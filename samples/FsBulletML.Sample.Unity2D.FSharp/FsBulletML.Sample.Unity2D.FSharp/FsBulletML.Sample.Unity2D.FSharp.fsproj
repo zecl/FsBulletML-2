@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML.Sample.Unity2D.FSharp</RootNamespace>
+    <AssemblyName>FsBulletML.Sample.Unity2D.FSharp</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BulletFunctions.fs" />
+    <Compile Include="IBullet.fs" />
+    <Compile Include="BaseBullet.fs" />
+    <Compile Include="EnemyBullet.fs" />
+    <Compile Include="PlayerBullet.fs" />
+    <Compile Include="Bomb.fs" />
+    <Compile Include="Enemy.fs" />
+    <Compile Include="Player.fs" />
+    <Compile Include="Informations.fs" />
+    <Compile Include="BgScroll.fs" />
+    <Compile Include="ParticleSortingLayer.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\FsBulletML.Core\FsBulletML.Core.fsproj" />
+    <ProjectReference Include="..\..\..\src\FsBulletML.Unity2D\FsBulletML.Unity2D.fsproj" />
+    <ProjectReference Include="..\..\FsBulletML.Bullets\FsBulletML.Bullets.fsproj" />
+    <!-- COMPILE-ONLY UnityEngine stub. Not a substitute for the Unity Editor. -->
+    <ProjectReference Include="..\..\..\src\UnityEngine.Stub\UnityEngine.Stub.csproj" Condition="'$(UseRealUnity)' != 'true'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseRealUnity)' == 'true'">
+    <Reference Include="UnityEngine.MathematicsModule">
+      <HintPath>$(UnityManaged)\UnityEngine.MathematicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(UnityManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(UnityManaged)\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.Physics2DModule">
+      <HintPath>$(UnityManaged)\UnityEngine.Physics2DModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(UnityManaged)\UnityEngine.ParticleSystemModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(UnityManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

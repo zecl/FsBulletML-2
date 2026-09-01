@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML.Sample.MonoGame.FSharp</RootNamespace>
+    <AssemblyName>FsBulletML.Sample.MonoGame.FSharp</AssemblyName>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <TieredCompilation>false</TieredCompilation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="IEnemy.fs" />
+    <Compile Include="Enemy.fs" />
+    <Compile Include="Player.fs" />
+    <Compile Include="Fps.fs" />
+    <Compile Include="Particle.fs" />
+    <Compile Include="ParticleEmitter.fs" />
+    <Compile Include="Background.fs" />
+    <Compile Include="FsBulletMLSampleGame.fs" />
+    <Compile Include="BulletFunctions.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Content\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="homing.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FsBulletML.Core\FsBulletML.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML.MonoGame\FsBulletML.MonoGame.fsproj" />
+    <ProjectReference Include="..\FsBulletML.Bullets\FsBulletML.Bullets.fsproj" />
+    <ProjectReference Include="..\FsBulletML.Sample.MonoGame.Font\FsBulletML.Sample.MonoGame.Font.csproj" />
+  </ItemGroup>
+</Project>

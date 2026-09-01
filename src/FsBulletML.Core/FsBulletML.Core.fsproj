@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML.Core</RootNamespace>
+    <AssemblyName>FsBulletML.Core</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Exception.fs" />
+    <Compile Include="AST.fs" />
+    <Compile Include="Util.fs" />
+    <Compile Include="DTD.fs" />
+    <Compile Include="Domain.fs" />
+    <Compile Include="Sim.fs" />
+    <Compile Include="Processable.fs" />
+    <Compile Include="IntermediateParser.fs" />
+    <Compile Include="Step.fs" />
+    <Compile Include="BulletRunner.fs" />
+    <Compile Include="Xml.fs" />
+    <Compile Include="BulletmlInfo.fs" />
+  </ItemGroup>
+</Project>

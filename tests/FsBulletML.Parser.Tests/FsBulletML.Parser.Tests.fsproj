@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>FsBulletML.Parser.Tests</RootNamespace>
+    <AssemblyName>FsBulletML.Parser.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Util.fs" />
+    <Compile Include="XmlParse.fs" />
+    <Compile Include="OtherParse.fs" />
+    <Compile Include="Snippet.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\TestData\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="FsUnit" Version="5.0.1" />
+    <PackageReference Include="FParsec" Version="1.1.1" />
+    <!-- 行と分岐のカバレッジを出すために要る（XPlat Code Coverage の収集器） -->
+    <PackageReference Include="coverlet.collector" Version="6.0.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FsBulletML.Core\FsBulletML.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML.Parser\FsBulletML.Parser.fsproj" />
+  </ItemGroup>
+</Project>

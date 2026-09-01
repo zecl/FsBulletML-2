@@ -1,0 +1,151 @@
+namespace FsBulletML.Core.Tests
+
+open System
+open System.Collections.Generic
+open System.Globalization
+open System.Text
+open FsBulletML
+open FsBulletML.DTD
+open FsBulletML.Domain
+
+/// 新経路で、Trace と同じ書式の軌跡を作る。
+///
+/// 書式が違うと差分が全行に出て橋が使えない。Trace.fs の fmt と
+/// 出力の並びをそのまま写してある。
+module TraceNew =
+
+  let private fmt (v: float32) =
+    let r = Math.Round(float v, Trace.digits)
+    let r = if r = 0.0 then 0.0 else r
+    r.ToString("F" + string Trace.digits, CultureInfo.InvariantCulture)
+
+  /// FakeBullet.GetAimDir と同じ式。ずれると全弾幕が割れる
+  let private aimDir (px: float32) (py: float32) (pos: Vec2) =
+    float32 (Math.Atan2(float (px - pos.X), float -(py - pos.Y)))
+
+  let private enemyAimDir (pos: Vec2) =
+    float32 (Math.Atan2(float (FakeEnemy.X - pos.X), -1.0 * float (FakeEnemy.Y - pos.Y)))
+
+  type private Live =
+    { mutable St : BulletState
+      mutable Alive : bool
+      mutable Vanished : int
+      Id : int }
+
+  let run (rand: unit -> float32) (rank: float32) (px: float32) (py: float32)
+          (xml: string) (frames: int) : string =
+    let bulletml = readXmlString xml
+    let rec' = IntermediateParser.convertRecBulletml bulletml
+    // 新経路の Resolvers は RecBulletml を返す側（*RecBulletml.expand*RefOnceRec）を使う。
+    // 旧 API の expand*RefOnce は convertRecBulletmlEx まで進めて
+    // ProcessableBulletml を返すので、そのままでは Step.Resolvers の型に合わない
+    let resolvers : Step.Resolvers =
+      { Bullet = IntermediateParser.expandBulletRefOnceRec rec'
+        Action = IntermediateParser.expandActionRefOnceRec rec' }
+    // top* の並びは現行の toProcessable と同じ選び方
+    let scripts =
+      rec'
+      |> IntermediateParser.getAction
+      |> List.filter (function
+        | RecBulletml.Action (attrs, _) ->
+            match attrs.actionLabel with
+            | Some label -> label.StartsWith "top"
+            | None -> false
+        | _ -> false)
+      |> List.map (IntermediateParser.convertRefBulletml rec')
+
+    // 根の Tops は Progress.initial では組めない。旧の toProcessable は
+    // 木を組む段で wait の term だけをその場で引く（IntermediateParser.fs の
+    // RecBulletml.Wait の腕、convertRecBulletmlEx から）。この段の Env は
+    // 撃つ弾ごとの位置がまだ無いので AimDir / EnemyAimDir を 0 に固定し、
+    // Rand / Rank はグローバルと同じ値を渡す（設計文書 5.6）。
+    // accel / changeDirection / changeSpeed はこの段では引かないので、
+    // resetChild ではなく rootProgress を通す
+    let rootEnv : Env = { Rand = rand; Rank = rank; AimDir = 0.f; EnemyAimDir = 0.f }
+    let initial =
+      { Pos = { X = 0.f; Y = 0.f }
+        Speed = 0.f
+        Dir = 0.f
+        Accel = { X = 0.f; Y = 0.f }
+        Kind = BulletType.Enemy
+        IsBullet = false
+        HasFired = false
+        Tops = scripts |> List.map (fun s -> s, Step.rootProgress rootEnv s, FireContext.zero)
+        PendingBulletAim = false }
+
+    let all = List<Live>()
+    all.Add { St = initial; Alive = true; Vanished = 0; Id = 0 }
+    let sb = StringBuilder()
+    let mutable seen = 1
+
+    for i in 0 .. frames - 1 do
+      sb.AppendLine(sprintf "f%02d" i) |> ignore
+      let liveCount = all.Count
+      for j in 0 .. liveCount - 1 do
+        let b = all.[j]
+        if b.Alive then
+          let env =
+            { Rand = rand
+              Rank = rank
+              AimDir = aimDir px py b.St.Pos
+              EnemyAimDir = enemyAimDir b.St.Pos }
+          let r = Step.step resolvers env b.St
+          let vanishedNow = r.Effects |> List.exists (fun e -> e = Vanished)
+          let st = { r.State with Pos = { X = r.State.Pos.X + r.Delta.X
+                                          Y = r.State.Pos.Y + r.Delta.Y } }
+          // Trace は Processed のとき task.Init(envOfGlobal o) を呼んで
+          // 回し直す。Original が None の task の Init は tasks を
+          // Init(env) で歩くだけで、これは Progress.initial ではなく
+          // Step.resetChild が写している（wait / changeDirection /
+          // changeSpeed を引き直す。ruling 5.6 / 5.3 参照）。
+          // 引き直しの Env は envOfGlobal と同じく、移動後の位置から組む
+          let st =
+            if r.Finished then
+              let reinitEnv =
+                { Rand = rand
+                  Rank = rank
+                  AimDir = aimDir px py st.Pos
+                  EnemyAimDir = enemyAimDir st.Pos }
+              { st with
+                  Tops =
+                    st.Tops
+                    |> List.map (fun (s, _, fc) -> s, Step.resetChild reinitEnv s, fc) }
+            else st
+          b.St <- st
+          if vanishedNow then
+            b.Vanished <- b.Vanished + 1
+            b.Alive <- false
+          if r.Retired then b.Alive <- false
+          let mark = if r.Finished then "P+" else "P-"
+          sb.Append(sprintf "  b%d %s x=%s y=%s d=%s s=%s"
+                      b.Id mark (fmt st.Pos.X) (fmt st.Pos.Y) (fmt st.Dir) (fmt st.Speed)) |> ignore
+          if vanishedNow then sb.Append(" vanish") |> ignore
+          sb.AppendLine() |> ignore
+          // 撃たれた弾を並びへ足す。
+          //
+          // PendingBulletAim が立っている（bullet 側の direction が aim 系
+          // だった）ときは、Step.fire の時点では解決していない。旧の
+          // createTask は GetNewBullet() 直後・位置をコピーする前
+          // （まだ (0, 0)）の newBullet 自身の GetAimDir() / GetEnemyAimDir()
+          // を読んでいた（Domain.BulletState / BulletRunner.applySpawn 参照）。
+          // ここは IBulletmlObject を介さない別経路なので、その場を
+          // 原点 (0, 0) で作って同じ式（aimDir / enemyAimDir）を通す
+          for e in r.Effects do
+            match e with
+            | Spawn child ->
+                let child =
+                  if child.PendingBulletAim then
+                    let origin = { X = 0.f; Y = 0.f }
+                    let aim =
+                      if child.Kind = BulletType.Player then enemyAimDir origin
+                      else aimDir px py origin
+                    { child with Dir = Step.calcDir (aim + child.Dir); PendingBulletAim = false }
+                  else child
+                all.Add { St = child; Alive = true; Vanished = 0; Id = all.Count }
+            | Vanished -> ()
+      while seen < all.Count do
+        let b = all.[seen]
+        sb.AppendLine(sprintf "  +b%d d=%s s=%s" b.Id (fmt b.St.Dir) (fmt b.St.Speed)) |> ignore
+        seen <- seen + 1
+
+    sb.ToString().Replace("\r\n", "\n")

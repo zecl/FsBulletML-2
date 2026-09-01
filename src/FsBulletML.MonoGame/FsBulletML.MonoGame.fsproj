@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML.MonoGame</RootNamespace>
+    <AssemblyName>FsBulletML.MonoGame</AssemblyName>
+    <DefineConstants>$(DefineConstants);NET40</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="FSharpFunc.fs" />
+    <Compile Include="Settings.fs" />
+    <Compile Include="IBullet.fs" />
+    <Compile Include="Manager.fs" />
+    <Compile Include="BaseBullet.fs" />
+    <Compile Include="EnemyBullet.fs" />
+    <Compile Include="PlayerBullet.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML.Core\FsBulletML.Core.fsproj" />
+  </ItemGroup>
+</Project>

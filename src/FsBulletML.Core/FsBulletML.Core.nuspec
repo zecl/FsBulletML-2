@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>FsBulletML.Core</title>
+    <authors>zecl</authors>
+    <owners>zecl</owners>
+    <licenseUrl>https://github.com/zecl/FsBulletML/blob/master/LICENSE.md</licenseUrl>
+    <projectUrl>https://github.com/zecl/FsBulletML</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>$description$</description>
+    <tags>f# library game DSL BulletML</tags>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System.Xml"/>
+    </frameworkAssemblies>
+  </metadata>
+
+  <files>
+    <file src="bin\Release\netstandard2.1\FsBulletML.Core.dll" target="lib\netstandard2.1\FsBulletML.Core.dll" />
+    <file src="bin\Release\netstandard2.1\FsBulletML.Core.xml" target="lib\netstandard2.1\FsBulletML.Core.xml" />
+
+    <file src="bin\Release\net10.0\FsBulletML.Core.dll" target="lib\net10.0\FsBulletML.Core.dll" />
+    <file src="bin\Release\net10.0\FsBulletML.Core.xml" target="lib\net10.0\FsBulletML.Core.xml" />
+
+    <file src="..\..\tools\Code Snippets\BulletFS\Action\action_accel.snippet" target="tools\Code Snipets\Action\action_accel.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Action\action_action.snippet" target="tools\Code Snipets\Action\action_action.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Action\action_actionRef.snippet" target="tools\Code Snipets\Action\action_actionRef.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Action\action_changeDirection.snippet" target="tools\Code Snipets\Action\action_changeDirection.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Action\action_changeSpeed.snippet" target="tools\Code Snipets\Action\action_changeSpeed.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Action\action_fire.snippet" target="tools\Code Snipets\Action\action_fire.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Action\action_fireRef.snippet" target="tools\Code Snipets\Action\action_fireRef.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Action\action_repeat.snippet" target="tools\Code Snipets\Action\action_repeat.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Action\action_vanish.snippet" target="tools\Code Snipets\Action\action_vanish.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Action\action_wait.snippet" target="tools\Code Snipets\Action\action_wait.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\ActionElm\actionElm_action.snippet" target="tools\Code Snipets\ActionElm\actionElm_action.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\ActionElm\actionElm_actionRef.snippet" target="tools\Code Snipets\ActionElm\actionElm_actionRef.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Attr\actionAttr.snippet" target="tools\Code Snipets\Attr\actionAttr.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Attr\actionRefAttr.snippet" target="tools\Code Snipets\Attr\actionRefAttr.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Attr\bulletAttr.snippet" target="tools\Code Snipets\Attr\bulletAttr.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Attr\bulletmlAttr.snippet" target="tools\Code Snipets\Attr\bulletmlAttr.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Attr\bulletRefAttr.snippet" target="tools\Code Snipets\Attr\bulletRefAttr.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Attr\directionAttr.snippet" target="tools\Code Snipets\Attr\directionAttr.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Attr\fireAttr.snippet" target="tools\Code Snipets\Attr\fireAttr.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Attr\fireRefAttr.snippet" target="tools\Code Snipets\Attr\fireRefAttr.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Attr\horizontalAttr.snippet" target="tools\Code Snipets\Attr\horizontalAttr.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Attr\speedAttr.snippet" target="tools\Code Snipets\Attr\speedAttr.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\Attr\verticalAttr.snippet" target="tools\Code Snipets\Attr\verticalAttr.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\BulletElm\bulletElm_bullet.snippet" target="tools\Code Snipets\BulletElm\bulletElm_bullet.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\BulletElm\bulletElm_bulletRef.snippet" target="tools\Code Snipets\BulletElm\bulletElm_bulletRef.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\BulletmlElm\bulletmlElm_action.snippet" target="tools\Code Snipets\BulletmlElm\bulletmlElm_action.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\BulletmlElm\bulletmlElm_bullet.snippet" target="tools\Code Snipets\BulletmlElm\bulletmlElm_bullet.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\BulletmlElm\bulletmlElm_fire.snippet" target="tools\Code Snipets\BulletmlElm\bulletmlElm_fire.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\bulletml.snippet" target="tools\Code Snipets\bulletml.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\direction.snippet" target="tools\Code Snipets\direction.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\horizontal.snippet" target="tools\Code Snipets\horizontal.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\speed.snippet" target="tools\Code Snipets\speed.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\term.snippet" target="tools\Code Snipets\term.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\times.snippet" target="tools\Code Snipets\times.snippet" />
+    <file src="..\..\tools\Code Snippets\BulletFS\vertical.snippet" target="tools\Code Snipets\vertical.snippet" />
+    <file src="..\..\tools\readme.txt" target="" />
+  </files>
+</package>

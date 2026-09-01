@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML.Unity2D</RootNamespace>
+    <AssemblyName>FsBulletML.Unity2D</AssemblyName>
+    <DefineConstants>$(DefineConstants);NET40</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="FSharpFunc.fs" />
+    <Compile Include="Settings.fs" />
+    <Compile Include="IDefaultBullet.fs" />
+    <Compile Include="Manager.fs" />
+    <Compile Include="InstanceManager.fs" />
+    <Compile Include="DefaultBullet.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML.Core\FsBulletML.Core.fsproj" />
+    <!-- COMPILE-ONLY UnityEngine stub (no Editor on this Linux box). Replace with real UnityEngine in the Editor. -->
+    <ProjectReference Include="..\UnityEngine.Stub\UnityEngine.Stub.csproj" Condition="'$(UseRealUnity)' != 'true'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseRealUnity)' == 'true'">
+    <Reference Include="UnityEngine.MathematicsModule">
+      <HintPath>$(UnityManaged)\UnityEngine.MathematicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(UnityManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

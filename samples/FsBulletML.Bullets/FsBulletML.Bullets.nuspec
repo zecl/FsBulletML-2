@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>FsBulletML.Bullets</title>
+    <authors>zecl</authors>
+    <owners>zecl</owners>
+    <licenseUrl>https://github.com/zecl/FsBulletML/blob/master/LICENSE.md</licenseUrl>
+    <projectUrl>https://github.com/zecl/FsBulletML</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>$description$</description>
+    <tags>f# library</tags>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System.Xml"/>
+    </frameworkAssemblies>
+    <dependencies>
+        <dependency id="FsBulletML.Core" version="0.8.8"/>
+    </dependencies>
+  </metadata>
+
+  <files>
+    <file src="bin\Release\net10.0\FsBulletML.Bullets.dll" target="lib\net10.0\FsBulletML.Bullets.dll" />
+    <file src="bin\Release\net10.0\FsBulletML.Bullets.xml" target="lib\net10.0\FsBulletML.Bullets.xml" />
+    <file src="bin\Release\netstandard2.1\FsBulletML.Bullets.dll" target="lib\netstandard2.1\FsBulletML.Bullets.dll" />
+    <file src="bin\Release\netstandard2.1\FsBulletML.Bullets.xml" target="lib\netstandard2.1\FsBulletML.Bullets.xml" />
+  </files>
+</package>
