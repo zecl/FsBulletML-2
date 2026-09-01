@@ -1,4 +1,4 @@
-﻿namespace FsBulletML.Sample.MonoGame.FSharp
+﻿namespace FsBulletML2.Sample.MonoGame.FSharp
 
 open System
 open System.Collections.Generic
@@ -8,10 +8,10 @@ open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Input
 open Microsoft.Xna.Framework.Graphics
 
-open FsBulletML
-open FsBulletML.MonoGame
+open FsBulletML2
+open FsBulletML2.MonoGame
 
-type FsBulletMLSampleGame () as this = 
+type FsBulletML2SampleGame () as this = 
   inherit Game()
   [<DefaultValue>]val mutable boss : IEnemy
   [<DefaultValue>]val mutable currentKeyState : KeyboardState 
@@ -24,7 +24,7 @@ type FsBulletMLSampleGame () as this =
   [<DefaultValue>]val mutable emitter : ParticleEmitter
 
   static let mutable gmanager = null : GraphicsDeviceManager
-  let gametitle, sprite = "FsBulletML.Sample.MonoGame.FSharp", lazy new SpriteBatch(this.GraphicsDevice)
+  let gametitle, sprite = "FsBulletML2.Sample.MonoGame.FSharp", lazy new SpriteBatch(this.GraphicsDevice)
   let bulletTexture,enemyBullet1Texture, enemyBullet2Texture, playerTexture, playerBullet1Texture, playerBullet2Texture, enemyTexture, backgroundTexture, particleTexture, enemyBullet3Texture = 
     ["bullet"; "enemy_bullet1";"enemy_bullet2";"player";"p_bullet_s";"player_bullet2";"enemy1";"background";"particle";"g_bullet_s"] 
     |> List.map (fun name -> lazy this.Content.Load<Texture2D>("Sprites/" + name)) |> function 
@@ -33,7 +33,7 @@ type FsBulletMLSampleGame () as this =
     try this.Content.Load<SpriteFont>("font/SpriteFont2")
     with ex ->
       eprintfn "SpriteFont XNB load failed (%s); baking a DejaVu fallback." ex.Message
-      FsBulletML.Sample.MonoGame.Font.RuntimeSpriteFont.Bake(this.GraphicsDevice, 14.f))
+      FsBulletML2.Sample.MonoGame.Font.RuntimeSpriteFont.Bake(this.GraphicsDevice, 14.f))
   let drawText (msg:string) (v:Vector2) c = sprite.Force() |> function
     | x -> sfont.Force() |> fun font -> [font, msg, Vector2(v.X+2.f,v.Y+2.f), Color.Gray; font, msg, v, c ] 
                                        |> List.iter (fun (font, msg, v, c) -> x.DrawString(font, msg, v, c))
@@ -45,13 +45,13 @@ type FsBulletMLSampleGame () as this =
   ///
   /// TODO: この値で描画や初期角度を変えるかは未決定。ライブラリ側で意味を決めるか、
   ///       ゲーム側で決めるかも、まだ決まっていない。
-  let scrollLabel (d: FsBulletML.DTD.ShootingDirection) =
+  let scrollLabel (d: FsBulletML2.DTD.ShootingDirection) =
     if isNull (box d) then "(未設定)"
     else
       match d with
-      | FsBulletML.DTD.ShootingDirection.BulletVertical   -> "vertical"
-      | FsBulletML.DTD.ShootingDirection.BulletHorizontal -> "horizontal"
-      | FsBulletML.DTD.ShootingDirection.BulletNone       -> "none"
+      | FsBulletML2.DTD.ShootingDirection.BulletVertical   -> "vertical"
+      | FsBulletML2.DTD.ShootingDirection.BulletHorizontal -> "horizontal"
+      | FsBulletML2.DTD.ShootingDirection.BulletNone       -> "none"
 
   static let mutable ship = defaultof<Player>
   static member Player : Player = ship

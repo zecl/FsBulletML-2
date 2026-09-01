@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace FsBulletML.Sample.MonoGame.CSharp
+namespace FsBulletML2.Sample.MonoGame.CSharp
 {
     class Fps
     {

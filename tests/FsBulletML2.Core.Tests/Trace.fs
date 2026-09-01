@@ -1,11 +1,11 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System
 open System.Collections.Generic
 open System.Globalization
 open System.Text
-open FsBulletML
-open FsBulletML.Processable
+open FsBulletML2
+open FsBulletML2.Processable
 
 /// XML を食わせて N フレーム回し、生きている弾ぜんぶの軌跡を作る。
 ///

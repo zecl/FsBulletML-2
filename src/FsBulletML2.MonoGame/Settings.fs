@@ -1,4 +1,4 @@
-﻿namespace FsBulletML.MonoGame
+﻿namespace FsBulletML2.MonoGame
 
 module Settings =
 

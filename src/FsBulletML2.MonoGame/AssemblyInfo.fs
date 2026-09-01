@@ -10,10 +10,10 @@ open System.Runtime.InteropServices
 [<assembly: AssemblyFileVersion("0.1.0")>]
 [<assembly: AssemblyInformationalVersion("0.1.0")>]
 
-[<assembly: AssemblyTitle("FsBulletML")>]
-[<assembly: AssemblyDescription("FsBulletML for MonoGame.")>]
+[<assembly: AssemblyTitle("FsBulletML2")>]
+[<assembly: AssemblyDescription("FsBulletML2 for MonoGame.")>]
 [<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("FsBulletML.MonoGame")>]
+[<assembly: AssemblyProduct("FsBulletML2.MonoGame")>]
 [<assembly: AssemblyCopyright("Copyright (C) 2013-2014 zecl")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
@@ -23,7 +23,7 @@ open System.Runtime.InteropServices
 [<assembly: Guid("565CAB1D-7E73-4F0E-944A-09CD895FC1D5")>]
 
 #if DEBUG
-[<assembly: InternalsVisibleTo("FsBulletML.MonoGame.Tests")>]
+[<assembly: InternalsVisibleTo("FsBulletML2.MonoGame.Tests")>]
 [<assembly: InternalsVisibleTo("CreateBullets")>]
 #endif
 

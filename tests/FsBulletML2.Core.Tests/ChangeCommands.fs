@@ -1,7 +1,7 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// changeDirection / changeSpeed / accel の type ごとの効き方と、vanish。
 /// absolute は Behavior.fs で見ているので、ここは残りを埋める。

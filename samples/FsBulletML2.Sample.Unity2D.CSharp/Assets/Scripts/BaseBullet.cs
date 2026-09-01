@@ -3,12 +3,12 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
-using FsBulletML;
+using FsBulletML2;
 using Microsoft.FSharp.Core;
 using R3;
-using BulletType = FsBulletML.DTD.BulletType;
+using BulletType = FsBulletML2.DTD.BulletType;
 
-public abstract class BaseBullet : MonoBehaviour, FsBulletML.Processable.IBulletmlObject
+public abstract class BaseBullet : MonoBehaviour, FsBulletML2.Processable.IBulletmlObject
 {
     [SerializeField]
     protected GameObject bulletObject;
@@ -36,7 +36,7 @@ public abstract class BaseBullet : MonoBehaviour, FsBulletML.Processable.IBullet
 
     protected void RunTask()
     {
-        var self = this as FsBulletML.Processable.IBulletmlObject;
+        var self = this as FsBulletML2.Processable.IBulletmlObject;
 
         Monad.OptionExtentions.Action<Processable.BulletmlTask>(self.Task,
             x =>

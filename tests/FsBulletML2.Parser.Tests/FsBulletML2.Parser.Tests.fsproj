@@ -5,8 +5,8 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <IsPackable>false</IsPackable>
-    <RootNamespace>FsBulletML.Parser.Tests</RootNamespace>
-    <AssemblyName>FsBulletML.Parser.Tests</AssemblyName>
+    <RootNamespace>FsBulletML2.Parser.Tests</RootNamespace>
+    <AssemblyName>FsBulletML2.Parser.Tests</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Util.fs" />
@@ -33,7 +33,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FsBulletML.Core\FsBulletML.Core.fsproj" />
-    <ProjectReference Include="..\..\src\FsBulletML.Parser\FsBulletML.Parser.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
   </ItemGroup>
 </Project>

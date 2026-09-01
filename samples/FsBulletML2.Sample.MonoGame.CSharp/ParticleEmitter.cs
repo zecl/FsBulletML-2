@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace FsBulletML.Sample.MonoGame.CSharp
+namespace FsBulletML2.Sample.MonoGame.CSharp
 {
     class ParticleEmitter
     {

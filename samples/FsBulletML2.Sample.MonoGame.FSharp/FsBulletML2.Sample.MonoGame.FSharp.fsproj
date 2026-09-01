@@ -5,8 +5,8 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <RootNamespace>FsBulletML.Sample.MonoGame.FSharp</RootNamespace>
-    <AssemblyName>FsBulletML.Sample.MonoGame.FSharp</AssemblyName>
+    <RootNamespace>FsBulletML2.Sample.MonoGame.FSharp</RootNamespace>
+    <AssemblyName>FsBulletML2.Sample.MonoGame.FSharp</AssemblyName>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
@@ -18,7 +18,7 @@
     <Compile Include="Particle.fs" />
     <Compile Include="ParticleEmitter.fs" />
     <Compile Include="Background.fs" />
-    <Compile Include="FsBulletMLSampleGame.fs" />
+    <Compile Include="FsBulletML2SampleGame.fs" />
     <Compile Include="BulletFunctions.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
@@ -34,9 +34,9 @@
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FsBulletML.Core\FsBulletML.Core.fsproj" />
-    <ProjectReference Include="..\..\src\FsBulletML.MonoGame\FsBulletML.MonoGame.fsproj" />
-    <ProjectReference Include="..\FsBulletML.Bullets\FsBulletML.Bullets.fsproj" />
-    <ProjectReference Include="..\FsBulletML.Sample.MonoGame.Font\FsBulletML.Sample.MonoGame.Font.csproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.MonoGame\FsBulletML2.MonoGame.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Bullets\FsBulletML2.Bullets.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Sample.MonoGame.Font\FsBulletML2.Sample.MonoGame.Font.csproj" />
   </ItemGroup>
 </Project>

@@ -3,8 +3,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <RootNamespace>FsBulletML.TypeProvider</RootNamespace>
-    <AssemblyName>FsBulletML.TypeProviders</AssemblyName>
+    <RootNamespace>FsBulletML2.TypeProvider</RootNamespace>
+    <AssemblyName>FsBulletML2.TypeProviders</AssemblyName>
     <!-- A type provider assembly must be loaded with its full implementation at design/compile
          time. The SDK's separate, method-body-stripped reference assembly (used elsewhere purely
          to speed up incremental builds) is not usable here - consumers would load stub bodies
@@ -26,7 +26,7 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FsBulletML.Core\FsBulletML.Core.fsproj" />
-    <ProjectReference Include="..\FsBulletML.Parser\FsBulletML.Parser.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
   </ItemGroup>
 </Project>

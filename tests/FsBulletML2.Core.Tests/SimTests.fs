@@ -1,10 +1,10 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsUnit
-open FsBulletML
-open FsBulletML.DTD
-open FsBulletML.Domain
+open FsBulletML2
+open FsBulletML2.DTD
+open FsBulletML2.Domain
 
 /// Sim は Reader + State + Writer を 1 本に畳んだもの。
 /// 手で 3 つ組を持ち回るのをやめるための道具なので、

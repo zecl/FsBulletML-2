@@ -5,17 +5,17 @@ using System.Text;
 
 using Microsoft.Xna.Framework;
 
-using FsBulletML;
-using FsBulletML.MonoGame;
-using BulletType = FsBulletML.DTD.BulletType;
-using EnemyBullet = FsBulletML.MonoGame.EnemyBullet;
-using IBulletmlObject = FsBulletML.Processable.IBulletmlObject;
+using FsBulletML2;
+using FsBulletML2.MonoGame;
+using BulletType = FsBulletML2.DTD.BulletType;
+using EnemyBullet = FsBulletML2.MonoGame.EnemyBullet;
+using IBulletmlObject = FsBulletML2.Processable.IBulletmlObject;
 
-namespace FsBulletML.Sample.MonoGame.CSharp
+namespace FsBulletML2.Sample.MonoGame.CSharp
 {
-    public class Enemy : FsBulletML.MonoGame.BaseBullet, IEnemy 
+    public class Enemy : FsBulletML2.MonoGame.BaseBullet, IEnemy 
     {
-        private FsBulletML.MonoGame.IBullet self = null;
+        private FsBulletML2.MonoGame.IBullet self = null;
         private int Timer { get; set; }
         string BulletName { get; set; }
         BulletmlInfo BulletmlInfo { get; set; }

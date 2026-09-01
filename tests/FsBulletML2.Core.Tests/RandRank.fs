@@ -1,7 +1,7 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// $rand と $rank。値そのものは IBulletMLManager から来るので、
 /// ここで見るのは「その値が式のどこに、どう入るか」。

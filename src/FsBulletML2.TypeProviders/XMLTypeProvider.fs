@@ -1,4 +1,4 @@
-﻿namespace FsBulletML.TypeProvider
+﻿namespace FsBulletML2.TypeProvider
 
 open System.IO
 open System.Xml
@@ -6,14 +6,14 @@ open System.Xml.Resolvers
 open System.Reflection
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes
-open FsBulletML
+open FsBulletML2
 
 [<TypeProvider>]
 type BulletmlTypeProvider(config: TypeProviderConfig) as this =
   inherit TypeProviderForNamespaces()
 
   let asm = Assembly.GetExecutingAssembly()
-  let ns = "FsBulletML.TypeProviders"
+  let ns = "FsBulletML2.TypeProviders"
 
   let typ = ProvidedTypeDefinition(asm, ns, "XML", Some (typeof<obj>), HideObjectMethods = true)
   do typ.DefineStaticParameters(
@@ -36,11 +36,11 @@ type BulletmlTypeProvider(config: TypeProviderConfig) as this =
                                           InvokeCode= (fun args -> <@@ xml :> obj @@>))
           typ.AddMember ctor
 
-          let bulletml = (xml, None) |> FsBulletML.Xml.Bulletml.readXmlString
+          let bulletml = (xml, None) |> FsBulletML2.Xml.Bulletml.readXmlString
           let bulletml2 = Bulletml({ bulletmlXmlns = Some "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml"; bulletmlType = Some ShootingDirection.BulletVertical }, [])
           let instanceProp = 
             ProvidedProperty(propertyName = "Value", 
-                             propertyType = typeof<FsBulletML.DTD.Bulletml>, 
+                             propertyType = typeof<FsBulletML2.DTD.Bulletml>, 
                              GetterCode= (fun _ -> <@@ bulletml  @@>))
           instanceProp.AddXmlDoc(System.String.Format(@"BulletMLを取得します。"))
 

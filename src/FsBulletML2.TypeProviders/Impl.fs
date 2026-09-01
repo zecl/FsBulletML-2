@@ -1,4 +1,4 @@
-﻿namespace FsBulletML.TypeProviders
+﻿namespace FsBulletML2.TypeProviders
 
 type Style =
   | Xml  = 0
@@ -14,7 +14,7 @@ open System.Reflection
 open System.ComponentModel
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes
-open FsBulletML
+open FsBulletML2
 
 [<CompilerMessage("hidden...", 13730, IsError = false, IsHidden = true)>]
 module Impl =
@@ -77,11 +77,11 @@ module Impl =
           docText)
         instanceProp))
 
-  // Was: probe for FsBulletML.Core/FParsec/FsBulletML.Parser under a NuGet packages.config-style
+  // Was: probe for FsBulletML2.Core/FParsec/FsBulletML2.Parser under a NuGet packages.config-style
   // "packages\<id>.<version>\lib\<tf>" layout, keyed off "net40"/"net45" via #if NET40/NET45 (an
   // ifdef that nothing defines any more - a latent, always-broken build target under this
   // project's later configurations). There is no packages.config in this repo; dependencies are
   // resolved through ProjectReference/PackageReference instead, and the build already copies
-  // FsBulletML.Core.dll, FsBulletML.Parser.dll and FParsec.dll next to FsBulletML.TypeProviders.dll,
+  // FsBulletML2.Core.dll, FsBulletML2.Parser.dll and FParsec.dll next to FsBulletML2.TypeProviders.dll,
   // which is where ordinary assembly resolution looks first. Registering this assembly's own
   // directory as a probing folder (as this function's first line did) is therefore also redundant.

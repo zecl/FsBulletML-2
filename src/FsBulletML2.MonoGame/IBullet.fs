@@ -1,5 +1,5 @@
-﻿namespace FsBulletML.MonoGame
-open FsBulletML
+﻿namespace FsBulletML2.MonoGame
+open FsBulletML2
 open Microsoft.Xna.Framework
 
 type IBullet =

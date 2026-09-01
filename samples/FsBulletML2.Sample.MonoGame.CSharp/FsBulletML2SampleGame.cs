@@ -6,13 +6,13 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-using FsBulletML;
-using FsBulletML.MonoGame;
-using Settings = FsBulletML.MonoGame.Settings;
+using FsBulletML2;
+using FsBulletML2.MonoGame;
+using Settings = FsBulletML2.MonoGame.Settings;
 
-namespace FsBulletML.Sample.MonoGame.CSharp
+namespace FsBulletML2.Sample.MonoGame.CSharp
 {
-    public class FsBulletMLSampleGame : Game
+    public class FsBulletML2SampleGame : Game
     {
         private static Vector2 EnemyDefaultPos = new Vector2(Settings.Enemy.X, Settings.Enemy.Y);
         private static IEnumerable<BulletmlInfo> EnemyBullets = null;
@@ -35,7 +35,7 @@ namespace FsBulletML.Sample.MonoGame.CSharp
         private int EnemyIndex { get; set; }
         public static Player Player { get; set; }
 
-        public FsBulletMLSampleGame()
+        public FsBulletML2SampleGame()
         {
             gmanager = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -57,10 +57,10 @@ namespace FsBulletML.Sample.MonoGame.CSharp
         protected override void LoadContent()
         {
             base.LoadContent();
-            base.Window.Title = "FsBulletML.Sample.MonoGame.CSharp";
+            base.Window.Title = "FsBulletML2.Sample.MonoGame.CSharp";
             spriteBatch = new SpriteBatch(GraphicsDevice);
             this.Font = LoadSpriteFont();
-            FsBulletMLSampleGame.EnemyBullets = EnemyControl.Bullets();
+            FsBulletML2SampleGame.EnemyBullets = EnemyControl.Bullets();
 
             this.Fps = new Fps();
 
@@ -184,7 +184,7 @@ namespace FsBulletML.Sample.MonoGame.CSharp
             catch (System.Exception ex)
             {
                 System.Console.Error.WriteLine("SpriteFont XNB load failed (" + ex.Message + "); baking a DejaVu fallback.");
-                return FsBulletML.Sample.MonoGame.Font.RuntimeSpriteFont.Bake(GraphicsDevice, 14f);
+                return FsBulletML2.Sample.MonoGame.Font.RuntimeSpriteFont.Bake(GraphicsDevice, 14f);
             }
         }
 
@@ -205,10 +205,10 @@ namespace FsBulletML.Sample.MonoGame.CSharp
 
         private Tuple<Vector2, BulletmlInfo> GetEnemyInfo(int index) 
         {
-            var len = FsBulletMLSampleGame.EnemyBullets.Count();
+            var len = FsBulletML2SampleGame.EnemyBullets.Count();
             if (len <= (index))
                 this.EnemyIndex = 0;
-            var bullet = FsBulletMLSampleGame.EnemyBullets.ElementAt(this.EnemyIndex);
+            var bullet = FsBulletML2SampleGame.EnemyBullets.ElementAt(this.EnemyIndex);
             return new Tuple<Vector2, BulletmlInfo>(EnemyDefaultPos, bullet);
         }
 

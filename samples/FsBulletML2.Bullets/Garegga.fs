@@ -1,5 +1,5 @@
-﻿namespace FsBulletML.Bullets.EnemyBullet.Sdmkun
-open FsBulletML
+﻿namespace FsBulletML2.Bullets.EnemyBullet.Sdmkun
+open FsBulletML2
 
 /// 白い弾幕くんより
 /// Garegga

@@ -1,8 +1,8 @@
-﻿namespace FsBulletML.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open System.Text.RegularExpressions
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// 参照にパラメータを足りなく渡す形。上の式を直に書く経路と違って、
 /// **本番で踏める経路**かどうかをこちらで見る。

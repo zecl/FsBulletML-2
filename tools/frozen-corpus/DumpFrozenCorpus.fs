@@ -1,11 +1,11 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System
 open System.IO
 open System.Security.Cryptography
 open System.Text
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// Producer of `tests/TestData/trace/corpus-trace-varying-old-4077ed6.tsv`.
 ///
@@ -18,7 +18,7 @@ open FsBulletML.Processable
 /// engine's last commit, not from this branch.
 ///
 /// The fold (`digest`, `aliveAtEnd`) and the exception rendering below are
-/// copied verbatim from `FsBulletML.Core.Tests.Equivalence`'s private
+/// copied verbatim from `FsBulletML2.Core.Tests.Equivalence`'s private
 /// `FoldTrace` / `RenderException` members as they stand at HEAD when this
 /// file was written. If those change, this file has drifted and must be
 /// re-synced by hand before the next regeneration — there is no shared
@@ -35,7 +35,7 @@ open FsBulletML.Processable
 ///      git worktree add C:\Code\FsBulletML-old-4077ed6 4077ed6
 ///
 ///    TRAP 1 (produces a confident wrong result — zero samples, green test):
-///    `CorpusData.isBuildOutput` (`tests/FsBulletML.Core.Tests/Corpus.fs`)
+///    `CorpusData.isBuildOutput` (`tests/FsBulletML2.Core.Tests/Corpus.fs`)
 ///    rejects any path containing the literal segment `/Temp/`, to keep
 ///    build-output copies out of the sample count. A worktree placed under
 ///    a temp directory (`$env:TEMP`, `/tmp`, anything with `\Temp\` or
@@ -52,16 +52,16 @@ open FsBulletML.Processable
 /// 2. Copy this file into that worktree's test project and wire it in:
 ///
 ///      Copy this file to
-///        <worktree>\tests\FsBulletML.Core.Tests\DumpFrozenCorpus.fs
+///        <worktree>\tests\FsBulletML2.Core.Tests\DumpFrozenCorpus.fs
 ///      Add one line to
-///        <worktree>\tests\FsBulletML.Core.Tests\FsBulletML.Core.Tests.fsproj
+///        <worktree>\tests\FsBulletML2.Core.Tests\FsBulletML2.Core.Tests.fsproj
 ///      inside the existing `<ItemGroup>` of `<Compile Include=...>` lines:
 ///        <Compile Include="DumpFrozenCorpus.fs" />
 ///
 /// 3. Run it and capture the written file:
 ///
 ///      cd <worktree>
-///      dotnet test tests\FsBulletML.Core.Tests\FsBulletML.Core.Tests.fsproj -v:n --filter "FullyQualifiedName~DumpFrozenCorpus"
+///      dotnet test tests\FsBulletML2.Core.Tests\FsBulletML2.Core.Tests.fsproj -v:n --filter "FullyQualifiedName~DumpFrozenCorpus"
 ///
 ///    The test writes to `%TEMP%\fsb-frozen-corpus-varying.tsv` and prints
 ///    the path and sample count via `TestContext.WriteLine`.
@@ -135,7 +135,7 @@ type DumpFrozenCorpus() =
           (string rank) (string px) (string py) frames
         "# producer: tools/frozen-corpus/DumpFrozenCorpus.fs"
         "# format: name\\tfired\\talive\\tdigest  OR  name\\tERROR\\ttype: message"
-        "# consumer: tests/FsBulletML.Core.Tests/Equivalence.fs (LoadFrozenVarying)" ]
+        "# consumer: tests/FsBulletML2.Core.Tests/Equivalence.fs (LoadFrozenVarying)" ]
     for h in headerLines do sb.AppendLine(h) |> ignore
     for path in samples do
       let name = CorpusData.relative path

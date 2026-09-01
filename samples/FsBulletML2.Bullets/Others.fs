@@ -1,5 +1,5 @@
-﻿namespace FsBulletML.Bullets.EnemyBullet
-open FsBulletML
+﻿namespace FsBulletML2.Bullets.EnemyBullet
+open FsBulletML2
 
 /// その他
 [<RequireQualifiedAccess>]

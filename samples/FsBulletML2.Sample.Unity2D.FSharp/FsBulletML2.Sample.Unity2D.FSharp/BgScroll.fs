@@ -1,4 +1,4 @@
-﻿namespace FsBulletML.Sample.Unity2D.FSharp
+﻿namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
 open UnityEngine

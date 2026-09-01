@@ -1,5 +1,5 @@
-﻿namespace FsBulletML.Unity2D
-open FsBulletML
+﻿namespace FsBulletML2.Unity2D
+open FsBulletML2
 open UnityEngine
 
 type IDefaultBullet =

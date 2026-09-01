@@ -1,7 +1,7 @@
-﻿namespace FsBulletML.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// fire の direction / speed を省いたとき、bullet と action の組み合わせ。
 /// DTD は <!ELEMENT fire (direction?, speed?, (bullet | bulletRef))> なので

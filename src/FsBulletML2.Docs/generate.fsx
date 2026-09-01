@@ -18,14 +18,14 @@ let script = Path.Combine(source, "Index.fsx")
 
 // Load the template & specify project information
 let projTemplateFile = Path.Combine(source, templatePath + "template-project.html")
-let root = "http://zecl.github.io/FsBulletML.Core"
+let root = "http://zecl.github.io/FsBulletML2.Core"
 let projInfo =
-  [ "page-description", "FsBulletML"
-    "nuget-page","https://www.nuget.org/packages/FsBulletML.Core"
+  [ "page-description", "FsBulletML2"
+    "nuget-page","https://www.nuget.org/packages/FsBulletML2.Core"
     "page-author", "zecl"
-    "github-link", "https://github.com/zecl/FsBulletML"
-    "project-name", "FsBulletML" 
-    "license-page", "https://github.com/zecl/FsBulletML/blob/master/LICENSE.md"
+    "github-link", "https://github.com/zecl/FsBulletML-2"
+    "project-name", "FsBulletML2" 
+    "license-page", "https://github.com/zecl/FsBulletML-2/blob/master/LICENSE.md"
     "releasenote-page","./releasenote.html"
     "root",root
     ]

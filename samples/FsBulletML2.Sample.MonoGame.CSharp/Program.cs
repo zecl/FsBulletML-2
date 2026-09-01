@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using FsBulletML;
+using FsBulletML2;
 
-namespace FsBulletML.Sample.MonoGame.CSharp
+namespace FsBulletML2.Sample.MonoGame.CSharp
 {
     public static class Program
     {
         [STAThread]
         static void Main()
         {
-            FsBulletML.Processable.BulletMLManager.Init(new BulletFunctions());
-            using (var game = new FsBulletMLSampleGame())
+            FsBulletML2.Processable.BulletMLManager.Init(new BulletFunctions());
+            using (var game = new FsBulletML2SampleGame())
                 game.Run();
         }
     }

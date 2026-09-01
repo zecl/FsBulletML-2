@@ -1,4 +1,4 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System.IO
 open System.Text.RegularExpressions

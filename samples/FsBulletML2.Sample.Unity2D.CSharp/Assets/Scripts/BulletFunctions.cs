@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using FsBulletML;
+using FsBulletML2;
 
-public class BulletFunctions : FsBulletML.Processable.IBulletMLManager
+public class BulletFunctions : FsBulletML2.Processable.IBulletMLManager
 {
     private static Player player;
 

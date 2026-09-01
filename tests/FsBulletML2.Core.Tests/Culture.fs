@@ -1,11 +1,11 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System
 open System.Globalization
 open System.Text.RegularExpressions
 open System.Threading
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// 式の評価がカルチャに影響されるか。
 ///

@@ -1,9 +1,9 @@
-﻿namespace FsBulletML.Parser.Tests
+﻿namespace FsBulletML2.Parser.Tests
 
 open System
 open System.Xml 
-open FsBulletML
-open FsBulletML.IntermediateParser
+open FsBulletML2
+open FsBulletML2.IntermediateParser
 open NUnit.Framework 
 open FsUnit
 

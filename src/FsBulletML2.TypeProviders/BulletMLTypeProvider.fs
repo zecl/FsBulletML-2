@@ -1,5 +1,5 @@
 ﻿#nowarn "13730"
-namespace FsBulletML.TypeProviders
+namespace FsBulletML2.TypeProviders
 open System
 open System.IO
 open System.Xml
@@ -8,7 +8,7 @@ open System.Reflection
 open System.ComponentModel
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes
-open FsBulletML
+open FsBulletML2
 open Impl
 open System.Text.RegularExpressions
 

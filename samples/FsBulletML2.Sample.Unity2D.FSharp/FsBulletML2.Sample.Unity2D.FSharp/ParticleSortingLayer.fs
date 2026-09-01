@@ -1,7 +1,7 @@
-﻿namespace FsBulletML.Sample.Unity2D.FSharp
+﻿namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open UnityEngine
-open FsBulletML.Unity2D 
+open FsBulletML2.Unity2D 
 
 type ParticleSortingLayer () = 
   inherit MonoBehaviour ()

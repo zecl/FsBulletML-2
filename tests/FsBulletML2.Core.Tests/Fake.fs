@@ -1,10 +1,10 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System
 open System.Collections.Generic
-open FsBulletML
-open FsBulletML.DTD
-open FsBulletML.Processable
+open FsBulletML2
+open FsBulletML2.DTD
+open FsBulletML2.Processable
 
 /// $rand / $rank / 自機位置を固定する。BulletMLManager は static mutable なので
 /// fixture ごとに Init し直すこと。

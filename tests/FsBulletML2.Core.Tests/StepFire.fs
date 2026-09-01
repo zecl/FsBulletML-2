@@ -1,10 +1,10 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsUnit
-open FsBulletML
-open FsBulletML.DTD
-open FsBulletML.Domain
+open FsBulletML2
+open FsBulletML2.DTD
+open FsBulletML2.Domain
 
 /// fire は撃つ側の状態と撃たれた弾の両方を決める。
 /// bullet の中に書いた値が fire 側より勝つところが、いちばん間違えやすい。

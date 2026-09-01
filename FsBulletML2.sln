@@ -10,31 +10,31 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{DA210C
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Core", "src\FsBulletML.Core\FsBulletML.Core.fsproj", "{DEDA69B5-2853-4192-A886-56194610391C}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Core", "src\FsBulletML2.Core\FsBulletML2.Core.fsproj", "{DEDA69B5-2853-4192-A886-56194610391C}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Parser", "src\FsBulletML.Parser\FsBulletML.Parser.fsproj", "{0094CAF8-9F7B-4F2E-948B-DC51AE2CEAC6}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Parser", "src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj", "{0094CAF8-9F7B-4F2E-948B-DC51AE2CEAC6}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Parser.Tests", "tests\FsBulletML.Parser.Tests\FsBulletML.Parser.Tests.fsproj", "{F304E9CA-2424-48DF-94B6-6AF7A38CA028}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Parser.Tests", "tests\FsBulletML2.Parser.Tests\FsBulletML2.Parser.Tests.fsproj", "{F304E9CA-2424-48DF-94B6-6AF7A38CA028}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Bullets", "samples\FsBulletML.Bullets\FsBulletML.Bullets.fsproj", "{F0BAD024-5C63-4C24-B9C8-3D8326CE8FD7}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Bullets", "samples\FsBulletML2.Bullets\FsBulletML2.Bullets.fsproj", "{F0BAD024-5C63-4C24-B9C8-3D8326CE8FD7}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Docs", "src\FsBulletML.Docs\FsBulletML.Docs.fsproj", "{BCC80F5C-93D0-4891-B90A-5CBFCAF5FAF6}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Docs", "src\FsBulletML2.Docs\FsBulletML2.Docs.fsproj", "{BCC80F5C-93D0-4891-B90A-5CBFCAF5FAF6}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.MonoGame", "src\FsBulletML.MonoGame\FsBulletML.MonoGame.fsproj", "{2E7EB854-10C6-48C8-B389-1410ABF0F5F8}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.MonoGame", "src\FsBulletML2.MonoGame\FsBulletML2.MonoGame.fsproj", "{2E7EB854-10C6-48C8-B389-1410ABF0F5F8}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Sample.MonoGame.FSharp", "samples\FsBulletML.Sample.MonoGame.FSharp\FsBulletML.Sample.MonoGame.FSharp.fsproj", "{7AE546E8-D456-40A8-8BE3-E73F2182A1FF}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Sample.MonoGame.FSharp", "samples\FsBulletML2.Sample.MonoGame.FSharp\FsBulletML2.Sample.MonoGame.FSharp.fsproj", "{7AE546E8-D456-40A8-8BE3-E73F2182A1FF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FsBulletML.Sample.MonoGame.CSharp", "samples\FsBulletML.Sample.MonoGame.CSharp\FsBulletML.Sample.MonoGame.CSharp.csproj", "{814F6B80-B792-4D24-879F-A7507A7EC9E4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FsBulletML2.Sample.MonoGame.CSharp", "samples\FsBulletML2.Sample.MonoGame.CSharp\FsBulletML2.Sample.MonoGame.CSharp.csproj", "{814F6B80-B792-4D24-879F-A7507A7EC9E4}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Unity2D", "src\FsBulletML.Unity2D\FsBulletML.Unity2D.fsproj", "{A53355E8-2D44-4FD1-A94A-D852773DAE35}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Unity2D", "src\FsBulletML2.Unity2D\FsBulletML2.Unity2D.fsproj", "{A53355E8-2D44-4FD1-A94A-D852773DAE35}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Sample.Unity2D.FSharp", "samples\FsBulletML.Sample.Unity2D.FSharp\FsBulletML.Sample.Unity2D.FSharp\FsBulletML.Sample.Unity2D.FSharp.fsproj", "{C9D15459-C3F8-4ED0-9312-423B3EB4CE47}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Sample.Unity2D.FSharp", "samples\FsBulletML2.Sample.Unity2D.FSharp\FsBulletML2.Sample.Unity2D.FSharp\FsBulletML2.Sample.Unity2D.FSharp.fsproj", "{C9D15459-C3F8-4ED0-9312-423B3EB4CE47}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.TypeProviders", "src\FsBulletML.TypeProviders\FsBulletML.TypeProviders.fsproj", "{5DC5E201-D1EE-4F3E-ADBC-6F76D6A19CB8}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.TypeProviders", "src\FsBulletML2.TypeProviders\FsBulletML2.TypeProviders.fsproj", "{5DC5E201-D1EE-4F3E-ADBC-6F76D6A19CB8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Core.Tests", "tests\FsBulletML.Core.Tests\FsBulletML.Core.Tests.fsproj", "{787B05DE-BBD5-4656-8190-71FE310EB43C}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Core.Tests", "tests\FsBulletML2.Core.Tests\FsBulletML2.Core.Tests.fsproj", "{787B05DE-BBD5-4656-8190-71FE310EB43C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject

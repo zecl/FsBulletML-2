@@ -1,10 +1,10 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System
 open System.Text.RegularExpressions
 open NUnit.Framework
 open FsUnit
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// final review 3: <bullet><direction type="aim"> は、撃った側ではなく
 /// 撃たれた新しい弾自身の位置から見た向きで解決する。

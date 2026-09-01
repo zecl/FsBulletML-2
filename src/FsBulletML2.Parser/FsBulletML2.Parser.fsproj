@@ -4,8 +4,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <RootNamespace>FsBulletML.Parser</RootNamespace>
-    <AssemblyName>FsBulletML.Parser</AssemblyName>
+    <RootNamespace>FsBulletML2.Parser</RootNamespace>
+    <AssemblyName>FsBulletML2.Parser</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
@@ -17,6 +17,6 @@
     <PackageReference Include="FParsec" Version="1.1.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FsBulletML.Core\FsBulletML.Core.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
   </ItemGroup>
 </Project>

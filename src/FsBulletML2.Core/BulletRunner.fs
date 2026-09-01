@@ -1,7 +1,7 @@
-namespace FsBulletML
+namespace FsBulletML2
 open System
-open FsBulletML.Domain
-open FsBulletML.Processable
+open FsBulletML2.Domain
+open FsBulletML2.Processable
 
 [<StructAttribute>]
 type RunResult =

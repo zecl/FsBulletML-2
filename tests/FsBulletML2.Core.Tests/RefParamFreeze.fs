@@ -1,8 +1,8 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML
-open FsBulletML.Processable
+open FsBulletML2
+open FsBulletML2.Processable
 
 /// ref の param に入れた $rand / $rank が、走るたびに読み直されるか。
 ///

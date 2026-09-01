@@ -1,9 +1,9 @@
 ﻿module Hoge
-open FsBulletML.TypeProviders
+open FsBulletML2.TypeProviders
 
-type XML1 = FsBulletML.TypeProviders.Xml.BulletML<"5way.xml;2wayRight.xml">
-type SXML1 = FsBulletML.TypeProviders.Sxml.BulletML<"5way.sxml">
-type FSB1 = FsBulletML.TypeProviders.Fsb.BulletML<"5way.fsb">
+type XML1 = FsBulletML2.TypeProviders.Xml.BulletML<"5way.xml;2wayRight.xml">
+type SXML1 = FsBulletML2.TypeProviders.Sxml.BulletML<"5way.sxml">
+type FSB1 = FsBulletML2.TypeProviders.Fsb.BulletML<"5way.fsb">
 
 [<Literal>]
 let bullets = """
@@ -42,14 +42,14 @@ let bullets = """
     </action>
 </bulletml>;
  homing.xml"""
-type XML2 = FsBulletML.TypeProviders.BulletML<bullets>
+type XML2 = FsBulletML2.TypeProviders.BulletML<bullets>
 
-type SXML2 = FsBulletML.TypeProviders.BulletML<"5way.sxml", Style.Sxml>
-type FSB2 = FsBulletML.TypeProviders.BulletML<"5way.fsb", Style.Fsb>
+type SXML2 = FsBulletML2.TypeProviders.BulletML<"5way.sxml", Style.Sxml>
+type FSB2 = FsBulletML2.TypeProviders.BulletML<"5way.fsb", Style.Fsb>
 
 [<EntryPoint>]
 let main argv = 
-  let a = FsBulletML.TypeProviders.Style.Xml
+  let a = FsBulletML2.TypeProviders.Style.Xml
   
   let bulletml1 = new XML1()
   bulletml1 |> printfn "%A"

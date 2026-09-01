@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Core", "..\FsBulletML.Core\FsBulletML.Core.fsproj", "{DEDA69B5-2853-4192-A886-56194610391C}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Core", "..\FsBulletML2.Core\FsBulletML2.Core.fsproj", "{DEDA69B5-2853-4192-A886-56194610391C}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.TypeProviders", "FsBulletML.TypeProviders.fsproj", "{5DC5E201-D1EE-4F3E-ADBC-6F76D6A19CB8}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.TypeProviders", "FsBulletML2.TypeProviders.fsproj", "{5DC5E201-D1EE-4F3E-ADBC-6F76D6A19CB8}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Parser", "..\FsBulletML.Parser\FsBulletML.Parser.fsproj", "{0094CAF8-9F7B-4F2E-948B-DC51AE2CEAC6}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Parser", "..\FsBulletML2.Parser\FsBulletML2.Parser.fsproj", "{0094CAF8-9F7B-4F2E-948B-DC51AE2CEAC6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

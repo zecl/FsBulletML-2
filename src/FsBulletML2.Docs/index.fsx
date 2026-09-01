@@ -1,10 +1,10 @@
 ﻿(**
-FsBulletML(Beta)
+FsBulletML2(Beta)
 ==================================
 
 これは何？
 -------------
-``FsBulletML``は、弾幕記述言語``BulletML``の``F#``実装です。  ``MonoGame``や``Unity(2D or 3D)``などで利用することができます。
+``FsBulletML2``は、弾幕記述言語``BulletML``の``F#``実装です。  ``MonoGame``や``Unity(2D or 3D)``などで利用することができます。
   
 判別共用体(Discriminated Unions)で弾幕を記述できる型付き内部DSLを提供します。
 また、``XML``形式、``SXML``形式、``FSB``形式(オフサイドルールの独自形式)の外部DSLを読み込んで実行することもできます。
@@ -14,7 +14,7 @@ FsBulletML(Beta)
 
 (*** hide ***)
 #I "bin/Debug"
-#r "FsBulletML.Core.dll"
+#r "FsBulletML2.Core.dll"
 
 (**
 特徴
@@ -22,7 +22,7 @@ FsBulletML(Beta)
  - 判別共用体で弾幕を記述できます。(内部DSL)
 
 *)
-open FsBulletML
+open FsBulletML2
 
 /// 全方位弾
 let sample = 
@@ -143,43 +143,43 @@ bulletml
 インストール
 -------------
 
-内部DSLおよび、``XML``形式の外部DSLを利用するには、``FsBulletML.Core``をインストールします。(.NET 10 / netstandard2.1)
+内部DSLおよび、``XML``形式の外部DSLを利用するには、``FsBulletML2.Core``をインストールします。(.NET 10 / netstandard2.1)
 
 <div class="row">
   <div class="span1"></div>
   <div class="span6">
     <div class="well well-small" id="nuget">
-      FsBulletML.Coreは<a href="https://nuget.org/packages/FsBulletML.Core" target="_blunk">NuGet</a>からインストールすることができます。
-      <pre>PM> Install-Package FsBulletML.Core</pre>
+      FsBulletML2.Coreは<a href="https://nuget.org/packages/FsBulletML2.Core" target="_blunk">NuGet</a>からインストールすることができます。
+      <pre>PM> Install-Package FsBulletML2.Core</pre>
     </div>
   </div>
   <div class="span1"></div>
 </div>
 
 
-外部DSL(``SXML``形式、``FSB``形式)を利用するには、``FsBulletML.Core``に加えて、``FsBulletML.Parser``をインストールします。(.NET 10)
+外部DSL(``SXML``形式、``FSB``形式)を利用するには、``FsBulletML2.Core``に加えて、``FsBulletML2.Parser``をインストールします。(.NET 10)
 
 <div class="row">
   <div class="span1"></div>
   <div class="span6">
     <div class="well well-small" id="nuget">
-      FsBulletML.Parserは<a href="https://nuget.org/packages/FsBulletML.Parser" target="_blunk">NuGet</a>からインストールすることができます。
-      <pre>PM> Install-Package FsBulletML.Parser</pre>
+      FsBulletML2.Parserは<a href="https://nuget.org/packages/FsBulletML2.Parser" target="_blunk">NuGet</a>からインストールすることができます。
+      <pre>PM> Install-Package FsBulletML2.Parser</pre>
     </div>
   </div>
   <div class="span1"></div>
 </div>
 
 
-型プロバイダーを利用するには、``FsBulletML.Core``, ``FsBulletML.Parser``に加えて、``FsBulletML.TypeProviders``をインストールします。
+型プロバイダーを利用するには、``FsBulletML2.Core``, ``FsBulletML2.Parser``に加えて、``FsBulletML2.TypeProviders``をインストールします。
 ※ TypeProviders はまだ旧 .NET Framework 向けで、.NET 10 移行では未対応です。
 ``XML``形式、``SXML``形式、``FSB``形式のBulletMLの型プロバイダーを利用することができます。
 <div class="row">
   <div class="span1"></div>
   <div class="span6">
     <div class="well well-small" id="nuget">
-      FsBulletML.TypeProvidersは<a href="https://nuget.org/packages/FsBulletML.TypeProviders" target="_blunk">NuGet</a>からインストールすることができます。
-      <pre>PM> Install-Package FsBulletML.TypeProviders</pre>
+      FsBulletML2.TypeProvidersは<a href="https://nuget.org/packages/FsBulletML2.TypeProviders" target="_blunk">NuGet</a>からインストールすることができます。
+      <pre>PM> Install-Package FsBulletML2.TypeProviders</pre>
     </div>
   </div>
   <div class="span1"></div>
@@ -195,8 +195,8 @@ bulletml
       <embed src="https://www.youtube.com/v/S43JUbxeQIs" width="560" height="315" />
       <noembed>プラグインが必要です。</noembed>
   </object><br>
-  サンプルプログラム(<a href="https://github.com/zecl/FsBulletML/tree/master/samples/FsBulletML.Sample.MonoGame.FSharp" target="_blunk">F#</a>),
-  サンプルプログラム(<a href="https://github.com/zecl/FsBulletML/tree/master/samples/FsBulletML.Sample.MonoGame.CSharp" target="_blunk">C#</a>)
+  サンプルプログラム(<a href="https://github.com/zecl/FsBulletML-2/tree/master/samples/FsBulletML2.Sample.MonoGame.FSharp" target="_blunk">F#</a>),
+  サンプルプログラム(<a href="https://github.com/zecl/FsBulletML-2/tree/master/samples/FsBulletML2.Sample.MonoGame.CSharp" target="_blunk">C#</a>)
 </div>
 
 <br>
@@ -205,12 +205,12 @@ bulletml
 -------------
 <center>
 Unity Web Player は廃止されています。Unity 6（6000.x）で C# サンプルプロジェクトを開いて Play してください。<br>
-プロジェクト: <code>samples/FsBulletML.Sample.Unity2D.CSharp</code><br>
-本編シーン: <code>Assets/Senes/FsBulletML.Sample.Unity2D.unity</code>（フォルダ名 Senes は元からの誤記）<br>
+プロジェクト: <code>samples/FsBulletML2.Sample.Unity2D.CSharp</code><br>
+本編シーン: <code>Assets/Senes/FsBulletML2.Sample.Unity2D.unity</code>（フォルダ名 Senes は元からの誤記）<br>
 Move:↑↓←→ 　Shot: Z Key<br>
 <br>
-サンプルプログラム(<a href="https://github.com/zecl/FsBulletML/tree/master/samples/FsBulletML.Sample.Unity2D.FSharp" target="_blank">F#</a>),
-サンプルプログラム(<a href="https://github.com/zecl/FsBulletML/tree/master/samples/FsBulletML.Sample.Unity2D.CSharp" target="_blank">C#</a>)<br>
+サンプルプログラム(<a href="https://github.com/zecl/FsBulletML-2/tree/master/samples/FsBulletML2.Sample.Unity2D.FSharp" target="_blank">F#</a>),
+サンプルプログラム(<a href="https://github.com/zecl/FsBulletML-2/tree/master/samples/FsBulletML2.Sample.Unity2D.CSharp" target="_blank">C#</a>)<br>
 </center>
 
 <br>

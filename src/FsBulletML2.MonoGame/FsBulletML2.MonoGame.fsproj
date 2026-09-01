@@ -4,8 +4,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <RootNamespace>FsBulletML.MonoGame</RootNamespace>
-    <AssemblyName>FsBulletML.MonoGame</AssemblyName>
+    <RootNamespace>FsBulletML2.MonoGame</RootNamespace>
+    <AssemblyName>FsBulletML2.MonoGame</AssemblyName>
     <DefineConstants>$(DefineConstants);NET40</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
@@ -22,6 +22,6 @@
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FsBulletML.Core\FsBulletML.Core.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
   </ItemGroup>
 </Project>

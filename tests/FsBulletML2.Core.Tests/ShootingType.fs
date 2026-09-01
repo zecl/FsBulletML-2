@@ -1,8 +1,8 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML.DTD
-open FsBulletML.Processable
+open FsBulletML2.DTD
+open FsBulletML2.Processable
 
 /// `<bulletml type="none|vertical|horizontal">` が走らせる側に効くか。
 ///
@@ -162,7 +162,7 @@ type ShootingType() =
   [<Test>]
   member _.``type に知らない値を書くと DTD 違反で落ちる``() =
     let ex =
-      Assert.Throws<FsBulletML.Exception.BulletmlDTDViolationException>(fun () ->
+      Assert.Throws<FsBulletML2.Exception.BulletmlDTDViolationException>(fun () ->
         Trace.run (bmlOfType "diagonal") 2 |> ignore)
     sprintf "例外: %s\nメッセージ: %s" (ex.GetType().Name) ex.Message
     |> Golden.check "shooting-type-unknown"

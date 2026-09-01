@@ -4,9 +4,9 @@ using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.Rendering;
-using FsBulletML;
+using FsBulletML2;
 using Microsoft.FSharp.Core;
-using BulletType = FsBulletML.DTD.BulletType;
+using BulletType = FsBulletML2.DTD.BulletType;
 
 public static class BulletEntityFactory
 {

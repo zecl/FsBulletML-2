@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StbTrueTypeSharp;
 
-namespace FsBulletML.Sample.MonoGame.Font;
+namespace FsBulletML2.Sample.MonoGame.Font;
 
 /// <summary>
 /// Bakes a TTF into a MonoGame SpriteFont at runtime so samples still run

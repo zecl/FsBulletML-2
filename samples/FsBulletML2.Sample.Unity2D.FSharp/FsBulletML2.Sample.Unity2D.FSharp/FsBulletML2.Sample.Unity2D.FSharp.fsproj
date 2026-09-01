@@ -4,8 +4,8 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <RootNamespace>FsBulletML.Sample.Unity2D.FSharp</RootNamespace>
-    <AssemblyName>FsBulletML.Sample.Unity2D.FSharp</AssemblyName>
+    <RootNamespace>FsBulletML2.Sample.Unity2D.FSharp</RootNamespace>
+    <AssemblyName>FsBulletML2.Sample.Unity2D.FSharp</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BulletFunctions.fs" />
@@ -21,9 +21,9 @@
     <Compile Include="ParticleSortingLayer.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\FsBulletML.Core\FsBulletML.Core.fsproj" />
-    <ProjectReference Include="..\..\..\src\FsBulletML.Unity2D\FsBulletML.Unity2D.fsproj" />
-    <ProjectReference Include="..\..\FsBulletML.Bullets\FsBulletML.Bullets.fsproj" />
+    <ProjectReference Include="..\..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\..\src\FsBulletML2.Unity2D\FsBulletML2.Unity2D.fsproj" />
+    <ProjectReference Include="..\..\FsBulletML2.Bullets\FsBulletML2.Bullets.fsproj" />
     <!-- COMPILE-ONLY UnityEngine stub. Not a substitute for the Unity Editor. -->
     <ProjectReference Include="..\..\..\src\UnityEngine.Stub\UnityEngine.Stub.csproj" Condition="'$(UseRealUnity)' != 'true'" />
   </ItemGroup>

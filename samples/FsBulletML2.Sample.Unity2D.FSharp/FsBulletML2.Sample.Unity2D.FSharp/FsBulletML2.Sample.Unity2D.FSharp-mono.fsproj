@@ -4,12 +4,12 @@
     LEGACY / NOT MAINTAINED - kept for historical reference only.
 
     This project compiles the same F# sources as the sibling
-    FsBulletML.Sample.Unity2D.FSharp.fsproj in this folder, but targets
+    FsBulletML2.Sample.Unity2D.FSharp.fsproj in this folder, but targets
     Unity's old, pre-.NET-Standard "classic" Mono scripting backend: it
     links against a single monolithic UnityEngine.dll from a full local
     Unity Editor install (hardcoded relative HintPath below), against
-    prebuilt FsBulletML.*.dll files expected to already exist under
-    ..\Assets\FsBulletML, and it imports a standalone "Microsoft F# v4.0"
+    prebuilt FsBulletML2.*.dll files expected to already exist under
+    ..\Assets\FsBulletML2, and it imports a standalone "Microsoft F# v4.0"
     MSBuild targets file that shipped with old Visual Studio F# tooling for
     early Unity/Mono projects.
 
@@ -24,7 +24,7 @@
 
     This is intentionally left unbuildable with current tooling, not a
     regression to fix. The maintained, portable equivalent is the sibling
-    FsBulletML.Sample.Unity2D.FSharp.fsproj, which compiles the identical
+    FsBulletML2.Sample.Unity2D.FSharp.fsproj, which compiles the identical
     sources against src/UnityEngine.Stub by default (no Unity install
     required) or against a real Unity's modular engine assemblies via
     -p:UseRealUnity=true -p:UnityManaged=<path to Unity's Managed folder>.
@@ -36,8 +36,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{0399F97B-BF95-412D-BFBC-D6489A1057E0}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>FsBulletML.Sample.Unity2D.FSharp</RootNamespace>
-    <AssemblyName>FsBulletML.Sample.Unity2D.FSharp</AssemblyName>
+    <RootNamespace>FsBulletML2.Sample.Unity2D.FSharp</RootNamespace>
+    <AssemblyName>FsBulletML2.Sample.Unity2D.FSharp</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -68,14 +68,14 @@
     <Reference Include="UnityEngine">
       <HintPath>..\..\..\..\..\Program Files %28x86%29\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
-    <Reference Include="FsBulletML.Bullets">
-      <HintPath>..\Assets\FsBulletML\FsBulletML.Bullets.dll</HintPath>
+    <Reference Include="FsBulletML2.Bullets">
+      <HintPath>..\Assets\FsBulletML2\FsBulletML2.Bullets.dll</HintPath>
     </Reference>
-    <Reference Include="FsBulletML.Core">
-      <HintPath>..\Assets\FsBulletML\FsBulletML.Core.dll</HintPath>
+    <Reference Include="FsBulletML2.Core">
+      <HintPath>..\Assets\FsBulletML2\FsBulletML2.Core.dll</HintPath>
     </Reference>
-    <Reference Include="FsBulletML.Unity2D">
-      <HintPath>..\Assets\FsBulletML\FsBulletML.Unity2D.dll</HintPath>
+    <Reference Include="FsBulletML2.Unity2D">
+      <HintPath>..\Assets\FsBulletML2\FsBulletML2.Unity2D.dll</HintPath>
     </Reference>
   </ItemGroup>
   <!-- Does not resolve on current tooling - see the file header comment above. -->

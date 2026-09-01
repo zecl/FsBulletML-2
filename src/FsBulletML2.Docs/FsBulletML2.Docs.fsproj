@@ -7,10 +7,10 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>bcc80f5c-93d0-4891-b90a-5cbfcaf5faf6</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>FsBulletML.Docs</RootNamespace>
-    <AssemblyName>FsBulletML.Docs</AssemblyName>
+    <RootNamespace>FsBulletML2.Docs</RootNamespace>
+    <AssemblyName>FsBulletML2.Docs</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <Name>FsBulletML.Docs</Name>
+    <Name>FsBulletML2.Docs</Name>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
     <TargetFSharpCoreVersion>4.3.0.0</TargetFSharpCoreVersion>
@@ -24,7 +24,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\FsBulletML.Docs.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\FsBulletML2.Docs.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -34,7 +34,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\FsBulletML.Docs.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\FsBulletML2.Docs.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release 4.5|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -44,7 +44,7 @@
     <OutputPath>bin\Release\net45\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Release\net45\FsBulletML.Docs.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\net45\FsBulletML2.Docs.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -53,7 +53,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Release\FsBulletML.Docs.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\FsBulletML2.Docs.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
@@ -86,8 +86,8 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FsBulletML.Core\FsBulletML.Core.fsproj">
-      <Name>FsBulletML.Core</Name>
+    <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj">
+      <Name>FsBulletML2.Core</Name>
       <Project>{deda69b5-2853-4192-a886-56194610391c}</Project>
       <Private>True</Private>
     </ProjectReference>
@@ -130,8 +130,8 @@
       <HintPath>..\..\packages\Microsoft.AspNet.Razor.2.0.30506.0\lib\net40\System.Web.Razor.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <ProjectReference Include="..\FsBulletML.Parser\FsBulletML.Parser.fsproj">
-      <Name>FsBulletML.Parser</Name>
+    <ProjectReference Include="..\FsBulletML2.Parser\FsBulletML2.Parser.fsproj">
+      <Name>FsBulletML2.Parser</Name>
       <Project>{0094caf8-9f7b-4f2e-948b-dc51ae2ceac6}</Project>
       <Private>True</Private>
     </ProjectReference>

@@ -1,8 +1,8 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML
-open FsBulletML.IntermediateParser
+open FsBulletML2
+open FsBulletML2.IntermediateParser
 
 /// XML を読んで書き戻したとき、属性が生き残るか。
 ///

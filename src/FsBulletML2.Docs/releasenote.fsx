@@ -3,12 +3,12 @@
 Release Notes
 ==================================
 
-FsBulletML.Core
+FsBulletML2.Core
 -------------
 0.10.0
 -------------
-- .NET 10 対応。``FsBulletML.Core`` は ``net10.0`` と ``netstandard2.1``。``FsBulletML.Parser`` は ``net10.0``。
-- ビルドは ``FsBulletML.Library.sln`` を使用（旧 ``FsBulletML.sln`` は .NET Framework 時代のまま）。
+- .NET 10 対応。``FsBulletML2.Core`` は ``net10.0`` と ``netstandard2.1``。``FsBulletML2.Parser`` は ``net10.0``。
+- ビルドは ``FsBulletML2.Library.sln`` を使用（旧 ``FsBulletML2.sln`` は .NET Framework 時代のまま）。
 - ``BinaryFormatter`` によるタスクの clone をやめた。
 - MonoGame は ``MonoGame.Framework.DesktopGL`` 3.8.5。
 - Unity 2D サンプルは Unity 6。Unity Web Player は使わない。
@@ -36,27 +36,27 @@ FsBulletML.Core
 -------------
 - bug fix
 - ``BulletmlInfo`` struct追加
-- ※``FsBulletML.Bullets``の弾幕定義で``BulletmlInfo`` structを利用するよう修正。
-- ※``FsBulletML.Bullets``の弾幕名変更(C#から参照可能)。
-- ※MonoGame(C#)サンプル ``FsBulletML.Sample.MonoGame.CSharp``を追加
-- ※MonoGame(F#)サンプル ``FsBulletML.Sample``を``FsBulletML.Sample.MonoGame.FSharp``へ変更
+- ※``FsBulletML2.Bullets``の弾幕定義で``BulletmlInfo`` structを利用するよう修正。
+- ※``FsBulletML2.Bullets``の弾幕名変更(C#から参照可能)。
+- ※MonoGame(C#)サンプル ``FsBulletML2.Sample.MonoGame.CSharp``を追加
+- ※MonoGame(F#)サンプル ``FsBulletML2.Sample``を``FsBulletML2.Sample.MonoGame.FSharp``へ変更
 
 
 0.8.5
 -------------
 - bug fix
-- ※``FsBulletML.Sample``: 弾を進行方向を反映して描画するよう修正。
+- ※``FsBulletML2.Sample``: 弾を進行方向を反映して描画するよう修正。
 
 
 0.8.4
 -------------
-- ``XML``形式の外部DSLを``FsBulletML.Core``へ含めるよう修正。``FsBulletML.Parser``では``SXML``形式、``FSB``形式のみ外部DSLを追加拡張する。
+- ``XML``形式の外部DSLを``FsBulletML2.Core``へ含めるよう修正。``FsBulletML2.Parser``では``SXML``形式、``FSB``形式のみ外部DSLを追加拡張する。
 
 
 0.8.3
 -------------
-- ``FsBulletML.Core``を.NET Framework3.5以上に対応
-- ``FsBulletML.Parser``は.NET Framework4.0以上に対応
+- ``FsBulletML2.Core``を.NET Framework3.5以上に対応
+- ``FsBulletML2.Parser``は.NET Framework4.0以上に対応
 
 
 0.8.2
@@ -70,7 +70,7 @@ FsBulletML.Core
 
 
 
-FsBulletML.Parser
+FsBulletML2.Parser
 -------------
 0.8.5
 -------------
@@ -82,7 +82,7 @@ FsBulletML.Parser
 - 最初のリリース
 
 
-FsBulletML.TypeProviders
+FsBulletML2.TypeProviders
 -------------
 0.9.1
 -------------

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace FsBulletML.Sample.MonoGame.CSharp.Properties {
+namespace FsBulletML2.Sample.MonoGame.CSharp.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]

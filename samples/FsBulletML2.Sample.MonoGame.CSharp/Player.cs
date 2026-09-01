@@ -8,12 +8,12 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-using FsBulletML;
-using FsBulletML.MonoGame;
-using Bulletml = FsBulletML.DTD.Bulletml;
-using Settings = FsBulletML.MonoGame.Settings;
+using FsBulletML2;
+using FsBulletML2.MonoGame;
+using Bulletml = FsBulletML2.DTD.Bulletml;
+using Settings = FsBulletML2.MonoGame.Settings;
 
-namespace FsBulletML.Sample.MonoGame.CSharp
+namespace FsBulletML2.Sample.MonoGame.CSharp
 {
     public class Player
     {

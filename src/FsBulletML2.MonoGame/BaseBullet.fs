@@ -1,10 +1,10 @@
-﻿namespace FsBulletML.MonoGame
+﻿namespace FsBulletML2.MonoGame
 
 open System
 open System.Collections.Generic 
 open Microsoft.Xna.Framework
 open Microsoft.FSharp.Core.Operators.Unchecked
-open FsBulletML
+open FsBulletML2
 
 type BaseBullet () as this =
   [<DefaultValue>]val mutable pos : Vector2

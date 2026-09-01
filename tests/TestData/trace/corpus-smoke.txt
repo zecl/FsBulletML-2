@@ -8,16 +8,16 @@
   なし
 
 落ちたもの:
-  samples/FsBulletML.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_self-0036.xml
+  samples/FsBulletML2.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_self-0036.xml
     BulletmlDTDViolationException: repeat element cannot have multiple elements of (Action|ActionRef).
-  samples/FsBulletML.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_self-1010.xml
+  samples/FsBulletML2.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_self-1010.xml
     BulletmlDTDViolationException: repeat element cannot have multiple elements of (Action|ActionRef).
-  samples/FsBulletML.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_self-1011.xml
+  samples/FsBulletML2.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_self-1011.xml
     BulletmlDTDViolationException: repeat element cannot have multiple elements of (Action|ActionRef).
 
 60 フレームで 1 発も撃たなかったもの:
-  samples/FsBulletML.Sample.MonoGame.CSharp/Content/xml/Enemy/move.xml
-  samples/FsBulletML.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[Original]_gyakuhunsya.xml
-  samples/FsBulletML.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_circle_trap.xml
-  samples/FsBulletML.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_dis_bee_2.xml
-  samples/FsBulletML.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_self-0034.xml
+  samples/FsBulletML2.Sample.MonoGame.CSharp/Content/xml/Enemy/move.xml
+  samples/FsBulletML2.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[Original]_gyakuhunsya.xml
+  samples/FsBulletML2.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_circle_trap.xml
+  samples/FsBulletML2.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_dis_bee_2.xml
+  samples/FsBulletML2.Sample.MonoGame.CSharp/Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_self-0034.xml

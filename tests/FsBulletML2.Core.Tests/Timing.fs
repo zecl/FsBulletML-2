@@ -1,8 +1,8 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System.Text.RegularExpressions
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// wait が何フレーム効くかを、発射の間隔として固める。
 ///

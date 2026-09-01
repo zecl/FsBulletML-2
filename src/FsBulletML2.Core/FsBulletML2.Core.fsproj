@@ -4,8 +4,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <RootNamespace>FsBulletML.Core</RootNamespace>
-    <AssemblyName>FsBulletML.Core</AssemblyName>
+    <RootNamespace>FsBulletML2.Core</RootNamespace>
+    <AssemblyName>FsBulletML2.Core</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />

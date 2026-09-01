@@ -9,10 +9,10 @@ open System.Runtime.InteropServices
 [<assembly: AssemblyFileVersion("0.8.6")>]
 [<assembly: AssemblyInformationalVersion("0.8.6")>]
 
-[<assembly: AssemblyTitle("FsBulletML")>]
+[<assembly: AssemblyTitle("FsBulletML2")>]
 [<assembly: AssemblyDescription("F# Implementation of BulletML for external DSL(SXML, FSB).")>]
 [<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("FsBulletML.Parser")>]
+[<assembly: AssemblyProduct("FsBulletML2.Parser")>]
 [<assembly: AssemblyCopyright("Copyright (C) 2013-2014 zecl All Rights Reserved.")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
@@ -21,7 +21,7 @@ open System.Runtime.InteropServices
 [<assembly: ComVisible(false)>]
 [<assembly: Guid("88DCD0C9-CEEE-428B-9AB9-8FD72B774275")>]
 
-[<assembly: InternalsVisibleTo("FsBulletML.Parser.Tests")>]
+[<assembly: InternalsVisibleTo("FsBulletML2.Parser.Tests")>]
 [<assembly: InternalsVisibleTo("CreateBullets")>]
 
 #if DEBUG

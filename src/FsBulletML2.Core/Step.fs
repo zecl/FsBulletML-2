@@ -1,8 +1,8 @@
-namespace FsBulletML
+namespace FsBulletML2
 
-open FsBulletML.DTD
-open FsBulletML.Domain
-open FsBulletML.Processable
+open FsBulletML2.DTD
+open FsBulletML2.Domain
+open FsBulletML2.Processable
 
 /// 命令を 1 つずつ進める。現行の BulletRunner.runCommand を写したもの。
 ///

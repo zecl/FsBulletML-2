@@ -4,8 +4,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <RootNamespace>FsBulletML.Bullets</RootNamespace>
-    <AssemblyName>FsBulletML.Bullets</AssemblyName>
+    <RootNamespace>FsBulletML2.Bullets</RootNamespace>
+    <AssemblyName>FsBulletML2.Bullets</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
@@ -38,6 +38,6 @@
     <Compile Include="Player.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FsBulletML.Core\FsBulletML.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
   </ItemGroup>
 </Project>

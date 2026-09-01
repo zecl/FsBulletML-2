@@ -1,4 +1,4 @@
-namespace FsBulletML
+namespace FsBulletML2
 
 module Domain =
 

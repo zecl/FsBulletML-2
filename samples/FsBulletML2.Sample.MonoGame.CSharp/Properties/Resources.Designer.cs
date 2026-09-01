@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace FsBulletML.Sample.MonoGame.CSharp.Properties {
+namespace FsBulletML2.Sample.MonoGame.CSharp.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace FsBulletML.Sample.MonoGame.CSharp.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("FsBulletML.Sample.MonoGame.CSharp.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("FsBulletML2.Sample.MonoGame.CSharp.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

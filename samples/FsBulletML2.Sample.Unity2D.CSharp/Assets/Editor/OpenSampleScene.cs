@@ -5,7 +5,7 @@ using UnityEngine;
 [InitializeOnLoad]
 static class OpenSampleScene
 {
-    const string Path = "Assets/Senes/FsBulletML.Sample.Unity2D.unity";
+    const string Path = "Assets/Senes/FsBulletML2.Sample.Unity2D.unity";
 
     static OpenSampleScene()
     {

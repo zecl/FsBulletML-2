@@ -1,10 +1,10 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsUnit
-open FsBulletML
-open FsBulletML.DTD
-open FsBulletML.Domain
+open FsBulletML2
+open FsBulletML2.DTD
+open FsBulletML2.Domain
 
 /// 命令を 1 つずつ、現行の BulletRunner と同じ形で動くかを見る。
 ///

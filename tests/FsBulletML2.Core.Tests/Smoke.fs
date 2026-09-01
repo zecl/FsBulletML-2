@@ -1,7 +1,7 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// 骨が通るかを見る 1 本。
 /// BulletMLManager が static mutable なので、この fixture は並列にしない。

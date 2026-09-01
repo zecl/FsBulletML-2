@@ -1,4 +1,4 @@
-﻿namespace FsBulletML.Sample.MonoGame.FSharp
+﻿namespace FsBulletML2.Sample.MonoGame.FSharp
 
 open System
 open System.Xml
@@ -8,8 +8,8 @@ open System.Runtime.Serialization
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Input
 open Microsoft.Xna.Framework.Graphics
-open FsBulletML
-open FsBulletML.MonoGame
+open FsBulletML2
+open FsBulletML2.MonoGame
 type Player () as this =
   [<DefaultValue>]val mutable timer : int
   [<DefaultValue>]val mutable pos : Vector2

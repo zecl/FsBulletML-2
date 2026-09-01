@@ -3,23 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using FsBulletML;
+using FsBulletML2;
 
-namespace FsBulletML.Sample.MonoGame.CSharp
+namespace FsBulletML2.Sample.MonoGame.CSharp
 {
-    class BulletFunctions : FsBulletML.Processable.IBulletMLManager 
+    class BulletFunctions : FsBulletML2.Processable.IBulletMLManager 
     {
         private static Random rand = new Random();
         public BulletFunctions () { }
 
         public float GetPlayerPosX()
         {
-            return FsBulletMLSampleGame.Player.Pos.X;
+            return FsBulletML2SampleGame.Player.Pos.X;
         }
 
         public float GetPlayerPosY()
         {
-            return FsBulletMLSampleGame.Player.Pos.Y;
+            return FsBulletML2SampleGame.Player.Pos.Y;
         }
 
         public float GetRandom()

@@ -1,8 +1,8 @@
-﻿namespace FsBulletML.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML
-open FsBulletML.Processable
+open FsBulletML2
+open FsBulletML2.Processable
 
 /// 中身の無い BulletML を食わせたときにどうなるか。
 /// run には X / Y を「差分ではなく絶対値」で返す枝が 2 つあり、
@@ -91,7 +91,7 @@ type Degenerate() =
     |> Golden.check "run-branch-task-none"
 
   // Tasks が null のときの枝は、ここからは測れない。
-  // Tasks の setter が internal で、FsBulletML.Core.Tests は
+  // Tasks の setter が internal で、FsBulletML2.Core.Tests は
   // InternalsVisibleTo に入っていない（Parser.Tests は入っている）。
   // 本番でも convertBulletmlTask が必ずリストを入れるので、到達する作り方が無い。
   // 直しは Task=None の枝と同じ形で入れてあるが、**測っていない**。

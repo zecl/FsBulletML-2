@@ -1,17 +1,17 @@
-﻿namespace FsBulletML.TypeProvider
+﻿namespace FsBulletML2.TypeProvider
 
 open System.IO
 open System.Reflection
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes
-open FsBulletML
+open FsBulletML2
 
 [<TypeProvider>]
 type FSBTypeProvider(config: TypeProviderConfig) as this =
   inherit TypeProviderForNamespaces()
 
   let asm = Assembly.GetExecutingAssembly()
-  let ns = "FsBulletML.TypeProviders"
+  let ns = "FsBulletML2.TypeProviders"
 
   let typ = ProvidedTypeDefinition(asm, ns, "SXML", Some (typeof<obj>), HideObjectMethods = true)
   do typ.DefineStaticParameters(
@@ -36,8 +36,8 @@ type FSBTypeProvider(config: TypeProviderConfig) as this =
           typ.AddMemberDelayed(fun () -> 
             let instanceProp = 
               ProvidedProperty(propertyName = "Value", 
-                                propertyType = typeof<FsBulletML.DTD.Bulletml>, 
-                                GetterCode= (fun _ -> <@@ source |> FsBulletML.DTD.Bulletml.ReadFsbString @@>))
+                                propertyType = typeof<FsBulletML2.DTD.Bulletml>, 
+                                GetterCode= (fun _ -> <@@ source |> FsBulletML2.DTD.Bulletml.ReadFsbString @@>))
             instanceProp.AddXmlDocDelayed (fun () -> System.String.Format(@"BulletMLを取得します。"))
             instanceProp)
 

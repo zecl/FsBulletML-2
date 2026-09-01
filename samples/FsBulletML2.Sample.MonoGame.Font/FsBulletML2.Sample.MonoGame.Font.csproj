@@ -4,8 +4,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>FsBulletML.Sample.MonoGame.Font</RootNamespace>
-    <AssemblyName>FsBulletML.Sample.MonoGame.Font</AssemblyName>
+    <RootNamespace>FsBulletML2.Sample.MonoGame.Font</RootNamespace>
+    <AssemblyName>FsBulletML2.Sample.MonoGame.Font</AssemblyName>
     <Description>Runtime SpriteFont baker used when MonoGame 3.2 XNB fonts fail to load on DesktopGL 3.8.</Description>
   </PropertyGroup>
   <ItemGroup>

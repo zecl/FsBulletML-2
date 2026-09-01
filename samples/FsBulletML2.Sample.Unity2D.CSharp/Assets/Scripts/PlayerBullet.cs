@@ -2,29 +2,29 @@
 // Kept so the prefab still compiles if opened; nothing instantiates this at runtime.
 using UnityEngine;
 using Microsoft.FSharp.Core;
-using FsBulletML;
+using FsBulletML2;
 using R3;
 using R3.Triggers;
-using BulletType = FsBulletML.DTD.BulletType;
+using BulletType = FsBulletML2.DTD.BulletType;
 
 public class PlayerBullet : BaseBullet
 {
     public PlayerBullet() : base()
     {
-        var self = this as FsBulletML.Processable.IBulletmlObject;
+        var self = this as FsBulletML2.Processable.IBulletmlObject;
         self.IsBullet = true;
         self.BulletType = BulletType.Player;
     }
 
     public void SetTask(FSharpOption<Processable.BulletmlTask> bulletmlTask)
     {
-        var self = this as FsBulletML.Processable.IBulletmlObject;
+        var self = this as FsBulletML2.Processable.IBulletmlObject;
         self.Task = bulletmlTask;
     }
 
     void Start()
     {
-        var self = this as FsBulletML.Processable.IBulletmlObject;
+        var self = this as FsBulletML2.Processable.IBulletmlObject;
         Observable.EveryUpdate(destroyCancellationToken)
             .Subscribe(_ =>
             {

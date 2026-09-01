@@ -1,10 +1,10 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsUnit
-open FsBulletML
-open FsBulletML.DTD
-open FsBulletML.Domain
+open FsBulletML2
+open FsBulletML2.DTD
+open FsBulletML2.Domain
 
 /// 実行位置を木の外へ出したもの。Script と同じ形の別の木になる。
 ///

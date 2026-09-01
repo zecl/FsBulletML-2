@@ -1,2 +1,2 @@
-..\.nuget\NuGet.exe pack ..\src\FsBulletML.TypeProviders\FsBulletML.TypeProviders.fsproj -symbols -build
+..\.nuget\NuGet.exe pack ..\src\FsBulletML2.TypeProviders\FsBulletML2.TypeProviders.fsproj -symbols -build
 pauseÅ@

@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>ConsoleApplication1</RootNamespace>
-    <AssemblyName>FsBulletML.Sample.TypeProviders.Debug</AssemblyName>
+    <AssemblyName>FsBulletML2.Sample.TypeProviders.Debug</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.fs" />
@@ -34,8 +34,8 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FsBulletML.Core\FsBulletML.Core.fsproj" />
-    <ProjectReference Include="..\..\src\FsBulletML.Parser\FsBulletML.Parser.fsproj" />
-    <ProjectReference Include="..\..\src\FsBulletML.TypeProviders\FsBulletML.TypeProviders.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.TypeProviders\FsBulletML2.TypeProviders.fsproj" />
   </ItemGroup>
 </Project>

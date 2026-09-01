@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: DefaultCompany
-  productName: FsBulletML.Sample.Unity2D
+  productName: FsBulletML2.Sample.Unity2D
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.12156863, g: 0.12156863, b: 0.1254902, a: 1}
@@ -170,7 +170,7 @@ PlayerSettings:
   androidMinAspectRatio: 1
   applicationIdentifier:
     Android: 
-    Standalone: unity.DefaultCompany.FsBulletML.Sample.Unity2D
+    Standalone: unity.DefaultCompany.FsBulletML2.Sample.Unity2D
     VisionOS: 
     iPhone: com.Company.ProductName
     tvOS: 
@@ -726,14 +726,14 @@ PlayerSettings:
   editorAssembliesCompatibilityLevel: 3
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
-  metroPackageName: FsBulletML.Sample.Unity2D
+  metroPackageName: FsBulletML2.Sample.Unity2D
   metroPackageVersion: 
   metroCertificatePath: 
   metroCertificatePassword: 
   metroCertificateSubject: 
   metroCertificateIssuer: 
   metroCertificateNotAfter: 0000000000000000
-  metroApplicationDescription: FsBulletML.Sample.Unity2D
+  metroApplicationDescription: FsBulletML2.Sample.Unity2D
   wsaImages: {}
   metroTileShortName: 
   metroTileShowName: 1

@@ -1,8 +1,8 @@
-﻿#r @".\bin\Debug\FsBulletML.TypeProvider.dll"
-#r @".\bin\Debug\FsBulletML.Core.dll"
-#r @".\bin\Debug\FsBulletML.Parser.dll"
+﻿#r @".\bin\Debug\FsBulletML2.TypeProvider.dll"
+#r @".\bin\Debug\FsBulletML2.Core.dll"
+#r @".\bin\Debug\FsBulletML2.Parser.dll"
 #r @".\bin\Debug\System.Xml.dll"
-open FsBulletML.TypeProviders.Xml 
+open FsBulletML2.TypeProviders.Xml 
 
 [<Literal>]
 let err = """
@@ -61,7 +61,7 @@ let sxml = """
     )
 )
 """
-type SXML2 = FsBulletML.TypeProviders.Sxml.BulletMLProvider<sxml>
+type SXML2 = FsBulletML2.TypeProviders.Sxml.BulletMLProvider<sxml>
 let bulletml2 = new SXML2()
 bulletml2.Value |> printfn "%A"
 
@@ -80,7 +80,7 @@ let fsb =
                           term:"3"
   """
 
-type FSB = FsBulletML.TypeProviders.Fsb.BulletMLProvider<fsb>
+type FSB = FsBulletML2.TypeProviders.Fsb.BulletMLProvider<fsb>
 let bulletml3 = new FSB()
 bulletml3.Value |> printfn "%A"
 

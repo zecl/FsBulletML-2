@@ -1,5 +1,5 @@
 ﻿#nowarn "13730"
-namespace FsBulletML.TypeProviders
+namespace FsBulletML2.TypeProviders
 
 open System
 open System.ComponentModel
@@ -9,7 +9,7 @@ open System.Xml.Resolvers
 open System.Reflection
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes
-open FsBulletML
+open FsBulletML2
 open Impl
 
 [<TypeProvider>]

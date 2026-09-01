@@ -1,11 +1,11 @@
-﻿namespace FsBulletML.MonoGame
+﻿namespace FsBulletML2.MonoGame
 
 open System
 open System.Collections.Generic
 open System.Runtime.Serialization
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Graphics 
-open FsBulletML
+open FsBulletML2
 
 module Manager =
 

@@ -1,10 +1,10 @@
-﻿namespace FsBulletML.Unity2D
+﻿namespace FsBulletML2.Unity2D
 
 open System
 open System.Collections.Generic
 open System.Runtime.Serialization
 open UnityEngine
-open FsBulletML
+open FsBulletML2
 
 module Manager =
 

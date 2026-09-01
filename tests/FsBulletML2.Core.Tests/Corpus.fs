@@ -1,11 +1,11 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System
 open System.IO
 open System.Security.Cryptography
 open System.Text
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// samples に入っている実物の BulletML を全部走らせる下ごしらえ。
 ///

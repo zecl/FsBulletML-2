@@ -1,2 +1,2 @@
-..\.nuget\NuGet.exe pack ..\src\FsBulletML.MonoGame\FsBulletML.MonoGame.fsproj -symbols -build
+..\.nuget\NuGet.exe pack ..\src\FsBulletML2.MonoGame\FsBulletML2.MonoGame.fsproj -symbols -build
 pauseÅ@

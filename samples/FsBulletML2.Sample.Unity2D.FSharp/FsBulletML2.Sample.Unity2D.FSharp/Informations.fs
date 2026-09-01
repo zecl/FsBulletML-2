@@ -1,11 +1,11 @@
-﻿namespace FsBulletML.Sample.Unity2D.FSharp
+﻿namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
 open System.Text 
 open System.Collections.Generic
 open System.Runtime.Serialization
 open UnityEngine
-open FsBulletML
+open FsBulletML2
  
 [<ExecuteInEditMode()>]
 type Informations () =

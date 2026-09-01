@@ -1,4 +1,4 @@
-﻿namespace FsBulletML.TypeProviders
+﻿namespace FsBulletML2.TypeProviders
 open System
 open System.IO
 open System.Runtime.CompilerServices

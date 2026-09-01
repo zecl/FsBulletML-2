@@ -1,11 +1,11 @@
-﻿namespace FsBulletML.Sample.Unity2D.FSharp
+﻿namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
 open System.Collections.Generic
 open System.Runtime.Serialization
 open UnityEngine
-open FsBulletML
-open FsBulletML.Unity2D 
+open FsBulletML2
+open FsBulletML2.Unity2D 
  
 type Player () =
   inherit MonoBehaviour ()
@@ -26,9 +26,9 @@ type Player () =
 
   member this.Awake () =
     Processable.BulletMLManager.Init(new BulletFunctions(this))
-    this.b2wayLeftBulletTask <- BulletRunner.convertBulletmlTaskOption(FsBulletML.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet)
-    this.b2wayRightBulletTask <- BulletRunner.convertBulletmlTaskOption(FsBulletML.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet)
-    this.hommingTask <- BulletRunner.convertBulletmlTaskOption(FsBulletML.Bullets.PlayerBullet.PlayerBullet.homing)
+    this.b2wayLeftBulletTask <- BulletRunner.convertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet)
+    this.b2wayRightBulletTask <- BulletRunner.convertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet)
+    this.hommingTask <- BulletRunner.convertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing)
 
   member this.X with get () = this.transform.position.x 
                  and set (v) = this.transform.position <- Vector3(v, this.transform.position.y, this.transform.position.z) 

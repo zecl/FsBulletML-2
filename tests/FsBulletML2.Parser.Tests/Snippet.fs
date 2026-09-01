@@ -1,5 +1,5 @@
-﻿namespace FsBulletML.Parser.Tests.Snippet
-open FsBulletML.DTD 
+﻿namespace FsBulletML2.Parser.Tests.Snippet
+open FsBulletML2.DTD 
 
 // bulletml snippet
 

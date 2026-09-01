@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML.Sample.TypeProviders.Debug", "FsBulletML.Sample.TypeProviders.Debug.fsproj", "{E547A42C-CB5E-4192-8152-890693C172BB}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FsBulletML2.Sample.TypeProviders.Debug", "FsBulletML2.Sample.TypeProviders.Debug.fsproj", "{E547A42C-CB5E-4192-8152-890693C172BB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

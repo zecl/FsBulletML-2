@@ -5,8 +5,8 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <IsPackable>false</IsPackable>
-    <RootNamespace>FsBulletML.Core.Tests</RootNamespace>
-    <AssemblyName>FsBulletML.Core.Tests</AssemblyName>
+    <RootNamespace>FsBulletML2.Core.Tests</RootNamespace>
+    <AssemblyName>FsBulletML2.Core.Tests</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Fake.fs" />
@@ -63,7 +63,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FsBulletML.Core\FsBulletML.Core.fsproj" />
-    <ProjectReference Include="..\..\src\FsBulletML.Parser\FsBulletML.Parser.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
   </ItemGroup>
 </Project>

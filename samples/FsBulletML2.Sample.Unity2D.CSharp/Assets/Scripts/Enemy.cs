@@ -2,11 +2,11 @@ using UnityEngine;
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using FsBulletML;
+using FsBulletML2;
 using Microsoft.FSharp.Core;
 using R3;
 using R3.Triggers;
-using BulletType = FsBulletML.DTD.BulletType;
+using BulletType = FsBulletML2.DTD.BulletType;
 
 public class Enemy : BaseBullet
 {
@@ -32,7 +32,7 @@ public class Enemy : BaseBullet
     public Enemy()
         : base()
     {
-        var self = this as FsBulletML.Processable.IBulletmlObject;
+        var self = this as FsBulletML2.Processable.IBulletmlObject;
         self.BulletType = BulletType.Enemy;
         self.IsBullet = false;
         self.Used = true;
@@ -98,10 +98,10 @@ public class Enemy : BaseBullet
 
     public void Shoot()
     {
-        var self = this as FsBulletML.Processable.IBulletmlObject;
+        var self = this as FsBulletML2.Processable.IBulletmlObject;
         if (self.Used)
         {
-            var task = FsBulletML.BulletRunner.ConvertBulletmlTaskOption(this.BulletmlInfo.Bulletml);
+            var task = FsBulletML2.BulletRunner.ConvertBulletmlTaskOption(this.BulletmlInfo.Bulletml);
             this.RootSim = BulletEntityFactory.SpawnEnemy(this.transform.position, task, root: true);
         }
     }
@@ -152,17 +152,17 @@ public class Enemy : BaseBullet
         this.RootSim = null;
     }
 
-    public static IEnumerable<FsBulletML.BulletmlInfo> GetBulletml()
+    public static IEnumerable<FsBulletML2.BulletmlInfo> GetBulletml()
     {
-        yield return FsBulletML.Bullets.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA;
-        yield return FsBulletML.Bullets.EnemyBullet.Sdmkun.Strikers1999.hanabi;
-        yield return FsBulletML.Bullets.EnemyBullet.Sdmkun.DragonBlaze.nebyurosu_2;
-        yield return FsBulletML.Bullets.EnemyBullet.Sdmkun.GWange._roll_gara;
-        yield return FsBulletML.Bullets.EnemyBullet.Sdmkun.Original.knight_2;
-        yield return FsBulletML.Bullets.EnemyBullet.Sdmkun.GWange.round_trip_bit;
-        yield return FsBulletML.Bullets.EnemyBullet.Sdmkun.Noiz2sa.b88way;
-        yield return FsBulletML.Bullets.EnemyBullet.Sdmkun.Noiz2sa.bit;
-        yield return FsBulletML.Bullets.EnemyBullet.Sdmkun.Noiz2sa.rollbar;
+        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA;
+        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.Strikers1999.hanabi;
+        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.DragonBlaze.nebyurosu_2;
+        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.GWange._roll_gara;
+        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.Original.knight_2;
+        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.GWange.round_trip_bit;
+        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.b88way;
+        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.bit;
+        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.rollbar;
     }
 
     void OnDestroy()

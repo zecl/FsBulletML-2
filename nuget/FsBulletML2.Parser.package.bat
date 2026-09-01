@@ -1,2 +1,2 @@
-..\.nuget\NuGet.exe pack ..\src\FsBulletML.Parser\FsBulletML.Parser.fsproj -symbols -build
+..\.nuget\NuGet.exe pack ..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj -symbols -build
 pauseÅ@

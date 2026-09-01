@@ -1,8 +1,8 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System.Threading
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// 輪になった参照。展開を打ち止めているのは IntermediateParser.convertRefBulletmlIn。
 /// bullet と action の輪はそこで残し、走らせる側が 1 段ずつ解く。

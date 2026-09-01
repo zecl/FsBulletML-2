@@ -10,10 +10,10 @@ open Microsoft.FSharp.Core.CompilerServices
 [<assembly: AssemblyFileVersion("0.9.1")>]
 [<assembly: AssemblyInformationalVersion("0.9.1")>]
 
-[<assembly: AssemblyTitle("FsBulletML")>]
+[<assembly: AssemblyTitle("FsBulletML2")>]
 [<assembly: AssemblyDescription("F# Implementation of BulletML. BulletML TypeProviders(Xml, Sxml, Fsb)")>]
 [<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("FsBulletML.TypeProviders")>]
+[<assembly: AssemblyProduct("FsBulletML2.TypeProviders")>]
 [<assembly: AssemblyCopyright("Copyright (C) 2013-2014 zecl All Rights Reserved.")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]

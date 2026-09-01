@@ -1,13 +1,13 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsUnit
-open FsBulletML
-open FsBulletML.Processable
+open FsBulletML2
+open FsBulletML2.Processable
 
 /// final review 7: GetNewBullet() が null を返す弾。
 ///
-/// FsBulletML.Unity2D/DefaultBullet.fs の GetBulletPrefubInstance は、
+/// FsBulletML2.Unity2D/DefaultBullet.fs の GetBulletPrefubInstance は、
 /// オーバーライドしなければ既定で null を返す（サンプルの未実装）。
 /// FakeBullet.GetNewBullet() は常に非 null を返すので、Trace / Equivalence の
 /// 橋はこの経路を一度も踏まない。ここでは経路そのものを直接 組み立てて見る

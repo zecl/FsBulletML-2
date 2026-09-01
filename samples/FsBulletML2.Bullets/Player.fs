@@ -1,5 +1,5 @@
-﻿namespace FsBulletML.Bullets.PlayerBullet
-open FsBulletML
+﻿namespace FsBulletML2.Bullets.PlayerBullet
+open FsBulletML2
 
 /// その他
 [<RequireQualifiedAccess>]

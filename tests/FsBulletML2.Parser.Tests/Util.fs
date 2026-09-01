@@ -1,4 +1,4 @@
-﻿namespace FsBulletML.Parser.Tests
+﻿namespace FsBulletML2.Parser.Tests
 open System
 open System.IO
 open NUnit.Framework

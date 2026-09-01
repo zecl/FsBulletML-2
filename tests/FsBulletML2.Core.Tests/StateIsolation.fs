@@ -1,7 +1,7 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// 同じ定義から作られた弾どうしが、可変状態を共有していないか。
 ///

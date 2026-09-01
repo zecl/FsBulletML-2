@@ -1,10 +1,10 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsUnit
-open FsBulletML
-open FsBulletML.DTD
-open FsBulletML.Domain
+open FsBulletML2
+open FsBulletML2.DTD
+open FsBulletML2.Domain
 
 /// final review 2: 根の accel は、木を組む段の placeholder が
 /// first = false（term = 1.f）であり、根の弾は Init を一度も通らない

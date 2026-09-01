@@ -1,12 +1,12 @@
-﻿namespace FsBulletML.Sample.Unity2D.FSharp
+﻿namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
 open System.Collections.Generic
 open System.Runtime.Serialization
 open UnityEngine
-open FsBulletML
-open FsBulletML.Bullets 
-open FsBulletML.Unity2D 
+open FsBulletML2
+open FsBulletML2.Bullets 
+open FsBulletML2.Unity2D 
  
 type Enemy () =
   inherit BaseBullet ()
@@ -81,7 +81,7 @@ type Enemy () =
     if (self.Used) then
       let bullet = this.GetBulletPrefubInstance()
       this.Bullet <- bullet.GetComponent<EnemyBullet>()
-      let task = FsBulletML.BulletRunner.convertBulletmlTaskOption(this.BulletmlInfo.Bulletml)
+      let task = FsBulletML2.BulletRunner.convertBulletmlTaskOption(this.BulletmlInfo.Bulletml)
       this.Bullet.GetDefaultBullet().Root <- true
       this.Bullet.SetTask(task)    
       
@@ -121,14 +121,14 @@ type Enemy () =
 
   member this.GetBulletml() : seq<BulletmlInfo> =
     seq {
-        yield FsBulletML.Bullets.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
-        yield FsBulletML.Bullets.EnemyBullet.Sdmkun.Strikers1999.hanabi
-        yield FsBulletML.Bullets.EnemyBullet.Sdmkun.DragonBlaze.nebyurosu_2
-        yield FsBulletML.Bullets.EnemyBullet.Sdmkun.GWange._roll_gara
-        yield FsBulletML.Bullets.EnemyBullet.Sdmkun.Original.knight_2
-        yield FsBulletML.Bullets.EnemyBullet.Sdmkun.GWange.round_trip_bit
-        yield FsBulletML.Bullets.EnemyBullet.Sdmkun.Noiz2sa.b88way
-        yield FsBulletML.Bullets.EnemyBullet.Sdmkun.Noiz2sa.bit
-        yield FsBulletML.Bullets.EnemyBullet.Sdmkun.Noiz2sa.rollbar
+        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
+        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.Strikers1999.hanabi
+        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.DragonBlaze.nebyurosu_2
+        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.GWange._roll_gara
+        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.Original.knight_2
+        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.GWange.round_trip_bit
+        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.b88way
+        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.bit
+        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.rollbar
     }
 

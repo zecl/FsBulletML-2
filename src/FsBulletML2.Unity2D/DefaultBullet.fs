@@ -1,10 +1,10 @@
-﻿namespace FsBulletML.Unity2D
+﻿namespace FsBulletML2.Unity2D
 
 open UnityEngine
 open System
 open System.Collections.Generic 
 open Microsoft.FSharp.Core.Operators.Unchecked
-open FsBulletML
+open FsBulletML2
 
 type DefaultBullet (transform:Transform) =
 

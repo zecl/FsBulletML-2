@@ -1,4 +1,4 @@
-﻿namespace FsBulletML.Unity2D
+﻿namespace FsBulletML2.Unity2D
 open System
 open System.Linq 
 open System.Collections.Generic

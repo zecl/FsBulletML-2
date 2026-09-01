@@ -1,6 +1,6 @@
 using UnityEngine;
 using System;
-using FsBulletML;
+using FsBulletML2;
 using R3;
 using R3.Triggers;
 
@@ -44,9 +44,9 @@ public class Player : MonoBehaviour
     void Awake()
     {
         Processable.BulletMLManager.Init(new BulletFunctions());
-        b2wayLeftBulletTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet);
-        b2wayRightBulletTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet);
-        hommingTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML.Bullets.PlayerBullet.PlayerBullet.homing);
+        b2wayLeftBulletTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet);
+        b2wayRightBulletTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet);
+        hommingTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing);
     }
 
     void Start()

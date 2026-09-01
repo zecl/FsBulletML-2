@@ -1,4 +1,4 @@
-namespace FsBulletML
+namespace FsBulletML2
 
 open System
 open System.Diagnostics
@@ -7,7 +7,7 @@ open System.IO
 open System.Text
 open System.Xml
 open System.Text.RegularExpressions
-open FsBulletML.Domain
+open FsBulletML2.Domain
 
 [<AutoOpen>]
 module Processable =

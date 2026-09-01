@@ -1,8 +1,8 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System.Text.RegularExpressions
 open NUnit.Framework
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 /// bullet 要素の中に書いた direction が、弾の向きに入るか。
 ///

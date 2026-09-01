@@ -1,10 +1,10 @@
-﻿namespace FsBulletML.Sample.Unity2D.FSharp
+﻿namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
 open System.Collections.Generic
 open System.Diagnostics
 open UnityEngine
-open FsBulletML
+open FsBulletML2
 
 /// BulletFunctions が要るのは Player という型そのものではなく、
 /// 位置を返せる何か 1 つ（player.transform.position.x / .y だけ）。

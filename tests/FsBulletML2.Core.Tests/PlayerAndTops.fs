@@ -1,9 +1,9 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System.Collections.Generic
 open NUnit.Framework
-open FsBulletML
-open FsBulletML.Processable
+open FsBulletML2
+open FsBulletML2.Processable
 
 /// ここまでの控えが 1 度も通っていなかった 2 つ。
 ///

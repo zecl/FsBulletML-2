@@ -1,6 +1,6 @@
-namespace FsBulletML
+namespace FsBulletML2
 
-open FsBulletML.Domain
+open FsBulletML2.Domain
 
 /// 1 コマ進めるあいだの、途中の結果。
 ///

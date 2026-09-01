@@ -1,7 +1,7 @@
-﻿namespace FsBulletML
+﻿namespace FsBulletML2
 open System
 open System.Globalization
-open FsBulletML.Processable
+open FsBulletML2.Processable
 
 module IntermediateParser =
   let internal existsAttribute attrs f = attrs |> List.exists (fun (label, v) -> if f label v then true else false)

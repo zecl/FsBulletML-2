@@ -33,7 +33,7 @@ nuget/*.nupkg
 /*.csproj
 /*.unityproj
 /*.sln
-!/FsBulletML.Library.sln
+!/FsBulletML2.Library.sln
 /*.suo
 /*.user
 /*.userprefs
@@ -55,8 +55,8 @@ samples/**/*.csproj.user
 
 # Unity accidentally creates these if the repo root or F# lib is opened as a project
 /ProjectSettings/
-src/FsBulletML.Unity2D/ProjectSettings/
-src/FsBulletML.Unity2D/Packages/
+src/FsBulletML2.Unity2D/ProjectSettings/
+src/FsBulletML2.Unity2D/Packages/
 
 # カバレッジ収集の出力（dotnet test --collect が吐く）
 TestResults/

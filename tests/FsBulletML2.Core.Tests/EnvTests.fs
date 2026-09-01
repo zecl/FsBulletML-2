@@ -1,12 +1,12 @@
-namespace FsBulletML.Core.Tests
+namespace FsBulletML2.Core.Tests
 
 open System
 open System.Collections.Generic
 open NUnit.Framework
 open FsUnit
-open FsBulletML
-open FsBulletML.Domain
-open FsBulletML.Processable
+open FsBulletML2
+open FsBulletML2.Domain
+open FsBulletML2.Processable
 
 /// Env はレコード 1 行で作れること。17 メンバの Fake を書かずに済むことが要点。
 [<TestFixture>]

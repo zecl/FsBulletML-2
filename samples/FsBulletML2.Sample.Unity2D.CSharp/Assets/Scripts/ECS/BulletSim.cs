@@ -1,8 +1,8 @@
 using Unity.Entities;
 using UnityEngine;
-using FsBulletML;
+using FsBulletML2;
 using Microsoft.FSharp.Core;
-using BulletType = FsBulletML.DTD.BulletType;
+using BulletType = FsBulletML2.DTD.BulletType;
 
 /// <summary>
 /// Managed BulletML object stored on an ECS entity. X/Y are plain floats (no Transform).
