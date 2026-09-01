@@ -262,7 +262,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 493327489}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 167623732, guid: a6055a0bfddb4fb4eb2a762e5e3ea13c, type: 3}
+  m_Script: {fileID: 1397531809, guid: a6055a0bfddb4fb4eb2a762e5e3ea13c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   scrollSpeed: .100000001
@@ -301,7 +301,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 596673695}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: -274243903, guid: 2321227d152b80a48a955da08a642cb3, type: 3}
+  m_Script: {fileID: -918731040, guid: 2321227d152b80a48a955da08a642cb3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   caches:
@@ -374,7 +374,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 674135554}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: -1916063114, guid: a6055a0bfddb4fb4eb2a762e5e3ea13c, type: 3}
+  m_Script: {fileID: 409911342, guid: a6055a0bfddb4fb4eb2a762e5e3ea13c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   bulletObject: {fileID: 100000, guid: 962adcb7170deb046824a3d8318c3ee7, type: 2}
@@ -491,7 +491,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1176930199}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1308643939, guid: a6055a0bfddb4fb4eb2a762e5e3ea13c, type: 3}
+  m_Script: {fileID: 2043810734, guid: a6055a0bfddb4fb4eb2a762e5e3ea13c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   bulletObject: {fileID: 100000, guid: dd0fc2649e54a2d4a9e37e76e0b541c9, type: 2}
@@ -637,7 +637,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2094294243}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1543742093, guid: a6055a0bfddb4fb4eb2a762e5e3ea13c, type: 3}
+  m_Script: {fileID: -2020883242, guid: a6055a0bfddb4fb4eb2a762e5e3ea13c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   show: 1
