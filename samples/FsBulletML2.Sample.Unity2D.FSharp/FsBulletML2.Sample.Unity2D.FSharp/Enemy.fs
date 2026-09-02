@@ -68,22 +68,18 @@ type Enemy () =
       false
     else
       let bullet = this.Bullet.GetDefaultBullet ()
-      let task = bullet.Task
-      match task with
-      | None -> false
-      | Some x -> 
-        if task.Value.Finish then
-          InstanceManager.Destroy(this.Bullet.gameObject)
-        task.Value.Finish
+      if bullet.Finished then
+        InstanceManager.Destroy(this.Bullet.gameObject)
+      bullet.Finished
 
   member this.Shoot () = 
     let self = this.GetDefaultBullet ()
     if (self.Used) then
       let bullet = this.GetBulletPrefubInstance()
       this.Bullet <- bullet.GetComponent<EnemyBullet>()
-      let task = FsBulletML2.BulletRunner.convertBulletmlTaskOption(this.BulletmlInfo.Bulletml)
+      let script = FsBulletML2.Runner.load (loadEnv ()) this.BulletmlInfo.Bulletml |> Some
       this.Bullet.GetDefaultBullet().Root <- true
-      this.Bullet.SetTask(task)    
+      this.Bullet.SetScript(script)    
       
 
 

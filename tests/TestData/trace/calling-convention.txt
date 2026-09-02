@@ -24,14 +24,13 @@ src/FsBulletML2.MonoGame/BaseBullet.fs
     apply f.Delta.X f.Delta.Y
 
 src/FsBulletML2.Unity2D/DefaultBullet.fs
-    self.X <- self.X + (x / Settings.Display.PixcelsToUnits)
-    self.Y <- self.Y - (y / Settings.Display.PixcelsToUnits)
-    let result = BulletRunner.run self
-    apply result.X result.Y
-    else apply result.X result.Y
+    me.X <- me.X + (x / Settings.Display.PixcelsToUnits)
+    me.Y <- me.Y - (y / Settings.Display.PixcelsToUnits)
+    let f = Runner.step sc (this.EnvNow ()) (rn.WithBody body)
+    apply f.Delta.X f.Delta.Y
 
 run の経路に居ないが、座標を足している所（件数だけ）:
   samples/FsBulletML2.Sample.MonoGame.FSharp/Background.fs         1 行
   samples/FsBulletML2.Sample.MonoGame.FSharp/Player.fs             4 行
 
-―― 本体 7 ファイル / 15 行（0 なら走査か網が壊れている）
+―― 本体 7 ファイル / 14 行（0 なら走査か網が壊れている）

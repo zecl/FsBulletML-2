@@ -36,9 +36,10 @@ type EnemyBullet () =
   override this.GetBulletPrefubInstance () =
     InstanceManager.InstantiatePrefab(this.bulletObject, this.transform.position, this.transform.rotation)
 
-  member this.SetTask(bulletmlTask) = 
+  /// 弾幕を割り当てる。根から始めるので実行状態は Core に作らせる
+  member this.SetScript(script) =
     let self = this.GetDefaultBullet ()
-    self.Task <- bulletmlTask
+    self.SetScript(script, None)
 
   member this.OnTriggerEnter2D(collier:Collider2D) =
     if (collier.gameObject.tag = "Player") then

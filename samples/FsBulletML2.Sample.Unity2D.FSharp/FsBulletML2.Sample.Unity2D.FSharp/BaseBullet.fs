@@ -33,7 +33,7 @@ type BaseBullet () =
 
   interface IBullet with
      member this.GetDefaultBullet() = 
-      this.defaultBullet  :> IBulletmlObject
+      this.defaultBullet :> IDefaultBullet
 
   abstract member Update : unit -> unit
   default this.Update () = this.defaultBullet.Update()

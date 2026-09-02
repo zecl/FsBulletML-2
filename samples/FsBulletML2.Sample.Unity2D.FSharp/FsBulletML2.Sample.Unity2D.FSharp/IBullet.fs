@@ -2,4 +2,4 @@
 open FsBulletML2
 
 type IBullet =
-  abstract GetDefaultBullet : unit -> IBulletmlObject
+  abstract GetDefaultBullet : unit -> FsBulletML2.Unity2D.IDefaultBullet

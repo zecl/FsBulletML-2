@@ -16,9 +16,9 @@ type Player () =
   [<DefaultValue>]val mutable public Damage : int
 
   [<DefaultValue>]val mutable private counter : int
-  [<DefaultValue>]val mutable private b2wayLeftBulletTask : BulletmlTask option
-  [<DefaultValue>]val mutable private b2wayRightBulletTask : BulletmlTask option
-  [<DefaultValue>]val mutable private hommingTask : BulletmlTask option
+  [<DefaultValue>]val mutable private b2wayLeftBulletTask : BulletmlScript option
+  [<DefaultValue>]val mutable private b2wayRightBulletTask : BulletmlScript option
+  [<DefaultValue>]val mutable private hommingTask : BulletmlScript option
 
   interface IPlayerPosition with
     member this.PlayerPosX () = this.transform.position.x
@@ -26,9 +26,9 @@ type Player () =
 
   member this.Awake () =
     Processable.BulletMLManager.Init(new BulletFunctions(this))
-    this.b2wayLeftBulletTask <- BulletRunner.convertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet)
-    this.b2wayRightBulletTask <- BulletRunner.convertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet)
-    this.hommingTask <- BulletRunner.convertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing)
+    this.b2wayLeftBulletTask <- Runner.load (loadEnv ()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet |> Some
+    this.b2wayRightBulletTask <- Runner.load (loadEnv ()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet |> Some
+    this.hommingTask <- Runner.load (loadEnv ()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing |> Some
 
   member this.X with get () = this.transform.position.x 
                  and set (v) = this.transform.position <- Vector3(v, this.transform.position.y, this.transform.position.z) 
@@ -64,13 +64,13 @@ type Player () =
     let position = this.transform.position + new Vector3(-0.1f,0.1f,0.f)
     let bullet = this.GetBulletPrefubInstance(position, this.transform.rotation)
     let b = bullet.GetComponent<PlayerBullet>()
-    b.SetTask(this.b2wayLeftBulletTask)
+    b.SetScript(this.b2wayLeftBulletTask)
 
   member this.Shoot2WayRightBullet () =
     let position = this.transform.position + new Vector3(0.1f, 0.1f, 0.f)
     let bullet = this.GetBulletPrefubInstance(position, this.transform.rotation)
     let b = bullet.GetComponent<PlayerBullet>()
-    b.SetTask(this.b2wayRightBulletTask)
+    b.SetScript(this.b2wayRightBulletTask)
   
   member this.ShootHomingBullet () =
     if this.counter > 60 then
@@ -78,7 +78,7 @@ type Player () =
       let bullet = this.GetBulletPrefubInstance(position, this.transform.rotation)
       let b = bullet.GetComponent<PlayerBullet>()
       (b :> IBullet).GetDefaultBullet().Init()
-      b.SetTask(this.hommingTask)
+      b.SetScript(this.hommingTask)
 
   member this.OnTriggerEnter2D (collier:Collider2D) =
     if (this.isBomb) then Bomb.GenerateBomb(this.bombType, this.transform.position)
