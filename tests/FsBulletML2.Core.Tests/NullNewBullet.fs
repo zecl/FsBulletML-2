@@ -71,7 +71,7 @@ type NullNewBullet() =
   /// 一度も更新されない（fire 側の SrcDir だけは GetNewBullet() の前で
   /// 確定するので、そちらは新しい値のまま残る——この門は SrcSpeed 側だけを見る）。
   ///
-  /// 直す前は Step.fire が GetNewBullet() の結果を待たずに常に
+  /// 直す前は stepFire が GetNewBullet() の結果を待たずに常に
   /// SrcSpeed / SpeedInit を計算してしまうので、1 発め（absolute 5）で 5、
   /// 2 発め（sequence 3）で 8 になってしまっていた
   [<Test>]

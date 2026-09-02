@@ -59,18 +59,18 @@ module BulletRunner =
   /// Env はグローバルを直に読む（IntermediateParser.fs の RecBulletml.Wait の
   /// 腕がそうだったのと同じ理由。撃つ弾ごとの位置がまだ無いので AimDir /
   /// EnemyAimDir は 0 に固定する）
-  let private buildRootTops (bulletml: Bulletml) : (RecBulletml * Progress) list =
+  let private buildRootTops (bulletml: Bulletml) : (RecActionElm * Progress) list =
     let recBulletml = IntermediateParser.convertRecBulletml bulletml
     let scripts =
       recBulletml
       |> IntermediateParser.getAction
       |> List.filter (function
-        | RecBulletml.Action (attrs, _) ->
+        | RecActionElm.Action (attrs, _) ->
           match attrs.actionLabel with
           | Some label -> (ActionLabel.text label).StartsWith("top")
           | _ -> false
-        | _ -> false)
-      |> List.map (IntermediateParser.convertRefBulletml recBulletml)
+        | RecActionElm.ActionRef _ -> false)
+      |> List.map (IntermediateParser.convertRefActionElm recBulletml)
     let rootEnv : Env =
       { Rand = BulletMLManager.GetRandom
         Rank = BulletMLManager.GetRank ()
@@ -78,7 +78,7 @@ module BulletRunner =
         EnemyAimDir = 0.f
         SpawnAimDir = 0.f
         SpawnEnemyAimDir = 0.f }
-    scripts |> List.map (fun s -> s, Step.rootProgress rootEnv s)
+    scripts |> List.map (fun s -> s, Step.rootProgressActionElm rootEnv s)
 
   /// 弾オブジェクトの現在の物理量と、task が持ち回っている Tops から
   /// BulletState を組む。Tops（実行位置と fire の累積。旧の pa.finish / term /
@@ -120,7 +120,7 @@ module BulletRunner =
       newBullet.Init ()
       let child = childIn
       let scripts = child.Tops |> List.map (fun (s, _, _) -> s)
-      let childTask = new BulletmlTask(Step.resetChild, buildRootTops, scripts, child)
+      let childTask = new BulletmlTask(Step.resetChildActionElm, buildRootTops, scripts, child)
       // 輪を解く入口は、撃たれた弾の task にも引き継ぐ。
       // 引き継がないと、弾の中に残った bulletRef / actionRef を誰も解けない
       childTask.ResolveBulletRef <- task.ResolveBulletRef
@@ -209,17 +209,18 @@ module BulletRunner =
           IsBullet = false
           HasFired = false
           Tops = [] }
-      BulletmlTask(Step.resetChild, buildRootTops, [], emptyState)
+      BulletmlTask(Step.resetChildActionElm, buildRootTops, [], emptyState)
     else
     let recBulletml = IntermediateParser.convertRecBulletml bulletml
 
+    // 根は bulletml しかない（RecBulletml の腕が 1 つ）。
+    // 以前はここに `| _ -> failwith "根が bulletml ではない"` があった
     let shootingDirection =
       match recBulletml with
       | RecBulletml.Bulletml(attrs,_) ->
         match attrs.bulletmlType with
         | Some x -> x
         | None -> ShootingDirection.BulletVertical
-      | _ -> failwith "convertBulletmlTask: 根が bulletml ではない"
 
     let tops = buildRootTops bulletml
     let scripts = tops |> List.map fst
@@ -233,7 +234,7 @@ module BulletRunner =
         HasFired = false
         Tops = tops |> List.map (fun (s, p) -> s, p, FireContext.zero) }
 
-    let bulletmlTask = new BulletmlTask(Step.resetChild, buildRootTops, scripts, initialState)
+    let bulletmlTask = new BulletmlTask(Step.resetChildActionElm, buildRootTops, scripts, initialState)
     bulletmlTask.ResolveBulletRef <- IntermediateParser.expandBulletRefOnceRec recBulletml
     bulletmlTask.ResolveActionRef <- IntermediateParser.expandActionRefOnceRec recBulletml
     bulletmlTask.ShootingDirection <- shootingDirection

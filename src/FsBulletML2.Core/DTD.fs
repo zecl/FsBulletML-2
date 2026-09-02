@@ -193,6 +193,78 @@ module DTD =
   type BulletAttrs = { bulletLabel : BulletLabel option }
   type BulletRefAttrs = { bulletRefLabel : BulletLabel }
 
+  /// エンジンが歩く木。**DTD の内容モデルを型で書いてある。**
+  ///
+  /// 以前は 14 の腕を持つ 1 つの平らな DU で、どの子の位置にも何でも
+  /// 入れられた。だから
+  ///
+  ///   - repeat の子に wait を入れる、fire の子に action を入れる、が型を通り、
+  ///     実行時の検査（"repeat element should have Action or ActionRef." など）と
+  ///     Step.fs の `| _ ->` フォールバックで受けるしかなかった。
+  ///     **フォールバックは落ちずに黙って違うことをする**ので、
+  ///     壊れた木を渡されても気づけない
+  ///   - 「BulletML の命令でない節」を表す NotCommand が木の型に居た。
+  ///     作るのは XML を読む段だけで、読んだ側はすぐ捨てていた
+  ///
+  /// 位置ごとに型を分けると、DTD の内容モデルがそのまま型になり、
+  /// フォールバックが書けなくなる（書く必要が無くなる）。
+  ///
+  /// 公開の Bulletml ファミリ（下）と同じ形。あちらは「書く木」、
+  /// こちらは「走らせる木」で、convertRecBulletml が定数を畳みながら移す
+
+  /// action の子になれるもの。
+  /// <!ELEMENT action (changeDirection | accel | vanish | changeSpeed | repeat
+  ///                   | wait | (fire | fireRef) | (action | actionRef))*>
+  [<RequireQualifiedAccess>]
+  type internal RecCommand =
+    internal
+  /// <!ELEMENT changeDirection (direction, term)>
+    | ChangeDirection of Direction * Term
+  /// <!ELEMENT changeSpeed (speed, term)>
+    | ChangeSpeed of Speed * Term
+  /// <!ELEMENT accel (horizontal?, vertical?, term)>
+    | Accel of Horizontal option * Vertical option * Term
+  /// <!ELEMENT wait (#PCDATA)>
+    | Wait of Expr.NumExpr
+  /// <!ELEMENT vanish (#PCDATA)>
+    | Vanish
+  /// <!ELEMENT repeat (times, (action | actionRef))>
+    | Repeat of Times * RecActionElm
+  /// <!ELEMENT fire (direction?, speed?, (bullet | bulletRef))>
+  /// <!ATTLIST fire label CDATA #IMPLIED>
+    | Fire of FireAttrs * Direction option * Speed option * RecBulletElm
+  /// <!ELEMENT fireRef (param* )>
+  /// <!ATTLIST fireRef label CDATA #REQUIRED>
+    | FireRef of FireRefAttrs * Params
+  /// <!ATTLIST action label CDATA #IMPLIED>
+    | Action of ActionAttrs * RecCommand list
+  /// <!ELEMENT actionRef (param* )>
+  /// <!ATTLIST actionRef label CDATA #REQUIRED>
+    | ActionRef of ActionRefAttrs * Params
+
+  /// repeat と bullet の子になれるもの
+  and [<RequireQualifiedAccess>] internal RecActionElm =
+    internal
+    | Action of ActionAttrs * RecCommand list
+    | ActionRef of ActionRefAttrs * Params
+
+  /// fire の子になれるもの
+  and [<RequireQualifiedAccess>] internal RecBulletElm =
+    internal
+  /// <!ELEMENT bullet (direction?, speed?, (action | actionRef)* )>
+  /// <!ATTLIST bullet label CDATA #IMPLIED>
+    | Bullet of BulletAttrs * Direction option * Speed option * RecActionElm list
+  /// <!ELEMENT bulletRef (param* )>
+  /// <!ATTLIST bulletRef label CDATA #REQUIRED>
+    | BulletRef of BulletRefAttrs * Params
+
+  /// bulletml の子になれるもの
+  and [<RequireQualifiedAccess>] internal RecTopElm =
+    internal
+    | Bullet of BulletAttrs * Direction option * Speed option * RecActionElm list
+    | Fire of FireAttrs * Direction option * Speed option * RecBulletElm
+    | Action of ActionAttrs * RecCommand list
+
   //[<DebuggerDisplay("BulletML = { this.ToXmlString() }")>]
   [<RequireQualifiedAccess>]
   type internal RecBulletml =
@@ -201,326 +273,222 @@ module DTD =
   /// <!ELEMENT bulletml (bullet | fire | action)*>
   /// <!ATTLIST bulletml xmlns CDATA #IMPLIED>
   /// <!ATTLIST bulletml type (none|vertical|horizontal) "none">
-    | Bulletml of BulletmlAttrs * RecBulletml list 
-  /// BulletML DTD
-  /// <!ELEMENT action (changeDirection | accel | vanish | changeSpeed | repeat | wait | (fire | fireRef) | (action | actionRef))*>
-  /// <!ATTLIST action label CDATA #IMPLIED>
-    | Action of ActionAttrs * RecBulletml list 
-  /// BulletML DTD
-  /// <!ELEMENT actionRef (param* )>
-  /// <!ATTLIST actionRef label CDATA #REQUIRED>
-    | ActionRef of ActionRefAttrs * Params
-  /// BulletML DTD
-  /// <!ELEMENT fire (direction?, speed?, (bullet | bulletRef))>
-  /// <!ATTLIST fire label CDATA #IMPLIED>
-    | Fire of FireAttrs * Direction option * Speed option * RecBulletml  
-  /// BulletML DTD
-  /// <!ELEMENT fireRef (param* )>
-  /// <!ATTLIST fireRef label CDATA #REQUIRED>
-    | FireRef of FireRefAttrs * Params
-  /// BulletML DTD
-  /// <!ELEMENT wait (#PCDATA)>
-    | Wait of Expr.NumExpr
-  /// BulletML DTD
-  /// <!ELEMENT vanish (#PCDATA)>
-    | Vanish 
-  /// BulletML DTD
-  /// <!ELEMENT changeSpeed (speed, term)>
-    | ChangeSpeed of Speed * Term
-  /// BulletML DTD
-  /// <!ELEMENT changeDirection (direction, term)>
-    | ChangeDirection of Direction * Term
-  /// BulletML DTD
-  /// <!ELEMENT accel (horizontal?, vertical?, term)>  
-    | Accel of Horizontal option * Vertical option * Term
-  /// BulletML DTD
-  /// <!ELEMENT bullet (direction?, speed?, (action | actionRef)* )>
-  /// <!ATTLIST bullet label CDATA #IMPLIED>
-    | Bullet of BulletAttrs * Direction option * Speed option * RecBulletml list 
-  /// BulletML DTD
-  /// <!ELEMENT bulletRef (param* )>
-  /// <!ATTLIST bulletRef label CDATA #REQUIRED>
-    | BulletRef of BulletRefAttrs * Params
-  /// BulletML DTD
-  /// <!ELEMENT repeat (times, (action | actionRef))>
-    | Repeat of Times * RecBulletml 
-    | NotCommand
+    | Bulletml of BulletmlAttrs * RecTopElm list
 
     /// BulletML 書き込み
     member private this.WriteContentTo(writer:XmlWriter) =
-      let rec write element =
-        match element with
-        | RecBulletml.Bulletml (attrs, children) ->
-          writer.WriteStartElement("bulletml")
-          let localName,xmlnsName = "xmlns", attrs.bulletmlXmlns 
-          xmlnsName |> function 
-          | Some v -> 
-            writer.WriteAttributeString(localName, v)
+      // 型が位置ごとに分かれたので、走査も位置ごとに分ける。
+      // 各腕の中身は分ける前と同じ順で書く（往復の試験が順序まで見ている）。
+      //
+      // direction / speed / term / param は 4 か所 ずつ同じものを書いていたので
+      // 関数に出した。出す順は変えていない
+      let writeDirection (d: Direction) =
+        writer.WriteStartElement("direction")
+        match d with
+        | Direction (attrs, s) ->
+          match attrs with
+          | Some attrs ->
+            let t =
+              attrs.directionType |> function
+              | DirectionType.Aim      -> "aim"
+              | DirectionType.Absolute -> "absolute"
+              | DirectionType.Relative -> "relative"
+              | DirectionType.Sequence -> "sequence"
+            writer.WriteAttributeString("type", t)
           | None -> ()
+          writer.WriteString(Expr.NumExpr.text s)
+        writer.WriteEndElement()
 
-          let localName,typeName = "type", attrs.bulletmlType 
-          match typeName with
-          | Some typeName ->
-            let t = 
-              typeName |> function 
-              | ShootingDirection.BulletNone -> "none"
-              | ShootingDirection.BulletHorizontal -> "horizontal"
-              | ShootingDirection.BulletVertical   -> "vertical"
-            writer.WriteAttributeString(localName, t )
+      let writeSpeed (sp: Speed) =
+        writer.WriteStartElement("speed")
+        match sp with
+        | Speed (attrs, s) ->
+          match attrs with
+          | Some attrs ->
+            let t =
+              attrs.speedType |> function
+              | SpeedType.Absolute -> "absolute"
+              | SpeedType.Relative -> "relative"
+              | SpeedType.Sequence -> "sequence"
+            writer.WriteAttributeString("type", t)
           | None -> ()
+          writer.WriteString(Expr.NumExpr.text s)
+        writer.WriteEndElement()
 
-          // parser が読む属性は writer も書く。書かないと往復で消える。
-          // 同梱の弾幕も type のうしろに name を置いている
-          match attrs.bulletmlName with
-          | Some v -> writer.WriteAttributeString("name", v)
-          | None -> ()
+      let writeTerm (Term s) =
+        writer.WriteStartElement("term")
+        writer.WriteString(Expr.NumExpr.text s)
+        writer.WriteEndElement()
 
-          match attrs.bulletmlDescription with
-          | Some v -> writer.WriteAttributeString("description", v)
-          | None -> ()
+      let writeParams (prams: Params) =
+        prams |> Seq.iter (fun s ->
+          writer.WriteStartElement("param")
+          writer.WriteString(s)
+          writer.WriteEndElement())
 
-          children |> Seq.iter (fun child -> write child)
-          writer.WriteEndElement()
-        | RecBulletml.Action (attrs, children) -> 
-          writer.WriteStartElement("action")
-          let localName,labelName = "label", attrs.actionLabel 
-          labelName |> function 
-          | Some v -> 
-            writer.WriteAttributeString(localName, ActionLabel.text v)
-          | None -> ()
-          children |> Seq.iter (fun child -> write child)
-          writer.WriteEndElement()
-        | RecBulletml.ActionRef (attrs, prams) ->
-          writer.WriteStartElement("actionRef")
-          
-          let localName,labelName = "label", attrs.actionRefLabel
-          writer.WriteAttributeString(localName, ActionLabel.text labelName)
+      let writeBulletBody (attrs: BulletAttrs) direction speed writeChildren =
+        writer.WriteStartElement("bullet")
+        match attrs.bulletLabel with
+        | Some v -> writer.WriteAttributeString("label", BulletLabel.text v)
+        | None -> ()
+        direction |> Option.iter writeDirection
+        speed |> Option.iter writeSpeed
+        writeChildren ()
+        writer.WriteEndElement()
 
-          prams |> Seq.iter(fun s -> 
-            writer.WriteStartElement("param")
-            writer.WriteString(s)
-            writer.WriteEndElement())
+      let writeFireBody (attrs: FireAttrs) direction speed writeChild =
+        writer.WriteStartElement("fire")
+        match attrs.fireLabel with
+        | Some v -> writer.WriteAttributeString("label", FireLabel.text v)
+        | None -> ()
+        direction |> Option.iter writeDirection
+        speed |> Option.iter writeSpeed
+        writeChild ()
+        writer.WriteEndElement()
 
-          writer.WriteEndElement()
-        | RecBulletml.Repeat (times , child) ->
-          writer.WriteStartElement("repeat")
-          
-          match times with
-          | Times s ->
-            writer.WriteStartElement("times")
-            writer.WriteString(Expr.NumExpr.text s)
-            writer.WriteEndElement()
+      let writeActionBody (attrs: ActionAttrs) writeChildren =
+        writer.WriteStartElement("action")
+        match attrs.actionLabel with
+        | Some v -> writer.WriteAttributeString("label", ActionLabel.text v)
+        | None -> ()
+        writeChildren ()
+        writer.WriteEndElement()
 
-          write child
-          writer.WriteEndElement()
-        | RecBulletml.Fire (attrs, direction, speed, child) ->
-          writer.WriteStartElement("fire")
-          
-          let localName,labelName = "label", attrs.fireLabel
-          labelName |> function 
-          | Some v -> 
-            writer.WriteAttributeString(localName, FireLabel.text v)
-          | None -> ()
-          direction |> function
-          | Some d ->
-            writer.WriteStartElement("direction")
-            match d with
-            | Direction (attrs, s) ->
-              match attrs  with
-              | Some attrs ->
-                let localName, typeName = "type", attrs.directionType
-                let t = 
-                  typeName |> function 
-                  | DirectionType.Aim      -> "aim"
-                  | DirectionType.Absolute -> "absolute"
-                  | DirectionType.Relative -> "relative"
-                  | DirectionType.Sequence -> "sequence"
-                writer.WriteAttributeString(localName, t)
-              | None -> ()
-              writer.WriteString(Expr.NumExpr.text s)
-            writer.WriteEndElement()
-          | None -> ()
-
-          speed |> function
-          | Some d ->
-            writer.WriteStartElement("speed")
-            match d with
-            | Speed (attrs, s) ->
-              match attrs  with
-              | Some attrs ->
-                let localName, typeName = "type", attrs.speedType
-                let t = 
-                  typeName |> function 
-                  | SpeedType.Absolute -> "absolute"
-                  | SpeedType.Relative -> "relative"
-                  | SpeedType.Sequence -> "sequence"
-                writer.WriteAttributeString(localName, t)
-              | None -> ()
-              writer.WriteString(Expr.NumExpr.text s)
-            writer.WriteEndElement()
-          | None -> ()
-          write child
-          writer.WriteEndElement()
-        | RecBulletml.FireRef (attrs, prams) ->
-          writer.WriteStartElement("fireRef")
-          let localName,labelName = "label", attrs.fireRefLabel
-          writer.WriteAttributeString(localName, FireLabel.text labelName)
-          prams |> Seq.iter(fun s -> 
-            writer.WriteStartElement("param")
-            writer.WriteString(s)
-            writer.WriteEndElement())
-          writer.WriteEndElement()
-        | RecBulletml.Bullet (attrs, direction, speed, children) ->
-          writer.WriteStartElement("bullet")
-          let localName,labelName = "label", attrs.bulletLabel
-          labelName |> function 
-          | Some v -> 
-            writer.WriteAttributeString(localName, BulletLabel.text v)
-          | None -> ()
-          direction |> function
-          | Some d ->
-            writer.WriteStartElement("direction")
-            match d with
-            | Direction (attrs, s) ->
-              match attrs  with
-              | Some attrs ->
-                let localName, typeName = "type", attrs.directionType
-                let t = 
-                  typeName |> function 
-                  | DirectionType.Aim      -> "aim"
-                  | DirectionType.Absolute -> "absolute"
-                  | DirectionType.Relative -> "relative"
-                  | DirectionType.Sequence -> "sequence"
-                writer.WriteAttributeString(localName, t)
-              | None -> ()
-              writer.WriteString(Expr.NumExpr.text s)
-            writer.WriteEndElement()
-          | None -> ()
-          speed |> function
-          | Some speed ->
-            writer.WriteStartElement("speed")
-            match speed with
-            | Speed (attrs, s) ->
-              match attrs  with
-              | Some attrs ->
-                let localName, typeName = "type", attrs.speedType
-                let t = 
-                  typeName |> function 
-                  | SpeedType.Absolute -> "absolute"
-                  | SpeedType.Relative -> "relative"
-                  | SpeedType.Sequence -> "sequence"
-                writer.WriteAttributeString(localName, t)
-              | None -> ()
-              writer.WriteString(Expr.NumExpr.text s)
-            writer.WriteEndElement()
-          | None -> ()
-          children |> Seq.iter (fun child -> write child)
-          writer.WriteEndElement()
-        | RecBulletml.BulletRef (attrs, prams) ->
-          writer.WriteStartElement("bulletRef")
-          let localName,labelName = "label", attrs.bulletRefLabel
-          writer.WriteAttributeString(localName, BulletLabel.text labelName)
-          prams |> Seq.iter(fun s -> 
-            writer.WriteStartElement("param")
-            writer.WriteString(s)
-            writer.WriteEndElement())
-          writer.WriteEndElement()
-        | RecBulletml.ChangeDirection (direction, term) ->
+      let rec writeCommand (c: RecCommand) =
+        match c with
+        | RecCommand.ChangeDirection (direction, term) ->
           writer.WriteStartElement("changeDirection")
-          writer.WriteStartElement("direction")
-          match direction with
-          | Direction (attrs, s) ->
-            match attrs  with
-            | Some attrs ->
-              let localName, typeName = "type", attrs.directionType
-              let t = 
-                typeName |> function 
-                | DirectionType.Aim      -> "aim"
-                | DirectionType.Absolute -> "absolute"
-                | DirectionType.Relative -> "relative"
-                | DirectionType.Sequence -> "sequence"
-              writer.WriteAttributeString(localName, t)
-            | None -> ()
-            writer.WriteString(Expr.NumExpr.text s)
+          writeDirection direction
+          writeTerm term
           writer.WriteEndElement()
-          match term with
-          | Term s ->
-            writer.WriteStartElement("term")
-            writer.WriteString(Expr.NumExpr.text s)
-            writer.WriteEndElement()
-          writer.WriteEndElement()
-        | RecBulletml.ChangeSpeed (speed, term) ->
+        | RecCommand.ChangeSpeed (speed, term) ->
           writer.WriteStartElement("changeSpeed")
-          writer.WriteStartElement("speed")
-          match speed with
-          | Speed (attrs, s) ->
-            match attrs  with
-            | Some attrs ->
-              let localName, typeName = "type", attrs.speedType
-              let t = 
-                typeName |> function 
-                | SpeedType.Absolute -> "absolute"
-                | SpeedType.Relative -> "relative"
-                | SpeedType.Sequence -> "sequence"
-              writer.WriteAttributeString(localName, t)
-            | None -> ()
-            writer.WriteString(Expr.NumExpr.text s)
+          writeSpeed speed
+          writeTerm term
           writer.WriteEndElement()
-          match term with
-          | Term s ->
-            writer.WriteStartElement("term")
-            writer.WriteString(Expr.NumExpr.text s)
-            writer.WriteEndElement()
-          writer.WriteEndElement()
-        | RecBulletml.Accel (horizontal, vertical, term) ->
+        | RecCommand.Accel (horizontal, vertical, term) ->
           writer.WriteStartElement("accel")
           match horizontal with
-          | Some (Horizontal.Horizontal(attrs,s)) ->
+          | Some (Horizontal.Horizontal(attrs, s)) ->
             writer.WriteStartElement("horizontal")
             match attrs with
             | Some attrs ->
-              let localName,typeName = "type", attrs.horizontalType 
-              let t = 
-                typeName |> function 
+              let t =
+                attrs.horizontalType |> function
                 | HorizontalType.Absolute -> "absolute"
                 | HorizontalType.Relative -> "relative"
                 | HorizontalType.Sequence -> "sequence"
-              writer.WriteAttributeString(localName, t)
+              writer.WriteAttributeString("type", t)
             | None -> ()
             writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
           | _ -> ()
           match vertical with
-          | Some (Vertical.Vertical(attrs,s)) ->
+          | Some (Vertical.Vertical(attrs, s)) ->
             writer.WriteStartElement("vertical")
             match attrs with
             | Some attrs ->
-              let localName,typeName = "type", attrs.verticalType  
-              let t = 
-                typeName |> function 
+              let t =
+                attrs.verticalType |> function
                 | VerticalType.Absolute -> "absolute"
                 | VerticalType.Relative -> "relative"
                 | VerticalType.Sequence -> "sequence"
-              writer.WriteAttributeString(localName, t)
+              writer.WriteAttributeString("type", t)
             | None -> ()
             writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
           | _ -> ()
-          match term with
-          | Term s ->
-            writer.WriteStartElement("term")
-            writer.WriteString(Expr.NumExpr.text s)
-            writer.WriteEndElement()
+          writeTerm term
           writer.WriteEndElement()
-        | RecBulletml.Wait (s) ->
+        | RecCommand.Wait s ->
           writer.WriteStartElement("wait")
           writer.WriteString(Expr.NumExpr.text s)
           writer.WriteEndElement()
-        | RecBulletml.Vanish ->
+        | RecCommand.Vanish ->
           writer.WriteStartElement("vanish")
           writer.WriteEndElement()
-        | RecBulletml.NotCommand -> ()
-      write this
+        | RecCommand.Repeat (times, child) ->
+          writer.WriteStartElement("repeat")
+          match times with
+          | Times s ->
+            writer.WriteStartElement("times")
+            writer.WriteString(Expr.NumExpr.text s)
+            writer.WriteEndElement()
+          writeActionElm child
+          writer.WriteEndElement()
+        | RecCommand.Fire (attrs, direction, speed, child) ->
+          writeFireBody attrs direction speed (fun () -> writeBulletElm child)
+        | RecCommand.FireRef (attrs, prams) ->
+          writer.WriteStartElement("fireRef")
+          writer.WriteAttributeString("label", FireLabel.text attrs.fireRefLabel)
+          writeParams prams
+          writer.WriteEndElement()
+        | RecCommand.Action (attrs, children) ->
+          writeActionBody attrs (fun () -> children |> Seq.iter writeCommand)
+        | RecCommand.ActionRef (attrs, prams) ->
+          writer.WriteStartElement("actionRef")
+          writer.WriteAttributeString("label", ActionLabel.text attrs.actionRefLabel)
+          writeParams prams
+          writer.WriteEndElement()
+
+      and writeActionElm (a: RecActionElm) =
+        match a with
+        | RecActionElm.Action (attrs, children) ->
+          writeActionBody attrs (fun () -> children |> Seq.iter writeCommand)
+        | RecActionElm.ActionRef (attrs, prams) ->
+          writer.WriteStartElement("actionRef")
+          writer.WriteAttributeString("label", ActionLabel.text attrs.actionRefLabel)
+          writeParams prams
+          writer.WriteEndElement()
+
+      and writeBulletElm (b: RecBulletElm) =
+        match b with
+        | RecBulletElm.Bullet (attrs, direction, speed, children) ->
+          writeBulletBody attrs direction speed (fun () -> children |> Seq.iter writeActionElm)
+        | RecBulletElm.BulletRef (attrs, prams) ->
+          writer.WriteStartElement("bulletRef")
+          writer.WriteAttributeString("label", BulletLabel.text attrs.bulletRefLabel)
+          writeParams prams
+          writer.WriteEndElement()
+
+      let writeTopElm (t: RecTopElm) =
+        match t with
+        | RecTopElm.Bullet (attrs, direction, speed, children) ->
+          writeBulletBody attrs direction speed (fun () -> children |> Seq.iter writeActionElm)
+        | RecTopElm.Fire (attrs, direction, speed, child) ->
+          writeFireBody attrs direction speed (fun () -> writeBulletElm child)
+        | RecTopElm.Action (attrs, children) ->
+          writeActionBody attrs (fun () -> children |> Seq.iter writeCommand)
+
+      match this with
+      | RecBulletml.Bulletml (attrs, children) ->
+        writer.WriteStartElement("bulletml")
+        match attrs.bulletmlXmlns with
+        | Some v -> writer.WriteAttributeString("xmlns", v)
+        | None -> ()
+
+        match attrs.bulletmlType with
+        | Some typeName ->
+          let t =
+            typeName |> function
+            | ShootingDirection.BulletNone -> "none"
+            | ShootingDirection.BulletHorizontal -> "horizontal"
+            | ShootingDirection.BulletVertical   -> "vertical"
+          writer.WriteAttributeString("type", t)
+        | None -> ()
+
+        // parser が読む属性は writer も書く。書かないと往復で消える。
+        // 同梱の弾幕も type のうしろに name を置いている
+        match attrs.bulletmlName with
+        | Some v -> writer.WriteAttributeString("name", v)
+        | None -> ()
+
+        match attrs.bulletmlDescription with
+        | Some v -> writer.WriteAttributeString("description", v)
+        | None -> ()
+
+        children |> Seq.iter writeTopElm
+        writer.WriteEndElement()
 
     member private this.GetXmlString formatting (encdoc:EncodingAndDoctype) indentation = 
       let output = new StringBuilder()             

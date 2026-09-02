@@ -1,6 +1,9 @@
 ﻿namespace FsBulletML2
 open System
 open System.Globalization
+// DTD は AutoOpen だが、open System が先に来るので Action が System.Action に
+// 取られる。DU のほうを指すよう明示で開き直す
+open FsBulletML2.DTD
 open FsBulletML2.Processable
 
 module IntermediateParser =
@@ -666,44 +669,67 @@ module IntermediateParser =
         | Vertical(a,x) -> rep x vertical (lazy (Some (Vertical(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr))))
       | None -> vertical
 
-    let rec convert = function 
-    | Bulletml.Bulletml (attrs, bulletmls) -> 
-      let newbulletmls = bulletmls |> List.map (bulletElmToBulletml >> convert)
-      RecBulletml.Bulletml(attrs, newbulletmls)
-    | Bulletml.Bullet (attrs, direction, speed, actions) -> 
-      let newActions = actions |> List.map (actionElmToBulletml >> convert) 
-      RecBulletml.Bullet(attrs, repDir direction, repSpd speed, newActions)
-    | Bulletml.Action (attrs, actions) -> 
-      let newActions = actions |> List.map (actionToBulletml >> convert) 
-      RecBulletml.Action(attrs, newActions)
-    | Bulletml.Fire (attrs, direction, speed, bullet) -> 
-      let newBullet = bullet |> (bulletElmToBullet >> convert)
-      RecBulletml.Fire (attrs, repDir direction, repSpd speed, newBullet)
-    | Bulletml.Repeat (times, action) -> 
-      let newAction = action |> (actionElmToBulletml >> convert)
-      RecBulletml.Repeat (repTimes times, newAction)
-    | Bulletml.Accel (horizontal, vertical, term) ->
-      RecBulletml.Accel(repHorizontal horizontal, repVertical vertical, repTerm term)
-    | Bulletml.ActionRef (attrs, prams) ->
-      RecBulletml.ActionRef (attrs, prams)
-    | Bulletml.BulletRef (attrs, prams) ->
-      RecBulletml.BulletRef (attrs, prams)
-    | Bulletml.ChangeDirection (direction, term) ->
-      let direction' = direction |> function 
-        | Direction(a,x) -> rep x direction (lazy (Direction(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
-      RecBulletml.ChangeDirection(direction', repTerm term)
-    | Bulletml.ChangeSpeed (speed, term) ->
-      let speed' = speed |> function 
-        | Speed(a,x) -> rep x speed (lazy (Speed(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
-      RecBulletml.ChangeSpeed (speed', repTerm term)
-    | Bulletml.FireRef (attrs, prams) ->
-      RecBulletml.FireRef (attrs, prams)
-    | Bulletml.Vanish -> RecBulletml.Vanish 
-    | Bulletml.Wait(times) -> 
-      let times' = rep times times (lazy (TryParse.eval (Expr.NumExpr.text times) |> toStr |> numExpr))
-      RecBulletml.Wait(times') 
-    | Bulletml.NotCommand -> RecBulletml.NotCommand 
-    convert bulletml
+    let repDirOne direction = direction |> function
+      | Direction(a,x) -> rep x direction (lazy (Direction(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
+    let repSpdOne speed = speed |> function
+      | Speed(a,x) -> rep x speed (lazy (Speed(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
+    let repWait times =
+      rep times times (lazy (TryParse.eval (Expr.NumExpr.text times) |> toStr |> numExpr))
+
+    // 位置ごとに変換する。公開の Bulletml ファミリと走らせる木が同じ形を
+    // しているので、腕が 1 対 1 に並ぶ。以前は平らな DU 同士だったので
+    // 「どの位置に来たか」を型が持たず、bulletElmToBulletml のような
+    // 位置を潰す変換を挟んでから 1 つの match で受けていた
+    let rec convertCommand (c: Action) : RecCommand =
+      match c with
+      | ChangeDirection (direction, term) ->
+        RecCommand.ChangeDirection (repDirOne direction, repTerm term)
+      | ChangeSpeed (speed, term) ->
+        RecCommand.ChangeSpeed (repSpdOne speed, repTerm term)
+      | Accel (horizontal, vertical, term) ->
+        RecCommand.Accel (repHorizontal horizontal, repVertical vertical, repTerm term)
+      | Vanish -> RecCommand.Vanish
+      | Wait times -> RecCommand.Wait (repWait times)
+      | Repeat (times, actionElm) ->
+        RecCommand.Repeat (repTimes times, convertActionElm actionElm)
+      | Fire (attrs, direction, speed, bulletElm) ->
+        RecCommand.Fire (attrs, repDir direction, repSpd speed, convertBulletElm bulletElm)
+      | FireRef (attrs, prams) -> RecCommand.FireRef (attrs, prams)
+      | Action.Action (attrs, commands) ->
+        RecCommand.Action (attrs, commands |> List.map convertCommand)
+      | Action.ActionRef (attrs, prams) -> RecCommand.ActionRef (attrs, prams)
+
+    and convertActionElm (a: ActionElm) : RecActionElm =
+      match a with
+      | ActionElm.Action (attrs, commands) ->
+        RecActionElm.Action (attrs, commands |> List.map convertCommand)
+      | ActionElm.ActionRef (attrs, prams) -> RecActionElm.ActionRef (attrs, prams)
+
+    and convertBulletElm (b: BulletElm) : RecBulletElm =
+      match b with
+      | BulletElm.Bullet (attrs, direction, speed, actionElms) ->
+        RecBulletElm.Bullet (attrs, repDir direction, repSpd speed,
+                             actionElms |> List.map convertActionElm)
+      | BulletElm.BulletRef (attrs, prams) -> RecBulletElm.BulletRef (attrs, prams)
+
+    let convertTopElm (t: BulletmlElm) : RecTopElm =
+      match t with
+      | BulletmlElm.Bullet (attrs, direction, speed, actionElms) ->
+        RecTopElm.Bullet (attrs, repDir direction, repSpd speed,
+                          actionElms |> List.map convertActionElm)
+      | BulletmlElm.Fire (attrs, direction, speed, bulletElm) ->
+        RecTopElm.Fire (attrs, repDir direction, repSpd speed, convertBulletElm bulletElm)
+      | BulletmlElm.Action (attrs, commands) ->
+        RecTopElm.Action (attrs, commands |> List.map convertCommand)
+
+    // 走らせる木の根は bulletml だけ。公開の Bulletml は「どの要素でも」
+    // 表せる型なので、ここで根であることを確かめる。DTD の
+    // <!ELEMENT bulletml ...> が根であるという決めが、ここに 1 回だけ出る
+    match bulletml with
+    | Bulletml.Bulletml (attrs, elms) ->
+      RecBulletml.Bulletml (attrs, elms |> List.map convertTopElm)
+    | _ ->
+      new BulletmlDTDViolationException("走らせる木の根は bulletml でなければなりません。") |> raise
 
   let internal convertRecBulletml bulletml= 
     convertRecBulletml' bulletml false
@@ -711,324 +737,341 @@ module IntermediateParser =
   let internal convertRecBulletmlForTest bulletml = 
     convertRecBulletml' bulletml true
 
-  let internal getAction (recBulletml:RecBulletml) = 
-    let rec xmlToCommandList2 topRecBulletml recBulletml = 
-      let rec xmlToCommandList2' topRecBulletml recBulletml (list:RecBulletml list) = 
-        let getChildren2 topRecBulletml children = List.fold (fun tl child -> tl@xmlToCommandList2 topRecBulletml child) [] children 
-        match recBulletml with
-        | RecBulletml.Bulletml (attrs, children) ->  
-          list@getChildren2 recBulletml children
-        | RecBulletml.Bullet (attrs, direction, speed, children) ->  
-          list@getChildren2 recBulletml children
-        | RecBulletml.Fire (a,b,c, child) ->  
-          list@getChildren2 recBulletml [child]
-        | RecBulletml.Repeat (a,child) -> 
-          list@getChildren2 recBulletml [child]
-        | RecBulletml.Action (attrs, children) -> 
-          match attrs.actionLabel with
-          | Some label ->
-            list@[recBulletml]@getChildren2 recBulletml children
-          | _ ->
-            list@getChildren2 recBulletml children
-        | RecBulletml.ActionRef _  
-        | RecBulletml.FireRef _  
-        | RecBulletml.ChangeSpeed _  
-        | RecBulletml.ChangeDirection _  
-        | RecBulletml.Accel _   
-        | RecBulletml.Wait _  
-        | RecBulletml.Vanish  
-        | RecBulletml.BulletRef _  
-        | RecBulletml.NotCommand ->
-          list
-      xmlToCommandList2' topRecBulletml recBulletml []
-    xmlToCommandList2 recBulletml recBulletml
+  /// 木を隅々まで歩いて、名前の付いた要素を集める。
+  ///
+  /// 以前は同じ形の走査を getAction / getFire / getBullet で 3 回 書いていた
+  /// （どれも 14 の腕を並べ、拾う 1 腕だけが違った）。位置ごとに型が
+  /// 分かれたので、歩き方を 1 本 にして「拾うもの」だけを差し替える。
+  ///
+  /// 拾う順は変えていない —— 自分を先に入れてから子へ降りる
+  let private collect
+      (fromAction: ActionAttrs * RecCommand list -> 'a list)
+      (fromFire: FireAttrs * Direction option * Speed option * RecBulletElm -> 'a list)
+      (fromBullet: BulletAttrs * Direction option * Speed option * RecActionElm list -> 'a list)
+      (root: RecBulletml) : 'a list =
+    let rec command (c: RecCommand) =
+      match c with
+      | RecCommand.Action (attrs, children) ->
+        fromAction (attrs, children) @ (children |> List.collect command)
+      | RecCommand.Fire (attrs, d, s, child) ->
+        fromFire (attrs, d, s, child) @ bulletElm child
+      | RecCommand.Repeat (_, child) -> actionElm child
+      // 要素の子を持たない腕。以前はここに NotCommand と、命令の位置には
+      // 来られない Bulletml / Bullet / BulletRef も並んでいた
+      | RecCommand.ActionRef _ | RecCommand.FireRef _
+      | RecCommand.ChangeDirection _ | RecCommand.ChangeSpeed _
+      | RecCommand.Accel _ | RecCommand.Wait _ | RecCommand.Vanish -> []
+    and actionElm (a: RecActionElm) =
+      match a with
+      | RecActionElm.Action (attrs, children) ->
+        fromAction (attrs, children) @ (children |> List.collect command)
+      | RecActionElm.ActionRef _ -> []
+    and bulletElm (b: RecBulletElm) =
+      match b with
+      | RecBulletElm.Bullet (attrs, d, s, children) ->
+        fromBullet (attrs, d, s, children) @ (children |> List.collect actionElm)
+      | RecBulletElm.BulletRef _ -> []
+    let topElm (t: RecTopElm) =
+      match t with
+      | RecTopElm.Bullet (attrs, d, s, children) ->
+        fromBullet (attrs, d, s, children) @ (children |> List.collect actionElm)
+      | RecTopElm.Fire (attrs, d, s, child) ->
+        fromFire (attrs, d, s, child) @ bulletElm child
+      | RecTopElm.Action (attrs, children) ->
+        fromAction (attrs, children) @ (children |> List.collect command)
+    match root with
+    | RecBulletml.Bulletml (_, elms) -> elms |> List.collect topElm
+
+  /// 名前の付いた action。actionRef が指す先になれるので RecActionElm で返す
+  let internal getAction (recBulletml: RecBulletml) : RecActionElm list =
+    recBulletml |> collect
+      (fun (attrs, children) ->
+        match attrs.actionLabel with
+        | Some _ -> [ RecActionElm.Action (attrs, children) ]
+        | None -> [])
+      (fun _ -> [])
+      (fun _ -> [])
 
   let internal tryFindAction recBulletml (targetLabel: ActionLabel) =
-    let actions = getAction recBulletml
-    actions |> List.tryFind (function
-      | RecBulletml.Action(attrs, _) ->
+    getAction recBulletml |> List.tryFind (function
+      | RecActionElm.Action (attrs, _) ->
         // 以前は tryFindLabelValue [("label", v)] を通していたが、
         // 1 要素の連想リストから同じキーを引くだけで、常に Some v を返す
         // 空回りだった。型が付いたのでそのまま比べる
-        match attrs.actionLabel with
-        | Some v -> v = targetLabel
-        | None -> false
-      | _ -> false)
+        (match attrs.actionLabel with Some v -> v = targetLabel | None -> false)
+      | RecActionElm.ActionRef _ -> false)
 
-  let internal getFire (recBulletml:RecBulletml) = 
-    let rec xmlToCommandList2 topRecBulletml recBulletml = 
-      let rec xmlToCommandList2' topRecBulletml recBulletml (list:RecBulletml list) = 
-        let getChildren2 topRecBulletml children = List.fold (fun tl child -> tl@xmlToCommandList2 topRecBulletml child) [] children 
-        match recBulletml with
-        | RecBulletml.Bulletml (attrs, children) ->  
-          list@getChildren2 recBulletml children
-        | RecBulletml.Bullet (attrs, direction, speed, children) ->  
-          list@getChildren2 recBulletml children
-        | RecBulletml.Action (attrs, children) -> 
-          list@getChildren2 recBulletml children
-        | RecBulletml.Repeat (a,child) -> 
-          list@getChildren2 recBulletml [child]
-        | RecBulletml.Fire (attrs,b,c, child) -> 
-          match attrs.fireLabel with
-          | Some label ->
-            list@[recBulletml]@getChildren2 recBulletml [child]
-          | _ ->
-            list@getChildren2 recBulletml [child]
-        | RecBulletml.ActionRef _  
-        | RecBulletml.FireRef _  
-        | RecBulletml.ChangeSpeed _  
-        | RecBulletml.ChangeDirection _  
-        | RecBulletml.Accel _   
-        | RecBulletml.Wait _ 
-        | RecBulletml.Vanish  
-        | RecBulletml.BulletRef _  
-        | RecBulletml.NotCommand ->
-          list
-      xmlToCommandList2' topRecBulletml recBulletml []
-    xmlToCommandList2 recBulletml recBulletml
+  /// 名前の付いた fire。fireRef が指す先は命令の位置へ差し込まれるので
+  /// RecCommand.Fire で返す（根の直下にある fire も同じ形にして返す）
+  let internal getFire (recBulletml: RecBulletml) : RecCommand list =
+    recBulletml |> collect
+      (fun _ -> [])
+      (fun (attrs, d, s, child) ->
+        match attrs.fireLabel with
+        | Some _ -> [ RecCommand.Fire (attrs, d, s, child) ]
+        | None -> [])
+      (fun _ -> [])
 
   let internal tryFindFire recBulletml (targetLabel: FireLabel) =
-    let fires = getFire recBulletml
-    fires |> List.tryFind (function
-      | RecBulletml.Fire(attrs, _, _, _) ->
-        match attrs.fireLabel with
-        | Some v -> v = targetLabel
-        | None -> false
+    getFire recBulletml |> List.tryFind (function
+      | RecCommand.Fire (attrs, _, _, _) ->
+        (match attrs.fireLabel with Some v -> v = targetLabel | None -> false)
       | _ -> false)
 
-  let internal getBullet (recBulletml:RecBulletml) = 
-    let rec xmlToCommandList2 topRecBulletml recBulletml = 
-      let rec xmlToCommandList2' topRecBulletml recBulletml (list:RecBulletml list) = 
-        let getChildren2 topRecBulletml children = List.fold (fun tl child -> tl@xmlToCommandList2 topRecBulletml child) [] children 
-        match recBulletml with
-        | RecBulletml.Bulletml (attrs, children) ->  
-          list@getChildren2 recBulletml children
-        | RecBulletml.Action (atts, children) ->  
-          list@getChildren2 recBulletml children
-        | RecBulletml.Fire (a,b,c, child) ->  
-          list@getChildren2 recBulletml [child]
-        | RecBulletml.Repeat (a,child) -> 
-          list@getChildren2 recBulletml [child]
-        | RecBulletml.Bullet (attrs, direction, speed, children) -> 
-          match attrs.bulletLabel with
-          | Some label ->
-            list@[recBulletml]@getChildren2 recBulletml children
-          | _ ->
-            list@getChildren2 recBulletml children
-        | RecBulletml.ActionRef _   
-        | RecBulletml.FireRef _  
-        | RecBulletml.ChangeSpeed _  
-        | RecBulletml.ChangeDirection _  
-        | RecBulletml.Accel _   
-        | RecBulletml.Wait _  
-        | RecBulletml.Vanish  
-        | RecBulletml.BulletRef _  
-        | RecBulletml.NotCommand ->
-          list
-      xmlToCommandList2' topRecBulletml recBulletml []
-    xmlToCommandList2 recBulletml recBulletml
+  /// 名前の付いた bullet。bulletRef が指す先になれるので RecBulletElm で返す
+  let internal getBullet (recBulletml: RecBulletml) : RecBulletElm list =
+    recBulletml |> collect
+      (fun _ -> [])
+      (fun _ -> [])
+      (fun (attrs, d, s, children) ->
+        match attrs.bulletLabel with
+        | Some _ -> [ RecBulletElm.Bullet (attrs, d, s, children) ]
+        | None -> [])
 
   let internal tryFindBullet recBulletml (targetLabel: BulletLabel) =
-    let bullets = getBullet recBulletml
-    bullets |> List.tryFind (function
-      | RecBulletml.Bullet(attrs, _, _, _) ->
-        match attrs.bulletLabel with
-        | Some v -> v = targetLabel
-        | None -> false
-      | _ -> false)
+    getBullet recBulletml |> List.tryFind (function
+      | RecBulletElm.Bullet (attrs, _, _, _) ->
+        (match attrs.bulletLabel with Some v -> v = targetLabel | None -> false)
+      | RecBulletElm.BulletRef _ -> false)
 
-  /// 参照先の要素へ実引数を差し込む。
+  /// 実引数を差し込む走査。位置ごとに分ける。
   ///
-  /// key は「どの種別の、どの名前を解いているか」。以前は label だけを
-  /// 素の string で受けていて、target が Action / Bullet / Fire の
-  /// どれであっても同じ文字列と比べられてしまっていた。**呼ぶ側は必ず
-  /// 種別を揃えて渡していたが、それを型で言えていなかった。**
-  /// key を RefKey にすると、種別が食い違う組み合わせが書けなくなり、
-  /// 下の match で「target と key の種別が揃っている」腕だけが残る
-  let internal refBulletml (target) (key: RefKey) prams =
-    let prams = prams |> Param.ofList
-    let rec convert bulletml =
-      match bulletml with
-      | RecBulletml.Bullet (attrs, direction, speed, actions) -> 
-        let newActions = actions |> List.map (convert)
-        RecBulletml.Bullet(attrs, convertDirectionOption prams direction, convertSpeedOption prams speed, newActions)
-      | RecBulletml.Action (attrs, actions) -> 
-        let newActions = actions |> List.map (convert)
-        RecBulletml.Action(attrs, newActions)
-      | RecBulletml.ActionRef (attrs, param) ->
-        RecBulletml.ActionRef (attrs, convertParam prams param)
-      | RecBulletml.Fire (attrs, direction, speed, bullet) -> 
-        let newBullet = bullet |> (convert)
-        RecBulletml.Fire (attrs, convertDirectionOption prams direction, convertSpeedOption prams speed, newBullet)
-      | RecBulletml.Repeat (times, action) -> 
-        let newAction = action |> convert
-        RecBulletml.Repeat (convertTimes prams times, newAction)
-      | RecBulletml.FireRef (attrs, param) ->
-        RecBulletml.FireRef (attrs, convertParam prams param)
-      | RecBulletml.BulletRef (attrs, param) ->
-        RecBulletml.BulletRef (attrs, convertParam prams param)
-      | RecBulletml.ChangeSpeed (speed, term) ->
-        RecBulletml.ChangeSpeed (convertSpeed prams speed, convertTerm prams term)
-      | RecBulletml.ChangeDirection (direction, term) ->
-        RecBulletml.ChangeDirection (convertDirection prams direction, convertTerm prams term)
-      | RecBulletml.Wait (s) ->
-        RecBulletml.Wait (convertWait prams s)
-      | RecBulletml.Accel(horizontal, vertical, term) ->
-        RecBulletml.Accel (convertHorizontalOption prams horizontal,convertVerticalOption prams vertical, convertTerm prams term)
-      | x -> x 
-    // target と key の種別が揃っている腕だけを書く。揃わない組み合わせは
-    // 呼ぶ側に無い（tryFindAction が返すのは Action、その key は ActionKey）。
-    // 以前は label が string だったので、揃わない組み合わせも書けてしまい、
-    // 「Fire を探して Action の名前と比べる」が型を通っていた
-    match target, key with
-    | RecBulletml.Action(attrs, _), ActionKey l ->
-      if attrs.actionLabel = Some l then
-        convert target
-      else
-        target
-    | RecBulletml.Bullet(attrs, _, _, _), BulletKey l ->
-      if attrs.bulletLabel = Some l then
-        convert target
-      else
-        target
-    | RecBulletml.Fire(attrs, _, _, _), FireKey l ->
-      if attrs.fireLabel = Some l then
-        convert target
-      else
-        target
-    | _ -> new BulletmlDTDViolationException("convert error.") |> raise
+  /// 以前は 1 本の convert が平らな DU を歩き、最後に `| x -> x` で
+  /// 「触らない腕」をまとめて受けていた。その `x` には
+  /// Vanish（触らなくてよい）と Bulletml / NotCommand（そもそも
+  /// ここへ来ない）が混ざっていた
+  let rec private substCommand prams (c: RecCommand) : RecCommand =
+    match c with
+    | RecCommand.ChangeDirection (direction, term) ->
+      RecCommand.ChangeDirection (convertDirection prams direction, convertTerm prams term)
+    | RecCommand.ChangeSpeed (speed, term) ->
+      RecCommand.ChangeSpeed (convertSpeed prams speed, convertTerm prams term)
+    | RecCommand.Accel (horizontal, vertical, term) ->
+      RecCommand.Accel (convertHorizontalOption prams horizontal,
+                        convertVerticalOption prams vertical, convertTerm prams term)
+    | RecCommand.Wait s -> RecCommand.Wait (convertWait prams s)
+    | RecCommand.Vanish -> RecCommand.Vanish
+    | RecCommand.Repeat (times, child) ->
+      RecCommand.Repeat (convertTimes prams times, substActionElm prams child)
+    | RecCommand.Fire (attrs, direction, speed, child) ->
+      RecCommand.Fire (attrs, convertDirectionOption prams direction,
+                       convertSpeedOption prams speed, substBulletElm prams child)
+    | RecCommand.FireRef (attrs, param) -> RecCommand.FireRef (attrs, convertParam prams param)
+    | RecCommand.Action (attrs, children) ->
+      RecCommand.Action (attrs, children |> List.map (substCommand prams))
+    | RecCommand.ActionRef (attrs, param) -> RecCommand.ActionRef (attrs, convertParam prams param)
 
-  let rec internal convertBulletml recbulletml = 
-    let rec convertBulletml' recbulletml = 
-      let rec convert recbulletml list =  
-        let getChildren children : Bulletml list = List.fold (fun tl child -> tl@convertBulletml' child) [] children 
-        match recbulletml with
-        | RecBulletml.Bulletml (attrs,bulletmls) -> 
-          let newBulletElms = getChildren bulletmls |> List.map (bulletmlToBulletmlElm)
-          Bulletml.Bulletml(attrs, newBulletElms)::list
-        | RecBulletml.Action (attrs, actions) -> 
-          let newActions = getChildren actions |> List.map (bulletmlToAction)
-          Bulletml.Action (attrs, newActions) ::list
-        | RecBulletml.Accel (horizontal, vertical, term) -> Bulletml.Accel(horizontal, vertical, term)::list
-        | RecBulletml.BulletRef (attrs, prams) -> Bulletml.BulletRef (attrs, prams)::list
-        | RecBulletml.FireRef (attrs, prams) ->
-           Bulletml.FireRef (attrs, prams)::list
-        | RecBulletml.ChangeDirection (direction, term) -> 
-          Bulletml.ChangeDirection (direction, term)::list
-        | RecBulletml.ChangeSpeed (speed, term) -> 
-          Bulletml.ChangeSpeed (speed, term)::list
-        | RecBulletml.Fire (attrs, direction, speed, bullet) -> 
-          let newBullet = convertBulletml bullet |> bulletmlToBulletElm
-          Bulletml.Fire(attrs, direction, speed, newBullet)::list
-        | RecBulletml.Bullet (attrs, direction, speed, actions) ->
-          let newActions = getChildren actions |> List.map (bulletmlToActionElm)
-          Bulletml.Bullet (attrs, direction, speed, newActions)::list
-        | RecBulletml.ActionRef (attrs,prams) -> Bulletml.ActionRef (attrs, prams)::list
-        | RecBulletml.Repeat (times, action) ->
-          let newAction = convertBulletml action |> bulletmlToActionElm
-          Bulletml.Repeat(times, newAction)::list 
-        | RecBulletml.Vanish -> Bulletml.Vanish::list 
-        | RecBulletml.Wait (s) -> Bulletml.Wait (s)::list
-        | RecBulletml.NotCommand -> Bulletml.NotCommand::list
-      convert recbulletml [] 
-    convertBulletml' recbulletml |> List.head 
+  and private substActionElm prams (a: RecActionElm) : RecActionElm =
+    match a with
+    | RecActionElm.Action (attrs, children) ->
+      RecActionElm.Action (attrs, children |> List.map (substCommand prams))
+    | RecActionElm.ActionRef (attrs, param) -> RecActionElm.ActionRef (attrs, convertParam prams param)
+
+  and private substBulletElm prams (b: RecBulletElm) : RecBulletElm =
+    match b with
+    | RecBulletElm.Bullet (attrs, direction, speed, children) ->
+      RecBulletElm.Bullet (attrs, convertDirectionOption prams direction,
+                           convertSpeedOption prams speed,
+                           children |> List.map (substActionElm prams))
+    | RecBulletElm.BulletRef (attrs, param) -> RecBulletElm.BulletRef (attrs, convertParam prams param)
+
+  /// 参照先の要素へ実引数を差し込む。**種別ごとに 1 本 ずつ。**
+  ///
+  /// 以前は target を 1 つの平らな型で受け、target と label の種別が
+  /// 揃っていることを型で言えなかった（前の段で RefKey を入れて
+  /// 「揃っている腕だけ」を書ける形にしたが、まだ 1 本 の関数だった）。
+  /// 位置ごとに型が分かれたので、関数そのものが 3 本 に割れて、
+  /// 揃わない呼び方が書けなくなる。
+  ///
+  /// 名前の一致を確かめてから差し込むのは以前と同じ。呼ぶ側は
+  /// tryFind* が返したものを渡すので必ず一致するが、確認は残す
+  let internal refAction (target: RecActionElm) (label: ActionLabel) prams : RecActionElm =
+    let prams = prams |> Param.ofList
+    match target with
+    | RecActionElm.Action (attrs, _) when attrs.actionLabel = Some label ->
+      substActionElm prams target
+    | _ -> target
+
+  let internal refFire (target: RecCommand) (label: FireLabel) prams : RecCommand =
+    let prams = prams |> Param.ofList
+    match target with
+    | RecCommand.Fire (attrs, _, _, _) when attrs.fireLabel = Some label ->
+      substCommand prams target
+    | _ -> target
+
+  let internal refBullet (target: RecBulletElm) (label: BulletLabel) prams : RecBulletElm =
+    let prams = prams |> Param.ofList
+    match target with
+    | RecBulletElm.Bullet (attrs, _, _, _) when attrs.bulletLabel = Some label ->
+      substBulletElm prams target
+    | _ -> target
+
+  /// 走らせる木を、公開の木へ戻す。位置ごとに 1 対 1 で並ぶ。
+  ///
+  /// 以前は平らな DU 同士だったので、いったん Bulletml へ潰してから
+  /// bulletmlToAction / bulletmlToActionElm / bulletmlToBulletElm で
+  /// 位置へ入れ直していた。その潰しと入れ直しが要らなくなる
+  let rec internal commandToPublic (c: RecCommand) : Action =
+    match c with
+    | RecCommand.ChangeDirection (direction, term) -> Action.ChangeDirection (direction, term)
+    | RecCommand.ChangeSpeed (speed, term) -> Action.ChangeSpeed (speed, term)
+    | RecCommand.Accel (horizontal, vertical, term) -> Action.Accel (horizontal, vertical, term)
+    | RecCommand.Wait s -> Action.Wait s
+    | RecCommand.Vanish -> Action.Vanish
+    | RecCommand.Repeat (times, child) -> Action.Repeat (times, actionElmToPublic child)
+    | RecCommand.Fire (attrs, d, s, child) -> Action.Fire (attrs, d, s, bulletElmToPublic child)
+    | RecCommand.FireRef (attrs, prams) -> Action.FireRef (attrs, prams)
+    | RecCommand.Action (attrs, children) ->
+      Action.Action (attrs, children |> List.map commandToPublic)
+    | RecCommand.ActionRef (attrs, prams) -> Action.ActionRef (attrs, prams)
+
+  and internal actionElmToPublic (a: RecActionElm) : ActionElm =
+    match a with
+    | RecActionElm.Action (attrs, children) ->
+      ActionElm.Action (attrs, children |> List.map commandToPublic)
+    | RecActionElm.ActionRef (attrs, prams) -> ActionElm.ActionRef (attrs, prams)
+
+  and internal bulletElmToPublic (b: RecBulletElm) : BulletElm =
+    match b with
+    | RecBulletElm.Bullet (attrs, d, s, children) ->
+      BulletElm.Bullet (attrs, d, s, children |> List.map actionElmToPublic)
+    | RecBulletElm.BulletRef (attrs, prams) -> BulletElm.BulletRef (attrs, prams)
+
+  let internal topElmToPublic (t: RecTopElm) : BulletmlElm =
+    match t with
+    | RecTopElm.Bullet (attrs, d, s, children) ->
+      BulletmlElm.Bullet (attrs, d, s, children |> List.map actionElmToPublic)
+    | RecTopElm.Fire (attrs, d, s, child) ->
+      BulletmlElm.Fire (attrs, d, s, bulletElmToPublic child)
+    | RecTopElm.Action (attrs, children) ->
+      BulletmlElm.Action (attrs, children |> List.map commandToPublic)
+
+  let internal convertBulletml (recBulletml: RecBulletml) : Bulletml =
+    match recBulletml with
+    | RecBulletml.Bulletml (attrs, elms) ->
+      Bulletml.Bulletml (attrs, elms |> List.map topElmToPublic)
 
   /// 展開中の参照は DTD.RefKey が表す（action:foo と bullet:foo は別物）。
   /// 以前はここに refKey kind label = kind + ":" + label があり、種別を
   /// 文字で足していた。型にしたので、足し忘れも綴り違いも起きない
 
+  /// 参照を解いて木へ展開する。
+  ///
   /// lastAction は「直近に展開した action の label」。
   /// action の輪を残してよいのは、その輪が直近に展開した action 自身へ戻るときだけ。
   /// 別の action を経由する輪は、解いた結果の中に action が挟まるので、
-  /// 走らせる側が 1 段ずつ解くと呼び出しがフレームごとに深くなる
-  let rec private convertRefBulletmlIn visiting lastAction topRecBulletml recBulletml =
-    // param は文字のまま子へ渡す。ここで数へ潰すと $rank / $rand が
-    // 展開の 1 回ぶんで凍り、走行中に値を変えても追随しなくなる。
-    // Params は string list で、Param.replace も文字の置き換えなので、
-    // 潰さないほうが型の形と合う
-    let mapEval expr : string list = expr
-    let enter key =
+  /// 走らせる側が 1 段ずつ解くと呼び出しがフレームごとに深くなる。
+  ///
+  /// 位置ごとに関数が分かれた。actionRef は「命令の位置」と
+  /// 「repeat / bullet の子の位置」の両方に出るので、解く判断だけを
+  /// resolveActionRef に出して両方から使う
+  let rec private resolveActionRef visiting lastAction top (attrs: ActionRefAttrs) prams
+      : RecActionElm option =
+    // None は「輪なので、そのまま残す」
+    let key = ActionKey attrs.actionRefLabel
+    if Set.contains key visiting then
+      if lastAction = Some attrs.actionRefLabel then None
+      else
+        new BulletmlDTDViolationException(
+              sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)) |> raise
+    else
+      match tryFindAction top attrs.actionRefLabel with
+      | Some action ->
+        let newAction = refAction action attrs.actionRefLabel prams
+        Some (expandActionElm (Set.add key visiting) (Some attrs.actionRefLabel) top newAction)
+      | None ->
+        new BulletmlDTDViolationException(
+              sprintf "not found target Action element:%s" (ActionLabel.text attrs.actionRefLabel)) |> raise
+
+  and private expandCommand visiting lastAction top (c: RecCommand) : RecCommand =
+    match c with
+    | RecCommand.ActionRef (attrs, prams) ->
+      match resolveActionRef visiting lastAction top attrs prams with
+      | None -> c
+      // 解いた結果は action。ActionRef が居たのは命令の位置なので、命令として置く
+      | Some (RecActionElm.Action (a, cs)) -> RecCommand.Action (a, cs)
+      | Some (RecActionElm.ActionRef (a, p)) -> RecCommand.ActionRef (a, p)
+    | RecCommand.FireRef (attrs, prams) ->
+      let key = FireKey attrs.fireRefLabel
       if Set.contains key visiting then
         new BulletmlDTDViolationException(
               sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)) |> raise
-      Set.add key visiting
-    let rec convert recBulletml =
-      match recBulletml with
-      | RecBulletml.ActionRef (attrs, prams) ->
-        let key = ActionKey attrs.actionRefLabel
-        if Set.contains key visiting then
-          if lastAction = Some attrs.actionRefLabel then
-            // 自分自身へ戻る輪。展開せず残し、走らせる側が 1 段ずつ解く
-            recBulletml
-          else
-            new BulletmlDTDViolationException(
-                  sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)) |> raise
-        else
-          match tryFindAction topRecBulletml attrs.actionRefLabel with
-          | Some action ->
-            let newAction = refBulletml action (ActionKey attrs.actionRefLabel) (mapEval prams)
-            convertRefBulletmlIn (Set.add key visiting) (Some attrs.actionRefLabel) topRecBulletml newAction
-          | None -> new BulletmlDTDViolationException(sprintf "not found target Action element:%s" (ActionLabel.text attrs.actionRefLabel)) |> raise
-      | RecBulletml.FireRef (attrs, prams) ->
-        let visiting = enter (FireKey attrs.fireRefLabel)
-        match tryFindFire topRecBulletml attrs.fireRefLabel with
-        | Some fire ->
-          let newFire = refBulletml fire (FireKey attrs.fireRefLabel) (mapEval prams)
-          convertRefBulletmlIn visiting None topRecBulletml newFire
-        | None -> new BulletmlDTDViolationException(sprintf "not found target Fire element:%s" (FireLabel.text attrs.fireRefLabel)) |> raise
-      | RecBulletml.BulletRef (attrs, prams) ->
-        let key = BulletKey attrs.bulletRefLabel
-        if Set.contains key visiting then
-          // 輪。展開せず残し、走らせる側が 1 段ずつ解く
-          recBulletml
-        else
-          match tryFindBullet topRecBulletml attrs.bulletRefLabel with
-          | Some bullet ->
-            let newBullet = refBulletml bullet (BulletKey attrs.bulletRefLabel) (mapEval prams)
-            convertRefBulletmlIn (Set.add key visiting) None topRecBulletml newBullet
-          | None -> new BulletmlDTDViolationException(sprintf "not foun target Bullet element:%s" (BulletLabel.text attrs.bulletRefLabel)) |> raise
-      | RecBulletml.Bulletml (attrs,bulletmls) -> 
-        let newbulletmls = bulletmls |> List.map convert
-        RecBulletml.Bulletml(attrs, newbulletmls)
-      | RecBulletml.Bullet (attrs, direction, speed, actions) -> 
-        let newActions = actions |> List.map convert 
-        RecBulletml.Bullet(attrs, direction, speed, newActions)
-      | RecBulletml.Action (attrs, actions) -> 
-        let newActions = actions |> List.map convert 
-        RecBulletml.Action(attrs, newActions)
-      | RecBulletml.Fire (attrs, direction, speed, bullet) -> 
-        let newBullet = bullet |> convert
-        RecBulletml.Fire (attrs, direction, speed, newBullet)
-      | RecBulletml.Repeat (times, action) -> 
-        let newAction = action |> convert
-        RecBulletml.Repeat (times, newAction)
-      | RecBulletml.Accel (horizontal, vertical, term) -> 
-        RecBulletml.Accel (horizontal, vertical, term) 
-      | RecBulletml.ChangeDirection _
-      | RecBulletml.ChangeSpeed _
-      | RecBulletml.Vanish 
-      | RecBulletml.Wait _
-      | RecBulletml.NotCommand -> recBulletml
-    convert recBulletml
+      let visiting = Set.add key visiting
+      match tryFindFire top attrs.fireRefLabel with
+      | Some fire ->
+        let newFire = refFire fire attrs.fireRefLabel prams
+        expandCommand visiting None top newFire
+      | None ->
+        new BulletmlDTDViolationException(
+              sprintf "not found target Fire element:%s" (FireLabel.text attrs.fireRefLabel)) |> raise
+    | RecCommand.Action (attrs, children) ->
+      RecCommand.Action (attrs, children |> List.map (expandCommand visiting lastAction top))
+    | RecCommand.Fire (attrs, d, s, child) ->
+      RecCommand.Fire (attrs, d, s, expandBulletElm visiting lastAction top child)
+    | RecCommand.Repeat (times, child) ->
+      RecCommand.Repeat (times, expandActionElm visiting lastAction top child)
+    | RecCommand.ChangeDirection _ | RecCommand.ChangeSpeed _
+    | RecCommand.Accel _ | RecCommand.Wait _ | RecCommand.Vanish -> c
 
-  let internal convertRefBulletml topRecBulletml recBulletml =
-    convertRefBulletmlIn Set.empty None topRecBulletml recBulletml
+  and private expandActionElm visiting lastAction top (a: RecActionElm) : RecActionElm =
+    match a with
+    | RecActionElm.Action (attrs, children) ->
+      RecActionElm.Action (attrs, children |> List.map (expandCommand visiting lastAction top))
+    | RecActionElm.ActionRef (attrs, prams) ->
+      match resolveActionRef visiting lastAction top attrs prams with
+      | None -> a
+      | Some expanded -> expanded
 
+  and private expandBulletElm visiting lastAction top (b: RecBulletElm) : RecBulletElm =
+    match b with
+    | RecBulletElm.Bullet (attrs, d, s, children) ->
+      RecBulletElm.Bullet (attrs, d, s, children |> List.map (expandActionElm visiting lastAction top))
+    | RecBulletElm.BulletRef (attrs, prams) ->
+      let key = BulletKey attrs.bulletRefLabel
+      if Set.contains key visiting then
+        // 輪。展開せず残し、走らせる側が 1 段ずつ解く
+        b
+      else
+        match tryFindBullet top attrs.bulletRefLabel with
+        | Some bullet ->
+          let newBullet = refBullet bullet attrs.bulletRefLabel prams
+          expandBulletElm (Set.add key visiting) None top newBullet
+        | None ->
+          new BulletmlDTDViolationException(
+                sprintf "not foun target Bullet element:%s" (BulletLabel.text attrs.bulletRefLabel)) |> raise
+
+  let private expandTopElm visiting lastAction top (t: RecTopElm) : RecTopElm =
+    match t with
+    | RecTopElm.Bullet (attrs, d, s, children) ->
+      RecTopElm.Bullet (attrs, d, s, children |> List.map (expandActionElm visiting lastAction top))
+    | RecTopElm.Fire (attrs, d, s, child) ->
+      RecTopElm.Fire (attrs, d, s, expandBulletElm visiting lastAction top child)
+    | RecTopElm.Action (attrs, children) ->
+      RecTopElm.Action (attrs, children |> List.map (expandCommand visiting lastAction top))
+
+  /// 木を丸ごと展開する。根から入る唯一の入口
+  let internal convertRefBulletml (top: RecBulletml) (recBulletml: RecBulletml) : RecBulletml =
+    match recBulletml with
+    | RecBulletml.Bulletml (attrs, elms) ->
+      RecBulletml.Bulletml (attrs, elms |> List.map (expandTopElm Set.empty None top))
+
+  /// top* の台本 1 本 を展開する。BulletRunner.buildRootTops が使う
+  let internal convertRefActionElm (top: RecBulletml) (a: RecActionElm) : RecActionElm =
+    expandActionElm Set.empty None top a
 
   /// 輪のために展開を止めた bulletRef を、走らせる側から 1 段だけ解く。
   /// 中にまた同じ参照が残るので、次に撃たれたときに次の 1 段が解かれる。
   ///
   /// 解く前から自分の key を visiting に入れておくこと。空から始めると
-  /// 解いた中身の同じ参照がもう 1 段 展開され、1 段のつもりが 2 段になる
-  /// 1 段だけ解いた RecBulletml を返す。
+  /// 解いた中身の同じ参照がもう 1 段 展開され、1 段のつもりが 2 段になる。
   /// 新経路（Step.Resolvers）は木を組まないのでこちらを直に使う
-  let internal expandBulletRefOnceRec topRecBulletml label prams =
-    match tryFindBullet topRecBulletml label with
+  let internal expandBulletRefOnceRec top (label: BulletLabel) prams : RecBulletElm option =
+    match tryFindBullet top label with
     | Some bullet ->
-      // param は文字のまま渡す（mapEval と同じ理由）
-      let evaluated = prams
-      refBulletml bullet (BulletKey label) evaluated
-      |> convertRefBulletmlIn (Set.singleton (BulletKey label)) None topRecBulletml
+      // param は文字のまま渡す（Params は string list で、Param.replace も
+      // 文字の置き換えなので、ここで数へ潰すと $rank / $rand が凍る）
+      refBullet bullet label prams
+      |> expandBulletElm (Set.singleton (BulletKey label)) None top
       |> Some
     | None -> None
 
@@ -1037,14 +1080,10 @@ module IntermediateParser =
   ///
   /// bulletRef と違って fire を挟まないので、2 段 解くと走らせる側の
   /// 呼び出しが 1 フレームごとに深くなり、スタックを使い切る
-  /// 1 段だけ解いた RecBulletml を返す。
-  /// 新経路（Step.Resolvers）は木を組まないのでこちらを直に使う
-  let internal expandActionRefOnceRec topRecBulletml label prams =
-    match tryFindAction topRecBulletml label with
+  let internal expandActionRefOnceRec top (label: ActionLabel) prams : RecActionElm option =
+    match tryFindAction top label with
     | Some action ->
-      // param は文字のまま渡す（mapEval と同じ理由）
-      let evaluated = prams
-      refBulletml action (ActionKey label) evaluated
-      |> convertRefBulletmlIn (Set.singleton (ActionKey label)) (Some label) topRecBulletml
+      refAction action label prams
+      |> expandActionElm (Set.singleton (ActionKey label)) (Some label) top
       |> Some
     | None -> None

@@ -47,16 +47,16 @@ module TraceNew =
       rec'
       |> IntermediateParser.getAction
       |> List.filter (function
-        | RecBulletml.Action (attrs, _) ->
+        | RecActionElm.Action (attrs, _) ->
             match attrs.actionLabel with
             | Some label -> (ActionLabel.text label).StartsWith "top"
             | None -> false
         | _ -> false)
-      |> List.map (IntermediateParser.convertRefBulletml rec')
+      |> List.map (IntermediateParser.convertRefActionElm rec')
 
     // 根の Tops は Progress.initial では組めない。旧の toProcessable は
     // 木を組む段で wait の term だけをその場で引く（IntermediateParser.fs の
-    // RecBulletml.Wait の腕、convertRecBulletmlEx から）。この段の Env は
+    // RecCommand.Wait の腕、convertRecBulletmlEx から）。この段の Env は
     // 撃つ弾ごとの位置がまだ無いので AimDir / EnemyAimDir を 0 に固定し、
     // Rand / Rank はグローバルと同じ値を渡す（設計文書 5.6）。
     // accel / changeDirection / changeSpeed はこの段では引かないので、
@@ -79,7 +79,7 @@ module TraceNew =
         Kind = BulletType.Enemy
         IsBullet = false
         HasFired = false
-        Tops = scripts |> List.map (fun s -> s, Step.rootProgress rootEnv s, FireContext.zero) }
+        Tops = scripts |> List.map (fun s -> s, Step.rootProgressActionElm rootEnv s, FireContext.zero) }
 
     let all = List<Live>()
     all.Add { St = initial; Alive = true; Vanished = 0; Id = 0 }
@@ -121,7 +121,7 @@ module TraceNew =
               { st with
                   Tops =
                     st.Tops
-                    |> List.map (fun (s, _, fc) -> s, Step.resetChild reinitEnv s, fc) }
+                    |> List.map (fun (s, _, fc) -> s, Step.resetChildActionElm reinitEnv s, fc) }
             else st
           b.St <- st
           if vanishedNow then
@@ -135,7 +135,7 @@ module TraceNew =
           sb.AppendLine() |> ignore
           // 撃たれた弾を並びへ足す。
           //
-          // bullet 側の direction が aim 系のときも、Step.fire が env.SpawnAimDir
+          // bullet 側の direction が aim 系のときも、stepFire が env.SpawnAimDir
           // で解決し終えている。ここで実体を見て仕上げる後処理は要らない
           for e in r.Effects do
             match e with

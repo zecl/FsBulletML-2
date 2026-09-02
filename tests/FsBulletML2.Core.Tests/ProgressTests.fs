@@ -17,7 +17,7 @@ type ProgressTests() =
   member _.``wait は、term を評価せずに置く``() =
     // 現行も ProcessableWait を作る時点では評価していない。
     // ここで評価すると $rand を読む回数が変わって、控えが動く
-    match Progress.initial (RecBulletml.Wait (numExpr "3")) with
+    match Progress.initial (RecCommand.Wait (numExpr "3")) with
     | PWait (started, left) ->
         started |> should equal false
         left |> should equal 0.0f
@@ -26,8 +26,8 @@ type ProgressTests() =
   [<Test>]
   member _.``action は、子ぶんの Progress を並べて持つ``() =
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
-                          [ RecBulletml.Wait (numExpr "1"); RecBulletml.Vanish ])
+      RecCommand.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecCommand.Wait (numExpr "1"); RecCommand.Vanish ])
     match Progress.initial script with
     | PAction (done_, loop, children) ->
         done_ |> should equal false
@@ -37,8 +37,8 @@ type ProgressTests() =
 
   [<Test>]
   member _.``repeat は、子 1 つぶんを持つ``() =
-    let body = RecBulletml.Action ({ actionLabel = None }, [ RecBulletml.Wait (numExpr "1") ])
-    match Progress.initial (RecBulletml.Repeat (Times (numExpr "3"), body)) with
+    let body = RecActionElm.Action ({ actionLabel = None }, [ RecCommand.Wait (numExpr "1") ])
+    match Progress.initial (RecCommand.Repeat (Times (numExpr "3"), body)) with
     | PRepeat (num, done_, child) ->
         num |> should equal 0
         done_ |> should equal false
@@ -50,14 +50,14 @@ type ProgressTests() =
   [<Test>]
   member _.``初期化の入口は 1 本。同じ Script から 2 回 作ると等しい``() =
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
-                          [ RecBulletml.Wait (numExpr "3"); RecBulletml.Vanish ])
+      RecCommand.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecCommand.Wait (numExpr "3"); RecCommand.Vanish ])
     Progress.initial script |> should equal (Progress.initial script)
 
   [<Test>]
   member _.``BulletState は、top ごとに script と Progress と FireContext を組で持つ``() =
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.Wait (numExpr "1") ])
+      RecActionElm.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecCommand.Wait (numExpr "1") ])
     let st =
       { Pos = { X = 0.f; Y = 0.f }
         Speed = 1.f
@@ -66,7 +66,7 @@ type ProgressTests() =
         Kind = BulletType.Enemy
         IsBullet = false
         HasFired = false
-        Tops = [ script, Progress.initial script, FireContext.zero ] }
+        Tops = [ script, Progress.initialActionElm script, FireContext.zero ] }
     List.length st.Tops |> should equal 1
     let _, _, fc = st.Tops.Head
     fc.SrcSpeed |> should equal 0.0f

@@ -106,9 +106,9 @@ module Processable =
   /// ノードに finish / term / first などの mutable フィールドが 39 個
   /// 埋まっていたが、それらは実行位置の木（Domain.Progress、State の中）へ
   /// 移った。ここに残るのはその木そのものを差し替える口だけ
-  and BulletmlTask internal (resetTop: Domain.Env -> RecBulletml -> Domain.Progress,
-                              rebuildRoot: Bulletml -> (RecBulletml * Domain.Progress) list,
-                              scripts: RecBulletml list,
+  and BulletmlTask internal (resetTop: Domain.Env -> RecActionElm -> Domain.Progress,
+                              rebuildRoot: Bulletml -> (RecActionElm * Domain.Progress) list,
+                              scripts: RecActionElm list,
                               initialState: Domain.BulletState) =
     let state = ref initialState
     let finish = ref false
@@ -116,10 +116,10 @@ module Processable =
     let original : Bulletml option ref = ref None
     /// 輪のために展開を止めた bulletRef を、走らせる側から 1 段だけ解く入口。
     /// label と param を渡すと、その bullet を 1 段展開したものが返る
-    let resolveBulletRef : (BulletLabel -> string list -> RecBulletml option) ref = ref (defaultof<_>)
+    let resolveBulletRef : (BulletLabel -> string list -> RecBulletElm option) ref = ref (defaultof<_>)
     /// 輪のために展開を止めた actionRef を、走らせる側から 1 段だけ解く入口。
     /// label と param を渡すと、その action を 1 段展開したものが返る
-    let resolveActionRef : (ActionLabel -> string list -> RecBulletml option) ref = ref (defaultof<_>)
+    let resolveActionRef : (ActionLabel -> string list -> RecActionElm option) ref = ref (defaultof<_>)
 
     member internal _.ResolveBulletRef with get () = resolveBulletRef.Value
                                         and set (v) = resolveBulletRef.Value <- v

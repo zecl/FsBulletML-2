@@ -37,11 +37,11 @@ type StepCommands() =
     //   2 回め  2 -> 1   Stop
     //   3 回め  1 -> 0   Stop
     //   4 回め  0 -> -1  Ended
-    let script = RecBulletml.Wait (numExpr "3")
+    let script = RecCommand.Wait (numExpr "3")
     let mutable p = Progress.initial script
     let results =
       [ for _ in 1 .. 4 ->
-          let (r, p'), _, _ = Sim.run env state (Step.wait script p)
+          let (r, p'), _, _ = Sim.run env state (stepWait script p)
           p <- p'
           r ]
     results |> should equal [ Step.Stopped; Step.Stopped; Step.Stopped; Step.Ended ]
@@ -49,14 +49,14 @@ type StepCommands() =
   [<Test>]
   member _.``wait 0 は、止まらずに 1 回で終わる``() =
     //   1 回め  0 -> -1 ... ではない。term >= 0 なので 1 減らして -1、Stop にならず Ended
-    let script = RecBulletml.Wait (numExpr "0")
+    let script = RecCommand.Wait (numExpr "0")
     let p = Progress.initial script
-    let (r, _), _, _ = Sim.run env state (Step.wait script p)
+    let (r, _), _, _ = Sim.run env state (stepWait script p)
     r |> should equal Step.Ended
 
   [<Test>]
   member _.``vanish は、効果を 1 つ出して終わる``() =
-    let p = Progress.initial RecBulletml.Vanish
+    let p = Progress.initial RecCommand.Vanish
     let (r, _), _, w = Sim.run env state (Step.vanish p)
     r |> should equal Step.Ended
     w |> should equal [ Vanished ]
@@ -65,12 +65,12 @@ type StepCommands() =
   member _.``終わった wait をもう一度 呼んでも、止めない``() =
     // 現行は getFinish で飛ばすので、この呼び方は起きない。
     // それでも Ended を返すことで、走査の側の作りに依存しない形にしておく
-    let script = RecBulletml.Wait (numExpr "1")
+    let script = RecCommand.Wait (numExpr "1")
     let mutable p = Progress.initial script
     for _ in 1 .. 3 do
-      let (_, p'), _, _ = Sim.run env state (Step.wait script p)
+      let (_, p'), _, _ = Sim.run env state (stepWait script p)
       p <- p'
-    let (r, _), _, _ = Sim.run env state (Step.wait script p)
+    let (r, _), _, _ = Sim.run env state (stepWait script p)
     r |> should equal Step.Ended
 
   [<Test>]
@@ -82,14 +82,14 @@ type StepCommands() =
     //   4 回め  term 1 -> 0   Accel.X = 4   Continue
     //   5 回め  term 0 -> -1  加算せず       Ended
     let script =
-      RecBulletml.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "4")),
+      RecCommand.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "4")),
                          None,
                          Term (numExpr "4"))
     let mutable p = Progress.initial script
     let mutable st = state
     let mutable rs = []
     for _ in 1 .. 5 do
-      let (r, p'), st', _ = Sim.run env st (Step.accel script p)
+      let (r, p'), st', _ = Sim.run env st (stepAccel script p)
       p <- p'
       st <- st'
       rs <- rs @ [ r ]
@@ -100,13 +100,13 @@ type StepCommands() =
   member _.``accel は、最後の 1 回で加算しない``() =
     // 上の 5 回めで Accel.X が 5 になっていたら写し間違い
     let script =
-      RecBulletml.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "4")),
+      RecCommand.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "4")),
                          None,
                          Term (numExpr "4"))
     let mutable p = Progress.initial script
     let mutable st = state
     for _ in 1 .. 5 do
-      let (_, p'), st', _ = Sim.run env st (Step.accel script p)
+      let (_, p'), st', _ = Sim.run env st (stepAccel script p)
       p <- p'
       st <- st'
     st.Accel.X |> should (equalWithin 0.0001) 4.0f
@@ -114,13 +114,13 @@ type StepCommands() =
   [<Test>]
   member _.``accel relative は、値を term で割って毎フレーム足す``() =
     let script =
-      RecBulletml.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Relative }, numExpr "4")),
+      RecCommand.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Relative }, numExpr "4")),
                          None,
                          Term (numExpr "4"))
     let mutable p = Progress.initial script
     let mutable st = { state with Accel = { X = 10.0f; Y = 0.0f } }
     for _ in 1 .. 4 do
-      let (_, p'), st', _ = Sim.run env st (Step.accel script p)
+      let (_, p'), st', _ = Sim.run env st (stepAccel script p)
       p <- p'
       st <- st'
     // relative は現在値を見ないので 10 + 4 = 14
@@ -129,13 +129,13 @@ type StepCommands() =
   [<Test>]
   member _.``accel は horizontal と vertical が別々に効く``() =
     let script =
-      RecBulletml.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "2")),
+      RecCommand.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "2")),
                          Some (Vertical (Some { verticalType = VerticalType.Absolute }, numExpr "-3")),
                          Term (numExpr "2"))
     let mutable p = Progress.initial script
     let mutable st = state
     for _ in 1 .. 2 do
-      let (_, p'), st', _ = Sim.run env st (Step.accel script p)
+      let (_, p'), st', _ = Sim.run env st (stepAccel script p)
       p <- p'
       st <- st'
     st.Accel.X |> should (equalWithin 0.0001) 2.0f
@@ -154,13 +154,13 @@ type StepCommands() =
     // 4 回め: dx = -2、Accel.X = 4 - 2 = 2
     // 5 回め: dx = -2、Accel.X = 2 - 2 = 0
     let script =
-      RecBulletml.Accel (None,
+      RecCommand.Accel (None,
                          None,
                          Term (numExpr "5"))
     let mutable p = Progress.initial script
     let mutable st = { state with Accel = { X = 10.0f; Y = 0.0f } }
     for _ in 1 .. 5 do
-      let (_, p'), st', _ = Sim.run env st (Step.accel script p)
+      let (_, p'), st', _ = Sim.run env st (stepAccel script p)
       p <- p'
       st <- st'
     // 減衰で 10 が 0 に下がっているはず。現状維持なら 10.0 のまま
@@ -180,11 +180,11 @@ type StepCommands() =
         EnemyAimDir = 0.f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
 
     let script =
-      RecBulletml.Accel (None,
+      RecCommand.Accel (None,
                          None,
                          Term (numExpr "2"))
     let p = Progress.initial script
-    let _ = Sim.run countingEnv state (Step.accel script p)
+    let _ = Sim.run countingEnv state (stepAccel script p)
     // 初回フレーム：term ("2") + horizontal (None -> getValue "0") + vertical (None -> getValue "0")
     // = getValue env "2" + getValue env "0" + getValue env "0" = 3 回
     randCount |> should equal 3
@@ -195,13 +195,13 @@ type StepCommands() =
     //   1 回め  term 2 -> 1   Dir = π/4   Continue
     //   2 回め  term 1 -> 0   Dir = π/2   Ended（加算してから）
     let script =
-      RecBulletml.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"),
+      RecCommand.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"),
                                    Term (numExpr "2"))
     let mutable p = Progress.initial script
     let mutable st = state
     let mutable rs = []
     for _ in 1 .. 2 do
-      let (r, p'), st', _ = Sim.run env st (Step.changeDirection script p)
+      let (r, p'), st', _ = Sim.run env st (stepChangeDirection script p)
       p <- p'
       st <- st'
       rs <- rs @ [ r ]
@@ -212,12 +212,12 @@ type StepCommands() =
   member _.``changeSpeed は、最後の 1 回も加算してから終わる``() =
     // absolute 3、term 2、現在 1。差は 2。2 で割って 1 ずつ。
     let script =
-      RecBulletml.ChangeSpeed (Speed (Some { speedType = SpeedType.Absolute }, numExpr "3"), Term (numExpr "2"))
+      RecCommand.ChangeSpeed (Speed (Some { speedType = SpeedType.Absolute }, numExpr "3"), Term (numExpr "2"))
     let mutable p = Progress.initial script
     let mutable st = state
     let mutable rs = []
     for _ in 1 .. 2 do
-      let (r, p'), st', _ = Sim.run env st (Step.changeSpeed script p)
+      let (r, p'), st', _ = Sim.run env st (stepChangeSpeed script p)
       p <- p'
       st <- st'
       rs <- rs @ [ r ]
@@ -228,11 +228,11 @@ type StepCommands() =
   member _.``changeSpeed sequence は、毎フレーム同じ量を足す``() =
     // sequence は term で割らない
     let script =
-      RecBulletml.ChangeSpeed (Speed (Some { speedType = SpeedType.Sequence }, numExpr "0.5"), Term (numExpr "2"))
+      RecCommand.ChangeSpeed (Speed (Some { speedType = SpeedType.Sequence }, numExpr "0.5"), Term (numExpr "2"))
     let mutable p = Progress.initial script
     let mutable st = state
     for _ in 1 .. 2 do
-      let (_, p'), st', _ = Sim.run env st (Step.changeSpeed script p)
+      let (_, p'), st', _ = Sim.run env st (stepChangeSpeed script p)
       p <- p'
       st <- st'
     st.Speed |> should (equalWithin 0.0001) 2.0f
@@ -242,13 +242,13 @@ type StepCommands() =
     // 同じ term 1 でも、accel は 2 回めで加算せず終わり、
     // changeDirection は 1 回めで加算して終わる
     let a =
-      RecBulletml.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "1")),
+      RecCommand.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "1")),
                          None, Term (numExpr "1"))
     let d =
-      RecBulletml.ChangeDirection (Direction (Some { directionType = DirectionType.Relative }, numExpr "10"),
+      RecCommand.ChangeDirection (Direction (Some { directionType = DirectionType.Relative }, numExpr "10"),
                                    Term (numExpr "1"))
-    let (ra, _), sa, _ = Sim.run env state (Step.accel a (Progress.initial a))
-    let (rd, _), sd, _ = Sim.run env state (Step.changeDirection d (Progress.initial d))
+    let (ra, _), sa, _ = Sim.run env state (stepAccel a (Progress.initial a))
+    let (rd, _), sd, _ = Sim.run env state (stepChangeDirection d (Progress.initial d))
     ra |> should equal Step.Continue
     sa.Accel.X |> should (equalWithin 0.0001) 1.0f
     rd |> should equal Step.Ended
@@ -266,16 +266,16 @@ type StepCommands() =
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let script =
-      RecBulletml.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"),
+      RecCommand.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"),
                                    Term (numExpr "2"))
     let mutable p = Progress.initial script
     let mutable st = state
-    let (r1, p1), st1, _ = Sim.run counting st (Step.changeDirection script p)
+    let (r1, p1), st1, _ = Sim.run counting st (stepChangeDirection script p)
     p <- p1
     st <- st1
     r1 |> should equal Step.Continue
     draws |> should equal 2
-    let (r2, _), _, _ = Sim.run counting st (Step.changeDirection script p)
+    let (r2, _), _, _ = Sim.run counting st (stepChangeDirection script p)
     r2 |> should equal Step.Ended
     draws |> should equal 3
 
@@ -289,15 +289,15 @@ type StepCommands() =
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let script =
-      RecBulletml.ChangeSpeed (Speed (Some { speedType = SpeedType.Absolute }, numExpr "3"), Term (numExpr "2"))
+      RecCommand.ChangeSpeed (Speed (Some { speedType = SpeedType.Absolute }, numExpr "3"), Term (numExpr "2"))
     let mutable p = Progress.initial script
     let mutable st = state
-    let (r1, p1), st1, _ = Sim.run counting st (Step.changeSpeed script p)
+    let (r1, p1), st1, _ = Sim.run counting st (stepChangeSpeed script p)
     p <- p1
     st <- st1
     r1 |> should equal Step.Continue
     draws |> should equal 2
-    let (r2, _), _, _ = Sim.run counting st (Step.changeSpeed script p)
+    let (r2, _), _, _ = Sim.run counting st (stepChangeSpeed script p)
     r2 |> should equal Step.Ended
     draws |> should equal 3
 
@@ -309,10 +309,10 @@ type StepCommands() =
   member _.``action は、Stopped で走査を止める``() =
     // wait 2 の後ろに vanish。1 回めは wait で止まるので vanish は出ない
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
-                          [ RecBulletml.Wait (numExpr "2"); RecBulletml.Vanish ])
+      RecCommand.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecCommand.Wait (numExpr "2"); RecCommand.Vanish ])
     let p = Progress.initial script
-    let (r, _, _), _, w = Sim.run env state (Step.action noResolvers script p FireContext.zero)
+    let (r, _, _), _, w = Sim.run env state (stepAction noResolvers script p FireContext.zero)
     r |> should equal Step.Stopped
     w |> should be Empty
 
@@ -320,12 +320,12 @@ type StepCommands() =
   member _.``action は、Continue では走査を止めない``() =
     // accel（Continue を返す）の後ろに vanish。同じフレームで vanish まで届く
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
-                          [ RecBulletml.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "1")),
+      RecCommand.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecCommand.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "1")),
                                                None, Term (numExpr "5"))
-                            RecBulletml.Vanish ])
+                            RecCommand.Vanish ])
     let p = Progress.initial script
-    let (r, _, _), _, w = Sim.run env state (Step.action noResolvers script p FireContext.zero)
+    let (r, _, _), _, w = Sim.run env state (stepAction noResolvers script p FireContext.zero)
     w |> should equal [ Vanished ]
     r |> should equal Step.Continue
 
@@ -334,29 +334,29 @@ type StepCommands() =
     // vanish の後ろに wait 1。1 回めで vanish が出て wait で止まる。
     // 2 回めは vanish を飛ばして wait だけ進むので、効果は増えない
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
-                          [ RecBulletml.Vanish; RecBulletml.Wait (numExpr "1") ])
+      RecCommand.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecCommand.Vanish; RecCommand.Wait (numExpr "1") ])
     let mutable p = Progress.initial script
-    let (_, p1, _), _, w1 = Sim.run env state (Step.action noResolvers script p FireContext.zero)
-    let (_, _, _), _, w2 = Sim.run env state (Step.action noResolvers script p1 FireContext.zero)
+    let (_, p1, _), _, w1 = Sim.run env state (stepAction noResolvers script p FireContext.zero)
+    let (_, _, _), _, w2 = Sim.run env state (stepAction noResolvers script p1 FireContext.zero)
     w1 |> should equal [ Vanished ]
     w2 |> should be Empty
 
   [<Test>]
   member _.``全部 終わったら Ended``() =
-    let script = RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.Vanish ])
+    let script = RecCommand.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecCommand.Vanish ])
     let p = Progress.initial script
-    let (r, _, _), _, _ = Sim.run env state (Step.action noResolvers script p FireContext.zero)
+    let (r, _, _), _, _ = Sim.run env state (stepAction noResolvers script p FireContext.zero)
     r |> should equal Step.Ended
 
   [<Test>]
   member _.``action は FireContext をそのまま素通しする``() =
     // action の走査自体は sequence を積まない（fire だけが FireContext を書き換える）。
     // 中身が wait / vanish だけなら、渡した fc がそのまま返ってくるはず
-    let script = RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.Vanish ])
+    let script = RecCommand.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecCommand.Vanish ])
     let p = Progress.initial script
     let fc = { FireContext.zero with SrcDir = 1.5f; SrcSpeed = 2.5f; SpeedInit = true }
-    let (_, _, fc'), _, _ = Sim.run env state (Step.action noResolvers script p fc)
+    let (_, _, fc'), _, _ = Sim.run env state (stepAction noResolvers script p fc)
     fc' |> should equal fc
 
   [<Test>]
@@ -365,9 +365,9 @@ type StepCommands() =
     // 中の命令（wait の term や accel の値）を評価するときだけ
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
-    let script = RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.Vanish ])
+    let script = RecCommand.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecCommand.Vanish ])
     let p = Progress.initial script
-    Sim.run counting state (Step.action noResolvers script p FireContext.zero) |> ignore
+    Sim.run counting state (stepAction noResolvers script p FireContext.zero) |> ignore
     draws |> should equal 0
 
   // ------------------------------------------------------------------
@@ -382,22 +382,22 @@ type StepCommands() =
     // 1 回めのフレームで wait が終わり、actionRef が解けて loop に積まれ、
     // 走査はそこで止まる（vanish はまだ出ない）。済んだ手前（wait と actionRef 自身）は
     // 捨てるので、loop は「解いた中身 + vanish」の 2 要素になる
-    let referenced = RecBulletml.Action ({ actionLabel = Some (ActionLabel "sub") }, [ RecBulletml.Wait (numExpr "5") ])
+    let referenced = RecActionElm.Action ({ actionLabel = Some (ActionLabel "sub") }, [ RecCommand.Wait (numExpr "5") ])
     let resolvers : Step.Resolvers =
       { Bullet = fun _ _ -> None
         Action = fun label _ -> if label = ActionLabel "sub" then Some referenced else None }
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
-                          [ RecBulletml.Wait (numExpr "0")
-                            RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "sub" }, [])
-                            RecBulletml.Vanish ])
+      RecCommand.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecCommand.Wait (numExpr "0")
+                            RecCommand.ActionRef ({ actionRefLabel = ActionLabel "sub" }, [])
+                            RecCommand.Vanish ])
     let p = Progress.initial script
-    let (r, p', _), _, w = Sim.run env state (Step.action resolvers script p FireContext.zero)
+    let (r, p', _), _, w = Sim.run env state (stepAction resolvers script p FireContext.zero)
     r |> should equal Step.Stopped
     w |> should be Empty
     match p' with
     | PAction (false, Some loop, progs) ->
-        loop |> should equal [ RecBulletml.Wait (numExpr "5"); RecBulletml.Vanish ]
+        loop |> should equal [ RecCommand.Wait (numExpr "5"); RecCommand.Vanish ]
         List.length progs |> should equal 2
     | other -> Assert.Fail (sprintf "PAction (false, Some _, _) のはずが %A" other)
 
@@ -410,17 +410,17 @@ type StepCommands() =
   /// term の評価も「まだ評価前（started = false）」の状態に取り違わる
   [<Test>]
   member _.``actionRef を解いた瞬間に、展開した中身の wait をまとめて引く``() =
-    let referenced = RecBulletml.Action ({ actionLabel = Some (ActionLabel "sub") }, [ RecBulletml.Wait (numExpr "5") ])
+    let referenced = RecActionElm.Action ({ actionLabel = Some (ActionLabel "sub") }, [ RecCommand.Wait (numExpr "5") ])
     let resolvers : Step.Resolvers =
       { Bullet = fun _ _ -> None
         Action = fun label _ -> if label = ActionLabel "sub" then Some referenced else None }
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
-                          [ RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "sub" }, []) ])
+      RecCommand.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecCommand.ActionRef ({ actionRefLabel = ActionLabel "sub" }, []) ])
     let p = Progress.initial script
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
-    let (_, p', _), _, _ = Sim.run counting state (Step.action resolvers script p FireContext.zero)
+    let (_, p', _), _, _ = Sim.run counting state (stepAction resolvers script p FireContext.zero)
     draws |> should equal 1
     match p' with
     | PAction (false, Some _, [ PWait (started, left) ]) ->
@@ -435,14 +435,14 @@ type StepCommands() =
     // 自己参照 actionRef はパーサが展開せず残す（輪を作るための意図的な仕様）。
     // 輪を解くたびに同じ形の並びへ差し替わるだけなので、並びの長さは伸びない
     let body =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
-                          [ RecBulletml.Vanish; RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "top" }, []) ])
+      RecActionElm.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecCommand.Vanish; RecCommand.ActionRef ({ actionRefLabel = ActionLabel "top" }, []) ])
     let resolvers : Step.Resolvers =
       { Bullet = fun _ _ -> None
         Action = fun label _ -> if label = ActionLabel "top" then Some body else None }
-    let mutable p = Progress.initial body
+    let mutable p = Progress.initialActionElm body
     for i in 1 .. 3 do
-      let (r, p', _), _, w = Sim.run env state (Step.action resolvers body p FireContext.zero)
+      let (r, p', _), _, w = Sim.run env state (Step.actionElm resolvers body p FireContext.zero)
       p <- p'
       r |> should equal Step.Stopped
       w |> should equal [ Vanished ]
@@ -457,11 +457,11 @@ type StepCommands() =
     // ラベルが見つからない actionRef はその場では何も起きない（PNoop のまま）。
     // Stop も Continue も立てないので、後ろの vanish は同じフレームで出る
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
-                          [ RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "missing" }, [])
-                            RecBulletml.Vanish ])
+      RecCommand.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecCommand.ActionRef ({ actionRefLabel = ActionLabel "missing" }, [])
+                            RecCommand.Vanish ])
     let p = Progress.initial script
-    let (r, p', _), _, w = Sim.run env state (Step.action noResolvers script p FireContext.zero)
+    let (r, p', _), _, w = Sim.run env state (stepAction noResolvers script p FireContext.zero)
     w |> should equal [ Vanished ]
     r |> should equal Step.Ended
     match p' with
@@ -474,27 +474,29 @@ type StepCommands() =
 
   [<Test>]
   member _.``command は、Action を action へ振り分ける``() =
-    let script = RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.Vanish ])
+    let script = RecCommand.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecCommand.Vanish ])
     let p = Progress.initial script
     let viaCommand, _, wc = Sim.run env state (Step.command noResolvers script p FireContext.zero)
-    let viaAction, _, wa = Sim.run env state (Step.action noResolvers script p FireContext.zero)
+    let viaAction, _, wa = Sim.run env state (stepAction noResolvers script p FireContext.zero)
     viaCommand |> should equal viaAction
     wc |> should equal wa
 
   [<Test>]
   member _.``command は、Repeat を repeat へ振り分ける``() =
-    let body = RecBulletml.Action ({ actionLabel = None }, [ RecBulletml.Vanish ])
-    let script = RecBulletml.Repeat (Times (numExpr "1"), body)
+    let body = RecActionElm.Action ({ actionLabel = None }, [ RecCommand.Vanish ])
+    let script = RecCommand.Repeat (Times (numExpr "1"), body)
     let p = Progress.initial script
     let viaCommand, _, wc = Sim.run env state (Step.command noResolvers script p FireContext.zero)
-    let viaRepeat, _, wr = Sim.run env state (Step.repeat noResolvers script p FireContext.zero)
+    let viaRepeat, _, wr = Sim.run env state (stepRepeat noResolvers script p FireContext.zero)
     viaCommand |> should equal viaRepeat
     wc |> should equal wr
 
   [<Test>]
   member _.``command は、まだ振り分け先の無い命令は Ended を返し fc を素通しする``() =
-    // 振り分け先の無い命令（NotCommand 等）は触らずに Ended で返す
-    let script = RecBulletml.NotCommand
+    // 振り分け先の無い命令は触らずに Ended で返す。
+    // 以前はここに NotCommand を置いていたが、型から消えた。
+    // いま「振り分け先が無い」のは展開していない参照（fireRef / actionRef）だけ
+    let script = RecCommand.FireRef ({ fireRefLabel = FireLabel "none" }, [])
     let p = PNoop
     let fc = { FireContext.zero with SrcDir = 3.0f }
     let (r, p', fc'), _, w = Sim.run env state (Step.command noResolvers script p fc)
@@ -505,7 +507,7 @@ type StepCommands() =
 
   [<Test>]
   member _.``command は、5 つの既存の命令には fc をそのまま返す``() =
-    let script = RecBulletml.Vanish
+    let script = RecCommand.Vanish
     let p = Progress.initial script
     let fc = { FireContext.zero with SrcSpeed = 4.0f; SpeedInit = true }
     let (_, _, fc'), _, _ = Sim.run env state (Step.command noResolvers script p fc)
@@ -528,13 +530,13 @@ type StepCommands() =
     // 読み違えると、3 フレーム目以降も delta を足し続けてしまう
     // （壊れていれば 6 回ぶん = 3π/2、正しければ 2 回ぶん = π/2）
     let changeDir =
-      RecBulletml.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "2"))
+      RecCommand.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "2"))
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ changeDir; RecBulletml.Wait (numExpr "5") ])
+      RecCommand.Action ({ actionLabel = Some (ActionLabel "top") }, [ changeDir; RecCommand.Wait (numExpr "5") ])
     let mutable p = Progress.initial script
     let mutable st = state
     for _ in 1 .. 6 do
-      let (_, p', _), st', _ = Sim.run env st (Step.action noResolvers script p FireContext.zero)
+      let (_, p', _), st', _ = Sim.run env st (stepAction noResolvers script p FireContext.zero)
       p <- p'
       st <- st'
     st.Dir |> should (equalWithin 0.0001) (float32 (System.Math.PI / 2.0))
@@ -544,13 +546,13 @@ type StepCommands() =
     // changeDirection と同じ形の穴が changeSpeed 側にも無いことを見る。
     // absolute 3、term 2、後ろに wait 5。壊れていれば速さが足され続ける
     let changeSpd =
-      RecBulletml.ChangeSpeed (Speed (Some { speedType = SpeedType.Absolute }, numExpr "3"), Term (numExpr "2"))
+      RecCommand.ChangeSpeed (Speed (Some { speedType = SpeedType.Absolute }, numExpr "3"), Term (numExpr "2"))
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ changeSpd; RecBulletml.Wait (numExpr "5") ])
+      RecCommand.Action ({ actionLabel = Some (ActionLabel "top") }, [ changeSpd; RecCommand.Wait (numExpr "5") ])
     let mutable p = Progress.initial script
     let mutable st = state
     for _ in 1 .. 6 do
-      let (_, p', _), st', _ = Sim.run env st (Step.action noResolvers script p FireContext.zero)
+      let (_, p', _), st', _ = Sim.run env st (stepAction noResolvers script p FireContext.zero)
       p <- p'
       st <- st'
     st.Speed |> should (equalWithin 0.0001) 3.0f
@@ -560,12 +562,12 @@ type StepCommands() =
     // 1 つめが Continue（accel）、2 つめが Stopped（wait）。優先順位は
     // Stop > Continue > End なので、全体の結果は Stopped でなければならない
     let script =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
-                          [ RecBulletml.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "1")),
+      RecCommand.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecCommand.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "1")),
                                                None, Term (numExpr "5"))
-                            RecBulletml.Wait (numExpr "2") ])
+                            RecCommand.Wait (numExpr "2") ])
     let p = Progress.initial script
-    let (r, _, _), _, _ = Sim.run env state (Step.action noResolvers script p FireContext.zero)
+    let (r, _, _), _, _ = Sim.run env state (stepAction noResolvers script p FireContext.zero)
     r |> should equal Step.Stopped
 
   // ------------------------------------------------------------------
@@ -574,10 +576,10 @@ type StepCommands() =
 
   [<Test>]
   member _.``repeat 3 は、子を 3 回 走らせる``() =
-    let body = RecBulletml.Action ({ actionLabel = None }, [ RecBulletml.Vanish ])
-    let script = RecBulletml.Repeat (Times (numExpr "3"), body)
+    let body = RecActionElm.Action ({ actionLabel = None }, [ RecCommand.Vanish ])
+    let script = RecCommand.Repeat (Times (numExpr "3"), body)
     let p = Progress.initial script
-    let (r, _, _), _, w = Sim.run env state (Step.repeat noResolvers script p FireContext.zero)
+    let (r, _, _), _, w = Sim.run env state (stepRepeat noResolvers script p FireContext.zero)
     List.length w |> should equal 3
     r |> should equal Step.Ended
 
@@ -588,42 +590,42 @@ type StepCommands() =
   // 生まれる —— 並びが逆転すれば速さの並びも逆転するので、識別できる
   [<Test>]
   member _.``repeat の中の fire は、周の順のまま効果に積まれる（同じ効果 2 つでは見えない並び）``() =
-    let bullet = RecBulletml.Bullet ({ bulletLabel = None }, None, None, [])
+    let bullet = RecBulletElm.Bullet ({ bulletLabel = None }, None, None, [])
     let fire =
-      RecBulletml.Fire ({ fireLabel = None }, None,
+      RecCommand.Fire ({ fireLabel = None }, None,
                         Some (Speed (Some { speedType = SpeedType.Sequence }, numExpr "1")),
                         bullet)
-    let body = RecBulletml.Action ({ actionLabel = None }, [ fire ])
-    let script = RecBulletml.Repeat (Times (numExpr "3"), body)
+    let body = RecActionElm.Action ({ actionLabel = None }, [ fire ])
+    let script = RecCommand.Repeat (Times (numExpr "3"), body)
     let p = Progress.initial script
-    let (_, _, _), _, w = Sim.run env state (Step.repeat noResolvers script p FireContext.zero)
+    let (_, _, _), _, w = Sim.run env state (stepRepeat noResolvers script p FireContext.zero)
     let speeds = w |> List.map (function Spawn b -> b.Speed | Vanished -> -1.0f)
     speeds |> should equal [ 1.0f; 2.0f; 3.0f ]
 
   [<Test>]
   member _.``repeat の times は式が書ける。7 割る 2 は 3``() =
-    let body = RecBulletml.Action ({ actionLabel = None }, [ RecBulletml.Vanish ])
-    let script = RecBulletml.Repeat (Times (numExpr "7/2"), body)
+    let body = RecActionElm.Action ({ actionLabel = None }, [ RecCommand.Vanish ])
+    let script = RecCommand.Repeat (Times (numExpr "7/2"), body)
     let p = Progress.initial script
-    let (_, _, _), _, w = Sim.run env state (Step.repeat noResolvers script p FireContext.zero)
+    let (_, _, _), _, w = Sim.run env state (stepRepeat noResolvers script p FireContext.zero)
     List.length w |> should equal 3
 
   [<Test>]
   member _.``repeat の中の wait は、周をまたいで止める``() =
     // wait 1 を 2 回。1 フレームめは 1 周めの wait で止まる
-    let body = RecBulletml.Action ({ actionLabel = None }, [ RecBulletml.Wait (numExpr "1") ])
-    let script = RecBulletml.Repeat (Times (numExpr "2"), body)
+    let body = RecActionElm.Action ({ actionLabel = None }, [ RecCommand.Wait (numExpr "1") ])
+    let script = RecCommand.Repeat (Times (numExpr "2"), body)
     let p = Progress.initial script
-    let (r, _, _), _, _ = Sim.run env state (Step.repeat noResolvers script p FireContext.zero)
+    let (r, _, _), _, _ = Sim.run env state (stepRepeat noResolvers script p FireContext.zero)
     r |> should equal Step.Stopped
 
   [<Test>]
   member _.``times が 0 でも止まらない``() =
     // 現行の癖。while に入らないだけで Ended は返る
-    let body = RecBulletml.Action ({ actionLabel = None }, [ RecBulletml.Vanish ])
-    let script = RecBulletml.Repeat (Times (numExpr "0"), body)
+    let body = RecActionElm.Action ({ actionLabel = None }, [ RecCommand.Vanish ])
+    let script = RecCommand.Repeat (Times (numExpr "0"), body)
     let p = Progress.initial script
-    let (r, _, _), _, w = Sim.run env state (Step.repeat noResolvers script p FireContext.zero)
+    let (r, _, _), _, w = Sim.run env state (stepRepeat noResolvers script p FireContext.zero)
     r |> should equal Step.Ended
     w |> should be Empty
 
@@ -632,15 +634,15 @@ type StepCommands() =
     // 「終わりに term を初期値へ戻すのは repeat の 2 周目で効く」を見る門。
     // 戻しを消すと 2 周目の term が 0 のままになり、速さの増え方が変わる
     let body =
-      RecBulletml.Action ({ actionLabel = None },
-                          [ RecBulletml.ChangeSpeed (Speed (Some { speedType = SpeedType.Relative }, numExpr "2"), Term (numExpr "2"))
-                            RecBulletml.Wait (numExpr "1") ])
-    let script = RecBulletml.Repeat (Times (numExpr "2"), body)
+      RecActionElm.Action ({ actionLabel = None },
+                          [ RecCommand.ChangeSpeed (Speed (Some { speedType = SpeedType.Relative }, numExpr "2"), Term (numExpr "2"))
+                            RecCommand.Wait (numExpr "1") ])
+    let script = RecCommand.Repeat (Times (numExpr "2"), body)
     let mutable p = Progress.initial script
     let mutable st = state
     // 1 周が changeSpeed 2 フレーム ＋ wait 1 フレームなので、2 周ぶん回す
     for _ in 1 .. 8 do
-      let (_, p', _), st', _ = Sim.run env st (Step.repeat noResolvers script p FireContext.zero)
+      let (_, p', _), st', _ = Sim.run env st (stepRepeat noResolvers script p FireContext.zero)
       p <- p'
       st <- st'
     // relative 2 を term 2 で割って 1 ずつ、それが 2 周ぶん。1 + 2 + 2 = 5
@@ -661,22 +663,22 @@ type StepCommands() =
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let body =
-      RecBulletml.Action ({ actionLabel = None },
-                          [ RecBulletml.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "2")) ])
-    let script = RecBulletml.Repeat (Times (numExpr "2"), body)
+      RecActionElm.Action ({ actionLabel = None },
+                          [ RecCommand.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "2")) ])
+    let script = RecCommand.Repeat (Times (numExpr "2"), body)
     let mutable p = Progress.initial script
     let mutable st = state
-    let (r1, p1, _), st1, _ = Sim.run counting st (Step.repeat noResolvers script p FireContext.zero)
+    let (r1, p1, _), st1, _ = Sim.run counting st (stepRepeat noResolvers script p FireContext.zero)
     p <- p1
     st <- st1
     r1 |> should equal Step.Continue
     draws |> should equal 3
-    let (r2, p2, _), st2, _ = Sim.run counting st (Step.repeat noResolvers script p FireContext.zero)
+    let (r2, p2, _), st2, _ = Sim.run counting st (stepRepeat noResolvers script p FireContext.zero)
     p <- p2
     st <- st2
     r2 |> should equal Step.Continue
     draws |> should equal 8
-    let (r3, _, _), _, _ = Sim.run counting st (Step.repeat noResolvers script p FireContext.zero)
+    let (r3, _, _), _, _ = Sim.run counting st (stepRepeat noResolvers script p FireContext.zero)
     r3 |> should equal Step.Ended
     draws |> should equal 10
 
@@ -724,12 +726,12 @@ type StepCommands() =
     let mutable n = 0
     let counting = { env with Rand = fun () -> let v = vals.[n] in n <- n + 1; v }
     let body =
-      RecBulletml.Action ({ actionLabel = None },
-                          [ RecBulletml.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "1"))
-                            RecBulletml.Wait (numExpr "$rand") ])
-    let script = RecBulletml.Repeat (Times (numExpr "2"), body)
+      RecActionElm.Action ({ actionLabel = None },
+                          [ RecCommand.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "1"))
+                            RecCommand.Wait (numExpr "$rand") ])
+    let script = RecCommand.Repeat (Times (numExpr "2"), body)
     let p = Progress.initial script
-    let (r, p', _), _, _ = Sim.run counting state (Step.repeat noResolvers script p FireContext.zero)
+    let (r, p', _), _, _ = Sim.run counting state (stepRepeat noResolvers script p FireContext.zero)
     // 終わり方も見ておく（見るのに何のコストも要らないし、値がそのまま
     // 動きに出ることの裏付けになる）
     r |> should equal Step.Ended
@@ -802,13 +804,13 @@ type StepCommands() =
     let mutable n = 0
     let counting = { env with Rand = fun () -> let v = vals.[n] in n <- n + 1; v }
     let body =
-      RecBulletml.Action ({ actionLabel = None },
-                          [ RecBulletml.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "1"))
-                            RecBulletml.ChangeSpeed (Speed (Some { speedType = SpeedType.Absolute }, numExpr "5"), Term (numExpr "1"))
-                            RecBulletml.Wait (numExpr "$rand") ])
-    let script = RecBulletml.Repeat (Times (numExpr "2"), body)
+      RecActionElm.Action ({ actionLabel = None },
+                          [ RecCommand.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "1"))
+                            RecCommand.ChangeSpeed (Speed (Some { speedType = SpeedType.Absolute }, numExpr "5"), Term (numExpr "1"))
+                            RecCommand.Wait (numExpr "$rand") ])
+    let script = RecCommand.Repeat (Times (numExpr "2"), body)
     let p = Progress.initial script
-    let (r, p', _), _, _ = Sim.run counting state (Step.repeat noResolvers script p FireContext.zero)
+    let (r, p', _), _, _ = Sim.run counting state (stepRepeat noResolvers script p FireContext.zero)
     r |> should equal Step.Stopped
     // 本題: 2 周めの wait に実際入った値を読み戻す。11 回めで引いた 1.7 を
     // 1 回 decrement した 0.7 のはず。changeSpeed の捨て引き（10 回め）が
@@ -835,27 +837,27 @@ type StepCommands() =
     // 辿るので、撃たれるかどうかに関わらず repeat の周ざかりのたびに
     // この wait の term を引く。
     //
-    // Step.fire が command に繋がった今は、実際に撃つときの引き
-    // （Step.fire 自身が resetChild で撃たれた弾の Tops を組むぶん）も乗る。
+    // stepFire が command に繋がった今は、実際に撃つときの引き
+    // （stepFire 自身が resetChild で撃たれた弾の Tops を組むぶん）も乗る。
     // times "2"、body は fire の後ろに vanish の 1 本だけなので、
     // 1 回の呼び出しの中で 2 周とも終わりまで進む：
     //   times                                          1 回
     //   1 周め: fire が実際に撃つ（wait の term）          1 回
     //   周ざかりの reset（撃ったかどうかに関わらず引く）    1 回
     //   2 周め: fire が実際に撃つ（wait の term）          1 回
-    // 計 4 回。撃つたびの引きと周ざかりの引きは別の場所（前者は Step.fire、
+    // 計 4 回。撃つたびの引きと周ざかりの引きは別の場所（前者は stepFire、
     // 後者は resetChild）が別の理由で行っており、どちらも現行の Init 呼び出しに
     // 対応するので、両方が乗って良い（二重に引いているわけではない）
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let bullet =
-      RecBulletml.Bullet ({ bulletLabel = None }, None, None,
-                          [ RecBulletml.Action ({ actionLabel = None }, [ RecBulletml.Wait (numExpr "3") ]) ])
-    let fire = RecBulletml.Fire ({ fireLabel = None }, None, None, bullet)
-    let body = RecBulletml.Action ({ actionLabel = None }, [ fire; RecBulletml.Vanish ])
-    let script = RecBulletml.Repeat (Times (numExpr "2"), body)
+      RecBulletElm.Bullet ({ bulletLabel = None }, None, None,
+                          [ RecActionElm.Action ({ actionLabel = None }, [ RecCommand.Wait (numExpr "3") ]) ])
+    let fire = RecCommand.Fire ({ fireLabel = None }, None, None, bullet)
+    let body = RecActionElm.Action ({ actionLabel = None }, [ fire; RecCommand.Vanish ])
+    let script = RecCommand.Repeat (Times (numExpr "2"), body)
     let p = Progress.initial script
-    let _ = Sim.run counting state (Step.repeat noResolvers script p FireContext.zero)
+    let _ = Sim.run counting state (stepRepeat noResolvers script p FireContext.zero)
     draws |> should equal 4
 
   [<Test>]
@@ -869,22 +871,22 @@ type StepCommands() =
     let resolvers : Step.Resolvers =
       { Bullet = fun _ _ -> None
         Action = fun label _ ->
-          if label = ActionLabel "ref" then Some (RecBulletml.Action ({ actionLabel = None }, [ RecBulletml.Vanish ]))
+          if label = ActionLabel "ref" then Some (RecActionElm.Action ({ actionLabel = None }, [ RecCommand.Vanish ]))
           else None }
     let body =
-      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "ref" }, []) ])
-    let script = RecBulletml.Repeat (Times (numExpr "2"), body)
+      RecActionElm.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecCommand.ActionRef ({ actionRefLabel = ActionLabel "ref" }, []) ])
+    let script = RecCommand.Repeat (Times (numExpr "2"), body)
     let mutable p = Progress.initial script
     let mutable st = state
     // 1 回め: actionRef を解くだけで Stopped。まだ Vanish は出ない
-    let (r1, p1, _), st1, w1 = Sim.run env st (Step.repeat resolvers script p FireContext.zero)
+    let (r1, p1, _), st1, w1 = Sim.run env st (stepRepeat resolvers script p FireContext.zero)
     p <- p1
     st <- st1
     r1 |> should equal Step.Stopped
     w1 |> should be Empty
     // 2 回め: 解いた並び（Vanish だけ）を持ち越していれば、actionRef を
     // 再び解かずに 2 周とも終わり、この 1 回で Ended になる
-    let (r2, _, _), _, w2 = Sim.run env st (Step.repeat resolvers script p FireContext.zero)
+    let (r2, _, _), _, w2 = Sim.run env st (stepRepeat resolvers script p FireContext.zero)
     r2 |> should equal Step.Ended
     w2 |> should equal [ Vanished; Vanished ]
 
@@ -908,21 +910,41 @@ type StepCommands() =
   [<Test>]
   member _.``repeat の子が Action でないと、現行と同じ例外で落ちる``() =
     // 自己参照で展開されずに残った actionRef を、repeat の直下にそのまま置く
-    let script = RecBulletml.Repeat (Times (numExpr "2"), RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "top" }, []))
+    let script = RecCommand.Repeat (Times (numExpr "2"), RecActionElm.ActionRef ({ actionRefLabel = ActionLabel "top" }, []))
     let p = Progress.initial script
     let ex =
       Assert.Throws<System.Exception>(fun () ->
-        Sim.run env state (Step.repeat noResolvers script p FireContext.zero) |> ignore)
+        Sim.run env state (stepRepeat noResolvers script p FireContext.zero) |> ignore)
     ex.Message |> should equal "repeatCommand: repeat の子が action ではない"
+
+  /// 撃たれた弾の action に、輪で解けなかった actionRef がそのまま残ることがある
+  /// （bullet の中の自己参照）。その台本を Step.step が回すと actionElm の
+  /// actionRef の腕へ入る。同梱の 227 本 では踏まないので、ここで直に押さえる。
+  ///
+  /// 台本まるごとを渡していた頃は action が children = [] で走り、
+  /// Ended と PAction (true, None, []) を返していた。ほどいて渡す形に
+  /// 変えたあとも同じ値を返すことを固定する。**Ended だけを見ては足りない**
+  /// —— PNoop を返す実装でも Ended になるが、PNoop は isDone が false なので
+  /// 呼ぶ側の「終わったか」の判定が変わる
+  [<Test>]
+  member _.``解けなかった actionRef を台本として回すと、子が空の action として終わる``() =
+    let script = RecActionElm.ActionRef ({ actionRefLabel = ActionLabel "unresolved" }, [])
+    let p = Progress.initialActionElm script
+    p |> should equal PNoop
+    let (r, p', fc'), _, w = Sim.run env state (Step.actionElm noResolvers script p FireContext.zero)
+    r |> should equal Step.Ended
+    p' |> should equal (PAction (true, None, []))
+    fc' |> should equal FireContext.zero
+    w |> should be Empty
 
   [<Test>]
   member _.``times が 0 なら、子が Action でなくても while に入らず落ちない``() =
     // 現行は times を while の外で引くが、while の中でしか actionElm を
     // 見ない。times に 1 度も届かなければ（times = 0、または num0 が
     // 既に times 以上）match そのものへ到達しないので落ちない
-    let script = RecBulletml.Repeat (Times (numExpr "0"), RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "top" }, []))
+    let script = RecCommand.Repeat (Times (numExpr "0"), RecActionElm.ActionRef ({ actionRefLabel = ActionLabel "top" }, []))
     let p = Progress.initial script
-    let (r, _, _), _, _ = Sim.run env state (Step.repeat noResolvers script p FireContext.zero)
+    let (r, _, _), _, _ = Sim.run env state (stepRepeat noResolvers script p FireContext.zero)
     r |> should equal Step.Ended
 
   // ------------------------------------------------------------------
@@ -932,7 +954,7 @@ type StepCommands() =
   [<Test>]
   member _.``repeat の times が 9999 でも、末尾再帰でない再帰を積まずに走り切る``() =
     // 旧 BulletRunner.repeatCommand の while は 1 周が定数のスタックで
-    // 済む（4077ed6 の repeatCommand 参照）。Step.repeat も見た目は
+    // 済む（4077ed6 の repeatCommand 参照）。stepRepeat も見た目は
     // 同じ手続きループへ書き換えてあるが、その while が sim { } の
     // ブロックの中に書かれていると、コンパイラが builder.While へ
     // 書き換えてしまう。SimBuilder.While は
@@ -944,11 +966,11 @@ type StepCommands() =
     // 進まず、この不具合を誰も踏んでいなかった）。
     //
     // wait を置かず、1 回の呼び出しで times ぶん全部を回し切らせる
-    let bullet = RecBulletml.Bullet ({ bulletLabel = None }, None, None, [])
-    let fire = RecBulletml.Fire ({ fireLabel = None }, None, None, bullet)
-    let body = RecBulletml.Action ({ actionLabel = None }, [ fire ])
-    let script = RecBulletml.Repeat (Times (numExpr "9999"), body)
+    let bullet = RecBulletElm.Bullet ({ bulletLabel = None }, None, None, [])
+    let fire = RecCommand.Fire ({ fireLabel = None }, None, None, bullet)
+    let body = RecActionElm.Action ({ actionLabel = None }, [ fire ])
+    let script = RecCommand.Repeat (Times (numExpr "9999"), body)
     let p = Progress.initial script
-    let (r, _, _), _, w = Sim.run env state (Step.repeat noResolvers script p FireContext.zero)
+    let (r, _, _), _, w = Sim.run env state (stepRepeat noResolvers script p FireContext.zero)
     r |> should equal Step.Ended
     List.length w |> should equal 9999

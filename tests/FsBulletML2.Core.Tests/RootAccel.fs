@@ -41,7 +41,7 @@ type RootAccel() =
   // term = 1.f が Init されるまで残るので、term も horizontal / vertical も
   // 一度も読まれない
   let accelScript =
-    RecBulletml.Accel (
+    RecCommand.Accel (
       Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "2")),
       Some (Vertical (Some { verticalType = VerticalType.Absolute }, numExpr "1")),
       Term (numExpr "5"))
@@ -66,10 +66,10 @@ type RootAccel() =
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let p0 = Step.rootProgress counting accelScript
-    let (r1, p1), st1, _ = Sim.run counting (stateWith []) (Step.accel accelScript p0)
+    let (r1, p1), st1, _ = Sim.run counting (stateWith []) (stepAccel accelScript p0)
     r1 |> should equal Step.Continue
     st1.Accel |> should equal { X = 0.0f; Y = 0.0f }
-    let (r2, _), st2, _ = Sim.run counting st1 (Step.accel accelScript p1)
+    let (r2, _), st2, _ = Sim.run counting st1 (stepAccel accelScript p1)
     r2 |> should equal Step.Ended
     st2.Accel |> should equal { X = 0.0f; Y = 0.0f }
     // horizontal "2" / vertical "1" / term "5" のどれかでも読んでいれば
@@ -80,8 +80,8 @@ type RootAccel() =
   /// 根の top* の中に直接書いた accel が、3 コマとも軌跡へ何も足さないことを見る
   [<Test>]
   member _.``top 直下の accel は、3 コマ動いても軌跡を動かさない``() =
-    let top = RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ accelScript; RecBulletml.Wait (numExpr "20") ])
-    let p0 = Step.rootProgress env top
+    let top = RecActionElm.Action ({ actionLabel = Some (ActionLabel "top") }, [ accelScript; RecCommand.Wait (numExpr "20") ])
+    let p0 = Step.rootProgressActionElm env top
     let st0 = stateWith [ top, p0, FireContext.zero ]
     let r1 = Step.step noResolvers env st0
     r1.Delta |> should equal { X = 0.0f; Y = 0.0f }
@@ -99,11 +99,11 @@ type RootAccel() =
   /// f01 x=1.200 y=0.600、f02 x=2.400 y=1.200）と一致する
   [<Test>]
   member _.``較正: Progress.initial のままだと、根の accel が本物の加速度になる``() =
-    let top = RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ accelScript; RecBulletml.Wait (numExpr "20") ])
+    let top = RecActionElm.Action ({ actionLabel = Some (ActionLabel "top") }, [ accelScript; RecCommand.Wait (numExpr "20") ])
     // rootProgress の代わりに Progress.initial で組む。accel は
     // PAccel (false, 0, 0, 0) になり、first = true（まだ評価前）と
     // 同じ扱いで最初のフレームに本当に評価される
-    let buggyProgress = Progress.initial top
+    let buggyProgress = Progress.initialActionElm top
     let st0 = stateWith [ top, buggyProgress, FireContext.zero ]
     let r1 = Step.step noResolvers env st0
     r1.Delta.X |> should (equalWithin 0.0001) 0.400f

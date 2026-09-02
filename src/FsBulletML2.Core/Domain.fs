@@ -36,7 +36,7 @@ module Domain =
   /// 「まだ途中」を区別できない。現行の pd.finish / ps.finish に当たる
   /// 明示のフラグが要る
   type internal Progress =
-    | PAction      of done_: bool * loop: RecBulletml list option * children: Progress list
+    | PAction      of done_: bool * loop: RecCommand list option * children: Progress list
     | PWait        of started: bool * left: float32
     | PRepeat      of num: int * done_: bool * child: Progress
     | PAccel       of started: bool * left: float32 * dx: float32 * dy: float32
@@ -48,23 +48,36 @@ module Domain =
 
   module Progress =
 
-    /// Script から実行位置を組む。初期化の入口はこの 1 本だけ
-    let rec internal initial (script: RecBulletml) : Progress =
+    /// Script から実行位置を組む。初期化の入口はこの 1 本だけ。
+    ///
+    /// 命令の 10 通りを漏れなく書く。以前は `| _ -> PNoop` で受けていて、
+    /// そこに「ActionRef と FireRef」（本当に PNoop でよいもの）と
+    /// 「Bulletml / Bullet / BulletRef / NotCommand」（そもそも命令の位置に
+    /// 来ないもの）が混ざっていた。型が分かれたので、前者だけが残る
+    let rec internal initial (script: RecCommand) : Progress =
       match script with
-      | RecBulletml.Action (_, children) ->
+      | RecCommand.Action (_, children) ->
           PAction (false, None, children |> List.map initial)
-      | RecBulletml.Repeat (_, body) ->
-          PRepeat (0, false, initial body)
-      | RecBulletml.Wait _ -> PWait (false, 0.0f)
-      | RecBulletml.Vanish -> PVanish false
-      | RecBulletml.Fire _ -> PFire false
-      | RecBulletml.Accel _ -> PAccel (false, 0.0f, 0.0f, 0.0f)
-      | RecBulletml.ChangeDirection _ -> PChangeDir (false, false, 0.0f, 0.0f)
-      | RecBulletml.ChangeSpeed _ -> PChangeSpeed (false, false, 0.0f, 0.0f)
-      // 展開していない ActionRef はここに落ちる。actionRef 自身は状態を持たないため。
+      | RecCommand.Repeat (_, body) ->
+          PRepeat (0, false, initialActionElm body)
+      | RecCommand.Wait _ -> PWait (false, 0.0f)
+      | RecCommand.Vanish -> PVanish false
+      | RecCommand.Fire _ -> PFire false
+      | RecCommand.Accel _ -> PAccel (false, 0.0f, 0.0f, 0.0f)
+      | RecCommand.ChangeDirection _ -> PChangeDir (false, false, 0.0f, 0.0f)
+      | RecCommand.ChangeSpeed _ -> PChangeSpeed (false, false, 0.0f, 0.0f)
+      // 展開していない ActionRef / FireRef はここ。参照自身は状態を持たない。
       // 輪を解いた並びは、その actionRef 自身ではなく親の PAction.loop が持つ
       // （Step.action 参照）
-      | _ -> PNoop
+      | RecCommand.ActionRef _ -> PNoop
+      | RecCommand.FireRef _ -> PNoop
+
+    /// repeat / bullet の子（action か actionRef）から実行位置を組む
+    and internal initialActionElm (script: RecActionElm) : Progress =
+      match script with
+      | RecActionElm.Action (_, children) ->
+          PAction (false, None, children |> List.map initial)
+      | RecActionElm.ActionRef _ -> PNoop
 
   /// 直前の fire の値。sequence の累積がここに乗る
   type FireContext =
@@ -90,7 +103,10 @@ module Domain =
       ///
       /// スクリプトを弾が持ち歩くのは、撃たれた弾が自分の action を
       /// 持てるようにするため。これで step の引数が状態 1 つで済む
-      Tops : (RecBulletml * Progress * FireContext) list }
+      ///
+      /// 台本は top* の action。展開を止めた actionRef が残ることがあるので
+      /// RecActionElm（action か actionRef）で持つ
+      Tops : (RecActionElm * Progress * FireContext) list }
 
   type internal Effect =
     | Spawn of BulletState
