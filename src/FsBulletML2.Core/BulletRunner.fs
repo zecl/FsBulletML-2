@@ -28,6 +28,30 @@ module BulletRunner =
       SpawnAimDir = bullet.GetSpawnAimDir ()
       SpawnEnemyAimDir = bullet.GetSpawnEnemyAimDir () }
 
+  /// aim を読まないと分かっているコマ用の Env。
+  ///
+  /// envOfGlobal の aim 4 本 は、フロントエンドの実装がどれも自機／敵との
+  /// 差から atan2 を引く（BaseBullet.GetAimDir、DefaultBullet.GetAimDir、
+  /// テストの FakeBullet も同じ式の写し）。弾 1 個 × 1 コマ ごとに 4 回 で、
+  /// 同梱ベンチの 5way / 10Way では全体の 2 割 を占める。撃ち終わって
+  /// 飛んでいるだけの弾が大半なので、その大半が払い損になっている。
+  ///
+  /// 「読まない」と言えるのは、生きている top が 1 本 も無いとき。Step.step が
+  /// env を触るのは top を回すループの中だけで、ループの外（差分の計算・
+  /// FireContext の積み直し・Finished の判定）は env を見ない。
+  ///
+  /// この前提は StepTop の「終わった top しか無いコマは、aim を読まない」で
+  /// 門にしてある。step がループの外で env を読むようになったら、
+  /// そちらが赤くなる。**前提が消えたことに気づかないまま速い経路を通ると、
+  /// aim が黙って 0 になる**ので、門を外さないこと。
+  let private envWithoutAim () : Env =
+    { Rand = BulletMLManager.GetRandom
+      Rank = BulletMLManager.GetRank ()
+      AimDir = 0.0f
+      EnemyAimDir = 0.0f
+      SpawnAimDir = 0.0f
+      SpawnEnemyAimDir = 0.0f }
+
   /// 角度を 0 〜 2π に丸める。式そのものは Step.calcDir にあり、ここはその別名。
   /// Step.fs はこのファイルより前に compile されるので、逆向き（Step 側が
   /// BulletRunner を指す）にはできない
@@ -191,8 +215,15 @@ module BulletRunner =
       // 未設定は null になりうるので、そのときは弾の値をそのままにする
       if not (isNull (box task.ShootingDirection)) then
         bullet.ShootingDirection <- task.ShootingDirection
-      let env = envOfGlobal bullet
       let st = stateOfBullet bullet task
+      // 生きている top が 1 本 でもあれば、そのコマは aim を読みうる。
+      // 1 本 も無ければ Step.step はループの中へ入らないので読まない
+      // （envWithoutAim の但し書きと、それを支える StepTop の門を見ること）
+      let env =
+        if st.Tops |> List.exists (fun (_, p, _) -> not (Step.isDone p)) then
+          envOfGlobal bullet
+        else
+          envWithoutAim ()
       let r = Step.step (resolversOf task) env st
       applyToBullet bullet task r
       RunResult(r.Finished, r.Delta.X, r.Delta.Y)

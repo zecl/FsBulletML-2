@@ -151,3 +151,38 @@ type StepTop() =
     let r = Step.step noResolvers env (stateWith [ t ])
     r.Effects |> List.length |> should equal 9999
     r.Finished |> should equal true
+
+  /// BulletRunner.run は「生きている top が 1 本 も無いコマ」で aim 4 本 を
+  /// 組まずに 0 で済ませる（BulletRunner.envWithoutAim）。その前提 ——
+  /// Step.step が env を触るのは top を回すループの中だけで、ループの外
+  /// （差分の計算・FireContext の積み直し・Finished の判定）は env を
+  /// 見ない —— をここで門にする。
+  ///
+  /// 見るのは「aim を変えても結果が 1 ビットも動かないこと」。step が
+  /// ループの外で env を読むようになったら、毒入りの env の側だけ答えが
+  /// ずれて赤くなる。
+  ///
+  /// 較正: step の差分に env.AimDir を足す変異を入れるとこの門は赤くなり、
+  /// 同じファイルの他の門は緑のままだった（top が生きているコマを見ている
+  /// ので、そちらは両方の env で同じだけずれる）。
+  [<Test>]
+  member _.``終わった top しか無いコマは、aim を読まない``() =
+    let poisoned =
+      { env with
+          AimDir = 1.25f
+          EnemyAimDir = -2.5f
+          SpawnAimDir = 3.0f
+          SpawnEnemyAimDir = -0.75f }
+    // vanish は 1 コマで終わる。2 コマめが「生きている top が無い」コマ
+    let t = top [ RecCommand.Vanish ]
+    let first = Step.step noResolvers env (stateWith [ t ])
+    first.Finished |> should equal true
+    // 前提そのもの: この状態では List.exists (not << isDone) が false
+    first.State.Tops |> List.exists (fun (_, p, _) -> not (Step.isDone p)) |> should equal false
+    let withZero = Step.step noResolvers env first.State
+    let withPoison = Step.step noResolvers poisoned first.State
+    withPoison.Delta |> should equal withZero.Delta
+    withPoison.State |> should equal withZero.State
+    withPoison.Effects |> should equal withZero.Effects
+    withPoison.Finished |> should equal withZero.Finished
+    withPoison.Retired |> should equal withZero.Retired
