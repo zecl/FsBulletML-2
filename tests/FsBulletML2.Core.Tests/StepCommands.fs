@@ -12,7 +12,7 @@ open FsBulletML2.Domain
 [<TestFixture>]
 type StepCommands() =
 
-  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimDir = 0.f; EnemyAimDir = 0.f }
+  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimDir = 0.f; EnemyAimDir = 0.f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
 
   let state =
     { Pos = { X = 0.f; Y = 0.f }
@@ -22,8 +22,7 @@ type StepCommands() =
       Kind = BulletType.Enemy
       IsBullet = false
       HasFired = false
-      Tops = []
-      PendingBulletAim = false }
+      Tops = [] }
 
   /// 参照を解けない Resolvers。bulletRef / actionRef が絡まないテストで使う
   let noResolvers : Step.Resolvers =
@@ -178,7 +177,7 @@ type StepCommands() =
       { Rand = (fun () -> randCount <- randCount + 1; 0.5f)
         Rank = 0.5f
         AimDir = 0.f
-        EnemyAimDir = 0.f }
+        EnemyAimDir = 0.f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
 
     let script =
       RecBulletml.Accel (None,

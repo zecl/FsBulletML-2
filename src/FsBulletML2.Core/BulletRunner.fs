@@ -18,13 +18,15 @@ module BulletRunner =
   ///
   /// public にしてあるのは、これを呼べない場所（テスト側・フロントエンド側の
   /// Init 呼び出し）が自前で同じレコードを組み直さずに済むようにするため。
-  /// 同じ 4 フィールドの組み方が複数箇所にコピーされると、どれか 1 つが
-  /// ずれたときに全弾幕の軌跡が静かにずれる。呼ぶ側は必ずここを通すこと。
+  /// 同じ組み方が複数箇所にコピーされると、どれか 1 つが ずれたときに
+  /// 全弾幕の軌跡が静かにずれる。呼ぶ側は必ずここを通すこと。
   let envOfGlobal (bullet: IBulletmlObject) : Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
       AimDir = bullet.GetAimDir ()
-      EnemyAimDir = bullet.GetEnemyAimDir () }
+      EnemyAimDir = bullet.GetEnemyAimDir ()
+      SpawnAimDir = bullet.GetSpawnAimDir ()
+      SpawnEnemyAimDir = bullet.GetSpawnEnemyAimDir () }
 
   /// 角度を 0 〜 2π に丸める。式そのものは Step.calcDir にあり、ここはその別名。
   /// Step.fs はこのファイルより前に compile されるので、逆向き（Step 側が
@@ -73,7 +75,9 @@ module BulletRunner =
       { Rand = BulletMLManager.GetRandom
         Rank = BulletMLManager.GetRank ()
         AimDir = 0.f
-        EnemyAimDir = 0.f }
+        EnemyAimDir = 0.f
+        SpawnAimDir = 0.f
+        SpawnEnemyAimDir = 0.f }
     scripts |> List.map (fun s -> s, Step.rootProgress rootEnv s)
 
   /// 弾オブジェクトの現在の物理量と、task が持ち回っている Tops から
@@ -94,28 +98,14 @@ module BulletRunner =
         HasFired = bullet.BulletRoot }
 
   /// Spawn を受けて、撃たれた弾へ状態を書き込む。旧の createTask 以降、
-  /// fireCommand が newBullet へ書く一連の代入の写し。方向・速さの解決の
-  /// 大半は Step.fire が既に済ませているので、ここではその結果
-  /// （child）を弾オブジェクトへ移すだけ ——
-  /// ただし bullet 側の direction が aim 系だった 1 か所だけは例外。
+  /// fireCommand が newBullet へ書く一連の代入の写し。方向・速さの解決は
+  /// Step.fire が済ませているので、ここではその結果（child）を弾オブジェクトへ
+  /// 移すだけ。
   ///
-  /// 旧 createTask は GetNewBullet() が返した新しい弾オブジェクトの
-  /// GetAimDir() / GetEnemyAimDir() を、撃った側の位置をコピーする前に
-  /// 読んで bullet 側の aim を解決していた。Step.fire の時点では撃たれた弾の
-  /// 実オブジェクトがまだ無いのでそこでは解決できず、PendingBulletAim を
-  /// 立てて child.Dir に revise 済みの角度だけを残してある
-  /// （Domain.BulletState 参照）。ここで newBullet を得た直後・位置を
-  /// コピーする前に、newBullet 自身の GetAimDir() / GetEnemyAimDir() を
-  /// 読んで仕上げる。
-  ///
-  /// この瞬間の newBullet の位置がどうなっているかはフロントエンドしだい
-  /// （FakeBullet / BaseBullet.GetNewBullet は Init 直後で未設定＝原点のまま、
-  /// Unity2D の ECS 実装 BulletEntityFactory.SpawnFromEmitter は撃った側の
-  /// 位置をコンストラクタで先にコピーしている）。位置が何であるかは
-  /// ここでは前提にしていない —— 「いま実際に生きている newBullet を読む。
-  /// 撃った側を読まない」という 1 点だけが要る。両方とも生きているオブジェクトを
-  /// 読んでいる点は同じなので、位置の値そのものが違っても解決結果は
-  /// 旧の createTask と同じ形になる。
+  /// bullet 側の direction が aim 系のときも、産まれる弾の位置から見た向きは
+  /// env.SpawnAimDir として Step.fire に渡っているので、ここで実体を見て
+  /// 仕上げる必要は無い（IBulletmlObject.GetSpawnAimDir / Step.fire 参照）。
+  /// 「撃つ」を値として返しきるために、この後付けの解決を外してある。
   ///
   /// GetNewBullet() が null を返したかどうかを呼ぶ側（applyToBullet）へ返す。
   /// 旧 fireCommand は null なら createTask を呼ばず、bullet 側の speed も
@@ -128,24 +118,7 @@ module BulletRunner =
     if isNull (box newBullet) then false
     else
       newBullet.Init ()
-      let child =
-        if childIn.PendingBulletAim then
-          // childIn.Kind は撃った側（self.Kind）の種別 —— Step.fire が
-          // child を組むときに Kind = self.Kind としているため。旧 createTask
-          // はここを newBullet.BulletType（新しい弾自身の種別）で判定していた。
-          // 2 つを同じものとして扱ってよいのは、GetNewBullet() の実装が
-          // 例外なく撃った側の種別を新しい弾へその場でコピーしているから
-          // （FakeBullet.GetNewBullet: c.BulletType <- bulletType、
-          // BaseBullet.GetNewBullet: newBullet.BulletType <- this.self.BulletType、
-          // BulletEntityFactory.SpawnFromEmitter: emitter.BulletType を見て
-          // 新しい弾の BulletType を決める）。この前提が崩れる
-          // GetNewBullet 実装がリポジトリに増えたら、ここは newBullet.BulletType
-          // を読み直す形に変える必要がある
-          let aim =
-            if childIn.Kind = BulletType.Player then newBullet.GetEnemyAimDir ()
-            else newBullet.GetAimDir ()
-          { childIn with Dir = calcDir (aim + childIn.Dir); PendingBulletAim = false }
-        else childIn
+      let child = childIn
       let scripts = child.Tops |> List.map (fun (s, _, _) -> s)
       let childTask = new BulletmlTask(Step.resetChild, buildRootTops, scripts, child)
       // 輪を解く入口は、撃たれた弾の task にも引き継ぐ。
@@ -235,8 +208,7 @@ module BulletRunner =
           Kind = BulletType.Enemy
           IsBullet = false
           HasFired = false
-          Tops = []
-          PendingBulletAim = false }
+          Tops = [] }
       BulletmlTask(Step.resetChild, buildRootTops, [], emptyState)
     else
     let recBulletml = IntermediateParser.convertRecBulletml bulletml
@@ -259,8 +231,7 @@ module BulletRunner =
         Kind = BulletType.Enemy
         IsBullet = false
         HasFired = false
-        Tops = tops |> List.map (fun (s, p) -> s, p, FireContext.zero)
-        PendingBulletAim = false }
+        Tops = tops |> List.map (fun (s, p) -> s, p, FireContext.zero) }
 
     let bulletmlTask = new BulletmlTask(Step.resetChild, buildRootTops, scripts, initialState)
     bulletmlTask.ResolveBulletRef <- IntermediateParser.expandBulletRefOnceRec recBulletml

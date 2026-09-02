@@ -693,23 +693,15 @@ module internal Step =
           Kind = self.Kind
           IsBullet = true
           HasFired = false
-          Tops = bActions |> List.map (fun a -> a, resetChild env a, FireContext.zero)
-          PendingBulletAim = false }
+          Tops = bActions |> List.map (fun a -> a, resetChild env a, FireContext.zero) }
       // bullet の direction。type ごとに基準が変わる。
       //
       // aim 系（type 省略 or "aim"）だけが撃つ側（fire 側）と違う基準を使う。
-      // 旧 createTask (bulletElm) (bulletmlTask) (bullet: IBulletmlObject) は
-      // fireCommand から newBullet を渡されて呼ばれ、中で bullet.GetAimDir() /
-      // GetEnemyAimDir() を読む —— この bullet は newBullet 自身であり、
-      // GetNewBullet() 直後でまだ位置が (0, 0) のまま（撃った側の位置を
-      // コピーするのはそのあと）。fire 側の aim（この関数の env から出す
-      // 上の aim）は撃った側の位置に依るので、同じ変数を bullet 側にも
-      // 使うと「新しい弾の aim のつもりで撃った側の aim を使う」取り違えに
-      // なる。撃たれた弾のオブジェクトはこの時点では存在しない（Spawn は
-      // 値で、実体は BulletRunner.applySpawn が newBullet として後で作る）ので、
-      // ここでは revise 済みの角度だけを Dir に留めて PendingBulletAim を
-      // 立て、実際に aim を足す仕上げは applySpawn（newBullet を得た直後・
-      // 位置をコピーする前）に委ねる
+      // 旧 createTask は fireCommand から newBullet を渡されて呼ばれ、中で
+      // その newBullet 自身の GetAimDir() / GetEnemyAimDir() を読んでいた
+      // ——「撃たれた弾から見た向き」であって、撃った側から見た向きではない。
+      // fire 側の aim（この関数の env から出す上の aim）は撃った側の位置に
+      // 依るので、同じ値を bullet 側にも使うと基準の取り違えになる
       match bDir with
       | Some (Direction (attrs, v)) ->
           let value = getValue env v * revise
@@ -719,7 +711,16 @@ module internal Step =
               | DirectionType.Sequence -> child <- { child with Dir = calcDir (fc.SrcDir + value) }
               | DirectionType.Absolute -> child <- { child with Dir = calcDir value }
               | DirectionType.Relative -> child <- { child with Dir = calcDir (child.Dir + value) }
-              | _ -> child <- { child with Dir = value; PendingBulletAim = true }
+              | _ ->
+                  // 撃たれた弾の実体はこの時点では無いが、その弾がどこに出るかは
+                  // フロントエンドが知っているので env.SpawnAimDir で受け取っている
+                  // （BulletRunner.envOfGlobal が GetSpawnAimDir を読む）。
+                  // これで Spawn は値として完結し、実体を見て仕上げる必要が無い。
+                  // Player / Enemy の振り分けは撃った側の種別で行う——撃たれた弾の
+                  // 種別は例外なく撃った側からその場で複写されるので同じになる
+                  let spawnAim =
+                    if child.Kind = BulletType.Player then env.SpawnEnemyAimDir else env.SpawnAimDir
+                  child <- { child with Dir = calcDir (spawnAim + value) }
           | None -> ()
       | None -> ()
       // bullet の speed。現行はこの式を 2 回 getValue で読む

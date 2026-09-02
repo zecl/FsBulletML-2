@@ -37,6 +37,10 @@ type private NullSpawnBullet() =
     member _.GetNewBullet() = Unchecked.defaultof<IBulletmlObject>
     member _.GetAimDir() = 0.0f
     member _.GetEnemyAimDir() = 0.0f
+    // GetNewBullet が null を返す弾なので、産まれる弾の向きを訊かれても
+    // 答える相手が居ない。上の 2 つと揃えて 0 を返す
+    member _.GetSpawnAimDir() = 0.0f
+    member _.GetSpawnEnemyAimDir() = 0.0f
     member _.Init() =
       used <- true
       bulletRoot <- false

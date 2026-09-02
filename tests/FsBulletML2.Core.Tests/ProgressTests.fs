@@ -66,8 +66,7 @@ type ProgressTests() =
         Kind = BulletType.Enemy
         IsBullet = false
         HasFired = false
-        Tops = [ script, Progress.initial script, FireContext.zero ]
-        PendingBulletAim = false }
+        Tops = [ script, Progress.initial script, FireContext.zero ] }
     List.length st.Tops |> should equal 1
     let _, _, fc = st.Tops.Head
     fc.SrcSpeed |> should equal 0.0f

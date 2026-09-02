@@ -50,6 +50,18 @@ module Processable =
     abstract GetNewBullet : unit -> IBulletmlObject
     abstract GetAimDir : unit -> float32
     abstract GetEnemyAimDir : unit -> float32
+    /// これから GetNewBullet() で産まれる弾の位置から見た、自機への向き。
+    ///
+    /// <bullet><direction type="aim"> の基準は「撃った側」ではなく
+    /// 「撃たれた弾」なので、撃つ側の GetAimDir では答えが違う。
+    /// 産まれる弾がどこに出るかはフロントエンドが決めていて Core には
+    /// 分からないため、ここで問い合わせる。
+    ///
+    /// 産まれた弾を実際に作ってから読む形にすると、「撃つ」という値の決定に
+    /// 実体の生成が要ることになり、Spawn を値として返せなくなる。
+    abstract GetSpawnAimDir : unit -> float32
+    /// 同上。撃つ側が Player のときに使う敵への向き
+    abstract GetSpawnEnemyAimDir : unit -> float32
     abstract Init : unit -> unit
     abstract Task : BulletmlTask option with get,set
     abstract BulletType : BulletType with get,set

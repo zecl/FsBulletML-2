@@ -61,7 +61,16 @@ module TraceNew =
     // Rand / Rank はグローバルと同じ値を渡す（設計文書 5.6）。
     // accel / changeDirection / changeSpeed はこの段では引かないので、
     // resetChild ではなく rootProgress を通す
-    let rootEnv : Env = { Rand = rand; Rank = rank; AimDir = 0.f; EnemyAimDir = 0.f }
+    // 産まれた弾がどこに出るかは、対になる FakeBullet.GetNewBullet が決める。
+    // あちらは FakeBullet(id, born) を位置を入れずに作るので原点。
+    // 同じ式に原点を入れた値を env に載せる（Fake.fs の GetSpawnAimDir と
+    // 同じ値になるようにしてある。片方だけ直すと橋が割れる）
+    let origin = { X = 0.f; Y = 0.f }
+    let spawnAim = aimDir px py origin
+    let spawnEnemyAim = enemyAimDir origin
+    let rootEnv : Env =
+      { Rand = rand; Rank = rank; AimDir = 0.f; EnemyAimDir = 0.f
+        SpawnAimDir = spawnAim; SpawnEnemyAimDir = spawnEnemyAim }
     let initial =
       { Pos = { X = 0.f; Y = 0.f }
         Speed = 0.f
@@ -70,8 +79,7 @@ module TraceNew =
         Kind = BulletType.Enemy
         IsBullet = false
         HasFired = false
-        Tops = scripts |> List.map (fun s -> s, Step.rootProgress rootEnv s, FireContext.zero)
-        PendingBulletAim = false }
+        Tops = scripts |> List.map (fun s -> s, Step.rootProgress rootEnv s, FireContext.zero) }
 
     let all = List<Live>()
     all.Add { St = initial; Alive = true; Vanished = 0; Id = 0 }
@@ -88,7 +96,9 @@ module TraceNew =
             { Rand = rand
               Rank = rank
               AimDir = aimDir px py b.St.Pos
-              EnemyAimDir = enemyAimDir b.St.Pos }
+              EnemyAimDir = enemyAimDir b.St.Pos
+              SpawnAimDir = spawnAim
+              SpawnEnemyAimDir = spawnEnemyAim }
           let r = Step.step resolvers env b.St
           let vanishedNow = r.Effects |> List.exists (fun e -> e = Vanished)
           let st = { r.State with Pos = { X = r.State.Pos.X + r.Delta.X
@@ -105,7 +115,9 @@ module TraceNew =
                 { Rand = rand
                   Rank = rank
                   AimDir = aimDir px py st.Pos
-                  EnemyAimDir = enemyAimDir st.Pos }
+                  EnemyAimDir = enemyAimDir st.Pos
+                  SpawnAimDir = spawnAim
+                  SpawnEnemyAimDir = spawnEnemyAim }
               { st with
                   Tops =
                     st.Tops
@@ -123,25 +135,11 @@ module TraceNew =
           sb.AppendLine() |> ignore
           // 撃たれた弾を並びへ足す。
           //
-          // PendingBulletAim が立っている（bullet 側の direction が aim 系
-          // だった）ときは、Step.fire の時点では解決していない。旧の
-          // createTask は GetNewBullet() 直後・位置をコピーする前
-          // （まだ (0, 0)）の newBullet 自身の GetAimDir() / GetEnemyAimDir()
-          // を読んでいた（Domain.BulletState / BulletRunner.applySpawn 参照）。
-          // ここは IBulletmlObject を介さない別経路なので、その場を
-          // 原点 (0, 0) で作って同じ式（aimDir / enemyAimDir）を通す
+          // bullet 側の direction が aim 系のときも、Step.fire が env.SpawnAimDir
+          // で解決し終えている。ここで実体を見て仕上げる後処理は要らない
           for e in r.Effects do
             match e with
-            | Spawn child ->
-                let child =
-                  if child.PendingBulletAim then
-                    let origin = { X = 0.f; Y = 0.f }
-                    let aim =
-                      if child.Kind = BulletType.Player then enemyAimDir origin
-                      else aimDir px py origin
-                    { child with Dir = Step.calcDir (aim + child.Dir); PendingBulletAim = false }
-                  else child
-                all.Add { St = child; Alive = true; Vanished = 0; Id = all.Count }
+            | Spawn child -> all.Add { St = child; Alive = true; Vanished = 0; Id = all.Count }
             | Vanished -> ()
       while seen < all.Count do
         let b = all.[seen]

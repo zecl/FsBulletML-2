@@ -45,6 +45,26 @@ type DefaultBullet (transform:Transform) =
       let dir = Math.Atan2( float (BulletMLManager.GetPlayerPosX() - self.X),float (BulletMLManager.GetPlayerPosY() - self.Y))
       float32 dir
 
+    /// 産まれる弾の位置から見た向き。
+    ///
+    /// このフロントエンドの GetBulletPrefubInstance は
+    /// InstantiatePrefab(prefab, this.transform.position, ...) で作るので、
+    /// 産まれた弾は撃った側と同じ場所に居る。よって上の GetAimDir と同じ式・
+    /// 同じ位置になる（MonoGame は原点に作るので、あちらは別の式）。
+    /// 上を直したらここも直すこと
+    member this.GetSpawnAimDir () : float32 =
+      let self = this :> IDefaultBullet
+      let dir = Math.Atan2( float (BulletMLManager.GetPlayerPosX() - self.X),float (BulletMLManager.GetPlayerPosY() - self.Y))
+      float32 dir
+
+    /// 同上。産まれる弾は撃った側と同じ場所なので、敵への向きも同じ値になる。
+    /// 撃った側が既に掴んでいる TargetEnemy をそのまま見る
+    member this.GetSpawnEnemyAimDir () : float32 =
+      let self = this :> IDefaultBullet
+      if self.TargetEnemy :> obj <> null then
+        Mathf.Atan2((self.TargetEnemy.X - self.X), 1.f * (self.TargetEnemy.Y - self.Y))
+      else 0.f
+
     member this.GetEnemyAimDir() : float32 = 
       let self = this :> IDefaultBullet
       let mutable md = Single.MaxValue 

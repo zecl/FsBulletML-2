@@ -20,7 +20,7 @@ open FsBulletML2.Domain
 [<TestFixture>]
 type RootAccel() =
 
-  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimDir = 0.f; EnemyAimDir = 0.f }
+  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimDir = 0.f; EnemyAimDir = 0.f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
 
   let noResolvers : Step.Resolvers =
     { Bullet = (fun _ _ -> None); Action = fun _ _ -> None }
@@ -33,8 +33,7 @@ type RootAccel() =
       Kind = BulletType.Enemy
       IsBullet = false
       HasFired = false
-      Tops = tops
-      PendingBulletAim = false }
+      Tops = tops }
 
   // 4077ed6 の accelCommand を first = false で読んだときの結果
   // （設計文書 5.3 に書いた手計算）。horizontal absolute 2、vertical

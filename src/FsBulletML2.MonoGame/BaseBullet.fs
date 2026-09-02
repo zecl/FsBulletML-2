@@ -49,6 +49,31 @@ type BaseBullet () as this =
       let dir = Math.Atan2( float (BulletMLManager.GetPlayerPosX() - this.self.X),float -(BulletMLManager.GetPlayerPosY() - this.self.Y))
       float32 dir
 
+    /// GetNewBullet は new BaseBullet() を位置を入れずに返すので、産まれた弾は
+    /// 原点に居る。GetAimDir と同じ式に、その弾の位置として (0, 0) を入れる
+    member this.GetSpawnAimDir () : float32 =
+      let dir = Math.Atan2( float (BulletMLManager.GetPlayerPosX() - 0.f), float -(BulletMLManager.GetPlayerPosY() - 0.f))
+      float32 dir
+
+    /// 同上。産まれたばかりの弾は TargetEnemy を持たない（new BaseBullet() の
+    /// 既定が null）ので、旧はその場で Manager.enemies から原点に最も近い敵を
+    /// 選んでいた。同じ選び方をここで行う。
+    ///
+    /// 旧はそのとき newBullet.TargetEnemy に選んだ相手を書き込んでいたが、
+    /// ここには書き込む先の弾がまだ無いので、その代入だけは起きない。
+    /// 次のコマでその弾が GetEnemyAimDir を通れば、同じ探し方でまた選ばれる
+    member this.GetSpawnEnemyAimDir () : float32 =
+      if ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then 0.f
+      else
+        let mutable md = Single.MaxValue
+        let mutable target = defaultof<IBullet>
+        for enemy in Manager.enemies do
+          let d = Vector2.Distance (Vector2(0.f, 0.f), Vector2(enemy.X, enemy.Y))
+          if md > d then
+            target <- enemy
+            md <- d
+        float32 (Math.Atan2( float (target.X - 0.f), -1. * float (target.Y - 0.f)))
+
     member this.GetEnemyAimDir() : float32 = 
       let mutable md = Single.MaxValue 
       if this.self.TargetEnemy :> obj <> null then

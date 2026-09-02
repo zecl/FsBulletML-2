@@ -134,6 +134,18 @@ type FakeBullet(id: int, born: List<FakeBullet>) =
     member _.GetEnemyAimDir() =
       float32 (Math.Atan2(float (FakeEnemy.X - x), -1.0 * float (FakeEnemy.Y - y)))
 
+    /// 産まれる弾の位置から見た向き。
+    ///
+    /// GetNewBullet は FakeBullet(id, born) を位置を入れずに作るので、
+    /// 産まれた弾は原点に居る。上の 2 つと同じ式に、その弾の位置として
+    /// (0, 0) を入れる。式を書き写しているので、上を直したらここも直すこと
+    member _.GetSpawnAimDir() =
+      float32 (Math.Atan2(float (BulletMLManager.GetPlayerPosX() - 0.0f),
+                          float -(BulletMLManager.GetPlayerPosY() - 0.0f)))
+
+    member _.GetSpawnEnemyAimDir() =
+      float32 (Math.Atan2(float (FakeEnemy.X - 0.0f), -1.0 * float (FakeEnemy.Y - 0.0f)))
+
     member _.Init() =
       used <- true
       bulletRoot <- false

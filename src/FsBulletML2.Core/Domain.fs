@@ -13,7 +13,15 @@ module Domain =
     { Rand : unit -> float32
       Rank : float32
       AimDir : float32
-      EnemyAimDir : float32 }
+      EnemyAimDir : float32
+      /// これから産まれる弾の位置から見た向き。AimDir とは基準が違う。
+      ///
+      /// <bullet><direction type="aim"> は撃たれた弾を基準にするので、
+      /// 撃つ側の AimDir では答えが違う。産まれる弾がどこに出るかは
+      /// フロントエンドが決めていて（MonoGame は原点、Unity2D は撃った側）
+      /// Core からは分からないので、IBulletmlObject.GetSpawnAimDir に訊く。
+      SpawnAimDir : float32
+      SpawnEnemyAimDir : float32 }
 
   /// 実行位置。Script と同じ形の別の木。
   ///
@@ -82,21 +90,7 @@ module Domain =
       ///
       /// スクリプトを弾が持ち歩くのは、撃たれた弾が自分の action を
       /// 持てるようにするため。これで step の引数が状態 1 つで済む
-      Tops : (RecBulletml * Progress * FireContext) list
-      /// true のとき、Dir はまだ最終値ではなく「aim を足す前の下書き」。
-      ///
-      /// 旧 createTask は GetNewBullet() が返す、まだ位置を持たない新しい
-      /// 弾オブジェクトの GetAimDir() / GetEnemyAimDir() を読んで bullet 側の
-      /// aim を解決していた（位置のコピーはそのあと）。Step.fire の時点では
-      /// 撃たれた弾の実オブジェクトがまだ存在しない（Spawn は値で、実体は
-      /// BulletRunner.applySpawn が newBullet として後で作る）ので、その場で
-      /// aim を解決できない。ここでは revise 済みの角度だけを Dir に留めて
-      /// この旗を立て、実際に aim を足す仕上げは newBullet を得た直後・
-      /// 位置をコピーする前の applySpawn に委ねる。
-      ///
-      /// 通常の（既に走っている）弾では常に false。Spawn の一瞬だけ true に
-      /// なりうるが、applySpawn が解決した時点で false に戻す
-      PendingBulletAim : bool }
+      Tops : (RecBulletml * Progress * FireContext) list }
 
   type internal Effect =
     | Spawn of BulletState

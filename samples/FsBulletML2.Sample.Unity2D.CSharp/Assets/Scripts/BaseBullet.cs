@@ -114,6 +114,20 @@ public abstract class BaseBullet : MonoBehaviour, FsBulletML2.Processable.IBulle
         return Mathf.Atan2((Processable.BulletMLManager.GetPlayerPosX() - this.X), (Processable.BulletMLManager.GetPlayerPosY() - this.Y));
     }
 
+    // 産まれる弾の位置から見た向き。GetNewBullet は
+    // BulletEntityFactory.SpawnFromEmitter(this) で作り、あちらは emitter.X /
+    // emitter.Y をそのまま渡すので、産まれた弾は撃った側と同じ場所に居る。
+    // よって撃った側と同じ値になる（MonoGame は原点に作るので、あちらは別）
+    public float GetSpawnAimDir()
+    {
+        return GetAimDir();
+    }
+
+    public float GetSpawnEnemyAimDir()
+    {
+        return GetEnemyAimDir();
+    }
+
     public float GetEnemyAimDir()
     {
         if (this.TargetEnemy != null)

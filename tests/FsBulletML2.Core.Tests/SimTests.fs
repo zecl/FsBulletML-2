@@ -12,7 +12,7 @@ open FsBulletML2.Domain
 [<TestFixture>]
 type SimTests() =
 
-  let env = { Rand = (fun () -> 0.5f); Rank = 0.25f; AimDir = 0.f; EnemyAimDir = 0.f }
+  let env = { Rand = (fun () -> 0.5f); Rank = 0.25f; AimDir = 0.f; EnemyAimDir = 0.f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
 
   let st0 =
     { Pos = { X = 0.f; Y = 0.f }
@@ -22,8 +22,7 @@ type SimTests() =
       Kind = BulletType.Enemy
       IsBullet = false
       HasFired = false
-      Tops = []
-      PendingBulletAim = false }
+      Tops = [] }
 
   [<Test>]
   member _.``ask は環境を読む。状態も効果も動かない``() =

@@ -62,6 +62,20 @@ public class BulletSim : IComponentData, Processable.IBulletmlObject
             Processable.BulletMLManager.GetPlayerPosY() - Y);
     }
 
+    // 産まれる弾の位置から見た向き。GetNewBullet は
+    // BulletEntityFactory.SpawnChild(this) で作り、あちらは parent.X / parent.Y
+    // をそのまま渡すので、産まれた弾は撃った側と同じ場所に居る。
+    // よって撃った側と同じ値になる
+    public float GetSpawnAimDir()
+    {
+        return GetAimDir();
+    }
+
+    public float GetSpawnEnemyAimDir()
+    {
+        return GetEnemyAimDir();
+    }
+
     public float GetEnemyAimDir()
     {
         var enemy = BulletEcsRuntime.Enemy;

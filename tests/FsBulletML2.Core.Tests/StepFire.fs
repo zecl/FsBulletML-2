@@ -11,7 +11,9 @@ open FsBulletML2.Domain
 [<TestFixture>]
 type StepFire() =
 
-  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimDir = 1.0f; EnemyAimDir = 2.0f }
+  // 4 つとも別の値にしてある。同じ値にすると、fire 側と bullet 側で
+  // 基準を取り違えていても門が緑のまま通る
+  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimDir = 1.0f; EnemyAimDir = 2.0f; SpawnAimDir = 3.0f; SpawnEnemyAimDir = 4.0f }
 
   let state =
     { Pos = { X = 5.f; Y = 7.f }
@@ -21,8 +23,7 @@ type StepFire() =
       Kind = BulletType.Enemy
       IsBullet = false
       HasFired = false
-      Tops = []
-      PendingBulletAim = false }
+      Tops = [] }
 
   let noResolvers : Step.Resolvers =
     { Bullet = fun _ _ -> None
@@ -94,33 +95,35 @@ type StepFire() =
   /// GetAimDir() を読んでいたが、Step.fire の時点では撃たれた弾の
   /// 実オブジェクトがまだ存在しない（Spawn は値で、実体は
   /// BulletRunner.applySpawn が newBullet として後で作る）。
-  /// ここでは revise 済みの角度だけを Dir に残し、PendingBulletAim を
-  /// 立てて解決を先送りすることだけを見る（実際に aim を足した最終値は
-  /// BulletAim.fs が Trace 経由で確かめる）
+  /// ここでは env.SpawnAimDir（産まれる弾の位置から見た向き）が使われ、
+  /// 撃った側の env.AimDir は使われないことを見る。
+  /// 実際に走らせたときの最終値は BulletAim.fs が Trace 経由で確かめる
   [<Test>]
-  member _.``bullet 側の aim は、Step.fire の時点では解決できないので保留になる``() =
+  member _.``bullet 側の aim は、産まれる弾の位置から見た向きで解決する``() =
     let script =
       RecBulletml.Fire ({ fireLabel = None }, None, None,
                         bullet (Some (Direction (Some { directionType = DirectionType.Aim }, "30"))) None)
     let _, _, w = Sim.run env state (Step.fire noResolvers script (PFire false) FireContext.zero)
     match w with
     | [ Spawn b ] ->
-        b.PendingBulletAim |> should equal true
-        // revise 済みの角度だけ（30 度 = π/6）。env.AimDir（1.0）は
-        // まだ混ざっていないはず —— 混ざっていれば約 1.524 になる
-        b.Dir |> should (equalWithin 0.0001) (float32 (System.Math.PI / 6.0))
+        // 30 度 = π/6 に env.SpawnAimDir（3.0）が足された値。
+        // 撃った側の env.AimDir（1.0）を混ぜていれば約 1.524 になるので、
+        // 取り違えるとここで割れる
+        b.Dir |> should (equalWithin 0.0001) (Step.calcDir (env.SpawnAimDir + float32 (System.Math.PI / 6.0)))
     | _ -> Assert.Fail (sprintf "Spawn 1 つのはずが %A" w)
 
-  /// 対照: fire 側の aim（bullet 側は無指定）は、この場で確定できる
-  /// （撃った側の env はもう分かっているため）。PendingBulletAim は立たない
+  /// 対照: fire 側の aim（bullet 側は無指定）は撃った側の env.AimDir を使う。
+  /// bullet 側と基準が違うことを、値が違うことで示す
   [<Test>]
-  member _.``fire 側の aim は保留にならず、その場で確定する``() =
+  member _.``fire 側の aim は、撃った側の位置から見た向きで解決する``() =
     let script = RecBulletml.Fire ({ fireLabel = None }, None, None, bullet None None)
     let _, _, w = Sim.run env state (Step.fire noResolvers script (PFire false) FireContext.zero)
     match w with
     | [ Spawn b ] ->
-        b.PendingBulletAim |> should equal false
         b.Dir |> should (equalWithin 0.0001) env.AimDir
+        // 産まれる弾の側の値（3.0）ではないこと。両者が同じ値だと
+        // 取り違えても緑になるので、違うことを明示で見る
+        b.Dir |> should not' (equalWithin 0.0001 env.SpawnAimDir)
     | _ -> Assert.Fail (sprintf "Spawn 1 つのはずが %A" w)
 
   [<Test>]

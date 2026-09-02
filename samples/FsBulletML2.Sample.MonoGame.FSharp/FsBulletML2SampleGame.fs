@@ -79,7 +79,9 @@ type FsBulletML2SampleGame () as this =
           { Rand = BulletMLManager.GetRandom
             Rank = BulletMLManager.GetRank ()
             AimDir = 0.f
-            EnemyAimDir = 0.f }
+            EnemyAimDir = 0.f
+            SpawnAimDir = 0.f
+            SpawnEnemyAimDir = 0.f }
         bullet.BulletmlTask().Init(env)
         enemyDefaultPos, (bullet.Name, bullet)
 
