@@ -35,6 +35,7 @@
     <Compile Include="StateIsolation.fs" />
     <Compile Include="RoundTrip.fs" />
     <Compile Include="Corpus.fs" />
+    <Compile Include="ExprTests.fs" />
     <Compile Include="Equivalence.fs" />
     <Compile Include="SelfReference.fs" />
     <Compile Include="CallingConvention.fs" />

@@ -12,6 +12,7 @@
     <Compile Include="Exception.fs" />
     <Compile Include="AST.fs" />
     <Compile Include="Util.fs" />
+    <Compile Include="Expr.fs" />
     <Compile Include="DTD.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="Sim.fs" />
