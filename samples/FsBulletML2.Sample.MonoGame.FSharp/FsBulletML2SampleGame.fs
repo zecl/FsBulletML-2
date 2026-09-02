@@ -73,16 +73,13 @@ type FsBulletML2SampleGame () as this =
     this.enemyBullets
     |> Seq.item this.enemyIndex
     |> fun bullet ->
-        // Init が通る getValue は Rand と Rank しか見ないので、狙いの向きは 0 でよい。
-        // ここは敵の実体を作る前なので、向きを問い合わせる相手がまだ居ない
-        let env : Domain.Env =
-          { Rand = BulletMLManager.GetRandom
-            Rank = BulletMLManager.GetRank ()
-            AimDir = 0.f
-            EnemyAimDir = 0.f
-            SpawnAimDir = 0.f
-            SpawnEnemyAimDir = 0.f }
-        bullet.BulletmlTask().Init(env)
+        // 木を組んで、wait の term をここで引いておく下ごしらえ。
+        // 旧は BulletmlTask().Init(env) が同じ仕事をしていた。
+        //
+        // 木を組む段が読むのは Rand と Rank だけなので、狙いの向きは 0 でよい
+        // （loadEnv がその形）。ここは敵の実体を作る前で、向きを問い合わせる
+        // 相手がまだ居ない
+        bullet.Script (loadEnv ()) |> ignore
         enemyDefaultPos, (bullet.Name, bullet)
 
   do 

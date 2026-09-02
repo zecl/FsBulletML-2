@@ -1,4 +1,13 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
+// 旧 API（IBulletmlObject）の Obsolete 警告を、**このファイルだけ**止める。
+// ここは旧経路を意図して走らせる側だから（新旧を突き合わせる橋の材料）。
+//
+// プロジェクト単位（NoWarn）で止めない。止めると、**新しく書いた試験が
+// うっかり旧 API を使っても警告が出なくなる**。
+// 効きがファイル単位であることは較正済み —— nowarn を置いていない
+// ファイルで旧 API に触ると FS0044 が出る。
+#nowarn "44"
+
 
 open System
 open System.Collections.Generic

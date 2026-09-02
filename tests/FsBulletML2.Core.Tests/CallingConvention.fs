@@ -103,9 +103,19 @@ type CallingConvention() =
     // そこは同じ行に呼び出しが在りうるので、狭めると本物を落とす。
     let isCommentOnly (l: string) = l.Trim().StartsWith "//"
 
+    // 属性だけの行も外す。**同じ理由**（呼び出しではなく、書かれた説明）。
+    //
+    // 二度 踏んだ。1 度目 は doc コメント、2 度目 は
+    // [<System.Obsolete("新 API（Runner.step）へ移してください…")>] の
+    // 説明文が網に当たった。**非推奨の案内には、移り先の名前を書くのが
+    // 当たり前**なので、移り先を網にした瞬間に必ずぶつかる。
+    let isAttributeOnly (l: string) =
+      let t = l.Trim()
+      t.StartsWith "[<" && t.EndsWith ">]"
+
     let pick (lines: string[]) =
       lines
-      |> Array.filter (isCommentOnly >> not)
+      |> Array.filter (fun l -> not (isCommentOnly l) && not (isAttributeOnly l))
       |> Array.filter (fun l -> callsRun.IsMatch l || usesResult.IsMatch l || movesPos.IsMatch l)
       // 行番号は入れない。行を動かしただけで赤くしても意味が無い
       |> Array.map (fun l -> Regex.Replace(l.Trim(), @"\s+", " "))

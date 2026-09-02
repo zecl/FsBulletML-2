@@ -1,4 +1,11 @@
 ﻿namespace FsBulletML2
+// 旧 API の Obsolete 警告を、**このファイルだけ**止める。
+// BulletmlTask / BulletmlTaskOption は旧 API のシムそのもので、
+// 中で旧を呼ぶのが仕事だから。
+//
+// プロジェクト単位（NoWarn）で止めない。効きがファイル単位であることは
+// 較正済み —— nowarn を置いていない Api.fs で旧 API に触ると FS0044 が出る。
+#nowarn "44"
 
 [<StructAttribute>]
 type BulletmlInfo =
@@ -15,9 +22,11 @@ type BulletmlInfo =
   member this.Script (rootEnv: Domain.Env) =
     Runner.load rootEnv this.Bulletml
 
+  [<System.Obsolete("Script(rootEnv) を使ってください。")>]
   member this.BulletmlTask () =
     BulletRunner.convertBulletmlTask this.Bulletml
 
+  [<System.Obsolete("Script(rootEnv) を使ってください。")>]
   member this.BulletmlTaskOption () =
     BulletRunner.convertBulletmlTask this.Bulletml |> Some
 

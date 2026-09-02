@@ -1,4 +1,12 @@
-namespace FsBulletML2
+﻿namespace FsBulletML2
+// 旧 API（IBulletmlObject）の Obsolete 警告を、**このファイルだけ**止める。
+// ここは旧 API のシムそのもので、旧の型に触るのが仕事だから。
+//
+// プロジェクト単位（NoWarn）で止めない。止めると、**新しく書いたコードが
+// うっかり旧 API を使っても警告が出なくなる**。抑制はいつも、意図して
+// 旧経路を使っているファイルの中だけに置く。
+#nowarn "44"
+
 
 open System
 open System.Diagnostics
@@ -58,6 +66,18 @@ module Processable =
     let s = System.Text.RegularExpressions.Regex.Replace(s,"\$\d*","0")
     TryParse.eval s
 
+  /// **旧 API。** エンジンがフロントを呼び返すための 19 メンバ。
+  ///
+  /// 実装する側が「いつ呼ばれるか」を知らないと書けなかった。新 API
+  /// （Runner.step / BulletRun / Frame）は値の受け渡しだけで呼び返しが無い。
+  /// 同梱フロント 2 つ は移してある。
+  ///
+  /// **消していないのは、旧にしかない意味論が 1 つ あるため。**
+  /// GetNewBullet が null を返したとき（弾プールが尽きた等）に fire の累積
+  /// （SrcSpeed / SpeedInit）を巻き戻す振る舞いは、新 API に無い
+  /// —— あちらは撃つ弾を値で返しきるので、断る口が無い。
+  /// NullNewBullet の門がこの経路を見続ける。
+  [<System.Obsolete("新 API（Runner.step / BulletRun / Frame）へ移してください。移し方は Api.fs の Runner の但し書き。")>]
   type IBulletmlObject =
     abstract AccelerationX : float32 with get, set
     abstract AccelerationY : float32 with get, set
@@ -106,7 +126,8 @@ module Processable =
   /// ノードに finish / term / first などの mutable フィールドが 39 個
   /// 埋まっていたが、それらは実行位置の木（Domain.Progress、State の中）へ
   /// 移った。ここに残るのはその木そのものを差し替える口だけ
-  and BulletmlTask internal (resetTop: Domain.Env -> RecActionElm -> Domain.Progress,
+  and [<System.Obsolete("弾幕は BulletmlScript、実行状態は BulletRun に割れました。Api.fs の Runner を見てください。")>]
+      BulletmlTask internal (resetTop: Domain.Env -> RecActionElm -> Domain.Progress,
                               rebuildRoot: Bulletml -> (RecActionElm * Domain.Progress) list,
                               scripts: RecActionElm list,
                               initialState: Domain.BulletState) =

@@ -1,4 +1,12 @@
-namespace FsBulletML2
+﻿namespace FsBulletML2
+// 旧 API（IBulletmlObject）の Obsolete 警告を、**このファイルだけ**止める。
+// ここは旧 API のシムそのもので、旧の型に触るのが仕事だから。
+//
+// プロジェクト単位（NoWarn）で止めない。止めると、**新しく書いたコードが
+// うっかり旧 API を使っても警告が出なくなる**。抑制はいつも、意図して
+// 旧経路を使っているファイルの中だけに置く。
+#nowarn "44"
+
 open System
 open FsBulletML2.Domain
 open FsBulletML2.Processable
@@ -20,6 +28,7 @@ module BulletRunner =
   /// Init 呼び出し）が自前で同じレコードを組み直さずに済むようにするため。
   /// 同じ組み方が複数箇所にコピーされると、どれか 1 つが ずれたときに
   /// 全弾幕の軌跡が静かにずれる。呼ぶ側は必ずここを通すこと。
+  [<System.Obsolete("新 API（Runner.step）へ移してください。移し方は Api.fs の Runner の但し書き。 Env はフロントが組みます（同梱フロントの loadEnv / EnvAt が例）。")>]
   let envOfGlobal (bullet: IBulletmlObject) : Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
@@ -202,6 +211,7 @@ module BulletRunner =
     task.Finish <- r.Finished
 
   [<CompiledName "Run">]
+  [<System.Obsolete("新 API（Runner.step）へ移してください。移し方は Api.fs の Runner の但し書き。")>]
   let run (bullet:IBulletmlObject) =
     match bullet.Task with
     | None ->
@@ -229,6 +239,7 @@ module BulletRunner =
       RunResult(r.Finished, r.Delta.X, r.Delta.Y)
 
   [<CompiledName "ConvertBulletmlTask">]
+  [<System.Obsolete("新 API（Runner.load）へ移してください。移し方は Api.fs の Runner の但し書き。")>]
   let convertBulletmlTask bulletml =
     if bulletml :> obj = null then
       let emptyState : BulletState =
@@ -272,5 +283,6 @@ module BulletRunner =
     bulletmlTask
 
   [<CompiledName "ConvertBulletmlTaskOption">]
+  [<System.Obsolete("新 API（Runner.load）へ移してください。移し方は Api.fs の Runner の但し書き。")>]
   let convertBulletmlTaskOption bulletml =
     convertBulletmlTask bulletml |> Some
