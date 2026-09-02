@@ -16,27 +16,27 @@ module Tenmado =
         bulletmlName = Some "tenmadoより、三面ボス「Disconnection」by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "240")),
                Some (Speed (None,numExpr "0.6")),
-               BulletRef ({bulletRefLabel = "bitlaser";},["60"; "10"]));
+               BulletRef ({bulletRefLabel = BulletLabel "bitlaser";},["60"; "10"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-240")),
                Some (Speed (None,numExpr "0.6")),
-               BulletRef ({bulletRefLabel = "bitlaser";},["-60"; "-10"]));
+               BulletRef ({bulletRefLabel = BulletLabel "bitlaser";},["-60"; "-10"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "240")),
                Some (Speed (None,numExpr "0.6")),
-               BulletRef ({bulletRefLabel = "bitaim";},["60"; "10"; "35"]));
+               BulletRef ({bulletRefLabel = BulletLabel "bitaim";},["60"; "10"; "35"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-240")),
                Some (Speed (None,numExpr "0.6")),
-               BulletRef ({bulletRefLabel = "bitaim";},["-60"; "-10"; "5"]));
+               BulletRef ({bulletRefLabel = BulletLabel "bitaim";},["-60"; "-10"; "5"]));
             Wait (numExpr "60");
             Repeat
               (Times (numExpr "600 / (6.0 - 4.0 * $rank)"),
@@ -50,7 +50,7 @@ module Tenmado =
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Wait (numExpr "6.0 - 4.0 * $rank")])); Wait (numExpr "90")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "bitlaser";},None,None,
+          ({bulletLabel = Some (BulletLabel "bitlaser");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "120"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "30");
@@ -61,7 +61,7 @@ module Tenmado =
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
                    Some (Speed (None,numExpr "0.1")),
-                   BulletRef ({bulletRefLabel = "laser";},["0.3"]));
+                   BulletRef ({bulletRefLabel = BulletLabel "laser";},["0.3"]));
                 Repeat
                   (Times (numExpr "6"),
                    Action
@@ -71,7 +71,7 @@ module Tenmado =
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$2")),
                           Some (Speed (None,numExpr "0.1")),
-                          BulletRef ({bulletRefLabel = "laser";},["0.3"]))]));
+                          BulletRef ({bulletRefLabel = BulletLabel "laser";},["0.3"]))]));
                 ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "30");
                 ChangeDirection
                   (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0"),Term (numExpr "1"));
@@ -81,7 +81,7 @@ module Tenmado =
                    Some
                      (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1 + 3.5 * $2")),
                    Some (Speed (None,numExpr "0.1")),
-                   BulletRef ({bulletRefLabel = "laser";},["1.5"]));
+                   BulletRef ({bulletRefLabel = BulletLabel "laser";},["1.5"]));
                 Repeat
                   (Times (numExpr "4"),
                    Action
@@ -91,10 +91,10 @@ module Tenmado =
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-$2")),
                           Some (Speed (None,numExpr "0.1")),
-                          BulletRef ({bulletRefLabel = "laser";},["1.5"]))]));
+                          BulletRef ({bulletRefLabel = BulletLabel "laser";},["1.5"]))]));
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "bitaim";},None,None,
+          ({bulletLabel = Some (BulletLabel "bitaim");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "120"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "30");
@@ -124,7 +124,7 @@ module Tenmado =
                    Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "50 + $3");
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "laser";},None,None,
+          ({bulletLabel = Some (BulletLabel "laser");},None,None,
            [Action
               ({actionLabel = None;},
                [Fire
@@ -168,11 +168,11 @@ module Tenmado =
         bulletmlName = Some "tenmadoより、最終ボス「L」第一形態 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
-               Some (Speed (None,numExpr "0")),BulletRef ({bulletRefLabel = "random";},[]));
+               Some (Speed (None,numExpr "0")),BulletRef ({bulletRefLabel = BulletLabel "random";},[]));
             Repeat
               (Times (numExpr "8"),
                Action
@@ -181,15 +181,15 @@ module Tenmado =
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
                       Some (Speed (None,numExpr "0.5")),
-                      BulletRef ({bulletRefLabel = "surprise";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "surprise";},[]));
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "270")),
                       Some (Speed (None,numExpr "0.5")),
-                      BulletRef ({bulletRefLabel = "surprise";},[])); Wait (numExpr "100")]));
+                      BulletRef ({bulletRefLabel = BulletLabel "surprise";},[])); Wait (numExpr "100")]));
             Wait (numExpr "20")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "surprise";},None,None,
+          ({bulletLabel = Some (BulletLabel "surprise");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "100"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"));
@@ -219,7 +219,7 @@ module Tenmado =
                                     [Action ({actionLabel = None;},[])]))]));
                        Wait (numExpr "1")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "random";},None,None,
+          ({bulletLabel = Some (BulletLabel "random");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "200");
@@ -246,11 +246,11 @@ module Tenmado =
         bulletmlName = Some "tenmadoより、最終ボス「L」第三形態 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
-               Some (Speed (None,numExpr "0")),BulletRef ({bulletRefLabel = "stardust";},[]));
+               Some (Speed (None,numExpr "0")),BulletRef ({bulletRefLabel = BulletLabel "stardust";},[]));
             Wait (numExpr "120");
             Repeat
               (Times (numExpr "840/(120 - 100 * $rank)"),
@@ -260,20 +260,20 @@ module Tenmado =
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = Aim;},numExpr "0")),
                       Some (Speed (None,numExpr "1")),
-                      BulletRef ({bulletRefLabel = "laser";},["2"]));
+                      BulletRef ({bulletRefLabel = BulletLabel "laser";},["2"]));
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = Aim;},numExpr "0")),
                       Some (Speed (None,numExpr "1")),
-                      BulletRef ({bulletRefLabel = "laser";},["2.05"]));
+                      BulletRef ({bulletRefLabel = BulletLabel "laser";},["2.05"]));
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = Aim;},numExpr "0")),
                       Some (Speed (None,numExpr "1")),
-                      BulletRef ({bulletRefLabel = "laser";},["2.1"]));
+                      BulletRef ({bulletRefLabel = BulletLabel "laser";},["2.1"]));
                    Wait (numExpr "0.5 * (120 - 100 * $rank)")])); Wait (numExpr "60")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "stardust";},None,None,
+          ({bulletLabel = Some (BulletLabel "stardust");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -287,7 +287,7 @@ module Tenmado =
                                (Some {directionType = DirectionType.Absolute;},numExpr "135 + 90 * $rand")),
                           Some (Speed (None,numExpr "0.3 + 1.7 * $rand")),
                           BulletRef
-                            ({bulletRefLabel = "stardust2";},["60"; "1.2"; "0.8"]));
+                            ({bulletRefLabel = BulletLabel "stardust2";},["60"; "1.2"; "0.8"]));
                        Fire
                          ({fireLabel = None;},
                           Some
@@ -295,7 +295,7 @@ module Tenmado =
                                (Some {directionType = DirectionType.Absolute;},numExpr "135 + 90 * $rand")),
                           Some (Speed (None,numExpr "0.3 + 1.7 * $rand")),
                           BulletRef
-                            ({bulletRefLabel = "stardust2";},["68"; "0.8"; "1.2"]));
+                            ({bulletRefLabel = BulletLabel "stardust2";},["68"; "0.8"; "1.2"]));
                        Fire
                          ({fireLabel = None;},
                           Some
@@ -303,7 +303,7 @@ module Tenmado =
                                (Some {directionType = DirectionType.Absolute;},numExpr "135 + 90 * $rand")),
                           Some (Speed (None,numExpr "0.3 + 1.7 * $rand")),
                           BulletRef
-                            ({bulletRefLabel = "stardust2";},["76"; "1.2"; "0.8"]));
+                            ({bulletRefLabel = BulletLabel "stardust2";},["76"; "1.2"; "0.8"]));
                        Fire
                          ({fireLabel = None;},
                           Some
@@ -311,10 +311,10 @@ module Tenmado =
                                (Some {directionType = DirectionType.Absolute;},numExpr "135 + 90 * $rand")),
                           Some (Speed (None,numExpr "0.3 + 1.7 * $rand")),
                           BulletRef
-                            ({bulletRefLabel = "stardust2";},["84"; "0.8"; "1.2"]));
+                            ({bulletRefLabel = BulletLabel "stardust2";},["84"; "0.8"; "1.2"]));
                        Wait (numExpr "960/(10+$rank*20)")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "stardust2";},None,None,
+          ({bulletLabel = Some (BulletLabel "stardust2");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "$1");
@@ -379,6 +379,6 @@ module Tenmado =
                    Some (Speed (None,numExpr "$3")),
                    Bullet ({bulletLabel = None;},None,None,[])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "laser";},None,None,
+          ({bulletLabel = Some (BulletLabel "laser");},None,None,
            [Action
               ({actionLabel = None;},[ChangeSpeed (Speed (None,numExpr "$1"),Term (numExpr "1"))])])])

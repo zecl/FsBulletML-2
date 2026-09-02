@@ -233,7 +233,7 @@ module IntermediateParser =
   let internal createAction factory xml getChildren = 
     match xml with
     | Element(name, attrs, children) ->
-      let attrs = { actionLabel = tryFindLabelValue attrs }
+      let attrs = { actionLabel = tryFindLabelValue attrs |> Option.map ActionLabel }
       let commands = getChildren xml children
 
       let actionElements = 
@@ -275,7 +275,7 @@ module IntermediateParser =
     | Element(_ , attrs, _) ->
       let tryFindActionRefAtts = maybe {
         let! label = tryFindLabelValue attrs
-        return { actionRefLabel = label } }
+        return { actionRefLabel = ActionLabel label } }
 
       match tryFindActionRefAtts with
       | Some attrs -> factory(attrs, getParam xml)
@@ -314,7 +314,7 @@ module IntermediateParser =
     match xml with 
     | Element(_ , attrs, children) -> 
       let text = getTextDefault children "0"
-      let attr = { bulletLabel = tryFindLabelValue attrs }
+      let attr = { bulletLabel = tryFindLabelValue attrs |> Option.map BulletLabel }
       let commands = getChildren xml children
 
       let actions = getActions commands
@@ -331,7 +331,7 @@ module IntermediateParser =
     | Element(_ , attrs, _) ->
       let tryFindBulletRefAttrs = maybe {
         let! label = tryFindLabelValue attrs
-        let bulletRefAttrs = { bulletRefLabel = label }
+        let bulletRefAttrs = { bulletRefLabel = BulletLabel label }
         return bulletRefAttrs
         }
       match tryFindBulletRefAttrs with
@@ -360,7 +360,7 @@ module IntermediateParser =
   let internal createFire xml getChildren = 
     match xml with
     | Element(_ , attrs, children) ->
-      let fireattrs = { FireAttrs.fireLabel = tryFindLabelValue attrs }
+      let fireattrs = { FireAttrs.fireLabel = tryFindLabelValue attrs |> Option.map FireLabel }
       match tryFindBulletOrBulletRef children getChildren with
       | Some bullet ->
         Bulletml.Fire(fireattrs, tryFindDirection children, tryFindSpeed children, bullet )
@@ -377,7 +377,7 @@ module IntermediateParser =
     | Element(_ , attrs, _) ->
       let tryFindFireAttrs = maybe {
         let! label = tryFindLabelValue attrs
-        return { fireRefLabel = label } }
+        return { fireRefLabel = FireLabel label } }
       
       match tryFindFireAttrs with
       | Some attrs ->
@@ -743,15 +743,15 @@ module IntermediateParser =
       xmlToCommandList2' topRecBulletml recBulletml []
     xmlToCommandList2 recBulletml recBulletml
 
-  let internal tryFindAction recBulletml targetLabel = 
+  let internal tryFindAction recBulletml (targetLabel: ActionLabel) =
     let actions = getAction recBulletml
     actions |> List.tryFind (function
       | RecBulletml.Action(attrs, _) ->
+        // 以前は tryFindLabelValue [("label", v)] を通していたが、
+        // 1 要素の連想リストから同じキーを引くだけで、常に Some v を返す
+        // 空回りだった。型が付いたのでそのまま比べる
         match attrs.actionLabel with
-        | Some v ->   
-          match tryFindLabelValue [("label",v)] with
-          | Some label -> if label = targetLabel then true else false
-          | None -> false
+        | Some v -> v = targetLabel
         | None -> false
       | _ -> false)
 
@@ -787,15 +787,12 @@ module IntermediateParser =
       xmlToCommandList2' topRecBulletml recBulletml []
     xmlToCommandList2 recBulletml recBulletml
 
-  let internal tryFindFire recBulletml targetLabel = 
+  let internal tryFindFire recBulletml (targetLabel: FireLabel) =
     let fires = getFire recBulletml
     fires |> List.tryFind (function
       | RecBulletml.Fire(attrs, _, _, _) ->
         match attrs.fireLabel with
-        | Some v ->   
-          match tryFindLabelValue [("label", v)] with
-          | Some label -> if label = targetLabel then true else false
-          | None -> false
+        | Some v -> v = targetLabel
         | None -> false
       | _ -> false)
 
@@ -831,20 +828,25 @@ module IntermediateParser =
       xmlToCommandList2' topRecBulletml recBulletml []
     xmlToCommandList2 recBulletml recBulletml
 
-  let internal tryFindBullet recBulletml targetLabel = 
+  let internal tryFindBullet recBulletml (targetLabel: BulletLabel) =
     let bullets = getBullet recBulletml
     bullets |> List.tryFind (function
       | RecBulletml.Bullet(attrs, _, _, _) ->
         match attrs.bulletLabel with
-        | Some v ->   
-          match tryFindLabelValue [("label", v)] with
-          | Some label -> if label = targetLabel then true else false
-          | None -> false
+        | Some v -> v = targetLabel
         | None -> false
       | _ -> false)
 
-  let internal refBulletml (target) label prams =
-    let prams = prams |> Param.ofList 
+  /// 参照先の要素へ実引数を差し込む。
+  ///
+  /// key は「どの種別の、どの名前を解いているか」。以前は label だけを
+  /// 素の string で受けていて、target が Action / Bullet / Fire の
+  /// どれであっても同じ文字列と比べられてしまっていた。**呼ぶ側は必ず
+  /// 種別を揃えて渡していたが、それを型で言えていなかった。**
+  /// key を RefKey にすると、種別が食い違う組み合わせが書けなくなり、
+  /// 下の match で「target と key の種別が揃っている」腕だけが残る
+  let internal refBulletml (target) (key: RefKey) prams =
+    let prams = prams |> Param.ofList
     let rec convert bulletml =
       match bulletml with
       | RecBulletml.Bullet (attrs, direction, speed, actions) -> 
@@ -874,20 +876,24 @@ module IntermediateParser =
       | RecBulletml.Accel(horizontal, vertical, term) ->
         RecBulletml.Accel (convertHorizontalOption prams horizontal,convertVerticalOption prams vertical, convertTerm prams term)
       | x -> x 
-    match target with
-    | RecBulletml.Action(attrs, _) -> 
-      if attrs.actionLabel = label then
-        convert target 
+    // target と key の種別が揃っている腕だけを書く。揃わない組み合わせは
+    // 呼ぶ側に無い（tryFindAction が返すのは Action、その key は ActionKey）。
+    // 以前は label が string だったので、揃わない組み合わせも書けてしまい、
+    // 「Fire を探して Action の名前と比べる」が型を通っていた
+    match target, key with
+    | RecBulletml.Action(attrs, _), ActionKey l ->
+      if attrs.actionLabel = Some l then
+        convert target
       else
         target
-    | RecBulletml.Bullet(attrs, _, _, _) -> 
-      if attrs.bulletLabel = label then
-        convert target 
+    | RecBulletml.Bullet(attrs, _, _, _), BulletKey l ->
+      if attrs.bulletLabel = Some l then
+        convert target
       else
         target
-    | RecBulletml.Fire(attrs, _, _, _) -> 
-      if attrs.fireLabel = label then
-        convert target 
+    | RecBulletml.Fire(attrs, _, _, _), FireKey l ->
+      if attrs.fireLabel = Some l then
+        convert target
       else
         target
     | _ -> new BulletmlDTDViolationException("convert error.") |> raise
@@ -927,8 +933,9 @@ module IntermediateParser =
       convert recbulletml [] 
     convertBulletml' recbulletml |> List.head 
 
-  /// 展開中の参照を種別つきで表す（action:foo と bullet:foo は別物）
-  let internal refKey kind label = kind + ":" + (label: string)
+  /// 展開中の参照は DTD.RefKey が表す（action:foo と bullet:foo は別物）。
+  /// 以前はここに refKey kind label = kind + ":" + label があり、種別を
+  /// 文字で足していた。型にしたので、足し忘れも綴り違いも起きない
 
   /// lastAction は「直近に展開した action の label」。
   /// action の輪を残してよいのは、その輪が直近に展開した action 自身へ戻るときだけ。
@@ -943,43 +950,43 @@ module IntermediateParser =
     let enter key =
       if Set.contains key visiting then
         new BulletmlDTDViolationException(
-              sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" key) |> raise
+              sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)) |> raise
       Set.add key visiting
     let rec convert recBulletml =
       match recBulletml with
       | RecBulletml.ActionRef (attrs, prams) ->
-        let key = refKey "action" attrs.actionRefLabel
+        let key = ActionKey attrs.actionRefLabel
         if Set.contains key visiting then
           if lastAction = Some attrs.actionRefLabel then
             // 自分自身へ戻る輪。展開せず残し、走らせる側が 1 段ずつ解く
             recBulletml
           else
             new BulletmlDTDViolationException(
-                  sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" key) |> raise
+                  sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)) |> raise
         else
           match tryFindAction topRecBulletml attrs.actionRefLabel with
           | Some action ->
-            let newAction = refBulletml action (Some(attrs.actionRefLabel)) (mapEval prams)
+            let newAction = refBulletml action (ActionKey attrs.actionRefLabel) (mapEval prams)
             convertRefBulletmlIn (Set.add key visiting) (Some attrs.actionRefLabel) topRecBulletml newAction
-          | None -> new BulletmlDTDViolationException(sprintf "not found target Action element:%s" attrs.actionRefLabel) |> raise
+          | None -> new BulletmlDTDViolationException(sprintf "not found target Action element:%s" (ActionLabel.text attrs.actionRefLabel)) |> raise
       | RecBulletml.FireRef (attrs, prams) ->
-        let visiting = enter (refKey "fire" attrs.fireRefLabel)
+        let visiting = enter (FireKey attrs.fireRefLabel)
         match tryFindFire topRecBulletml attrs.fireRefLabel with
         | Some fire ->
-          let newFire = refBulletml fire (Some(attrs.fireRefLabel))  (mapEval prams)
+          let newFire = refBulletml fire (FireKey attrs.fireRefLabel) (mapEval prams)
           convertRefBulletmlIn visiting None topRecBulletml newFire
-        | None -> new BulletmlDTDViolationException(sprintf "not found target Fire element:%s" attrs.fireRefLabel) |> raise
+        | None -> new BulletmlDTDViolationException(sprintf "not found target Fire element:%s" (FireLabel.text attrs.fireRefLabel)) |> raise
       | RecBulletml.BulletRef (attrs, prams) ->
-        let key = refKey "bullet" attrs.bulletRefLabel
+        let key = BulletKey attrs.bulletRefLabel
         if Set.contains key visiting then
           // 輪。展開せず残し、走らせる側が 1 段ずつ解く
           recBulletml
         else
           match tryFindBullet topRecBulletml attrs.bulletRefLabel with
           | Some bullet ->
-            let newBullet = refBulletml bullet (Some(attrs.bulletRefLabel))  (mapEval prams)
+            let newBullet = refBulletml bullet (BulletKey attrs.bulletRefLabel) (mapEval prams)
             convertRefBulletmlIn (Set.add key visiting) None topRecBulletml newBullet
-          | None -> new BulletmlDTDViolationException(sprintf "not foun target Bullet element:%s" attrs.bulletRefLabel) |> raise
+          | None -> new BulletmlDTDViolationException(sprintf "not foun target Bullet element:%s" (BulletLabel.text attrs.bulletRefLabel)) |> raise
       | RecBulletml.Bulletml (attrs,bulletmls) -> 
         let newbulletmls = bulletmls |> List.map convert
         RecBulletml.Bulletml(attrs, newbulletmls)
@@ -1020,8 +1027,8 @@ module IntermediateParser =
     | Some bullet ->
       // param は文字のまま渡す（mapEval と同じ理由）
       let evaluated = prams
-      refBulletml bullet (Some label) evaluated
-      |> convertRefBulletmlIn (Set.singleton (refKey "bullet" label)) None topRecBulletml
+      refBulletml bullet (BulletKey label) evaluated
+      |> convertRefBulletmlIn (Set.singleton (BulletKey label)) None topRecBulletml
       |> Some
     | None -> None
 
@@ -1037,7 +1044,7 @@ module IntermediateParser =
     | Some action ->
       // param は文字のまま渡す（mapEval と同じ理由）
       let evaluated = prams
-      refBulletml action (Some label) evaluated
-      |> convertRefBulletmlIn (Set.singleton (refKey "action" label)) (Some label) topRecBulletml
+      refBulletml action (ActionKey label) evaluated
+      |> convertRefBulletmlIn (Set.singleton (ActionKey label)) (Some label) topRecBulletml
       |> Some
     | None -> None

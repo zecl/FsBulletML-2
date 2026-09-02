@@ -16,15 +16,15 @@ module SilverGun =
         bulletmlName = Some "レイディアントシルバーガン4Dボス、PENTA。by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "100")),
-               Some (Speed (None,numExpr "4")),BulletRef ({bulletRefLabel = "arm";},[]));
+               Some (Speed (None,numExpr "4")),BulletRef ({bulletRefLabel = BulletLabel "arm";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-100")),
-               Some (Speed (None,numExpr "4")),BulletRef ({bulletRefLabel = "arm";},[]));
+               Some (Speed (None,numExpr "4")),BulletRef ({bulletRefLabel = BulletLabel "arm";},[]));
             Repeat
               (Times (numExpr "400"),
                Action
@@ -36,7 +36,7 @@ module SilverGun =
                       Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1")]));
             Wait (numExpr "60")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "arm";},None,None,
+          ({bulletLabel = Some (BulletLabel "arm");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "12"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"));
@@ -49,15 +49,15 @@ module SilverGun =
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = Aim;},numExpr "-15")),
                           Some (Speed (None,numExpr "1.8")),
-                          BulletRef ({bulletRefLabel = "homing";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "homing";},[]));
                        Fire
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "30")),
                           Some (Speed (None,numExpr "1.8")),
-                          BulletRef ({bulletRefLabel = "homing";},[])); Wait (numExpr "2")]));
+                          BulletRef ({bulletRefLabel = BulletLabel "homing";},[])); Wait (numExpr "2")]));
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "homing";},None,None,
+          ({bulletLabel = Some (BulletLabel "homing");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "60");

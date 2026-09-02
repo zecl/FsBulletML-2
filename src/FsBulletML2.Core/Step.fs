@@ -1,4 +1,4 @@
-namespace FsBulletML2
+﻿namespace FsBulletML2
 
 open FsBulletML2.DTD
 open FsBulletML2.Domain
@@ -326,9 +326,13 @@ module internal Step =
 
   /// 輪のために展開を止めた bulletRef / actionRef を、走らせる側から
   /// 1 段だけ解くための入口。実装は fire（bulletRef）と action（actionRef）
+  ///
+  /// 名前を BulletLabel / ActionLabel で受けるので、bullet の名前を
+  /// Action の解決子へ渡す形が組めない。以前はどちらも string を受けていて、
+  /// 取り違えても型が通っていた
   type Resolvers =
-    { Bullet : string -> string list -> RecBulletml option
-      Action : string -> string list -> RecBulletml option }
+    { Bullet : BulletLabel -> string list -> RecBulletml option
+      Action : ActionLabel -> string list -> RecBulletml option }
 
   /// Progress が「終わった」を持っているか。現行の getFinish。
   ///

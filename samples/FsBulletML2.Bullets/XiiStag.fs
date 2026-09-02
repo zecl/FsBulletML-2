@@ -16,16 +16,16 @@ module XiiStag =
         bulletmlName = Some "トゥエルブスタッグ３ボス by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
-           [Action.ActionRef ({actionRefLabel = "bara";},["1"]);
-            Action.ActionRef ({actionRefLabel = "bara";},["-1"]);
-            Action.ActionRef ({actionRefLabel = "3way";},["180-55"; "-5"]);
-            Action.ActionRef ({actionRefLabel = "3way";},["180"; "0"]);
-            Action.ActionRef ({actionRefLabel = "3way";},["180+55"; "5"]);
-            Action.ActionRef ({actionRefLabel = "roll";},["180+45"; "1"]);
-            Action.ActionRef ({actionRefLabel = "roll";},["180-45"; "-1"]);
-            Action.ActionRef ({actionRefLabel = "straight";},["1"]);
-            Action.ActionRef ({actionRefLabel = "straight";},["-1"]); Wait (numExpr "50");
+          ({actionLabel = Some (ActionLabel "top");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "bara";},["1"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "bara";},["-1"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "3way";},["180-55"; "-5"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "3way";},["180"; "0"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "3way";},["180+55"; "5"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "roll";},["180+45"; "1"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "roll";},["180-45"; "-1"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "straight";},["1"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "straight";},["-1"]); Wait (numExpr "50");
             Repeat
               (Times (numExpr "3*$rank"),
                Action
@@ -35,24 +35,24 @@ module XiiStag =
                       Some (Speed (Some {speedType = SpeedType.Absolute;},numExpr "0")),
                       Bullet
                         ({bulletLabel = None;},None,None,
-                         [ActionRef ({actionRefLabel = "fin1";},["1"])]));
+                         [ActionRef ({actionRefLabel = ActionLabel "fin1";},["1"])]));
                    Fire
                      ({fireLabel = None;},None,
                       Some (Speed (Some {speedType = SpeedType.Absolute;},numExpr "0")),
                       Bullet
                         ({bulletLabel = None;},None,None,
-                         [ActionRef ({actionRefLabel = "fin1";},["-1"])]));
+                         [ActionRef ({actionRefLabel = ActionLabel "fin1";},["-1"])]));
                    Fire
                      ({fireLabel = None;},None,None,
                       Bullet
                         ({bulletLabel = None;},None,None,
-                         [ActionRef ({actionRefLabel = "white1";},[])]));
+                         [ActionRef ({actionRefLabel = ActionLabel "white1";},[])]));
                    Wait (numExpr "5*(6+(12*$rank))")])); Wait (numExpr "110")]);
         BulletmlElm.Action
-          ({actionLabel = Some "fin1";},
-           [Action.ActionRef ({actionRefLabel = "fin2";},["$1"]); Vanish]);
+          ({actionLabel = Some (ActionLabel "fin1");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "fin2";},["$1"]); Vanish]);
         BulletmlElm.Action
-          ({actionLabel = Some "fin2";},
+          ({actionLabel = Some (ActionLabel "fin2");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = Aim;},numExpr "$1*90")),
@@ -72,12 +72,12 @@ module XiiStag =
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Wait (numExpr "2/($rank+0.2)")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "white1";},
-           [FireRef ({fireRefLabel = "white2";},["0"; "0.00001"; "0"]);
-            FireRef ({fireRefLabel = "white2";},["90"; "1"; "1.5"]);
-            FireRef ({fireRefLabel = "white2";},["-90"; "1"; "-1.5"]); Vanish]);
+          ({actionLabel = Some (ActionLabel "white1");},
+           [FireRef ({fireRefLabel = FireLabel "white2";},["0"; "0.00001"; "0"]);
+            FireRef ({fireRefLabel = FireLabel "white2";},["90"; "1"; "1.5"]);
+            FireRef ({fireRefLabel = FireLabel "white2";},["-90"; "1"; "-1.5"]); Vanish]);
         BulletmlElm.Fire
-          ({fireLabel = Some "white2";},
+          ({fireLabel = Some (FireLabel "white2");},
            Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "$1")),
            Some (Speed (Some {speedType = SpeedType.Absolute;},numExpr "$2")),
            Bullet
@@ -101,14 +101,14 @@ module XiiStag =
                              Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "5")]));
                    Vanish])]));
         BulletmlElm.Action
-          ({actionLabel = Some "bara";},
-           [FireRef ({fireRefLabel = "5c";},["44*$1"; "4.1"; "4"]);
-            FireRef ({fireRefLabel = "5c";},["55.5*$1"; "3.45"; "3"]);
-            FireRef ({fireRefLabel = "5c";},["55*$1"; "4.2"; "2"]);
-            FireRef ({fireRefLabel = "5c";},["70*$1"; "3"; "0"]);
-            FireRef ({fireRefLabel = "5c";},["68*$1"; "3.74"; "1"])]);
+          ({actionLabel = Some (ActionLabel "bara");},
+           [FireRef ({fireRefLabel = FireLabel "5c";},["44*$1"; "4.1"; "4"]);
+            FireRef ({fireRefLabel = FireLabel "5c";},["55.5*$1"; "3.45"; "3"]);
+            FireRef ({fireRefLabel = FireLabel "5c";},["55*$1"; "4.2"; "2"]);
+            FireRef ({fireRefLabel = FireLabel "5c";},["70*$1"; "3"; "0"]);
+            FireRef ({fireRefLabel = FireLabel "5c";},["68*$1"; "3.74"; "1"])]);
         BulletmlElm.Fire
-          ({fireLabel = Some "5c";},
+          ({fireLabel = Some (FireLabel "5c");},
            Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180+$1")),
            Some (Speed (None,numExpr "$2/1.1")),
            Bullet
@@ -123,23 +123,23 @@ module XiiStag =
                       Action
                         ({actionLabel = None;},
                          [Repeat
-                            (Times (numExpr "3"),ActionRef ({actionRefLabel = "almond1";},[]));
+                            (Times (numExpr "3"),ActionRef ({actionRefLabel = ActionLabel "almond1";},[]));
                           Wait (numExpr "85-(40*$rank)")])); Vanish])]));
         BulletmlElm.Action
-          ({actionLabel = Some "almond1";},
+          ({actionLabel = Some (ActionLabel "almond1");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = Aim;},numExpr "3.5-(7*$rand)")),
                Some (Speed (Some {speedType = SpeedType.Absolute;},numExpr "0+(0.3*$rand)")),
-               BulletRef ({bulletRefLabel = "almond2";},[])); Wait (numExpr "3")]);
+               BulletRef ({bulletRefLabel = BulletLabel "almond2";},[])); Wait (numExpr "3")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "almond2";},None,None,
+          ({bulletLabel = Some (BulletLabel "almond2");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeSpeed
                   (Speed (Some {speedType = SpeedType.Relative;},numExpr "1.8+(0.8*$rank)"),Term (numExpr "10"))])]);
         BulletmlElm.Action
-          ({actionLabel = Some "3way";},
+          ({actionLabel = Some (ActionLabel "3way");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180+$2")),
@@ -156,17 +156,17 @@ module XiiStag =
                          (Times (numExpr "7+(10*$rank)"),
                           Action
                             ({actionLabel = None;},
-                             [FireRef ({fireRefLabel = "9way";},["$1+16"]);
-                              FireRef ({fireRefLabel = "9way";},["$1"]);
-                              FireRef ({fireRefLabel = "9way";},["$1-16"]);
+                             [FireRef ({fireRefLabel = FireLabel "9way";},["$1+16"]);
+                              FireRef ({fireRefLabel = FireLabel "9way";},["$1"]);
+                              FireRef ({fireRefLabel = FireLabel "9way";},["$1-16"]);
                               Wait (numExpr "25")])); Vanish])]))]);
         BulletmlElm.Fire
-          ({fireLabel = Some "9way";},
+          ({fireLabel = Some (FireLabel "9way");},
            Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
            Some (Speed (Some {speedType = SpeedType.Absolute;},numExpr "1.5")),
            Bullet ({bulletLabel = None;},None,None,[]));
         BulletmlElm.Action
-          ({actionLabel = Some "roll";},
+          ({actionLabel = Some (ActionLabel "roll");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180+(11*$2)")),
@@ -211,7 +211,7 @@ module XiiStag =
                                  Bullet ({bulletLabel = None;},None,None,[]));
                               Wait (numExpr "15")])); Vanish])]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "straight";},
+          ({actionLabel = Some (ActionLabel "straight");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180+(82*$1)")),
@@ -226,9 +226,9 @@ module XiiStag =
                        Wait (numExpr "1");
                        Repeat
                          (Times (numExpr "3+(5*$rank)"),
-                          ActionRef ({actionRefLabel = "fall";},[])); Vanish])]))]);
+                          ActionRef ({actionRefLabel = ActionLabel "fall";},[])); Vanish])]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "fall";},
+          ({actionLabel = Some (ActionLabel "fall");},
            [Repeat
               (Times (numExpr "7"),
                Action

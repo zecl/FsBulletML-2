@@ -16,7 +16,7 @@ module ChaosSeed =
         bulletmlName = Some "カオスシード、大猿ボス。by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "roll";},None,None,
+          ({bulletLabel = Some (BulletLabel "roll");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
@@ -29,7 +29,7 @@ module ChaosSeed =
                 ChangeSpeed
                   (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.01"),Term (numExpr "100000"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "explosionBullet";},None,None,
+          ({bulletLabel = Some (BulletLabel "explosionBullet");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "30");
@@ -41,10 +41,10 @@ module ChaosSeed =
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "30")),
                           Some (Speed (None,numExpr "1.2")),
-                          BulletRef ({bulletRefLabel = "roll";},[]))])); Vanish])]);
+                          BulletRef ({bulletRefLabel = BulletLabel "roll";},[]))])); Vanish])]);
 
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "3+$rank*6"),
                Action
@@ -53,5 +53,5 @@ module ChaosSeed =
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = Aim;},numExpr "-90+180*$rand")),
                       Some (Speed (None,numExpr "$rand*3+1")),
-                      BulletRef ({bulletRefLabel = "explosionBullet";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "explosionBullet";},[]));
                    Wait (numExpr "90-$rank*60")]))])])

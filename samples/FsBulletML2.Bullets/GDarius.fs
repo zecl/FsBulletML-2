@@ -16,14 +16,14 @@ module GDarius =
         bulletmlName = Some "Gダライアス中のホーミングレーザー by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "20"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},Some (Direction (None,numExpr "-60+$rand*120")),
-                      None,BulletRef ({bulletRefLabel = "hmgLsr";},[]));
+                      None,BulletRef ({bulletRefLabel = BulletLabel "hmgLsr";},[]));
                    Repeat
                      (Times (numExpr "8"),
                       Action
@@ -32,10 +32,10 @@ module GDarius =
                           Fire
                             ({fireLabel = None;},
                              Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
-                             None,BulletRef ({bulletRefLabel = "hmgLsr";},[]))]));
+                             None,BulletRef ({bulletRefLabel = BulletLabel "hmgLsr";},[]))]));
                    Wait (numExpr "10")])); Wait (numExpr "60")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "hmgLsr";},None,Some (Speed (None,numExpr "2")),
+          ({bulletLabel = Some (BulletLabel "hmgLsr");},None,Some (Speed (None,numExpr "2")),
            [Action
               ({actionLabel = None;},
                [ChangeSpeed (Speed (None,numExpr "0.3"),Term (numExpr "30")); Wait (numExpr "100");

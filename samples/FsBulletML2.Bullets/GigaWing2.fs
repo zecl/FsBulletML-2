@@ -16,7 +16,7 @@ module GigaWing2 =
         bulletmlName = Some "ギガウィング2のアークリミかも。by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "add2";},
+          ({actionLabel = Some (ActionLabel "add2");},
            [Repeat
               (Times (numExpr "2"),
                Action
@@ -27,7 +27,7 @@ module GigaWing2 =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top1";},
+          ({actionLabel = Some (ActionLabel "top1");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "9")),None,
@@ -43,9 +43,9 @@ module GigaWing2 =
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "7-18")),
                       Some (Speed (None,numExpr "1.8")),
                       Bullet ({bulletLabel = None;},None,None,[]));
-                   Action.ActionRef ({actionRefLabel = "add2";},[]); Wait (numExpr "4-$rank*2+$rand")]))]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "add2";},[]); Wait (numExpr "4-$rank*2+$rand")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top2";},
+          ({actionLabel = Some (ActionLabel "top2");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "9")),None,
@@ -61,4 +61,4 @@ module GigaWing2 =
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-7-18")),
                       Some (Speed (None,numExpr "1.8")),
                       Bullet ({bulletLabel = None;},None,None,[]));
-                   Action.ActionRef ({actionRefLabel = "add2";},[]); Wait (numExpr "4-$rank*2+$rand")]))])])
+                   Action.ActionRef ({actionRefLabel = ActionLabel "add2";},[]); Wait (numExpr "4-$rank*2+$rand")]))])])

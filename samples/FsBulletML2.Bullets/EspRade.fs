@@ -16,7 +16,7 @@ module EspRade =
         bulletmlName = Some "エスプレイド、最終面後半「アリスクローン」by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Fire
-          ({fireLabel = Some "alice";},Some (Direction (None,numExpr "$rand*360")),
+          ({fireLabel = Some (FireLabel "alice");},Some (Direction (None,numExpr "$rand*360")),
            Some (Speed (None,numExpr "8")),
            Bullet
              ({bulletLabel = None;},None,None,
@@ -28,12 +28,12 @@ module EspRade =
                       Some (Direction (Some {directionType = Aim;},numExpr "$rand*30-15")),
                       None,Bullet ({bulletLabel = None;},None,None,[])); Vanish])]));
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "600"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "alice";},[]); Wait (numExpr "$rank+1+$rand")]));
+                  [FireRef ({fireRefLabel = FireLabel "alice";},[]); Wait (numExpr "$rank+1+$rand")]));
             Wait (numExpr "100")])])
 
   /// エスプレイド、無敵の軍神アレス第二形態 by 白い弾幕くん
@@ -46,10 +46,10 @@ module EspRade =
         bulletmlName = Some "エスプレイド、無敵の軍神アレス第二形態 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "Stop";},
+          ({actionLabel = Some (ActionLabel "Stop");},
            [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWay";},
+          ({actionLabel = Some (ActionLabel "XWay");},
            [Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -62,15 +62,15 @@ module EspRade =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "aim3";},None,None,
+          ({bulletLabel = Some (BulletLabel "aim3");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "10");
                 Fire
                   ({fireLabel = None;},None,Some (Speed (None,numExpr "0")),
-                   BulletRef ({bulletRefLabel = "aim3Impl";},[])); Vanish])]);
+                   BulletRef ({bulletRefLabel = BulletLabel "aim3Impl";},[])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "aim3Impl";},None,None,
+          ({bulletLabel = Some (BulletLabel "aim3Impl");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -85,7 +85,7 @@ module EspRade =
                           Some (Speed (None,numExpr "1.5")),
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Action.ActionRef
-                         ({actionRefLabel = "XWay";},
+                         ({actionRefLabel = ActionLabel "XWay";},
                           ["3"; "30"]);
                        Repeat
                          (Times (numExpr "2+$rank*3"),
@@ -100,19 +100,19 @@ module EspRade =
                                  Some (Speed (None,numExpr "1.5")),
                                  Bullet ({bulletLabel = None;},None,None,[]));
                               Action.ActionRef
-                                ({actionRefLabel = "XWay";},
+                                ({actionRefLabel = ActionLabel "XWay";},
                                  ["3"; "30"])]));
                        Wait (numExpr "54-$rank*9")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "aim";},None,None,
+          ({bulletLabel = Some (BulletLabel "aim");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "10");
                 Fire
                   ({fireLabel = None;},None,Some (Speed (None,numExpr "0")),
-                   BulletRef ({bulletRefLabel = "aimImpl";},[])); Vanish])]);
+                   BulletRef ({bulletRefLabel = BulletLabel "aimImpl";},[])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "aimImpl";},None,None,
+          ({bulletLabel = Some (BulletLabel "aimImpl");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -140,10 +140,10 @@ module EspRade =
                                  Bullet ({bulletLabel = None;},None,None,[]))]));
                        Wait (numExpr "54-$rank*9")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "fan";},None,None,
+          ({bulletLabel = Some (BulletLabel "fan");},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Repeat
                   (Times (numExpr "3+$rank*4"),
                    Action
@@ -156,82 +156,82 @@ module EspRade =
                           Some (Speed (None,numExpr "$3")),
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Action.ActionRef
-                         ({actionRefLabel = "XWay";},
+                         ({actionRefLabel = ActionLabel "XWay";},
                           ["7"; "10"]);
                        Wait (numExpr "420/(3+$rank*4)")])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "110")),
                Some (Speed (None,numExpr "4")),
-               BulletRef ({bulletRefLabel = "aim3";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "aim3";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-110")),
                Some (Speed (None,numExpr "4")),
-               BulletRef ({bulletRefLabel = "aim3";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "aim3";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "125")),
                Some (Speed (None,numExpr "5")),
-               BulletRef ({bulletRefLabel = "aim";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "aim";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-125")),
                Some (Speed (None,numExpr "5")),
-               BulletRef ({bulletRefLabel = "aim";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "aim";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "150")),
                Some (Speed (None,numExpr "7")),
-               BulletRef ({bulletRefLabel = "aim";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "aim";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-150")),
                Some (Speed (None,numExpr "7")),
-               BulletRef ({bulletRefLabel = "aim";},[])); Wait (numExpr "10");
+               BulletRef ({bulletRefLabel = BulletLabel "aim";},[])); Wait (numExpr "10");
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
                Some (Speed (None,numExpr "6")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["-135"; "10"; "1.3"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
                Some (Speed (None,numExpr "6")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["135"; "10"; "1.3"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "110")),
                Some (Speed (None,numExpr "4")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["-164"; "8"; "1.2"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-110")),
                Some (Speed (None,numExpr "4")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["156"; "8"; "1.2"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "130")),
                Some (Speed (None,numExpr "2")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["180"; "8"; "1.1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-130")),
                Some (Speed (None,numExpr "2")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["180"; "5"; "1.1"]));
             Wait (numExpr "430")])])
 
@@ -245,15 +245,15 @@ module EspRade =
         bulletmlName = Some "エスプレイド、ガラ婦人第一形態の片方 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "sequenceThree";},
+          ({actionLabel = Some (ActionLabel "sequenceThree");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "12")),
                Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                Bullet ({bulletLabel = None;},None,None,[]));
-            Action.ActionRef ({actionRefLabel = "sequenceTwo";},[])]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "sequenceTwo";},[])]);
         BulletmlElm.Action
-          ({actionLabel = Some "sequenceTwo";},
+          ({actionLabel = Some (ActionLabel "sequenceTwo");},
            [Repeat
               (Times (numExpr "2"),
                Action
@@ -264,39 +264,39 @@ module EspRade =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "oogi";},
+          ({actionLabel = Some (ActionLabel "oogi");},
            [Fire
               ({fireLabel = None;},Some (Direction (None,numExpr "-90")),
                Some (Speed (None,numExpr "1.5")),Bullet ({bulletLabel = None;},None,None,[]));
-            Action.ActionRef ({actionRefLabel = "sequenceTwo";},[]);
-            Repeat (Times (numExpr "11"),ActionRef ({actionRefLabel = "sequenceThree";},[]));
+            Action.ActionRef ({actionRefLabel = ActionLabel "sequenceTwo";},[]);
+            Repeat (Times (numExpr "11"),ActionRef ({actionRefLabel = ActionLabel "sequenceThree";},[]));
             Wait (numExpr "10")]);
         BulletmlElm.Action
-          ({actionLabel = Some "oogiOuHuku";},
+          ({actionLabel = Some (ActionLabel "oogiOuHuku");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-213")),
                Some (Speed (None,numExpr "1.5")),Bullet ({bulletLabel = None;},None,None,[]));
-            Action.ActionRef ({actionRefLabel = "sequenceTwo";},[]);
-            Repeat (Times (numExpr "11"),ActionRef ({actionRefLabel = "sequenceThree";},[]));
+            Action.ActionRef ({actionRefLabel = ActionLabel "sequenceTwo";},[]);
+            Repeat (Times (numExpr "11"),ActionRef ({actionRefLabel = ActionLabel "sequenceThree";},[]));
             Wait (numExpr "10")]);
         BulletmlElm.Action
-          ({actionLabel = Some "gara1a";},
+          ({actionLabel = Some (ActionLabel "gara1a");},
            [Repeat
               (Times (numExpr "5"),
                Action
                  ({actionLabel = None;},
                   [ChangeDirection (Direction (None,numExpr "360*$rand"),Term (numExpr "1"));
                    ChangeSpeed (Speed (None,numExpr "0.5*$rand+0.5"),Term (numExpr "1"));
-                   Action.ActionRef ({actionRefLabel = "oogi";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "oogi";},[]);
                    Repeat
                      (Times (numExpr "$rand*(3+$rank*2)+1+$rank*2"),
                       Action
                         ({actionLabel = None;},
-                         [Action.ActionRef ({actionRefLabel = "oogiOuHuku";},[])]));
+                         [Action.ActionRef ({actionRefLabel = ActionLabel "oogiOuHuku";},[])]));
                    ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "50")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},[Action.ActionRef ({actionRefLabel = "gara1a";},[])])])
+          ({actionLabel = Some (ActionLabel "top");},[Action.ActionRef ({actionRefLabel = ActionLabel "gara1a";},[])])])
 
   /// エスプレイド、ガラ第一形態のもう一方 by 白い弾幕くん
   /// [ESP_RADE]_round_5_boss_gara_1_b.xml
@@ -308,7 +308,7 @@ module EspRade =
         bulletmlName = Some "エスプレイド、ガラ第一形態のもう一方 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "8way2";},
+          ({actionLabel = Some (ActionLabel "8way2");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180-75")),
@@ -336,7 +336,7 @@ module EspRade =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.25")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "downShot";},
+          ({actionLabel = Some (ActionLabel "downShot");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = Aim;},numExpr "-60+$rand*120")),
@@ -353,7 +353,7 @@ module EspRade =
                           Some (Speed (None,numExpr "1.2")),
                           Bullet ({bulletLabel = None;},None,None,[])); Vanish])]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "gara";},
+          ({actionLabel = Some (ActionLabel "gara");},
            [ChangeDirection
               (Direction (Some {directionType = Aim;},numExpr "10+$rand*340"),Term (numExpr "1"));
             ChangeSpeed (Speed (Some {speedType = SpeedType.Absolute;},numExpr "0.3"),Term (numExpr "1"));
@@ -365,12 +365,12 @@ module EspRade =
                      (Times (numExpr "8"),
                       Action
                         ({actionLabel = None;},
-                         [Action.ActionRef ({actionRefLabel = "downShot";},[]);
+                         [Action.ActionRef ({actionRefLabel = ActionLabel "downShot";},[]);
                           Wait (numExpr "3*(3-$rank*2)*$rand")]));
-                   Action.ActionRef ({actionRefLabel = "8way2";},[])]))]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "8way2";},[])]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
-           [Repeat (Times (numExpr "5"),ActionRef ({actionRefLabel = "gara";},[]));
+          ({actionLabel = Some (ActionLabel "top");},
+           [Repeat (Times (numExpr "5"),ActionRef ({actionRefLabel = ActionLabel "gara";},[]));
             ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "30")])])
 
   /// エスプレイド、ガラ婦人第二形態 by 白い弾幕くん
@@ -383,13 +383,13 @@ module EspRade =
         bulletmlName = Some "エスプレイド、ガラ婦人第二形態 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "featherShot";},None,Some (Speed (None,numExpr "6")),
+          ({bulletLabel = Some (BulletLabel "featherShot");},None,Some (Speed (None,numExpr "6")),
            [Action
               ({actionLabel = None;},
                [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "20")); Wait (numExpr "20");
                 Fire
                   ({fireLabel = None;},None,None,
-                   BulletRef ({bulletRefLabel = "featherAim";},[]));
+                   BulletRef ({bulletRefLabel = BulletLabel "featherAim";},[]));
                 Repeat
                   (Times (numExpr "150+$rank*100"),
                    Action
@@ -400,7 +400,7 @@ module EspRade =
                           None,Bullet ({bulletLabel = None;},None,None,[]));
                        Wait (numExpr "3-$rank*2")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "featherAim";},None,Some (Speed (None,numExpr "0")),
+          ({bulletLabel = Some (BulletLabel "featherAim");},None,Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -423,15 +423,15 @@ module EspRade =
                                  Bullet ({bulletLabel = None;},None,None,[]))]));
                        Wait (numExpr "30")])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),None,
-               BulletRef ({bulletRefLabel = "featherShot";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherShot";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),None,
-               BulletRef ({bulletRefLabel = "featherShot";},[])); Wait (numExpr "550")])])
+               BulletRef ({bulletRefLabel = BulletLabel "featherShot";},[])); Wait (numExpr "550")])])
 
   /// エスプレイド、ガラ第三形態 by 白い弾幕くん
   /// [ESP_RADE]_round_5_boss_gara_3.xml
@@ -443,10 +443,10 @@ module EspRade =
         bulletmlName = Some "エスプレイド、ガラ第三形態 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "stop";},
+          ({actionLabel = Some (ActionLabel "stop");},
            [Wait (numExpr "15"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "1")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "featherAllWay";},None,None,
+          ({bulletLabel = Some (BulletLabel "featherAllWay");},None,None,
            [Action
               ({actionLabel = None;},
                [Fire
@@ -458,7 +458,7 @@ module EspRade =
                    Bullet
                      ({bulletLabel = None;},None,None,
                       [Action ({actionLabel = None;},[Vanish])]));
-                Action.ActionRef ({actionRefLabel = "stop";},[]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "stop";},[]);
                 Repeat
                   (Times (numExpr "40"),
                    Action
@@ -483,10 +483,10 @@ module EspRade =
                                  Bullet ({bulletLabel = None;},None,None,[]))]));
                        Wait (numExpr "15")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "featherAim";},None,None,
+          ({bulletLabel = Some (BulletLabel "featherAim");},None,None,
            [Action
               ({actionLabel = None;},
-               [Action.ActionRef ({actionRefLabel = "stop";},[]);
+               [Action.ActionRef ({actionRefLabel = ActionLabel "stop";},[]);
                 Repeat
                   (Times (numExpr "10+$rank*20"),
                    Action
@@ -512,67 +512,67 @@ module EspRade =
                                     [Action ({actionLabel = None;},[])]))]));
                        Wait (numExpr "40-$rank*20")])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
                Some (Speed (None,numExpr "1")),
-               BulletRef ({bulletRefLabel = "featherAim";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAim";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
                Some (Speed (None,numExpr "1")),
-               BulletRef ({bulletRefLabel = "featherAim";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAim";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "70")),
                Some (Speed (None,numExpr "2")),
-               BulletRef ({bulletRefLabel = "featherAim";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAim";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-70")),
                Some (Speed (None,numExpr "2")),
-               BulletRef ({bulletRefLabel = "featherAim";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAim";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "100")),
                Some (Speed (None,numExpr "1.8")),
-               BulletRef ({bulletRefLabel = "featherAllWay";},["3"; "1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAllWay";},["3"; "1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-100")),
                Some (Speed (None,numExpr "1.8")),
-               BulletRef ({bulletRefLabel = "featherAllWay";},["3"; "-1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAllWay";},["3"; "-1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
                Some (Speed (None,numExpr "3")),
-               BulletRef ({bulletRefLabel = "featherAllWay";},["4"; "1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAllWay";},["4"; "1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
                Some (Speed (None,numExpr "3")),
-               BulletRef ({bulletRefLabel = "featherAllWay";},["4"; "-1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAllWay";},["4"; "-1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "85")),
                Some (Speed (None,numExpr "4")),
-               BulletRef ({bulletRefLabel = "featherAllWay";},["5"; "1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAllWay";},["5"; "1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-85")),
                Some (Speed (None,numExpr "4")),
-               BulletRef ({bulletRefLabel = "featherAllWay";},["5"; "-1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAllWay";},["5"; "-1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "72")),
                Some (Speed (None,numExpr "5")),
-               BulletRef ({bulletRefLabel = "featherAllWay";},["6"; "1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAllWay";},["6"; "1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-72")),
                Some (Speed (None,numExpr "5")),
-               BulletRef ({bulletRefLabel = "featherAllWay";},["6"; "-1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "featherAllWay";},["6"; "-1"]));
             Wait (numExpr "700")])])
 
   /// エスプレイド、ガラ婦人第四形態 by 白い弾幕くん
@@ -585,7 +585,7 @@ module EspRade =
         bulletmlName = Some "エスプレイド、ガラ婦人第四形態 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "featherShot";},None,Some (Speed (None,numExpr "7")),
+          ({bulletLabel = Some (BulletLabel "featherShot");},None,Some (Speed (None,numExpr "7")),
            [Action
               ({actionLabel = None;},
                [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "20")); Wait (numExpr "20");
@@ -599,7 +599,7 @@ module EspRade =
                           Some (Speed (None,numExpr "2*$rand+0.7")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "4"),
                Action
@@ -608,12 +608,12 @@ module EspRade =
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),None,
 
-                      BulletRef ({bulletRefLabel = "featherShot";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "featherShot";},[]));
                    Wait (numExpr "30+$rank*30");
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),None,
-                      BulletRef ({bulletRefLabel = "featherShot";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "featherShot";},[]));
                    Wait (numExpr "30+$rank*30")])); Wait (numExpr "120");
             Repeat
               (Times (numExpr "4"),
@@ -623,12 +623,12 @@ module EspRade =
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),None,
 
-                      BulletRef ({bulletRefLabel = "featherShot";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "featherShot";},[]));
                    Wait (numExpr "40-$rank*20");
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),None,
-                      BulletRef ({bulletRefLabel = "featherShot";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "featherShot";},[]));
                    Wait (numExpr "40-$rank*20")])); Wait (numExpr "60")])])
 
   /// エスプレイド、ガラ婦人最終形態 by 白い弾幕くん
@@ -641,16 +641,16 @@ module EspRade =
         bulletmlName = Some "エスプレイド、ガラ婦人最終形態 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "accel";},
+          ({actionLabel = Some (ActionLabel "accel");},
            [ChangeDirection (Direction (None,numExpr "360*$rand"),Term (numExpr "1"));
             ChangeSpeed (Speed (None,numExpr "0.5+$rand*0.5"),Term (numExpr "1"))]);
         BulletmlElm.Action
-          ({actionLabel = Some "stop";},[ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
+          ({actionLabel = Some (ActionLabel "stop");},[ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Action
-          ({actionLabel = Some "stopAndWait";},
-           [Action.ActionRef ({actionRefLabel = "stop";},[]); Wait (numExpr "70-$rank*50")]);
+          ({actionLabel = Some (ActionLabel "stopAndWait");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "stop";},[]); Wait (numExpr "70-$rank*50")]);
         BulletmlElm.Action
-          ({actionLabel = Some "ippon";},
+          ({actionLabel = Some (ActionLabel "ippon");},
            [Repeat
               (Times (numExpr "26"),
                Action
@@ -661,7 +661,7 @@ module EspRade =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.12")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "murasaki";},
+          ({actionLabel = Some (ActionLabel "murasaki");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$2")),
@@ -670,14 +670,14 @@ module EspRade =
               (Times (numExpr "3+$rand*17"),
                Action
                  ({actionLabel = None;},
-                  [Action.ActionRef ({actionRefLabel = "ippon";},[]); Wait (numExpr "6");
+                  [Action.ActionRef ({actionRefLabel = ActionLabel "ippon";},[]); Wait (numExpr "6");
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$1")),
                       Some (Speed (None,numExpr "0.8")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "ao";},
+          ({actionLabel = Some (ActionLabel "ao");},
            [Repeat
               (Times (numExpr "3+$rand*17"),
                Action
@@ -685,28 +685,28 @@ module EspRade =
                   [Fire
                      ({fireLabel = None;},None,Some (Speed (None,numExpr "0.8")),
                       Bullet ({bulletLabel = None;},None,None,[]));
-                   Action.ActionRef ({actionRefLabel = "ippon";},[]); Wait (numExpr "6")]))]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "ippon";},[]); Wait (numExpr "6")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "gara5";},
+          ({actionLabel = Some (ActionLabel "gara5");},
            [Repeat
               (Times (numExpr "2"),
                Action
                  ({actionLabel = None;},
-                  [Action.ActionRef ({actionRefLabel = "accel";},[]);
-                   Action.ActionRef ({actionRefLabel = "murasaki";},["5"; "180-$rand*90"]);
+                  [Action.ActionRef ({actionRefLabel = ActionLabel "accel";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "murasaki";},["5"; "180-$rand*90"]);
 
-                   Action.ActionRef ({actionRefLabel = "stopAndWait";},[]);
-                   Action.ActionRef ({actionRefLabel = "accel";},[]);
-                   Action.ActionRef ({actionRefLabel = "ao";},[]);
-                   Action.ActionRef ({actionRefLabel = "stopAndWait";},[]);
-                   Action.ActionRef ({actionRefLabel = "accel";},[]);
-                   Action.ActionRef ({actionRefLabel = "murasaki";},["-5"; "180+$rand*90"]);
-                   Action.ActionRef ({actionRefLabel = "stopAndWait";},[]);
-                   Action.ActionRef ({actionRefLabel = "accel";},[]);
-                   Action.ActionRef ({actionRefLabel = "ao";},[]);
-                   Action.ActionRef ({actionRefLabel = "stopAndWait";},[])]))]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "stopAndWait";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "accel";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "ao";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "stopAndWait";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "accel";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "murasaki";},["-5"; "180+$rand*90"]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "stopAndWait";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "accel";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "ao";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "stopAndWait";},[])]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},[Action.ActionRef ({actionRefLabel = "gara5";},[])])
+          ({actionLabel = Some (ActionLabel "top");},[Action.ActionRef ({actionRefLabel = ActionLabel "gara5";},[])])
     ])
 
   /// エスプレイド、五行覚師、発狂。by 白い弾幕くん
@@ -719,7 +719,7 @@ module EspRade =
         bulletmlName = Some "エスプレイド、五行覚師、発狂。by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "6shots";},None,Some (Speed (None,numExpr "3")),
+          ({bulletLabel = Some (BulletLabel "6shots");},None,Some (Speed (None,numExpr "3")),
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "3");
@@ -755,7 +755,7 @@ module EspRade =
                           Some (Speed (None,numExpr "0.8+$rank+$rand")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "kakusi";},None,Some (Speed (None,numExpr "6")),
+          ({bulletLabel = Some (BulletLabel "kakusi");},None,Some (Speed (None,numExpr "6")),
            [Action
               ({actionLabel = None;},
                [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "10")); Wait (numExpr "10");
@@ -766,23 +766,23 @@ module EspRade =
                       [Fire
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = Aim;},numExpr "90")),None,
-                          BulletRef ({bulletRefLabel = "6shots";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "6shots";},[]));
                        Fire
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = Aim;},numExpr "-90")),None,
 
-                          BulletRef ({bulletRefLabel = "6shots";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "6shots";},[]));
                        Wait (numExpr "200/(4+$rank*6)")])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),None,
-               BulletRef ({bulletRefLabel = "kakusi";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "kakusi";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "270")),None,
-               BulletRef ({bulletRefLabel = "kakusi";},[])); Wait (numExpr "200")])])
+               BulletRef ({bulletRefLabel = BulletLabel "kakusi";},[])); Wait (numExpr "200")])])
 
   /// エスプレイド、1-3面のボスとなる、IZUNA発狂 by 白い弾幕くん
   /// [ESP_RADE]_round_123_boss_izuna_hakkyou.xml
@@ -794,20 +794,20 @@ module EspRade =
         bulletmlName = Some "エスプレイド、1-3面のボスとなる、IZUNA発狂 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "Red";},None,None,[Action ({actionLabel = None;},[])]);
+          ({bulletLabel = Some (BulletLabel "Red");},None,None,[Action ({actionLabel = None;},[])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "Stop";},
+          ({actionLabel = Some (ActionLabel "Stop");},
            [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWay";},
+          ({actionLabel = Some (ActionLabel "XWay");},
            [Action.ActionRef
-              ({actionRefLabel = "XWayFan";},
+              ({actionRefLabel = ActionLabel "XWayFan";},
                ["$1"; "$2"; "0"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWayFan";},
+          ({actionLabel = Some (ActionLabel "XWayFan");},
            [Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -820,18 +820,18 @@ module EspRade =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "$3")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "roll";},
+          ({bulletLabel = Some (BulletLabel "roll");},
            Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90*$1")),
            Some (Speed (None,numExpr "3")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Fire
                   ({fireLabel = None;},
                    Some
                      (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
                    Some (Speed (None,numExpr "1.5+$rank")),
-                   BulletRef ({bulletRefLabel = "Dummy";},[]));
+                   BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]));
                 Repeat
                   (Times (numExpr "10"),
                    Action
@@ -847,7 +847,7 @@ module EspRade =
                                (Some {speedType = SpeedType.Sequence;},numExpr "-0.3-$rank*0.5")),
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Action.ActionRef
-                         ({actionRefLabel = "XWay";},
+                         ({actionRefLabel = ActionLabel "XWay";},
                           ["8"; "45"]);
                        Repeat
                          (Times (numExpr "5"),
@@ -864,17 +864,17 @@ module EspRade =
                                       (Some {speedType = SpeedType.Sequence;},numExpr "0.06+$rank*0.1")),
                                  Bullet ({bulletLabel = None;},None,None,[]));
                               Action.ActionRef
-                                ({actionRefLabel = "XWay";},
+                                ({actionRefLabel = ActionLabel "XWay";},
                                  ["8"; "45"])]))]));
                 Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "roll";},["1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "roll";},["1"]));
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "roll";},["-1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "roll";},["-1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
@@ -884,11 +884,11 @@ module EspRade =
                   [Action
                      ({actionLabel = None;},
                       [Wait (numExpr "10");
-                       Action.ActionRef ({actionRefLabel = "Stop";},[]);
-                       Action.ActionRef ({actionRefLabel = "aim";},[]); Vanish])]));
+                       Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
+                       Action.ActionRef ({actionRefLabel = ActionLabel "aim";},[]); Vanish])]));
             Wait (numExpr "500")]);
         BulletmlElm.Action
-          ({actionLabel = Some "aim";},
+          ({actionLabel = Some (ActionLabel "aim");},
            [Repeat
               (Times (numExpr "10"),
                Action
@@ -899,14 +899,14 @@ module EspRade =
                       Some
                         (Direction (Some {directionType = Aim;},numExpr "-1")),
                       Some (Speed (None,numExpr "1.7")),
-                      BulletRef ({bulletRefLabel = "Red";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "Red";},[]));
                    Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
                            (Some {directionType = DirectionType.Sequence;},numExpr "2")),
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
-                      BulletRef ({bulletRefLabel = "Red";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "Red";},[]));
                    Repeat
                      (Times (numExpr "2+$rank*6"),
                       Action
@@ -919,7 +919,7 @@ module EspRade =
                              Some
                                (Speed
                                   (Some {speedType = SpeedType.Sequence;},numExpr "0.1")),
-                             BulletRef ({bulletRefLabel = "Red";},[]));
+                             BulletRef ({bulletRefLabel = BulletLabel "Red";},[]));
                           Fire
                             ({fireLabel = None;},
                              Some
@@ -928,7 +928,7 @@ module EspRade =
                              Some
                                (Speed
                                   (Some {speedType = SpeedType.Sequence;},numExpr "0")),
-                             BulletRef ({bulletRefLabel = "Red";},[]))]))]))])])
+                             BulletRef ({bulletRefLabel = BulletLabel "Red";},[]))]))]))])])
 
   /// エスプレイド、1-3面のボスとなる、ペラボーイ発狂 by 白い弾幕くん
   /// [ESP_RADE]_round_123_boss_pelaboy_hakkyou.xml
@@ -940,20 +940,20 @@ module EspRade =
         bulletmlName = Some "エスプレイド、1-3面のボスとなる、ペラボーイ発狂 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "Red";},None,None,[Action ({actionLabel = None;},[])]);
+          ({bulletLabel = Some (BulletLabel "Red");},None,None,[Action ({actionLabel = None;},[])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "Stop";},
+          ({actionLabel = Some (ActionLabel "Stop");},
            [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWay";},
+          ({actionLabel = Some (ActionLabel "XWay");},
            [Action.ActionRef
-              ({actionRefLabel = "XWayFan";},
+              ({actionRefLabel = ActionLabel "XWayFan";},
                ["$1"; "$2"; "0"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWayFan";},
+          ({actionLabel = Some (ActionLabel "XWayFan");},
            [Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -966,11 +966,11 @@ module EspRade =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "$3")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "subBatteryFan";},None,
+          ({bulletLabel = Some (BulletLabel "subBatteryFan");},None,
            Some (Speed (None,numExpr "4")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Wait (numExpr "250");
                 Fire
                   ({fireLabel = None;},
@@ -978,7 +978,7 @@ module EspRade =
                    Some (Speed (None,numExpr "1.6")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Action.ActionRef
-                  ({actionRefLabel = "XWay";},
+                  ({actionRefLabel = ActionLabel "XWay";},
                    ["10+$rank*10"; "90/(10+$rank*10)"]);
                 Repeat
                   (Times (numExpr "2"),
@@ -994,10 +994,10 @@ module EspRade =
                           Some (Speed (None,numExpr "1.6")),
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Action.ActionRef
-                         ({actionRefLabel = "XWay";},
+                         ({actionRefLabel = ActionLabel "XWay";},
                           ["11+$rank*10";"90/(10+$rank*10)"])])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "aimFan";},None,Some (Speed (None,numExpr "4")),
+          ({bulletLabel = Some (BulletLabel "aimFan");},None,Some (Speed (None,numExpr "4")),
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "5");
@@ -1009,14 +1009,14 @@ module EspRade =
                    Some (Speed (None,numExpr "1.6")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Action.ActionRef
-                  ({actionRefLabel = "XWay";},
+                  ({actionRefLabel = ActionLabel "XWay";},
                    ["5+$rank*8"; "2"]); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "subBatteryAim";},None,
+          ({bulletLabel = Some (BulletLabel "subBatteryAim");},None,
            Some (Speed (None,numExpr "1")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Repeat
                   (Times (numExpr "4"),
                    Action
@@ -1027,26 +1027,26 @@ module EspRade =
                           Some
                             (Direction
                                (Some {directionType = DirectionType.Absolute;},numExpr "90")),
-                          None,BulletRef ({bulletRefLabel = "aimFan";},[]));
+                          None,BulletRef ({bulletRefLabel = BulletLabel "aimFan";},[]));
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
                                (Some {directionType = DirectionType.Absolute;},numExpr "-90")),None,
-                          BulletRef ({bulletRefLabel = "aimFan";},[]))])); Vanish])]);
+                          BulletRef ({bulletRefLabel = BulletLabel "aimFan";},[]))])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "soldier";},
+          ({bulletLabel = Some (BulletLabel "soldier");},
            Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90*$1")),
            Some (Speed (None,numExpr "2")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Fire
                   ({fireLabel = None;},
                    Some
                      (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$2")),
                    Some (Speed (None,numExpr "1.3")),
-                   BulletRef ({bulletRefLabel = "Dummy";},[]));
+                   BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]));
                 Repeat
                   (Times (numExpr "120+$rank*200"),
                    Action
@@ -1061,28 +1061,28 @@ module EspRade =
                             (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                           Bullet ({bulletLabel = None;},None,None,[]))]))])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},None,None,
                BulletRef
-                 ({bulletRefLabel = "soldier";},["1"; "90"]));
+                 ({bulletRefLabel = BulletLabel "soldier";},["1"; "90"]));
             Fire
               ({fireLabel = None;},None,None,
                BulletRef
-                 ({bulletRefLabel = "soldier";},
+                 ({bulletRefLabel = BulletLabel "soldier";},
                   ["-1"; "-80"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
-               None,BulletRef ({bulletRefLabel = "subBatteryAim";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "subBatteryAim";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
-               None,BulletRef ({bulletRefLabel = "subBatteryFan";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "subBatteryFan";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
-               None,BulletRef ({bulletRefLabel = "subBatteryFan";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "subBatteryFan";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
@@ -1099,10 +1099,10 @@ module EspRade =
                             ({bulletLabel = None;},None,None,
                              [Action
                                 ({actionLabel = None;},
-                                 [Action.ActionRef ({actionRefLabel = "mainBattery";},[]);
+                                 [Action.ActionRef ({actionRefLabel = ActionLabel "mainBattery";},[]);
                                   Vanish])])); Vanish])])); Wait (numExpr "500")]);
         BulletmlElm.Action
-          ({actionLabel = Some "mainBattery";},
+          ({actionLabel = Some (ActionLabel "mainBattery");},
            [Repeat
               (Times (numExpr "15"),
                Action
@@ -1128,7 +1128,7 @@ module EspRade =
                       Some (Speed (None,numExpr "1.6")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef
-                     ({actionRefLabel = "XWay";},
+                     ({actionRefLabel = ActionLabel "XWay";},
                       ["12+$rank*16";"180/(12+$rank*16)"]); Wait (numExpr "20");
                    Fire
                      ({fireLabel = None;},
@@ -1138,7 +1138,7 @@ module EspRade =
                       Some (Speed (None,numExpr "1.6")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef
-                     ({actionRefLabel = "XWay";},
+                     ({actionRefLabel = ActionLabel "XWay";},
                       ["11+$rank*16";"170/(11+$rank*16)"])])); Wait (numExpr "40")])])
 
   /// エスプレイド、1-3面のボスとなる、近江悟君 by 白い弾幕くん
@@ -1151,7 +1151,7 @@ module EspRade =
         bulletmlName = Some "エスプレイド、1-3面のボスとなる、近江悟君 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "1way";},
+          ({actionLabel = Some (ActionLabel "1way");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = Aim;},numExpr "$2+$1*$rand*2-$1")),
@@ -1167,25 +1167,25 @@ module EspRade =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.1")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "5way";},
-           [Action.ActionRef ({actionRefLabel = "1way";},["$1"; "-30"]);
-            Action.ActionRef ({actionRefLabel = "1way";},["$1"; "-15"]);
-            Action.ActionRef ({actionRefLabel = "1way";},["$1"; "0"]);
-            Action.ActionRef ({actionRefLabel = "1way";},["$1"; "15"]);
-            Action.ActionRef ({actionRefLabel = "1way";},["$1"; "30"])]);
+          ({actionLabel = Some (ActionLabel "5way");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "1way";},["$1"; "-30"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "1way";},["$1"; "-15"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "1way";},["$1"; "0"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "1way";},["$1"; "15"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "1way";},["$1"; "30"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "idousite5way";},
+          ({actionLabel = Some (ActionLabel "idousite5way");},
            [ChangeDirection (Direction (None,numExpr "$rand*360"),Term (numExpr "1"));
             ChangeSpeed (Speed (None,numExpr "2"),Term (numExpr "1")); Wait (numExpr "30");
-            Action.ActionRef ({actionRefLabel = "5way";},["$1"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "5way";},["$1"]);
             ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "90-$rank*60")]);
         BulletmlElm.Action
-          ({actionLabel = Some "satoru";},
-           [Action.ActionRef ({actionRefLabel = "idousite5way";},["1"]);
-            Action.ActionRef ({actionRefLabel = "idousite5way";},["2"]);
-            Action.ActionRef ({actionRefLabel = "idousite5way";},["3"]);
-            Action.ActionRef ({actionRefLabel = "idousite5way";},["4"]);
-            Action.ActionRef ({actionRefLabel = "idousite5way";},["5"])]);
+          ({actionLabel = Some (ActionLabel "satoru");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "idousite5way";},["1"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "idousite5way";},["2"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "idousite5way";},["3"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "idousite5way";},["4"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "idousite5way";},["5"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
-           [Action.ActionRef ({actionRefLabel = "satoru";},[]); Wait (numExpr "30")])])
+          ({actionLabel = Some (ActionLabel "top");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "satoru";},[]); Wait (numExpr "30")])])

@@ -26,7 +26,7 @@ type ProgressTests() =
   [<Test>]
   member _.``action は、子ぶんの Progress を並べて持つ``() =
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" },
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
                           [ RecBulletml.Wait (numExpr "1"); RecBulletml.Vanish ])
     match Progress.initial script with
     | PAction (done_, loop, children) ->
@@ -50,14 +50,14 @@ type ProgressTests() =
   [<Test>]
   member _.``初期化の入口は 1 本。同じ Script から 2 回 作ると等しい``() =
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" },
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
                           [ RecBulletml.Wait (numExpr "3"); RecBulletml.Vanish ])
     Progress.initial script |> should equal (Progress.initial script)
 
   [<Test>]
   member _.``BulletState は、top ごとに script と Progress と FireContext を組で持つ``() =
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" }, [ RecBulletml.Wait (numExpr "1") ])
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.Wait (numExpr "1") ])
     let st =
       { Pos = { X = 0.f; Y = 0.f }
         Speed = 1.f

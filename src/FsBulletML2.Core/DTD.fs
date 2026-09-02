@@ -146,12 +146,52 @@ module DTD =
     | Enemy
     | Player
 
-  type ActionAttrs = { actionLabel : string option }
-  type ActionRefAttrs = { actionRefLabel : string }
-  type FireAttrs = { fireLabel : string option }
-  type FireRefAttrs = { fireRefLabel : string }
-  type BulletAttrs = { bulletLabel : string option }
-  type BulletRefAttrs = { bulletRefLabel : string }
+  /// 要素の名前。**定義する側と参照する側で同じ型にしてある。**
+  ///
+  ///   <action label="top">  と  <actionRef label="top">  は同じ ActionLabel
+  ///
+  /// actionRef が指す先は action なので、同じ型で持つのが自然で、
+  /// 「fire の名前で action を探す」が型で組めなくなる。以前は
+  /// どれも素の string で、種別は refKey が "action:" のような接頭辞を
+  /// 文字で足して区別していた（IntermediateParser）。その足し算が要らなくなる。
+  ///
+  /// 3 つを 1 つの型に kind フィールドで畳まないのは、畳むと
+  /// 「kind が違うものを渡した」が実行時にしか分からなくなるため
+  type ActionLabel = ActionLabel of string
+  type FireLabel = FireLabel of string
+  type BulletLabel = BulletLabel of string
+
+  module ActionLabel =
+    let text (ActionLabel s) = s
+  module FireLabel =
+    let text (FireLabel s) = s
+  module BulletLabel =
+    let text (BulletLabel s) = s
+
+  /// 展開中の参照。種別と名前の組で、以前は refKey が
+  /// "action:" + label のように文字で作っていたもの。
+  ///
+  /// 型にすると、種別を書き忘れて別の種別と衝突する形が組めない。
+  /// F# の DU は構造で比較・整列できるので Set にそのまま入る
+  type RefKey =
+    | ActionKey of ActionLabel
+    | FireKey of FireLabel
+    | BulletKey of BulletLabel
+
+  module RefKey =
+    /// 人へ見せる形。以前 refKey が作っていた "action:top" と同じ書き方に
+    /// してある（輪を見つけたときの例外文がこの形で出ていた）
+    let text = function
+      | ActionKey l -> "action:" + ActionLabel.text l
+      | FireKey l -> "fire:" + FireLabel.text l
+      | BulletKey l -> "bullet:" + BulletLabel.text l
+
+  type ActionAttrs = { actionLabel : ActionLabel option }
+  type ActionRefAttrs = { actionRefLabel : ActionLabel }
+  type FireAttrs = { fireLabel : FireLabel option }
+  type FireRefAttrs = { fireRefLabel : FireLabel }
+  type BulletAttrs = { bulletLabel : BulletLabel option }
+  type BulletRefAttrs = { bulletRefLabel : BulletLabel }
 
   //[<DebuggerDisplay("BulletML = { this.ToXmlString() }")>]
   [<RequireQualifiedAccess>]
@@ -246,7 +286,7 @@ module DTD =
           let localName,labelName = "label", attrs.actionLabel 
           labelName |> function 
           | Some v -> 
-            writer.WriteAttributeString(localName, v)
+            writer.WriteAttributeString(localName, ActionLabel.text v)
           | None -> ()
           children |> Seq.iter (fun child -> write child)
           writer.WriteEndElement()
@@ -254,7 +294,7 @@ module DTD =
           writer.WriteStartElement("actionRef")
           
           let localName,labelName = "label", attrs.actionRefLabel
-          writer.WriteAttributeString(localName, labelName)
+          writer.WriteAttributeString(localName, ActionLabel.text labelName)
 
           prams |> Seq.iter(fun s -> 
             writer.WriteStartElement("param")
@@ -279,7 +319,7 @@ module DTD =
           let localName,labelName = "label", attrs.fireLabel
           labelName |> function 
           | Some v -> 
-            writer.WriteAttributeString(localName, v)
+            writer.WriteAttributeString(localName, FireLabel.text v)
           | None -> ()
           direction |> function
           | Some d ->
@@ -324,7 +364,7 @@ module DTD =
         | RecBulletml.FireRef (attrs, prams) ->
           writer.WriteStartElement("fireRef")
           let localName,labelName = "label", attrs.fireRefLabel
-          writer.WriteAttributeString(localName, labelName)
+          writer.WriteAttributeString(localName, FireLabel.text labelName)
           prams |> Seq.iter(fun s -> 
             writer.WriteStartElement("param")
             writer.WriteString(s)
@@ -335,7 +375,7 @@ module DTD =
           let localName,labelName = "label", attrs.bulletLabel
           labelName |> function 
           | Some v -> 
-            writer.WriteAttributeString(localName, v)
+            writer.WriteAttributeString(localName, BulletLabel.text v)
           | None -> ()
           direction |> function
           | Some d ->
@@ -379,7 +419,7 @@ module DTD =
         | RecBulletml.BulletRef (attrs, prams) ->
           writer.WriteStartElement("bulletRef")
           let localName,labelName = "label", attrs.bulletRefLabel
-          writer.WriteAttributeString(localName, labelName)
+          writer.WriteAttributeString(localName, BulletLabel.text labelName)
           prams |> Seq.iter(fun s -> 
             writer.WriteStartElement("param")
             writer.WriteString(s)

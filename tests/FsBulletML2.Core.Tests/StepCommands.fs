@@ -309,7 +309,7 @@ type StepCommands() =
   member _.``action は、Stopped で走査を止める``() =
     // wait 2 の後ろに vanish。1 回めは wait で止まるので vanish は出ない
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" },
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
                           [ RecBulletml.Wait (numExpr "2"); RecBulletml.Vanish ])
     let p = Progress.initial script
     let (r, _, _), _, w = Sim.run env state (Step.action noResolvers script p FireContext.zero)
@@ -320,7 +320,7 @@ type StepCommands() =
   member _.``action は、Continue では走査を止めない``() =
     // accel（Continue を返す）の後ろに vanish。同じフレームで vanish まで届く
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" },
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
                           [ RecBulletml.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "1")),
                                                None, Term (numExpr "5"))
                             RecBulletml.Vanish ])
@@ -334,7 +334,7 @@ type StepCommands() =
     // vanish の後ろに wait 1。1 回めで vanish が出て wait で止まる。
     // 2 回めは vanish を飛ばして wait だけ進むので、効果は増えない
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" },
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
                           [ RecBulletml.Vanish; RecBulletml.Wait (numExpr "1") ])
     let mutable p = Progress.initial script
     let (_, p1, _), _, w1 = Sim.run env state (Step.action noResolvers script p FireContext.zero)
@@ -344,7 +344,7 @@ type StepCommands() =
 
   [<Test>]
   member _.``全部 終わったら Ended``() =
-    let script = RecBulletml.Action ({ actionLabel = Some "top" }, [ RecBulletml.Vanish ])
+    let script = RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.Vanish ])
     let p = Progress.initial script
     let (r, _, _), _, _ = Sim.run env state (Step.action noResolvers script p FireContext.zero)
     r |> should equal Step.Ended
@@ -353,7 +353,7 @@ type StepCommands() =
   member _.``action は FireContext をそのまま素通しする``() =
     // action の走査自体は sequence を積まない（fire だけが FireContext を書き換える）。
     // 中身が wait / vanish だけなら、渡した fc がそのまま返ってくるはず
-    let script = RecBulletml.Action ({ actionLabel = Some "top" }, [ RecBulletml.Vanish ])
+    let script = RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.Vanish ])
     let p = Progress.initial script
     let fc = { FireContext.zero with SrcDir = 1.5f; SrcSpeed = 2.5f; SpeedInit = true }
     let (_, _, fc'), _, _ = Sim.run env state (Step.action noResolvers script p fc)
@@ -365,7 +365,7 @@ type StepCommands() =
     // 中の命令（wait の term や accel の値）を評価するときだけ
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
-    let script = RecBulletml.Action ({ actionLabel = Some "top" }, [ RecBulletml.Vanish ])
+    let script = RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.Vanish ])
     let p = Progress.initial script
     Sim.run counting state (Step.action noResolvers script p FireContext.zero) |> ignore
     draws |> should equal 0
@@ -382,14 +382,14 @@ type StepCommands() =
     // 1 回めのフレームで wait が終わり、actionRef が解けて loop に積まれ、
     // 走査はそこで止まる（vanish はまだ出ない）。済んだ手前（wait と actionRef 自身）は
     // 捨てるので、loop は「解いた中身 + vanish」の 2 要素になる
-    let referenced = RecBulletml.Action ({ actionLabel = Some "sub" }, [ RecBulletml.Wait (numExpr "5") ])
+    let referenced = RecBulletml.Action ({ actionLabel = Some (ActionLabel "sub") }, [ RecBulletml.Wait (numExpr "5") ])
     let resolvers : Step.Resolvers =
       { Bullet = fun _ _ -> None
-        Action = fun label _ -> if label = "sub" then Some referenced else None }
+        Action = fun label _ -> if label = ActionLabel "sub" then Some referenced else None }
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" },
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
                           [ RecBulletml.Wait (numExpr "0")
-                            RecBulletml.ActionRef ({ actionRefLabel = "sub" }, [])
+                            RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "sub" }, [])
                             RecBulletml.Vanish ])
     let p = Progress.initial script
     let (r, p', _), _, w = Sim.run env state (Step.action resolvers script p FireContext.zero)
@@ -410,13 +410,13 @@ type StepCommands() =
   /// term の評価も「まだ評価前（started = false）」の状態に取り違わる
   [<Test>]
   member _.``actionRef を解いた瞬間に、展開した中身の wait をまとめて引く``() =
-    let referenced = RecBulletml.Action ({ actionLabel = Some "sub" }, [ RecBulletml.Wait (numExpr "5") ])
+    let referenced = RecBulletml.Action ({ actionLabel = Some (ActionLabel "sub") }, [ RecBulletml.Wait (numExpr "5") ])
     let resolvers : Step.Resolvers =
       { Bullet = fun _ _ -> None
-        Action = fun label _ -> if label = "sub" then Some referenced else None }
+        Action = fun label _ -> if label = ActionLabel "sub" then Some referenced else None }
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" },
-                          [ RecBulletml.ActionRef ({ actionRefLabel = "sub" }, []) ])
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "sub" }, []) ])
     let p = Progress.initial script
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
@@ -435,11 +435,11 @@ type StepCommands() =
     // 自己参照 actionRef はパーサが展開せず残す（輪を作るための意図的な仕様）。
     // 輪を解くたびに同じ形の並びへ差し替わるだけなので、並びの長さは伸びない
     let body =
-      RecBulletml.Action ({ actionLabel = Some "top" },
-                          [ RecBulletml.Vanish; RecBulletml.ActionRef ({ actionRefLabel = "top" }, []) ])
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecBulletml.Vanish; RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "top" }, []) ])
     let resolvers : Step.Resolvers =
       { Bullet = fun _ _ -> None
-        Action = fun label _ -> if label = "top" then Some body else None }
+        Action = fun label _ -> if label = ActionLabel "top" then Some body else None }
     let mutable p = Progress.initial body
     for i in 1 .. 3 do
       let (r, p', _), _, w = Sim.run env state (Step.action resolvers body p FireContext.zero)
@@ -457,8 +457,8 @@ type StepCommands() =
     // ラベルが見つからない actionRef はその場では何も起きない（PNoop のまま）。
     // Stop も Continue も立てないので、後ろの vanish は同じフレームで出る
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" },
-                          [ RecBulletml.ActionRef ({ actionRefLabel = "missing" }, [])
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
+                          [ RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "missing" }, [])
                             RecBulletml.Vanish ])
     let p = Progress.initial script
     let (r, p', _), _, w = Sim.run env state (Step.action noResolvers script p FireContext.zero)
@@ -474,7 +474,7 @@ type StepCommands() =
 
   [<Test>]
   member _.``command は、Action を action へ振り分ける``() =
-    let script = RecBulletml.Action ({ actionLabel = Some "top" }, [ RecBulletml.Vanish ])
+    let script = RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.Vanish ])
     let p = Progress.initial script
     let viaCommand, _, wc = Sim.run env state (Step.command noResolvers script p FireContext.zero)
     let viaAction, _, wa = Sim.run env state (Step.action noResolvers script p FireContext.zero)
@@ -530,7 +530,7 @@ type StepCommands() =
     let changeDir =
       RecBulletml.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "2"))
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" }, [ changeDir; RecBulletml.Wait (numExpr "5") ])
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ changeDir; RecBulletml.Wait (numExpr "5") ])
     let mutable p = Progress.initial script
     let mutable st = state
     for _ in 1 .. 6 do
@@ -546,7 +546,7 @@ type StepCommands() =
     let changeSpd =
       RecBulletml.ChangeSpeed (Speed (Some { speedType = SpeedType.Absolute }, numExpr "3"), Term (numExpr "2"))
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" }, [ changeSpd; RecBulletml.Wait (numExpr "5") ])
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ changeSpd; RecBulletml.Wait (numExpr "5") ])
     let mutable p = Progress.initial script
     let mutable st = state
     for _ in 1 .. 6 do
@@ -560,7 +560,7 @@ type StepCommands() =
     // 1 つめが Continue（accel）、2 つめが Stopped（wait）。優先順位は
     // Stop > Continue > End なので、全体の結果は Stopped でなければならない
     let script =
-      RecBulletml.Action ({ actionLabel = Some "top" },
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") },
                           [ RecBulletml.Accel (Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "1")),
                                                None, Term (numExpr "5"))
                             RecBulletml.Wait (numExpr "2") ])
@@ -869,10 +869,10 @@ type StepCommands() =
     let resolvers : Step.Resolvers =
       { Bullet = fun _ _ -> None
         Action = fun label _ ->
-          if label = "ref" then Some (RecBulletml.Action ({ actionLabel = None }, [ RecBulletml.Vanish ]))
+          if label = ActionLabel "ref" then Some (RecBulletml.Action ({ actionLabel = None }, [ RecBulletml.Vanish ]))
           else None }
     let body =
-      RecBulletml.Action ({ actionLabel = Some "top" }, [ RecBulletml.ActionRef ({ actionRefLabel = "ref" }, []) ])
+      RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, [ RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "ref" }, []) ])
     let script = RecBulletml.Repeat (Times (numExpr "2"), body)
     let mutable p = Progress.initial script
     let mutable st = state
@@ -908,7 +908,7 @@ type StepCommands() =
   [<Test>]
   member _.``repeat の子が Action でないと、現行と同じ例外で落ちる``() =
     // 自己参照で展開されずに残った actionRef を、repeat の直下にそのまま置く
-    let script = RecBulletml.Repeat (Times (numExpr "2"), RecBulletml.ActionRef ({ actionRefLabel = "top" }, []))
+    let script = RecBulletml.Repeat (Times (numExpr "2"), RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "top" }, []))
     let p = Progress.initial script
     let ex =
       Assert.Throws<System.Exception>(fun () ->
@@ -920,7 +920,7 @@ type StepCommands() =
     // 現行は times を while の外で引くが、while の中でしか actionElm を
     // 見ない。times に 1 度も届かなければ（times = 0、または num0 が
     // 既に times 以上）match そのものへ到達しないので落ちない
-    let script = RecBulletml.Repeat (Times (numExpr "0"), RecBulletml.ActionRef ({ actionRefLabel = "top" }, []))
+    let script = RecBulletml.Repeat (Times (numExpr "0"), RecBulletml.ActionRef ({ actionRefLabel = ActionLabel "top" }, []))
     let p = Progress.initial script
     let (r, _, _), _, _ = Sim.run env state (Step.repeat noResolvers script p FireContext.zero)
     r |> should equal Step.Ended

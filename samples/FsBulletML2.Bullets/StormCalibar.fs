@@ -16,7 +16,7 @@ module StormCalibar =
         bulletmlName = Some "ストームキャリバーのラスボス、回転二つ。by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "rollShots";},
+          ({actionLabel = Some (ActionLabel "rollShots");},
            [Repeat
               (Times (numExpr "200"),
                Action
@@ -37,31 +37,31 @@ module StormCalibar =
                              Bullet ({bulletLabel = None;},None,None,[]))]));
                    Wait (numExpr "2")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "right";},
+          ({actionLabel = Some (ActionLabel "right");},
            [ChangeDirection
               (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90"),Term (numExpr "1"));
             ChangeSpeed (Speed (Some {speedType = SpeedType.Absolute;},numExpr "1.5"),Term (numExpr "1"));
             Wait (numExpr "50")]);
         BulletmlElm.Action
-          ({actionLabel = Some "left";},
+          ({actionLabel = Some (ActionLabel "left");},
            [ChangeDirection
               (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90"),Term (numExpr "1"));
             ChangeSpeed (Speed (Some {speedType = SpeedType.Absolute;},numExpr "1.5"),Term (numExpr "1"));
             Wait (numExpr "50")]);
         BulletmlElm.Action
-          ({actionLabel = Some "top1";},
+          ({actionLabel = Some (ActionLabel "top1");},
            [Repeat
               (Times (numExpr "2"),
                Action
                  ({actionLabel = None;},
-                  [Action.ActionRef ({actionRefLabel = "right";},[]);
-                   Action.ActionRef ({actionRefLabel = "left";},[]);
-                   Action.ActionRef ({actionRefLabel = "left";},[]);
-                   Action.ActionRef ({actionRefLabel = "right";},[])]));
+                  [Action.ActionRef ({actionRefLabel = ActionLabel "right";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "left";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "left";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "right";},[])]));
             ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "1")]);
         BulletmlElm.Action
-          ({actionLabel = Some "top2";},
-           [Action.ActionRef ({actionRefLabel = "rollShots";},["-1"])]);
+          ({actionLabel = Some (ActionLabel "top2");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "rollShots";},["-1"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top3";},
-           [Action.ActionRef ({actionRefLabel = "rollShots";},["1"])])])
+          ({actionLabel = Some (ActionLabel "top3");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "rollShots";},["1"])])])

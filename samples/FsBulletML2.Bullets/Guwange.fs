@@ -16,7 +16,7 @@ module Guwange =
         bulletmlName = Some "ぐわんげ、二面ボス by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Fire
-          ({fireLabel = Some "circle";},
+          ({fireLabel = Some (FireLabel "circle");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$1")),
            Some (Speed (None,numExpr "6")),
            Bullet
@@ -30,15 +30,15 @@ module Guwange =
                       Some (Speed (None,numExpr "1.5+$rank")),
                       Bullet ({bulletLabel = None;},None,None,[])); Vanish])]));
         BulletmlElm.Action
-          ({actionLabel = Some "fireCircle";},
+          ({actionLabel = Some (ActionLabel "fireCircle");},
            [Repeat
               (Times (numExpr "18"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "circle";},["20"; "$1"])]))]);
+                  [FireRef ({fireRefLabel = FireLabel "circle";},["20"; "$1"])]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
-           [Action.ActionRef ({actionRefLabel = "fireCircle";},["180-45+90*$rand"]);
+          ({actionLabel = Some (ActionLabel "top");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "fireCircle";},["180-45+90*$rand"]);
             Wait (numExpr "10")])])
 
   /// ぐわんげ、三面ボス by 白い弾幕くん
@@ -51,7 +51,7 @@ module Guwange =
         bulletmlName = Some "ぐわんげ、三面ボス by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "10+$rank*50"),
                Action
@@ -59,17 +59,17 @@ module Guwange =
                   [Fire
                      ({fireLabel = None;},Some (Direction (None,numExpr "$rand*360")),
                       Some (Speed (None,numExpr "5")),
-                      BulletRef ({bulletRefLabel = "seed";},["5+$rand*10"]));
+                      BulletRef ({bulletRefLabel = BulletLabel "seed";},["5+$rand*10"]));
                    Wait (numExpr "20-$rank*10")]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "seed";},None,None,
+          ({bulletLabel = Some (BulletLabel "seed");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "$1")); Wait (numExpr "$1");
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = Aim;},numExpr "-20")),None,
-                   BulletRef ({bulletRefLabel = "3way";},[]));
+                   BulletRef ({bulletRefLabel = BulletLabel "3way";},[]));
                 Repeat
                   (Times (numExpr "2"),
                    Action
@@ -77,7 +77,7 @@ module Guwange =
                       [Fire
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "20")),
-                          None,BulletRef ({bulletRefLabel = "3way";},[]))]));
+                          None,BulletRef ({bulletRefLabel = BulletLabel "3way";},[]))]));
                 Wait (numExpr "6");
                 Repeat
                   (Times (numExpr "2"),
@@ -87,7 +87,7 @@ module Guwange =
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
                           Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
-                          BulletRef ({bulletRefLabel = "3way";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "3way";},[]));
                        Repeat
                          (Times (numExpr "2"),
                           Action
@@ -98,13 +98,13 @@ module Guwange =
                                    (Direction
                                       (Some {directionType = DirectionType.Sequence;},numExpr "-20")),
                                  Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
-                                 BulletRef ({bulletRefLabel = "3way";},[]))]));
+                                 BulletRef ({bulletRefLabel = BulletLabel "3way";},[]))]));
                        Wait (numExpr "6");
                        Fire
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
                           Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
-                          BulletRef ({bulletRefLabel = "3way";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "3way";},[]));
                        Repeat
                          (Times (numExpr "2"),
                           Action
@@ -115,9 +115,9 @@ module Guwange =
                                    (Direction
                                       (Some {directionType = DirectionType.Sequence;},numExpr "20")),
                                  Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
-                                 BulletRef ({bulletRefLabel = "3way";},[]))]));
+                                 BulletRef ({bulletRefLabel = BulletLabel "3way";},[]))]));
                        Wait (numExpr "6")])); Vanish])]);
-        BulletmlElm.Bullet ({bulletLabel = Some "3way";},None,Some (Speed (None,numExpr "3")),[])])
+        BulletmlElm.Bullet ({bulletLabel = Some (BulletLabel "3way");},None,Some (Speed (None,numExpr "3")),[])])
 
   /// ぐわんげ、四面ボス by 白い弾幕くん
   /// [Guwange]_round_4_boss_eye_ball.xml
@@ -129,17 +129,17 @@ module Guwange =
         bulletmlName = Some "ぐわんげ、四面ボス by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "10+$rank*10"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},Some (Direction (None,numExpr "$rand*360")),None,
-                      BulletRef ({bulletRefLabel = "eye";},[])); Wait (numExpr "30")]));
+                      BulletRef ({bulletRefLabel = BulletLabel "eye";},[])); Wait (numExpr "30")]));
             Wait (numExpr "120")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "eye";},None,Some (Speed (None,numExpr "0")),
+          ({bulletLabel = Some (BulletLabel "eye");},None,Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [ChangeSpeed (Speed (None,numExpr "10"),Term (numExpr "400"));
@@ -153,10 +153,10 @@ module Guwange =
                       [Fire
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
-                          None,BulletRef ({bulletRefLabel = "shadow";},[]));
+                          None,BulletRef ({bulletRefLabel = BulletLabel "shadow";},[]));
                        Wait (numExpr "4")]))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "shadow";},None,Some (Speed (None,numExpr "0.1")),
+          ({bulletLabel = Some (BulletLabel "shadow");},None,Some (Speed (None,numExpr "0.1")),
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "20");

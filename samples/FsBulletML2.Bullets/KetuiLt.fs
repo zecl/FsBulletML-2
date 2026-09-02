@@ -16,15 +16,15 @@ module KetuiLt =
         bulletmlName = Some "ケツイロケテより、一面ボスのビット攻撃 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWay";},
+          ({actionLabel = Some (ActionLabel "XWay");},
            [Action.ActionRef
-              ({actionRefLabel = "XWayFan";},
+              ({actionRefLabel = ActionLabel "XWayFan";},
                ["$1"; "$2"; "0"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWayFan";},
+          ({actionLabel = Some (ActionLabel "XWayFan");},
            [Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -37,7 +37,7 @@ module KetuiLt =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "$3")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "3way";},
+          ({actionLabel = Some (ActionLabel "3way");},
            [Repeat
               (Times (numExpr "2"),
                Action
@@ -50,10 +50,10 @@ module KetuiLt =
                       Some (Speed (None,numExpr "1.4")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef
-                     ({actionRefLabel = "XWay";},
+                     ({actionRefLabel = ActionLabel "XWay";},
                       ["3"; "2"])]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "bit";},None,None,
+          ({bulletLabel = Some (BulletLabel "bit");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -68,7 +68,7 @@ module KetuiLt =
                             (Vertical
                                (Some {verticalType = VerticalType.Absolute;},numExpr "1")),
                           Term (numExpr "60"));
-                       Action.ActionRef ({actionRefLabel = "3way";},[]);
+                       Action.ActionRef ({actionRefLabel = ActionLabel "3way";},[]);
                        Accel
                          (Some
                             (Horizontal
@@ -77,7 +77,7 @@ module KetuiLt =
                             (Vertical
                                (Some {verticalType = VerticalType.Absolute;},numExpr "0")),
                           Term (numExpr "60"));
-                       Action.ActionRef ({actionRefLabel = "3way";},[]);
+                       Action.ActionRef ({actionRefLabel = ActionLabel "3way";},[]);
                        Accel
                          (Some
                             (Horizontal
@@ -86,7 +86,7 @@ module KetuiLt =
                             (Vertical
                                (Some {verticalType = VerticalType.Absolute;},numExpr "-1")),
                           Term (numExpr "60"));
-                       Action.ActionRef ({actionRefLabel = "3way";},[]);
+                       Action.ActionRef ({actionRefLabel = ActionLabel "3way";},[]);
                        Accel
                          (Some
                             (Horizontal
@@ -95,9 +95,9 @@ module KetuiLt =
                             (Vertical
                                (Some {verticalType = VerticalType.Absolute;},numExpr "0")),
                           Term (numExpr "60"));
-                       Action.ActionRef ({actionRefLabel = "3way";},[])]))])]);
+                       Action.ActionRef ({actionRefLabel = ActionLabel "3way";},[])]))])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "4+$rank*6"),
                Action
@@ -108,7 +108,7 @@ module KetuiLt =
                         (Direction
                            (Some {directionType = DirectionType.Absolute;},numExpr "90")),
                       Some (Speed (None,numExpr "2")),
-                      BulletRef ({bulletRefLabel = "bit";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "bit";},[]));
                    Wait (numExpr "245/(4+$rank*6)")])); Wait (numExpr "550")])])
 
   /// ケツイロケテより、三ボスのくねくね by 白い弾幕くん
@@ -121,7 +121,7 @@ module KetuiLt =
         bulletmlName = Some "ケツイロケテより、三ボスのくねくね by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "aimSrc";},None,Some (Speed (None,numExpr "3")),
+          ({bulletLabel = Some (BulletLabel "aimSrc");},None,Some (Speed (None,numExpr "3")),
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "10");
@@ -145,7 +145,7 @@ module KetuiLt =
                                  Bullet ({bulletLabel = None;},None,None,[]))]))]));
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "circleSrc";},None,Some (Speed (None,numExpr "4")),
+          ({bulletLabel = Some (BulletLabel "circleSrc");},None,Some (Speed (None,numExpr "4")),
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "10");
@@ -167,23 +167,23 @@ module KetuiLt =
                           Some (Speed (None,numExpr "3+$rand*0.02")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
-               None,BulletRef ({bulletRefLabel = "circleSrc";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "circleSrc";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
-               None,BulletRef ({bulletRefLabel = "circleSrc";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "circleSrc";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "135")),
-               None,BulletRef ({bulletRefLabel = "aimSrc";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "aimSrc";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-135")),
-               None,BulletRef ({bulletRefLabel = "aimSrc";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "aimSrc";},[]));
             Repeat
               (Times (numExpr "20"),
                Action
@@ -227,15 +227,15 @@ module KetuiLt =
         bulletmlName = Some "ケツイロケテより、三ボスの自機狙い弾と横殴り弾 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWay";},
+          ({actionLabel = Some (ActionLabel "XWay");},
            [Action.ActionRef
-              ({actionRefLabel = "XWayFan";},
+              ({actionRefLabel = ActionLabel "XWayFan";},
                ["$1"; "$2"; "0"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWayFan";},
+          ({actionLabel = Some (ActionLabel "XWayFan");},
            [Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -248,7 +248,7 @@ module KetuiLt =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "$3")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "curve";},None,None,
+          ({bulletLabel = Some (BulletLabel "curve");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -260,7 +260,7 @@ module KetuiLt =
                             (Some {directionType = DirectionType.Relative;},numExpr "-$1*(4+$rank*$rank*4)"),
                           Term (numExpr "10")); Wait (numExpr "10")]))])]);
         BulletmlElm.Action
-          ({actionLabel = Some "spiral";},
+          ({actionLabel = Some (ActionLabel "spiral");},
            [Wait (numExpr "$rand * 30");
             Repeat
               (Times (numExpr "10+$rank*15"),
@@ -278,7 +278,7 @@ module KetuiLt =
                              Some
                                (Speed (None,numExpr "1.5+$rank*$rank*1.5")),
                              BulletRef
-                               ({bulletRefLabel = "curve";},
+                               ({bulletRefLabel = BulletLabel "curve";},
                                 ["$1"]));
                           Repeat
                             (Times (numExpr "4"),
@@ -293,7 +293,7 @@ module KetuiLt =
                                       (Speed
                                          (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                                     BulletRef
-                                      ({bulletRefLabel = "curve";},
+                                      ({bulletRefLabel = BulletLabel "curve";},
                                        ["$1"]))]));
                           Wait (numExpr "6 + $rand * 3")]));
                    Wait (numExpr "6");
@@ -303,9 +303,9 @@ module KetuiLt =
                         (Direction
                            (Some {directionType = DirectionType.Sequence;},numExpr "$1")),
                       Some (Speed (None,numExpr "1+$rank*2")),
-                      BulletRef ({bulletRefLabel = "Dummy";},[]))]))]);
+                      BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "twoWay";},
+          ({actionLabel = Some (ActionLabel "twoWay");},
            [Repeat
               (Times (numExpr "5+$rank*4"),
                Action
@@ -331,14 +331,14 @@ module KetuiLt =
                           Wait (numExpr "5")])); 
                    Wait (numExpr "20")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top1";},
-           [Action.ActionRef ({actionRefLabel = "spiral";},["-2"])]);
+          ({actionLabel = Some (ActionLabel "top1");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "spiral";},["-2"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top2";},
-           [Action.ActionRef ({actionRefLabel = "spiral";},["2"])]);
+          ({actionLabel = Some (ActionLabel "top2");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "spiral";},["2"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top3";},
-           [Action.ActionRef ({actionRefLabel = "twoWay";},[])])])
+          ({actionLabel = Some (ActionLabel "top3");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "twoWay";},[])])])
 
 
   /// ケツイロケテより、二面ボスのワインダー？ by 白い弾幕くん
@@ -351,7 +351,7 @@ module KetuiLt =
         bulletmlName = Some "ケツイロケテより、二面ボスのワインダー？ by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "pre";},
+          ({actionLabel = Some (ActionLabel "pre");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = Aim;},numExpr "-20")),
@@ -377,7 +377,7 @@ module KetuiLt =
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Wait (numExpr "2")]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "missile";},None,None,
+          ({bulletLabel = Some (BulletLabel "missile");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -400,14 +400,14 @@ module KetuiLt =
                                     (Speed (None,numExpr "3"),
                                      Term (numExpr "30"))])]))]))])]);
         BulletmlElm.Action
-          ({actionLabel = Some "missiles";},
+          ({actionLabel = Some (ActionLabel "missiles");},
            [Fire
               ({fireLabel = None;},
                Some
                  (Direction
                     (Some {directionType = DirectionType.Sequence;},numExpr "-($1-1)*1.5")),
                Some (Speed (None,numExpr "4")),
-               BulletRef ({bulletRefLabel = "missile";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "missile";},[]));
             Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -418,14 +418,14 @@ module KetuiLt =
                         (Direction
                            (Some {directionType = DirectionType.Sequence;},numExpr "3")),
                       Some (Speed (None,numExpr "4")),
-                      BulletRef ({bulletRefLabel = "missile";},[]))]));
+                      BulletRef ({bulletRefLabel = BulletLabel "missile";},[]))]));
             Fire
               ({fireLabel = None;},
                Some
                  (Direction
                     (Some {directionType = DirectionType.Sequence;},numExpr "40-($1-1)*3")),
                Some (Speed (None,numExpr "4")),
-               BulletRef ({bulletRefLabel = "missile";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "missile";},[]));
             Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -436,12 +436,12 @@ module KetuiLt =
                         (Direction
                            (Some {directionType = DirectionType.Sequence;},numExpr "3")),
                       Some (Speed (None,numExpr "4")),
-                      BulletRef ({bulletRefLabel = "missile";},[]))]))]);
+                      BulletRef ({bulletRefLabel = BulletLabel "missile";},[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
-           [Action.ActionRef ({actionRefLabel = "pre";},[]);
-            Action.ActionRef ({actionRefLabel = "missiles";},["3+$rank*4"]);
+          ({actionLabel = Some (ActionLabel "top");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "pre";},[]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "missiles";},["3+$rank*4"]);
             Wait (numExpr "160"); 
-            Action.ActionRef ({actionRefLabel = "pre";},[]);
-            Action.ActionRef ({actionRefLabel = "missiles";},["4+$rank*6"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "pre";},[]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "missiles";},["4+$rank*6"]);
             Wait (numExpr "160")])])

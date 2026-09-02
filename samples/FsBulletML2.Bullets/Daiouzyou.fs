@@ -16,7 +16,7 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生「緋蜂」開幕攻撃 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "10+$rank*70"),
                Action
@@ -28,24 +28,24 @@ module Daiouzyou =
                            (Some {directionType = Aim;},numExpr "$rand*30-74+$rank*2")),
                       Some (Speed (None,numExpr "0.5+$rank*2")),
                       Bullet ({bulletLabel = None;},None,None,[]));
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]);
-                   FireRef ({fireRefLabel = "n";},[]); Wait (numExpr "14-$rank*10")]))]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]);
+                   FireRef ({fireRefLabel = FireLabel "n";},[]); Wait (numExpr "14-$rank*10")]))]);
         BulletmlElm.Fire
-          ({fireLabel = Some "n";},
+          ({fireLabel = Some (FireLabel "n");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$rand*2+7-$rank*2")),
            Some (Speed (None,numExpr "0.5+$rank*2")),
            Bullet ({bulletLabel = None;},None,None,[]))])
@@ -60,7 +60,7 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生「緋蜂」超速青弾 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "175")),
@@ -70,28 +70,28 @@ module Daiouzyou =
               (Times (numExpr "30"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]); Wait (numExpr "1");
-                   Action.ActionRef ({actionRefLabel = "rights";},[]);
-                   Action.ActionRef ({actionRefLabel = "rights";},[]);
-                   Action.ActionRef ({actionRefLabel = "rights";},[]);
-                   Action.ActionRef ({actionRefLabel = "rights";},[]);
-                   Action.ActionRef ({actionRefLabel = "rights";},[]);
-                   Action.ActionRef ({actionRefLabel = "rights";},[]);
-                   Action.ActionRef ({actionRefLabel = "rights";},[]);
-                   Action.ActionRef ({actionRefLabel = "rights";},[]); Wait (numExpr "15-$rank*10");
+                  [FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]); Wait (numExpr "1");
+                   Action.ActionRef ({actionRefLabel = ActionLabel "rights";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "rights";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "rights";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "rights";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "rights";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "rights";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "rights";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "rights";},[]); Wait (numExpr "15-$rank*10");
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "4")),
                       Some (Speed (None,numExpr "1+$rank*4")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "tops";},
+          ({actionLabel = Some (ActionLabel "tops");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "185")),
@@ -101,56 +101,56 @@ module Daiouzyou =
               (Times (numExpr "30"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]);
-                   FireRef ({fireRefLabel = "allway";},[]); Wait (numExpr "1");
-                   Action.ActionRef ({actionRefLabel = "lefts";},[]);
-                   Action.ActionRef ({actionRefLabel = "lefts";},[]);
-                   Action.ActionRef ({actionRefLabel = "lefts";},[]);
-                   Action.ActionRef ({actionRefLabel = "lefts";},[]);
-                   Action.ActionRef ({actionRefLabel = "lefts";},[]);
-                   Action.ActionRef ({actionRefLabel = "lefts";},[]);
-                   Action.ActionRef ({actionRefLabel = "lefts";},[]);
-                   Action.ActionRef ({actionRefLabel = "lefts";},[]); Wait (numExpr "15-$rank*10");
+                  [FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]);
+                   FireRef ({fireRefLabel = FireLabel "allway";},[]); Wait (numExpr "1");
+                   Action.ActionRef ({actionRefLabel = ActionLabel "lefts";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "lefts";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "lefts";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "lefts";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "lefts";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "lefts";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "lefts";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "lefts";},[]); Wait (numExpr "15-$rank*10");
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-4")),
                       Some (Speed (None,numExpr "1+$rank*4")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "lefts";},
+          ({actionLabel = Some (ActionLabel "lefts");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-0.7")),
                Some (Speed (None,numExpr "1+$rank*4")),
                Bullet ({bulletLabel = None;},None,None,[]));
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]); Wait (numExpr "1")]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]); Wait (numExpr "1")]);
         BulletmlElm.Action
-          ({actionLabel = Some "rights";},
+          ({actionLabel = Some (ActionLabel "rights");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0.7")),
                Some (Speed (None,numExpr "1+$rank*4")),
                Bullet ({bulletLabel = None;},None,None,[]));
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]);
-            FireRef ({fireRefLabel = "allway";},[]); Wait (numExpr "1")]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]);
+            FireRef ({fireRefLabel = FireLabel "allway";},[]); Wait (numExpr "1")]);
         BulletmlElm.Fire
-          ({fireLabel = Some "allway";},
+          ({fireLabel = Some (FireLabel "allway");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "45")),
            Some (Speed (None,numExpr "1+$rank*4")),
            Bullet ({bulletLabel = None;},None,None,[]))])
@@ -165,7 +165,7 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生「緋蜂」第三攻撃 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [ChangeSpeed (Speed (Some {speedType = SpeedType.Absolute;},numExpr "2"),Term (numExpr "1"));
             ChangeDirection
               (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180"),Term (numExpr "1"));
@@ -174,34 +174,34 @@ module Daiouzyou =
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
-               Some (Speed (None,numExpr "1.5")),BulletRef ({bulletRefLabel = "blue";},[]));
+               Some (Speed (None,numExpr "1.5")),BulletRef ({bulletRefLabel = BulletLabel "blue";},[]));
 
             Repeat
               (Times (numExpr "60+$rank*60"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "red";},[]);
-                   FireRef ({fireRefLabel = "red";},[]);
-                   FireRef ({fireRefLabel = "red";},[]);
-                   FireRef ({fireRefLabel = "red";},[]);
-                   FireRef ({fireRefLabel = "red";},[]);
-                   FireRef ({fireRefLabel = "red";},[]);
-                   FireRef ({fireRefLabel = "red";},[]);
-                   FireRef ({fireRefLabel = "red";},[]);
-                   FireRef ({fireRefLabel = "red";},[]);
-                   FireRef ({fireRefLabel = "red";},[]);
-                   FireRef ({fireRefLabel = "red";},[]); Wait (numExpr "20-$rank*14");
+                  [FireRef ({fireRefLabel = FireLabel "red";},[]);
+                   FireRef ({fireRefLabel = FireLabel "red";},[]);
+                   FireRef ({fireRefLabel = FireLabel "red";},[]);
+                   FireRef ({fireRefLabel = FireLabel "red";},[]);
+                   FireRef ({fireRefLabel = FireLabel "red";},[]);
+                   FireRef ({fireRefLabel = FireLabel "red";},[]);
+                   FireRef ({fireRefLabel = FireLabel "red";},[]);
+                   FireRef ({fireRefLabel = FireLabel "red";},[]);
+                   FireRef ({fireRefLabel = FireLabel "red";},[]);
+                   FireRef ({fireRefLabel = FireLabel "red";},[]);
+                   FireRef ({fireRefLabel = FireLabel "red";},[]); Wait (numExpr "20-$rank*14");
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-31.5")),
                       Some (Speed (None,numExpr "1.5")),
-                      BulletRef ({bulletRefLabel = "blue";},[]))]))]);
+                      BulletRef ({bulletRefLabel = BulletLabel "blue";},[]))]))]);
         BulletmlElm.Fire
-          ({fireLabel = Some "red";},
+          ({fireLabel = Some (FireLabel "red");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "30")),
-           Some (Speed (None,numExpr "1.5")),BulletRef ({bulletRefLabel = "blue";},[]));
+           Some (Speed (None,numExpr "1.5")),BulletRef ({bulletRefLabel = BulletLabel "blue";},[]));
         BulletmlElm.Bullet
-          ({bulletLabel = Some "blue";},None,None,
+          ({bulletLabel = Some (BulletLabel "blue");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "30");
@@ -221,7 +221,7 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生「緋蜂」発狂攻撃 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "45")),
@@ -231,9 +231,9 @@ module Daiouzyou =
               (Times (numExpr "113+900/(16-$rank*10)"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "four";},[]);
-                   FireRef ({fireRefLabel = "four";},[]);
-                   FireRef ({fireRefLabel = "four";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "four";},[]);
+                   FireRef ({fireRefLabel = FireLabel "four";},[]);
+                   FireRef ({fireRefLabel = FireLabel "four";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "86")),
@@ -241,7 +241,7 @@ module Daiouzyou =
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Wait (numExpr "16-$rank*10")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "tops";},
+          ({actionLabel = Some (ActionLabel "tops");},
            [Wait (numExpr "(16-$rank*10)*22.5");
             Fire
               ({fireLabel = None;},
@@ -252,9 +252,9 @@ module Daiouzyou =
               (Times (numExpr "91+900/(16-$rank*10)"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "four";},[]);
-                   FireRef ({fireRefLabel = "four";},[]);
-                   FireRef ({fireRefLabel = "four";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "four";},[]);
+                   FireRef ({fireRefLabel = FireLabel "four";},[]);
+                   FireRef ({fireRefLabel = FireLabel "four";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "94")),
@@ -262,700 +262,700 @@ module Daiouzyou =
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Wait (numExpr "16-$rank*10")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "topt";},
+          ({actionLabel = Some (ActionLabel "topt");},
            [Wait (numExpr "(16-$rank*10)*45");
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "gurugurup";},[]))]);
+               BulletRef ({bulletRefLabel = BulletLabel "gurugurup";},[]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "gurugurup";},None,None,
+          ({bulletLabel = Some (BulletLabel "gurugurup");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"));
-                Action.ActionRef ({actionRefLabel = "guru2";},[]); Vanish])]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "guru2";},[]); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "guru2";},
+          ({actionLabel = Some (ActionLabel "guru2");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
                Some (Speed (None,numExpr "1+$rank")),
-               BulletRef ({bulletRefLabel = "guruc";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "guruc";},[]));
             Repeat
               (Times (numExpr "450/(16-$rank*10)"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
-                   FireRef ({fireRefLabel = "guru";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "20.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
-                   FireRef ({fireRefLabel = "guru2";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru2";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "20.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc2";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc2";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
-                   FireRef ({fireRefLabel = "guru3";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru3";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "20.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc3";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc3";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
-                   FireRef ({fireRefLabel = "guru4";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru4";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "20.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc4";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc4";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
-                   FireRef ({fireRefLabel = "guru5";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru5";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "20.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc5";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc5";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "4"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
-                   FireRef ({fireRefLabel = "guru6";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru6";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "20.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc6";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc6";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "4"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
-                   FireRef ({fireRefLabel = "guru7";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru7";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "21")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc7";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc7";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "6"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
-                   FireRef ({fireRefLabel = "guru8";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru8";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "21.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc8";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc8";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "7"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
-                   FireRef ({fireRefLabel = "guru9";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru9";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc9";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc9";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "2"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
-                   FireRef ({fireRefLabel = "guru10";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru10";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.7")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc10";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc10";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "7"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
-                   FireRef ({fireRefLabel = "guru11";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru11";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "23")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc11";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc11";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "6"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
-                   FireRef ({fireRefLabel = "guru12";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru12";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "23.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc12";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc12";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "4"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
-                   FireRef ({fireRefLabel = "guru13";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru13";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "24")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc13";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc13";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "4"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
-                   FireRef ({fireRefLabel = "guru14";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru14";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "24.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc14";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc14";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
-                   FireRef ({fireRefLabel = "guru15";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru15";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "24.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc15";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc15";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
-                   FireRef ({fireRefLabel = "guru16";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru16";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "24.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc16";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc16";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
-                   FireRef ({fireRefLabel = "guru17";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru17";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "24.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc17";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc17";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
-                   FireRef ({fireRefLabel = "guru18";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru18";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "24.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc18";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc18";},[]));
                    Wait (numExpr "16-$rank*10")]));
             Repeat
               (Times (numExpr "450/(16-$rank*10)"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
-                   FireRef ({fireRefLabel = "guru19";},[]);
+                  [FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
+                   FireRef ({fireRefLabel = FireLabel "guru19";},[]);
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "24.5")),
                       Some (Speed (None,numExpr "1+$rank")),
-                      BulletRef ({bulletRefLabel = "guruc19";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "guruc19";},[]));
                    Wait (numExpr "16-$rank*10")]))]);
         BulletmlElm.Fire
-          ({fireLabel = Some "guru";},
+          ({fireLabel = Some (FireLabel "guru");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
-           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = "guruc";},[]));
+           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = BulletLabel "guruc";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru2";},
+          ({fireLabel = Some (FireLabel "guru2");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
-           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = "guruc2";},[]));
+           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = BulletLabel "guruc2";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru3";},
+          ({fireLabel = Some (FireLabel "guru3");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
-           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = "guruc3";},[]));
+           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = BulletLabel "guruc3";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru4";},
+          ({fireLabel = Some (FireLabel "guru4");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
-           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = "guruc4";},[]));
+           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = BulletLabel "guruc4";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru5";},
+          ({fireLabel = Some (FireLabel "guru5");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
-           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = "guruc5";},[]));
+           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = BulletLabel "guruc5";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru6";},
+          ({fireLabel = Some (FireLabel "guru6");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
-           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = "guruc6";},[]));
+           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = BulletLabel "guruc6";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru7";},
+          ({fireLabel = Some (FireLabel "guru7");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
-           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = "guruc7";},[]));
+           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = BulletLabel "guruc7";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru8";},
+          ({fireLabel = Some (FireLabel "guru8");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
-           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = "guruc8";},[]));
+           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = BulletLabel "guruc8";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru9";},
+          ({fireLabel = Some (FireLabel "guru9");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
-           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = "guruc9";},[]));
+           Some (Speed (None,numExpr "1+$rank")),BulletRef ({bulletRefLabel = BulletLabel "guruc9";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru10";},
+          ({fireLabel = Some (FireLabel "guru10");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.3+$rand*0.4")),
            Some (Speed (None,numExpr "1+$rank")),
-           BulletRef ({bulletRefLabel = "guruc10";},[]));
+           BulletRef ({bulletRefLabel = BulletLabel "guruc10";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru11";},
+          ({fireLabel = Some (FireLabel "guru11");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
            Some (Speed (None,numExpr "1+$rank")),
-           BulletRef ({bulletRefLabel = "guruc11";},[]));
+           BulletRef ({bulletRefLabel = BulletLabel "guruc11";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru12";},
+          ({fireLabel = Some (FireLabel "guru12");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
            Some (Speed (None,numExpr "1+$rank")),
-           BulletRef ({bulletRefLabel = "guruc12";},[]));
+           BulletRef ({bulletRefLabel = BulletLabel "guruc12";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru13";},
+          ({fireLabel = Some (FireLabel "guru13");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
            Some (Speed (None,numExpr "1+$rank")),
-           BulletRef ({bulletRefLabel = "guruc13";},[]));
+           BulletRef ({bulletRefLabel = BulletLabel "guruc13";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru14";},
+          ({fireLabel = Some (FireLabel "guru14");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
            Some (Speed (None,numExpr "1+$rank")),
-           BulletRef ({bulletRefLabel = "guruc14";},[]));
+           BulletRef ({bulletRefLabel = BulletLabel "guruc14";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru15";},
+          ({fireLabel = Some (FireLabel "guru15");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
            Some (Speed (None,numExpr "1+$rank")),
-           BulletRef ({bulletRefLabel = "guruc15";},[]));
+           BulletRef ({bulletRefLabel = BulletLabel "guruc15";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru16";},
+          ({fireLabel = Some (FireLabel "guru16");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
            Some (Speed (None,numExpr "1+$rank")),
-           BulletRef ({bulletRefLabel = "guruc16";},[]));
+           BulletRef ({bulletRefLabel = BulletLabel "guruc16";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru17";},
+          ({fireLabel = Some (FireLabel "guru17");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
            Some (Speed (None,numExpr "1+$rank")),
-           BulletRef ({bulletRefLabel = "guruc17";},[]));
+           BulletRef ({bulletRefLabel = BulletLabel "guruc17";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru18";},
+          ({fireLabel = Some (FireLabel "guru18");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
            Some (Speed (None,numExpr "1+$rank")),
-           BulletRef ({bulletRefLabel = "guruc18";},[]));
+           BulletRef ({bulletRefLabel = BulletLabel "guruc18";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "guru19";},
+          ({fireLabel = Some (FireLabel "guru19");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
            Some (Speed (None,numExpr "1+$rank")),
-           BulletRef ({bulletRefLabel = "guruc19";},[]));
+           BulletRef ({bulletRefLabel = BulletLabel "guruc19";},[]));
         BulletmlElm.Fire
-          ({fireLabel = Some "four";},
+          ({fireLabel = Some (FireLabel "four");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "90")),
            Some (Speed (None,numExpr "1+$rank*0.5")),
            Bullet ({bulletLabel = None;},None,None,[]));
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "-270"),Term (numExpr "90"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc2";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc2");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "-270"),Term (numExpr "170"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc3";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc3");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "-270"),Term (numExpr "260"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc4";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc4");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "-270"),Term (numExpr "300"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc5";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc5");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "-270"),Term (numExpr "450"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc6";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc6");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "-270"),Term (numExpr "600"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc7";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc7");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "-270"),Term (numExpr "700"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc8";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc8");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "-270"),Term (numExpr "800"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc9";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc9");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "-270"),Term (numExpr "900"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc10";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc10");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "0"),Term (numExpr "90"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc11";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc11");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "270"),Term (numExpr "900"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc12";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc12");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "270"),Term (numExpr "800"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc13";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc13");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "270"),Term (numExpr "700"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc14";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc14");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "270"),Term (numExpr "600"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc15";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc15");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "270"),Term (numExpr "450"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc16";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc16");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "270"),Term (numExpr "300"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc17";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc17");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "270"),Term (numExpr "280"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc18";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc18");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
                   (Direction (Some {directionType = DirectionType.Relative;},numExpr "270"),Term (numExpr "230"))])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "guruc19";},None,None,
+          ({bulletLabel = Some (BulletLabel "guruc19");},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
@@ -971,15 +971,15 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生「緋蜂」最終形態を妄想してみた by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWay";},
+          ({actionLabel = Some (ActionLabel "XWay");},
            [Action.ActionRef
-              ({actionRefLabel = "XWayFan";},
+              ({actionRefLabel = ActionLabel "XWayFan";},
                ["$1"; "$2"; "0"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWayFan";},
+          ({actionLabel = Some (ActionLabel "XWayFan");},
            [Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -992,7 +992,7 @@ module Daiouzyou =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "$3")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "spiral";},
+          ({actionLabel = Some (ActionLabel "spiral");},
            [Fire
               ({fireLabel = None;},None,Some (Speed (None,numExpr "0")),
                Bullet
@@ -1011,20 +1011,20 @@ module Daiouzyou =
                                  Some (Speed (None,numExpr "1+$rank*2")),
                                  Bullet ({bulletLabel = None;},None,None,[]));
                               Action.ActionRef
-                                ({actionRefLabel = "XWay";},
+                                ({actionRefLabel = ActionLabel "XWay";},
                                  ["10"; "36"]);
                               Wait (numExpr "6-$rank*3")])); Vanish])]));
             Wait (numExpr "225")]);
         BulletmlElm.Action
-          ({actionLabel = Some "top1";},
-           [Action.ActionRef ({actionRefLabel = "spiral";},["7"]);
-            Action.ActionRef ({actionRefLabel = "spiral";},["-7"])]);
+          ({actionLabel = Some (ActionLabel "top1");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "spiral";},["7"]);
+            Action.ActionRef ({actionRefLabel = ActionLabel "spiral";},["-7"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "fan4";},
+          ({actionLabel = Some (ActionLabel "fan4");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-$1")),
-               None,BulletRef ({bulletRefLabel = "Dummy";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]));
             Repeat
               (Times (numExpr "60+$rank*90"),
                Action
@@ -1037,15 +1037,15 @@ module Daiouzyou =
                       Some (Speed (None,numExpr "1+$rank*2")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef
-                     ({actionRefLabel = "XWay";},
+                     ({actionRefLabel = ActionLabel "XWay";},
                       ["4"; "90"]);
                    Wait (numExpr "6-$rank*3")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top2";},
-           [Action.ActionRef ({actionRefLabel = "fan4";},["4"])]);
+          ({actionLabel = Some (ActionLabel "top2");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "fan4";},["4"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top3";},
-           [Action.ActionRef ({actionRefLabel = "fan4";},["-4"])])])
+          ({actionLabel = Some (ActionLabel "top3");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "fan4";},["-4"])])])
 
   /// 怒首領蜂大往生「緋蜂」最終形態に多分似たもの by 白い弾幕くん
   /// [Daiouzyou]_hibachi_maybe.xml
@@ -1057,15 +1057,15 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生「緋蜂」最終形態に多分似たもの by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWay";},
+          ({actionLabel = Some (ActionLabel "XWay");},
            [Action.ActionRef
-              ({actionRefLabel = "XWayFan";},
+              ({actionRefLabel = ActionLabel "XWayFan";},
                ["$1"; "$2"; "0"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWayFan";},
+          ({actionLabel = Some (ActionLabel "XWayFan");},
            [Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -1078,7 +1078,7 @@ module Daiouzyou =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "$3")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "curve";},None,None,
+          ({bulletLabel = Some (BulletLabel "curve");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -1090,7 +1090,7 @@ module Daiouzyou =
                             (Some {directionType = DirectionType.Relative;},numExpr "-$1*(4+$rank*$rank*4)"),
                           Term (numExpr "10")); Wait (numExpr "10")]))])]);
         BulletmlElm.Action
-          ({actionLabel = Some "spiral";},
+          ({actionLabel = Some (ActionLabel "spiral");},
            [Repeat
               (Times (numExpr "10+$rank*15"),
                Action
@@ -1107,7 +1107,7 @@ module Daiouzyou =
                              Some
                                (Speed (None,numExpr "1.5+$rank*$rank*1.5")),
                              BulletRef
-                               ({bulletRefLabel = "curve";},
+                               ({bulletRefLabel = BulletLabel "curve";},
                                 ["$1"]));
                           Repeat
                             (Times (numExpr "10+$rank*10-1"),
@@ -1122,7 +1122,7 @@ module Daiouzyou =
                                       (Speed
                                          (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                                     BulletRef
-                                      ({bulletRefLabel = "curve";},
+                                      ({bulletRefLabel = BulletLabel "curve";},
                                        ["$1"]))]));
                           Wait (numExpr "6-$rank*3")]));
                    Wait (numExpr "6-$rank*3");
@@ -1132,16 +1132,16 @@ module Daiouzyou =
                         (Direction
                            (Some {directionType = DirectionType.Sequence;},numExpr "$1")),
                       Some (Speed (None,numExpr "1+$rank*2")),
-                      BulletRef ({bulletRefLabel = "Dummy";},[]))]))]);
+                      BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top1";},
-           [Action.ActionRef ({actionRefLabel = "spiral";},["-2"])]);
+          ({actionLabel = Some (ActionLabel "top1");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "spiral";},["-2"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "fan4";},
+          ({actionLabel = Some (ActionLabel "fan4");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-$1")),
-               None,BulletRef ({bulletRefLabel = "Dummy";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]));
             Repeat
               (Times (numExpr "30+$rank*45"),
                Action
@@ -1154,15 +1154,15 @@ module Daiouzyou =
                       Some (Speed (None,numExpr "1+$rank*$rank*2")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef
-                     ({actionRefLabel = "XWay";},
+                     ({actionRefLabel = ActionLabel "XWay";},
                       ["4"; "90"]);
                    Wait (numExpr "6-$rank*3")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top2";},
-           [Action.ActionRef ({actionRefLabel = "fan4";},["4"])]);
+          ({actionLabel = Some (ActionLabel "top2");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "fan4";},["4"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top3";},
-           [Action.ActionRef ({actionRefLabel = "fan4";},["-4"])])])
+          ({actionLabel = Some (ActionLabel "top3");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "fan4";},["-4"])])])
 
   /// 怒首領蜂大往生一面ボス by 白い弾幕くん
   /// [Daiouzyou]_round_1_boss.xml
@@ -1174,7 +1174,7 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生一面ボス by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "3"),
                Action
@@ -1183,32 +1183,32 @@ module Daiouzyou =
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
                       Some (Speed (None,numExpr "4")),
-                      BulletRef ({bulletRefLabel = "seed";},[])); Wait (numExpr "500")]));
+                      BulletRef ({bulletRefLabel = BulletLabel "seed";},[])); Wait (numExpr "500")]));
             Wait (numExpr "100")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "seed";},None,None,
+          ({bulletLabel = Some (BulletLabel "seed");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "9");
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),None,
-                   BulletRef ({bulletRefLabel = "seed2";},[]));
+                   BulletRef ({bulletRefLabel = BulletLabel "seed2";},[]));
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "180")),None,
-                   BulletRef ({bulletRefLabel = "seed2";},[])); Vanish])]);
+                   BulletRef ({bulletRefLabel = BulletLabel "seed2";},[])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "seed2";},None,Some (Speed (None,numExpr "18")),
+          ({bulletLabel = Some (BulletLabel "seed2");},None,Some (Speed (None,numExpr "18")),
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "1");
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "90")),None,
-                   BulletRef ({bulletRefLabel = "seed3";},[])); Vanish])]);
+                   BulletRef ({bulletRefLabel = BulletLabel "seed3";},[])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "seed3";},None,Some (Speed (None,numExpr "0.8")),
+          ({bulletLabel = Some (BulletLabel "seed3");},None,Some (Speed (None,numExpr "0.8")),
            [Action
               ({actionLabel = None;},
                [ChangeDirection
@@ -1265,18 +1265,18 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生一面ボス、発狂。by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top1";},
+          ({actionLabel = Some (ActionLabel "top1");},
            [Repeat
               (Times (numExpr "128"),
                Action
                  ({actionLabel = None;},
-                  [Wait (numExpr "4"); Action.ActionRef ({actionRefLabel = "four";},["$rand*90+135"])]))]);
+                  [Wait (numExpr "4"); Action.ActionRef ({actionRefLabel = ActionLabel "four";},["$rand*90+135"])]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "four";},
+          ({actionLabel = Some (ActionLabel "four");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
-               Some (Speed (None,numExpr "6")),BulletRef ({bulletRefLabel = "rb";},["$1"]));
+               Some (Speed (None,numExpr "6")),BulletRef ({bulletRefLabel = BulletLabel "rb";},["$1"]));
             Repeat
               (Times (numExpr "3"),
                Action
@@ -1285,12 +1285,12 @@ module Daiouzyou =
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "60")),
                       Some (Speed (None,numExpr "6")),
-                      BulletRef ({bulletRefLabel = "rb";},["$1"]))]))]);
+                      BulletRef ({bulletRefLabel = BulletLabel "rb";},["$1"]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "rb";},None,None,
-           [ActionRef ({actionRefLabel = "red";},["$1+$rand*20-10"])]);
+          ({bulletLabel = Some (BulletLabel "rb");},None,None,
+           [ActionRef ({actionRefLabel = ActionLabel "red";},["$1+$rand*20-10"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "red";},
+          ({actionLabel = Some (ActionLabel "red");},
            [Wait (numExpr "1");
             Fire
               ({fireLabel = None;},
@@ -1298,7 +1298,7 @@ module Daiouzyou =
                Some (Speed (None,numExpr "1+$rank")),
                Bullet ({bulletLabel = None;},None,None,[])); Vanish]);
         BulletmlElm.Action
-          ({actionLabel = Some "top2";},
+          ({actionLabel = Some (ActionLabel "top2");},
            [Repeat
               (Times (numExpr "4"),
                Action
@@ -1306,9 +1306,9 @@ module Daiouzyou =
                   [Wait (numExpr "160");
                    Fire
                      ({fireLabel = None;},None,None,
-                      BulletRef ({bulletRefLabel = "sht";},["1.2"])); Wait (numExpr "80")]))]);
+                      BulletRef ({bulletRefLabel = BulletLabel "sht";},["1.2"])); Wait (numExpr "80")]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "sht";},None,None,
+          ({bulletLabel = Some (BulletLabel "sht");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -1320,7 +1320,7 @@ module Daiouzyou =
                           Some (Speed (None,numExpr "($1+$rand*$1)*($rank/2+0.65)")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top3";},
+          ({actionLabel = Some (ActionLabel "top3");},
            [Repeat
               (Times (numExpr "4"),
                Action
@@ -1328,28 +1328,28 @@ module Daiouzyou =
                   [Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),None,
-                      BulletRef ({bulletRefLabel = "rd_seed";},["-5"; "-5"]));
+                      BulletRef ({bulletRefLabel = BulletLabel "rd_seed";},["-5"; "-5"]));
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "270")),None,
-                      BulletRef ({bulletRefLabel = "rd_seed";},["5"; "5"]));
+                      BulletRef ({bulletRefLabel = BulletLabel "rd_seed";},["5"; "5"]));
                    Wait (numExpr "240")]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "rd_seed";},None,Some (Speed (None,numExpr "3")),
+          ({bulletLabel = Some (BulletLabel "rd_seed");},None,Some (Speed (None,numExpr "3")),
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "1");
                 Fire
                   ({fireLabel = None;},None,Some (Speed (None,numExpr "0")),
-                   BulletRef ({bulletRefLabel = "rd_seed2";},[]));
+                   BulletRef ({bulletRefLabel = BulletLabel "rd_seed2";},[]));
                 Fire
                   ({fireLabel = None;},None,Some (Speed (None,numExpr "0")),
-                   BulletRef ({bulletRefLabel = "bd_seed";},["0"; "$2"]));
+                   BulletRef ({bulletRefLabel = BulletLabel "bd_seed";},["0"; "$2"]));
                 Fire
                   ({fireLabel = None;},None,Some (Speed (None,numExpr "0")),
-                   BulletRef ({bulletRefLabel = "bd_seed";},["$1"; "$2"])); Vanish])]);
+                   BulletRef ({bulletRefLabel = BulletLabel "bd_seed";},["$1"; "$2"])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "rd_seed2";},None,None,
+          ({bulletLabel = Some (BulletLabel "rd_seed2");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -1369,7 +1369,7 @@ module Daiouzyou =
                                  Bullet ({bulletLabel = None;},None,None,[]));
                               Wait (numExpr "4")])); Wait (numExpr "12")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "bd_seed";},None,None,
+          ({bulletLabel = Some (BulletLabel "bd_seed");},None,None,
            [Action
               ({actionLabel = None;},
                [Fire
@@ -1397,38 +1397,38 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生三面ボス「厳武」第二形態 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "155")),
                Some (Speed (None,numExpr "3.3")),
-               BulletRef ({bulletRefLabel = "roll";},["1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "roll";},["1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "205")),
                Some (Speed (None,numExpr "3.3")),
-               BulletRef ({bulletRefLabel = "roll";},["-1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "roll";},["-1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "135")),
                Some (Speed (None,numExpr "3.2")),
-               BulletRef ({bulletRefLabel = "roll";},["1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "roll";},["1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "225")),
                Some (Speed (None,numExpr "3.2")),
-               BulletRef ({bulletRefLabel = "roll";},["-1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "roll";},["-1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "135")),
-               Some (Speed (None,numExpr "2")),BulletRef ({bulletRefLabel = "roll";},["1"]));
+               Some (Speed (None,numExpr "2")),BulletRef ({bulletRefLabel = BulletLabel "roll";},["1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "225")),
-               Some (Speed (None,numExpr "2")),BulletRef ({bulletRefLabel = "roll";},["-1"]));
+               Some (Speed (None,numExpr "2")),BulletRef ({bulletRefLabel = BulletLabel "roll";},["-1"]));
             Wait (numExpr "400")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "roll";},None,None,
+          ({bulletLabel = Some (BulletLabel "roll");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "12"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"));
@@ -1460,20 +1460,20 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生三面ボス「厳武」第三形態 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "Red";},None,None,[Action ({actionLabel = None;},[])]);
+          ({bulletLabel = Some (BulletLabel "Red");},None,None,[Action ({actionLabel = None;},[])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "Stop";},
+          ({actionLabel = Some (ActionLabel "Stop");},
            [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWay";},
+          ({actionLabel = Some (ActionLabel "XWay");},
            [Action.ActionRef
-              ({actionRefLabel = "XWayFan";},
+              ({actionRefLabel = ActionLabel "XWayFan";},
                ["$1"; "$2"; "0"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWayFan";},
+          ({actionLabel = Some (ActionLabel "XWayFan");},
            [Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -1486,37 +1486,37 @@ module Daiouzyou =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "$3")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top1";},
+          ({actionLabel = Some (ActionLabel "top1");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
-               None,BulletRef ({bulletRefLabel = "aim2";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "aim2";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
-               None,BulletRef ({bulletRefLabel = "aim2";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "aim2";},[]));
             Fire
               ({fireLabel = None;},None,Some (Speed (None,numExpr "0")),
                Bullet
                  ({bulletLabel = None;},None,None,
-                  [ActionRef ({actionRefLabel = "fanRoll";},["7"])]));
+                  [ActionRef ({actionRefLabel = ActionLabel "fanRoll";},["7"])]));
             Fire
               ({fireLabel = None;},None,Some (Speed (None,numExpr "0")),
                Bullet
                  ({bulletLabel = None;},None,None,
-                  [ActionRef ({actionRefLabel = "fanRoll";},["-7"])]))]);
+                  [ActionRef ({actionRefLabel = ActionLabel "fanRoll";},["-7"])]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top2";},
-           [Action.ActionRef ({actionRefLabel = "3wayRoll";},["13"])]);
+          ({actionLabel = Some (ActionLabel "top2");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "3wayRoll";},["13"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top3";},
-           [Action.ActionRef ({actionRefLabel = "3wayRoll";},["-13"])]);
+          ({actionLabel = Some (ActionLabel "top3");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "3wayRoll";},["-13"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "3wayRoll";},
+          ({actionLabel = Some (ActionLabel "3wayRoll");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
-               None,BulletRef ({bulletRefLabel = "Dummy";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]));
             Repeat
               (Times (numExpr "14"),
                Action
@@ -1529,7 +1529,7 @@ module Daiouzyou =
                       Some (Speed (None,numExpr "1.4+$rank*0.8")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef
-                     ({actionRefLabel = "XWay";},
+                     ({actionRefLabel = ActionLabel "XWay";},
                       ["3"; "$1"]);
                    Wait (numExpr "10")]));
             Repeat
@@ -1544,15 +1544,15 @@ module Daiouzyou =
                       Some (Speed (None,numExpr "1.4+$rank*0.8")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef
-                     ({actionRefLabel = "XWay";},
+                     ({actionRefLabel = ActionLabel "XWay";},
                       ["3"; "-$1"]);
                    Wait (numExpr "10")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "fanRoll";},
+          ({actionLabel = Some (ActionLabel "fanRoll");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1*8")),
-               None,BulletRef ({bulletRefLabel = "Dummy";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]));
             Repeat
               (Times (numExpr "32"),
                Action
@@ -1565,14 +1565,14 @@ module Daiouzyou =
                       Some (Speed (None,numExpr "1.2+$rank*0.4")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef
-                     ({actionRefLabel = "XWayFan";},
+                     ({actionRefLabel = ActionLabel "XWayFan";},
                       ["4"; "$1"; "0.3"]);
                    Wait (numExpr "10")])); Vanish]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "aim2";},None,Some (Speed (None,numExpr "1")),
+          ({bulletLabel = Some (BulletLabel "aim2");},None,Some (Speed (None,numExpr "1")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "8"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "8"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Repeat
                   (Times (numExpr "14+$rank*12"),
                    Action
@@ -1584,7 +1584,7 @@ module Daiouzyou =
                             (Direction
                                (Some {directionType = Aim;},numExpr "0")),
                           Some (Speed (None,numExpr "1.4+$rank*0.8")),
-                          BulletRef ({bulletRefLabel = "Red";},[]))])); Vanish])])])
+                          BulletRef ({bulletRefLabel = BulletLabel "Red";},[]))])); Vanish])])])
 
   /// 怒首領蜂大往生三面ボス「厳武」発狂 by 白い弾幕くん
   /// [Daiouzyou]_round_3_boss_last.xml
@@ -1596,27 +1596,27 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生三面ボス「厳武」発狂 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "100")),
                Some (Speed (None,numExpr "3")),
-               BulletRef ({bulletRefLabel = "armSrc";},["1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "armSrc";},["1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-100")),
                Some (Speed (None,numExpr "3")),
-               BulletRef ({bulletRefLabel = "armSrc";},["0"]));
-            FireRef ({fireRefLabel = "center";},[]); Wait (numExpr "500")]);
+               BulletRef ({bulletRefLabel = BulletLabel "armSrc";},["0"]));
+            FireRef ({fireRefLabel = FireLabel "center";},[]); Wait (numExpr "500")]);
         BulletmlElm.Action
-          ({actionLabel = Some "center3";},
+          ({actionLabel = Some (ActionLabel "center3");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = Aim;},numExpr "-10.5*$1")),None,
-               BulletRef ({bulletRefLabel = "Dummy";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]));
             Repeat
               (Times (numExpr "3"),
                Action
@@ -1650,7 +1650,7 @@ module Daiouzyou =
                         ({bulletLabel = None;},None,None,
                          [Action ({actionLabel = None;},[Vanish])])); Wait (numExpr "5")]))]);
         BulletmlElm.Fire
-          ({fireLabel = Some "center";},
+          ({fireLabel = Some (FireLabel "center");},
            Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
            Some (Speed (None,numExpr "5")),
            Bullet
@@ -1662,20 +1662,20 @@ module Daiouzyou =
                      (Times (numExpr "2"),
                       Action
                         ({actionLabel = None;},
-                         [Action.ActionRef ({actionRefLabel = "center3";},["-4"]);
-                          Wait (numExpr "30"); Action.ActionRef ({actionRefLabel = "center3";},["4"]);
+                         [Action.ActionRef ({actionRefLabel = ActionLabel "center3";},["-4"]);
+                          Wait (numExpr "30"); Action.ActionRef ({actionRefLabel = ActionLabel "center3";},["4"]);
                           Wait (numExpr "30")])); Vanish])]));
         BulletmlElm.Bullet
-          ({bulletLabel = Some "armSrc";},None,None,
+          ({bulletLabel = Some (BulletLabel "armSrc");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "12"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "1");
-                FireRef ({fireRefLabel = "arm";},["8-16*$1"; "0"]); Wait (numExpr "2");
-                FireRef ({fireRefLabel = "arm";},["8-16*$1"; "90"]); Wait (numExpr "2");
-                FireRef ({fireRefLabel = "arm";},["8-16*$1"; "180"]); Wait (numExpr "2");
-                FireRef ({fireRefLabel = "arm";},["8-16*$1"; "270"]); Vanish])]);
+                FireRef ({fireRefLabel = FireLabel "arm";},["8-16*$1"; "0"]); Wait (numExpr "2");
+                FireRef ({fireRefLabel = FireLabel "arm";},["8-16*$1"; "90"]); Wait (numExpr "2");
+                FireRef ({fireRefLabel = FireLabel "arm";},["8-16*$1"; "180"]); Wait (numExpr "2");
+                FireRef ({fireRefLabel = FireLabel "arm";},["8-16*$1"; "270"]); Vanish])]);
         BulletmlElm.Fire
-          ({fireLabel = Some "arm";},None,Some (Speed (None,numExpr "0")),
+          ({fireLabel = Some (FireLabel "arm");},None,Some (Speed (None,numExpr "0")),
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
@@ -1707,19 +1707,19 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生四面ボス「逝流」第一形態その三 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "110")),
                Some (Speed (None,numExpr "3")),
-               BulletRef ({bulletRefLabel = "armSrc";},["1"]));
+               BulletRef ({bulletRefLabel = BulletLabel "armSrc";},["1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-110")),
                Some (Speed (None,numExpr "3")),
-               BulletRef ({bulletRefLabel = "armSrc";},["0"])); Wait (numExpr "400")]);
+               BulletRef ({bulletRefLabel = BulletLabel "armSrc";},["0"])); Wait (numExpr "400")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "armSrc";},None,None,
+          ({bulletLabel = Some (BulletLabel "armSrc");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "12");
@@ -1727,34 +1727,34 @@ module Daiouzyou =
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
                    Some (Speed (None,numExpr "1")),
-                   BulletRef ({bulletRefLabel = "arm";},["$1"; "1"]));
+                   BulletRef ({bulletRefLabel = BulletLabel "arm";},["$1"; "1"]));
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "60")),
                    Some (Speed (None,numExpr "1")),
-                   BulletRef ({bulletRefLabel = "arm";},["$1"; "1"]));
+                   BulletRef ({bulletRefLabel = BulletLabel "arm";},["$1"; "1"]));
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-60")),
                    Some (Speed (None,numExpr "1")),
-                   BulletRef ({bulletRefLabel = "arm";},["$1"; "1"]));
+                   BulletRef ({bulletRefLabel = BulletLabel "arm";},["$1"; "1"]));
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
                    Some (Speed (None,numExpr "1")),
-                   BulletRef ({bulletRefLabel = "arm";},["$1"; "-1"]));
+                   BulletRef ({bulletRefLabel = BulletLabel "arm";},["$1"; "-1"]));
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "60")),
                    Some (Speed (None,numExpr "1")),
-                   BulletRef ({bulletRefLabel = "arm";},["$1"; "-1"]));
+                   BulletRef ({bulletRefLabel = BulletLabel "arm";},["$1"; "-1"]));
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-60")),
                    Some (Speed (None,numExpr "1")),
-                   BulletRef ({bulletRefLabel = "arm";},["$1"; "-1"])); Vanish])]);
+                   BulletRef ({bulletRefLabel = BulletLabel "arm";},["$1"; "-1"])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "arm";},None,None,
+          ({bulletLabel = Some (BulletLabel "arm");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "12");
@@ -1787,16 +1787,16 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生四面ボス「逝流」第一形態その一 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "Stop";},
+          ({actionLabel = Some (ActionLabel "Stop");},
            [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "seed";},None,Some (Speed (None,numExpr "4")),
+          ({bulletLabel = Some (BulletLabel "seed");},None,Some (Speed (None,numExpr "4")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Repeat
                   (Times (numExpr "20"),
                    Action
@@ -1828,11 +1828,11 @@ module Daiouzyou =
                                         Bullet ({bulletLabel = None;},None,None,[]))]))]))]));
                 Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "xway";},
+          ({actionLabel = Some (ActionLabel "xway");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = Aim;},numExpr "-7*$1-7")),
-               None,BulletRef ({bulletRefLabel = "Dummy";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]));
             Repeat
               (Times (numExpr "$1"),
                Action
@@ -1862,15 +1862,15 @@ module Daiouzyou =
                                ({bulletLabel = None;},None,None,
                                 [Action ({actionLabel = None;},[])]))]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "110")),
-               None,BulletRef ({bulletRefLabel = "seed";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "seed";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-110")),
-               None,BulletRef ({bulletRefLabel = "seed";},[])); Wait (numExpr "400")])])
+               None,BulletRef ({bulletRefLabel = BulletLabel "seed";},[])); Wait (numExpr "400")])])
 
   /// 怒首領蜂大往生四面ボス「逝流」第一形態その二 by 白い弾幕くん
   /// [Daiouzyou]_round_4_boss_2.xml
@@ -1882,16 +1882,16 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生四面ボス「逝流」第一形態その二 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "Stop";},
+          ({actionLabel = Some (ActionLabel "Stop");},
            [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "blue";},None,Some (Speed (None,numExpr "3")),
+          ({bulletLabel = Some (BulletLabel "blue");},None,Some (Speed (None,numExpr "3")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Repeat
                   (Times (numExpr "16+$rank*16"),
                    Action
@@ -1923,11 +1923,11 @@ module Daiouzyou =
                                         Bullet ({bulletLabel = None;},None,None,[]))]))]))]));
                 Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "xway";},
+          ({actionLabel = Some (ActionLabel "xway");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = Aim;},numExpr "-7*$1-7")),
-               None,BulletRef ({bulletRefLabel = "Dummy";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]));
             Repeat
               (Times (numExpr "$1"),
                Action
@@ -1957,36 +1957,36 @@ module Daiouzyou =
                                ({bulletLabel = None;},None,None,
                                 [Action ({actionLabel = None;},[])]))]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "red";},None,Some (Speed (None,numExpr "3")),
+          ({bulletLabel = Some (BulletLabel "red");},None,Some (Speed (None,numExpr "3")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Repeat
                   (Times (numExpr "5"),
                    Action
                      ({actionLabel = None;},
                       [Action.ActionRef
-                         ({actionRefLabel = "xway";},
+                         ({actionRefLabel = ActionLabel "xway";},
                           ["$rand*3+$rank*2"]);
                        Wait (numExpr "40")])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "120")),
-               None,BulletRef ({bulletRefLabel = "blue";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "blue";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-120")),
-               None,BulletRef ({bulletRefLabel = "red";},[])); Wait (numExpr "200");
+               None,BulletRef ({bulletRefLabel = BulletLabel "red";},[])); Wait (numExpr "200");
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-120")),
-               None,BulletRef ({bulletRefLabel = "blue";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "blue";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "120")),
-               None,BulletRef ({bulletRefLabel = "red";},[])); Wait (numExpr "200")])])
+               None,BulletRef ({bulletRefLabel = BulletLabel "red";},[])); Wait (numExpr "200")])])
 
   /// 怒首領蜂大往生四面ボス「逝流」第一形態その四 by 白い弾幕くん
   /// [Daiouzyou]_round_4_boss_4.xml
@@ -1998,15 +1998,15 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生四面ボス「逝流」第一形態その四 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "Stop";},
+          ({actionLabel = Some (ActionLabel "Stop");},
            [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWay";},
+          ({actionLabel = Some (ActionLabel "XWay");},
            [Action.ActionRef
-              ({actionRefLabel = "XWayFan";},
+              ({actionRefLabel = ActionLabel "XWayFan";},
                ["$1"; "$2"; "0"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWayFan";},
+          ({actionLabel = Some (ActionLabel "XWayFan");},
            [Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -2019,17 +2019,17 @@ module Daiouzyou =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "$3")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "fan";},
+          ({actionLabel = Some (ActionLabel "fan");},
            [Wait (numExpr "30");
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
                Some (Speed (None,numExpr "1.2+$rank")),
-               BulletRef ({bulletRefLabel = "Dummy";},[]));
-            Action.ActionRef ({actionRefLabel = "XWay";},["$2"; "$3"]);
+               BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]));
+            Action.ActionRef ({actionRefLabel = ActionLabel "XWay";},["$2"; "$3"]);
             Repeat
               (Times (numExpr "6"),
                Action
@@ -2043,34 +2043,34 @@ module Daiouzyou =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef
-                     ({actionRefLabel = "XWay";},
+                     ({actionRefLabel = ActionLabel "XWay";},
                       ["$2"; "$3"])]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top1";},
+          ({actionLabel = Some (ActionLabel "top1");},
            [Action.ActionRef
-              ({actionRefLabel = "fan";},
+              ({actionRefLabel = ActionLabel "fan";},
                ["220"; "8"; "5"; "-42.5"]);
             Action.ActionRef
-              ({actionRefLabel = "fan";},
+              ({actionRefLabel = ActionLabel "fan";},
                ["150"; "8"; "-5"; "42.5"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top2";},
+          ({actionLabel = Some (ActionLabel "top2");},
            [Action.ActionRef
-              ({actionRefLabel = "fan";},
+              ({actionRefLabel = ActionLabel "fan";},
                ["200"; "7"; "2.5"; "-22.5"]);
             Action.ActionRef
-              ({actionRefLabel = "fan";},
+              ({actionRefLabel = ActionLabel "fan";},
                ["170"; "7"; "-2.5"; "22.5"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top3";},
+          ({actionLabel = Some (ActionLabel "top3");},
            [Action.ActionRef
-              ({actionRefLabel = "fan";},
+              ({actionRefLabel = ActionLabel "fan";},
                ["160"; "8"; "5"; "-42.5"]);
             Action.ActionRef
-              ({actionRefLabel = "fan";},
+              ({actionRefLabel = ActionLabel "fan";},
                ["210"; "8"; "-5"; "42.5"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top4";},
+          ({actionLabel = Some (ActionLabel "top4");},
            [Wait (numExpr "20");
             Repeat
               (Times (numExpr "2"),
@@ -2089,7 +2089,7 @@ module Daiouzyou =
                                 [Action
                                    ({actionLabel = None;},
                                     [Wait (numExpr "10*$rand");
-                                     Action.ActionRef ({actionRefLabel = "Stop";},[]);
+                                     Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                                      Wait (numExpr "60");
                                      ChangeDirection
                                        (Direction
@@ -2111,10 +2111,10 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生四面ボス「逝流」第二形態その一 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "Stop";},
+          ({actionLabel = Some (ActionLabel "Stop");},
            [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWay";},
+          ({actionLabel = Some (ActionLabel "XWay");},
            [Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -2127,13 +2127,13 @@ module Daiouzyou =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "blueFan";},None,Some (Speed (None,numExpr "3")),
+          ({bulletLabel = Some (BulletLabel "blueFan");},None,Some (Speed (None,numExpr "3")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "20"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "20"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Repeat
                   (Times (numExpr "6"),
                    Action
@@ -2146,7 +2146,7 @@ module Daiouzyou =
                           Some (Speed (None,numExpr "1.6")),
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Action.ActionRef
-                         ({actionRefLabel = "XWay";},
+                         ({actionRefLabel = ActionLabel "XWay";},
                           ["3"; "120"]);
                        Repeat
                          (Times (numExpr "6+$rank*6"),
@@ -2161,11 +2161,11 @@ module Daiouzyou =
                                  Some (Speed (None,numExpr "1.6")),
                                  Bullet ({bulletLabel = None;},None,None,[]));
                               Action.ActionRef
-                                ({actionRefLabel = "XWay";},
+                                ({actionRefLabel = ActionLabel "XWay";},
                                  ["3"; "120"])]));
                        Wait (numExpr "14")])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "singleRedAim";},
+          ({actionLabel = Some (ActionLabel "singleRedAim");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = Aim;},numExpr "0")),
@@ -2188,7 +2188,7 @@ module Daiouzyou =
                         ({bulletLabel = None;},None,None,
                          [Action ({actionLabel = None;},[])]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "doubleRedAim";},
+          ({actionLabel = Some (ActionLabel "doubleRedAim");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = Aim;},numExpr "-5*$1")),
@@ -2227,47 +2227,47 @@ module Daiouzyou =
                         ({bulletLabel = None;},None,None,
                          [Action ({actionLabel = None;},[])]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "redAim2";},None,Some (Speed (None,numExpr "1")),
+          ({bulletLabel = Some (BulletLabel "redAim2");},None,Some (Speed (None,numExpr "1")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "20"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "20"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Wait (numExpr "100");
-                Action.ActionRef ({actionRefLabel = "singleRedAim";},[]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "singleRedAim";},[]);
                 Wait (numExpr "60");
-                Action.ActionRef ({actionRefLabel = "doubleRedAim";},["-1"]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "doubleRedAim";},["-1"]);
                 Wait (numExpr "20");
-                Action.ActionRef ({actionRefLabel = "doubleRedAim";},["-1"]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "doubleRedAim";},["-1"]);
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "redAim1";},None,Some (Speed (None,numExpr "1")),
+          ({bulletLabel = Some (BulletLabel "redAim1");},None,Some (Speed (None,numExpr "1")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "20"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "20"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Wait (numExpr "40");
-                Action.ActionRef ({actionRefLabel = "singleRedAim";},[]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "singleRedAim";},[]);
                 Wait (numExpr "60");
-                Action.ActionRef ({actionRefLabel = "doubleRedAim";},["1"]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "doubleRedAim";},["1"]);
                 Wait (numExpr "80");
-                Action.ActionRef ({actionRefLabel = "doubleRedAim";},["1"]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "doubleRedAim";},["1"]);
                 Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
-               None,BulletRef ({bulletRefLabel = "blueFan";},["4"]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "blueFan";},["4"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
-               None,BulletRef ({bulletRefLabel = "blueFan";},["-4"]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "blueFan";},["-4"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
-               None,BulletRef ({bulletRefLabel = "redAim2";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "redAim2";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
-               None,BulletRef ({bulletRefLabel = "redAim1";},[]));
+               None,BulletRef ({bulletRefLabel = BulletLabel "redAim1";},[]));
             Wait (numExpr "400")])])
 
   /// 怒首領蜂大往生五面ボス「黄流」第一形態その一 by 白い弾幕くん
@@ -2280,10 +2280,10 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生五面ボス「黄流」第一形態その一 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "Stop";},
+          ({actionLabel = Some (ActionLabel "Stop");},
            [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Action
-          ({actionLabel = Some "XWay";},
+          ({actionLabel = Some (ActionLabel "XWay");},
            [Repeat
               (Times (numExpr "$1-1"),
                Action
@@ -2296,15 +2296,15 @@ module Daiouzyou =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "aim3";},None,None,
+          ({bulletLabel = Some (BulletLabel "aim3");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "10");
                 Fire
                   ({fireLabel = None;},None,Some (Speed (None,numExpr "0")),
-                   BulletRef ({bulletRefLabel = "aim3Impl";},[])); Vanish])]);
+                   BulletRef ({bulletRefLabel = BulletLabel "aim3Impl";},[])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "aim3Impl";},None,None,
+          ({bulletLabel = Some (BulletLabel "aim3Impl");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -2320,7 +2320,7 @@ module Daiouzyou =
                           Some (Speed (None,numExpr "1.5")),
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Action.ActionRef
-                         ({actionRefLabel = "XWay";},
+                         ({actionRefLabel = ActionLabel "XWay";},
                           ["3"; "30"]);
                        Repeat
                          (Times (numExpr "2+$rank*3"),
@@ -2335,19 +2335,19 @@ module Daiouzyou =
                                  Some (Speed (None,numExpr "1.5")),
                                  Bullet ({bulletLabel = None;},None,None,[]));
                               Action.ActionRef
-                                ({actionRefLabel = "XWay";},
+                                ({actionRefLabel = ActionLabel "XWay";},
                                  ["3"; "30"])]));
                        Wait (numExpr "54-$rank*9")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "aim";},None,None,
+          ({bulletLabel = Some (BulletLabel "aim");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "10");
                 Fire
                   ({fireLabel = None;},None,Some (Speed (None,numExpr "0")),
-                   BulletRef ({bulletRefLabel = "aimImpl";},[])); Vanish])]);
+                   BulletRef ({bulletRefLabel = BulletLabel "aimImpl";},[])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "aimImpl";},None,None,
+          ({bulletLabel = Some (BulletLabel "aimImpl");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -2376,10 +2376,10 @@ module Daiouzyou =
                                  Bullet ({bulletLabel = None;},None,None,[]))]));
                        Wait (numExpr "54-$rank*9")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "fan";},None,None,
+          ({bulletLabel = Some (BulletLabel "fan");},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Repeat
                   (Times (numExpr "3+$rank*4"),
                    Action
@@ -2392,82 +2392,82 @@ module Daiouzyou =
                           Some (Speed (None,numExpr "$3")),
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Action.ActionRef
-                         ({actionRefLabel = "XWay";},
+                         ({actionRefLabel = ActionLabel "XWay";},
                           ["7"; "10"]);
                        Wait (numExpr "420/(3+$rank*4)")])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "110")),
                Some (Speed (None,numExpr "4")),
-               BulletRef ({bulletRefLabel = "aim3";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "aim3";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-110")),
                Some (Speed (None,numExpr "4")),
-               BulletRef ({bulletRefLabel = "aim3";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "aim3";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "125")),
                Some (Speed (None,numExpr "5")),
-               BulletRef ({bulletRefLabel = "aim";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "aim";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-125")),
                Some (Speed (None,numExpr "5")),
-               BulletRef ({bulletRefLabel = "aim";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "aim";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "150")),
                Some (Speed (None,numExpr "7")),
-               BulletRef ({bulletRefLabel = "aim";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "aim";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-150")),
                Some (Speed (None,numExpr "7")),
-               BulletRef ({bulletRefLabel = "aim";},[])); Wait (numExpr "10");
+               BulletRef ({bulletRefLabel = BulletLabel "aim";},[])); Wait (numExpr "10");
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
                Some (Speed (None,numExpr "6")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["-135"; "10"; "1.3"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
                Some (Speed (None,numExpr "6")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["135"; "10"; "1.3"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "110")),
                Some (Speed (None,numExpr "4")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["-164"; "8"; "1.2"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-110")),
                Some (Speed (None,numExpr "4")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["156"; "8"; "1.2"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "130")),
                Some (Speed (None,numExpr "2")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["180"; "8"; "1.1"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-130")),
                Some (Speed (None,numExpr "2")),
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["180"; "5"; "1.1"]));
             Wait (numExpr "430")])])
   
@@ -2481,20 +2481,20 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生五面ボス「黄流」第一形態その二 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "Red";},None,None,[Action ({actionLabel = None;},[])]);
+          ({bulletLabel = Some (BulletLabel "Red");},None,None,[Action ({actionLabel = None;},[])]);
         BulletmlElm.Action
-          ({actionLabel = Some "Stop";},
+          ({actionLabel = Some (ActionLabel "Stop");},
            [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "Dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "Dummy");},None,None,
            [Action ({actionLabel = None;},[Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "seven";},
+          ({bulletLabel = Some (BulletLabel "seven");},
            Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
            Some (Speed (None,numExpr "4")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Repeat
                   (Times (numExpr "5+$rank*4"),
                    Action
@@ -2505,58 +2505,58 @@ module Daiouzyou =
                             (Direction
                                (Some {directionType = Aim;},numExpr "-10")),
                           Some (Speed (None,numExpr "1.5")),
-                          BulletRef ({bulletRefLabel = "Red";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "Red";},[]));
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
                                (Some {directionType = Aim;},numExpr "10")),
                           Some (Speed (None,numExpr "1.5")),
-                          BulletRef ({bulletRefLabel = "Red";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "Red";},[]));
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
                                (Some {directionType = Aim;},numExpr "-5")),
                           Some (Speed (None,numExpr "1.3")),
-                          BulletRef ({bulletRefLabel = "Red";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "Red";},[]));
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
                                (Some {directionType = Aim;},numExpr "5")),
                           Some (Speed (None,numExpr "1.3")),
-                          BulletRef ({bulletRefLabel = "Red";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "Red";},[]));
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
                                (Some {directionType = Aim;},numExpr "-5")),
                           Some (Speed (None,numExpr "1.7")),
-                          BulletRef ({bulletRefLabel = "Red";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "Red";},[]));
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
                                (Some {directionType = Aim;},numExpr "5")),
                           Some (Speed (None,numExpr "1.7")),
-                          BulletRef ({bulletRefLabel = "Red";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "Red";},[]));
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
                                (Some {directionType = Aim;},numExpr "0")),
                           Some (Speed (None,numExpr "1.5")),
-                          BulletRef ({bulletRefLabel = "Red";},[]));
+                          BulletRef ({bulletRefLabel = BulletLabel "Red";},[]));
                        Wait (numExpr "360/(5+$rank*4)")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "fan";},None,Some (Speed (None,numExpr "4")),
+          ({bulletLabel = Some (BulletLabel "fan");},None,Some (Speed (None,numExpr "4")),
            [Action
               ({actionLabel = None;},
-               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = "Stop";},[]);
+               [Wait (numExpr "10"); Action.ActionRef ({actionRefLabel = ActionLabel "Stop";},[]);
                 Fire
                   ({fireLabel = None;},Some (Direction (None,numExpr "$1")),None,
-                   BulletRef ({bulletRefLabel = "Dummy";},[]));
+                   BulletRef ({bulletRefLabel = BulletLabel "Dummy";},[]));
                 Repeat
                   (Times (numExpr "35+$rank*35"),
                    Action
@@ -2570,65 +2570,65 @@ module Daiouzyou =
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Wait (numExpr "10/(1+$rank)+$rand")])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "seven";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "seven";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "170")),
                None,
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["55"; "10"; "1.8+$rank*0.4"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "170")),
                None,
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["60"; "10"; "1+$rank*0.2"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "170")),
                None,
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["225"; "10"; "1.4+$rank*0.2"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "170")),
                None,
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["250"; "10"; "1.3+$rank*0.2"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-170")),
                None,
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["55"; "-10"; "1.8+$rank*0.4"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-170")),
                None,
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["60"; "-10"; "1+$rank*0.2"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-170")),
                None,
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["225"; "-10"; "1.4+$rank*0.2"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-170")),
                None,
                BulletRef
-                 ({bulletRefLabel = "fan";},
+                 ({bulletRefLabel = BulletLabel "fan";},
                   ["250"; "-10"; "1.3+$rank*0.2"]));
             Wait (numExpr "360")])])
   
@@ -2642,18 +2642,18 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生二周目一面ボス、その一 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "64"),
                Action
                  ({actionLabel = None;},
-                  [Wait (numExpr "2"); Action.ActionRef ({actionRefLabel = "four";},["$rand*90+135"])]))]);
+                  [Wait (numExpr "2"); Action.ActionRef ({actionRefLabel = ActionLabel "four";},["$rand*90+135"])]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "four";},
+          ({actionLabel = Some (ActionLabel "four");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
-               Some (Speed (None,numExpr "6")),BulletRef ({bulletRefLabel = "rb";},["$1"]));
+               Some (Speed (None,numExpr "6")),BulletRef ({bulletRefLabel = BulletLabel "rb";},["$1"]));
             Repeat
               (Times (numExpr "3"),
                Action
@@ -2662,12 +2662,12 @@ module Daiouzyou =
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "60")),
                       Some (Speed (None,numExpr "6")),
-                      BulletRef ({bulletRefLabel = "rb";},["$1"]))]))]);
+                      BulletRef ({bulletRefLabel = BulletLabel "rb";},["$1"]))]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "rb";},None,None,
-           [ActionRef ({actionRefLabel = "red";},["$1+$rand*20-10"])]);
+          ({bulletLabel = Some (BulletLabel "rb");},None,None,
+           [ActionRef ({actionRefLabel = ActionLabel "red";},["$1+$rand*20-10"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "red";},
+          ({actionLabel = Some (ActionLabel "red");},
            [Wait (numExpr "1");
             Fire
               ({fireLabel = None;},
@@ -2685,7 +2685,7 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生二周目一面ボス、その二 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [ChangeSpeed (Speed (None,numExpr "4"),Term (numExpr "1"));
             ChangeDirection
               (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180"),Term (numExpr "1"));
@@ -2697,17 +2697,17 @@ module Daiouzyou =
                   [Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),None,
-                      BulletRef ({bulletRefLabel = "bl_seed";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "bl_seed";},[]));
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "270")),None,
-                      BulletRef ({bulletRefLabel = "bl_seed";},[])); Wait (numExpr "80")]));
+                      BulletRef ({bulletRefLabel = BulletLabel "bl_seed";},[])); Wait (numExpr "80")]));
             ChangeSpeed (Speed (None,numExpr "4"),Term (numExpr "1"));
             ChangeDirection
               (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0"),Term (numExpr "1")); Wait (numExpr "10");
             ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "bl_seed";},None,Some (Speed (None,numExpr "24")),
+          ({bulletLabel = Some (BulletLabel "bl_seed");},None,Some (Speed (None,numExpr "24")),
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "1");
@@ -2715,9 +2715,9 @@ module Daiouzyou =
                   ({fireLabel = None;},None,None,
                    Bullet
                      ({bulletLabel = None;},None,Some (Speed (None,numExpr "0")),
-                      [ActionRef ({actionRefLabel = "bl";},[])])); Vanish])]);
+                      [ActionRef ({actionRefLabel = ActionLabel "bl";},[])])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "bl";},
+          ({actionLabel = Some (ActionLabel "bl");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = Aim;},numExpr "-30")),
@@ -2763,7 +2763,7 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生二周目一面ボス、その三 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "3"),
                Action
@@ -2771,13 +2771,13 @@ module Daiouzyou =
                   [Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "270")),None,
-                      BulletRef ({bulletRefLabel = "bm_seed";},["-25"])); Wait (numExpr "20");
+                      BulletRef ({bulletRefLabel = BulletLabel "bm_seed";},["-25"])); Wait (numExpr "20");
                    Fire
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),None,
-                      BulletRef ({bulletRefLabel = "bm_seed";},["25"])); Wait (numExpr "100")]))]);
+                      BulletRef ({bulletRefLabel = BulletLabel "bm_seed";},["25"])); Wait (numExpr "100")]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "bm_seed";},None,Some (Speed (None,numExpr "24")),
+          ({bulletLabel = Some (BulletLabel "bm_seed");},None,Some (Speed (None,numExpr "24")),
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "1");
@@ -2787,28 +2787,28 @@ module Daiouzyou =
                      ({bulletLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
                       Some (Speed (None,numExpr "3")),
-                      [ActionRef ({actionRefLabel = "bm";},[])]));
+                      [ActionRef ({actionRefLabel = ActionLabel "bm";},[])]));
                 Fire
                   ({fireLabel = None;},None,None,
                    Bullet
                      ({bulletLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$1")),
                       Some (Speed (None,numExpr "2")),
-                      [ActionRef ({actionRefLabel = "bm";},[])])); Vanish])]);
+                      [ActionRef ({actionRefLabel = ActionLabel "bm";},[])])); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "bm";},
+          ({actionLabel = Some (ActionLabel "bm");},
            [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "50")); Wait (numExpr "45");
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "round";},["1.5"; "0"]));
+               BulletRef ({bulletRefLabel = BulletLabel "round";},["1.5"; "0"]));
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "round";},["1.25"; "7"]));
+               BulletRef ({bulletRefLabel = BulletLabel "round";},["1.25"; "7"]));
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "round";},["1"; "14"])); Vanish]);
+               BulletRef ({bulletRefLabel = BulletLabel "round";},["1"; "14"])); Vanish]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "round";},None,Some (Speed (None,numExpr "0")),
+          ({bulletLabel = Some (BulletLabel "round");},None,Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
@@ -2838,36 +2838,36 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生二周目一面ボス、その四 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "round_seed";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "round_seed";},[]));
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "sht";},["0.8"])); Wait (numExpr "20");
+               BulletRef ({bulletRefLabel = BulletLabel "sht";},["0.8"])); Wait (numExpr "20");
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "round_seed";},[])); Wait (numExpr "100");
+               BulletRef ({bulletRefLabel = BulletLabel "round_seed";},[])); Wait (numExpr "100");
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "round_seed";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "round_seed";},[]));
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "sht";},["1"])); Wait (numExpr "20");
+               BulletRef ({bulletRefLabel = BulletLabel "sht";},["1"])); Wait (numExpr "20");
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "round_seed";},[])); Wait (numExpr "100");
+               BulletRef ({bulletRefLabel = BulletLabel "round_seed";},[])); Wait (numExpr "100");
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "round_seed";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "round_seed";},[]));
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "sht";},["1.2"])); Wait (numExpr "20");
+               BulletRef ({bulletRefLabel = BulletLabel "sht";},["1.2"])); Wait (numExpr "20");
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "round_seed";},[])); Wait (numExpr "25")]);
+               BulletRef ({bulletRefLabel = BulletLabel "round_seed";},[])); Wait (numExpr "25")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "sht";},None,None,
+          ({bulletLabel = Some (BulletLabel "sht");},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
@@ -2879,12 +2879,12 @@ module Daiouzyou =
                           Some (Speed (None,numExpr "($1+$rand*$1)*(1+$rank*$rank)")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "round_seed";},None,Some (Speed (None,numExpr "0")),
+          ({bulletLabel = Some (BulletLabel "round_seed");},None,Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},Some (Direction (None,numExpr "0")),None,
-                   BulletRef ({bulletRefLabel = "two";},[]));
+                   BulletRef ({bulletRefLabel = BulletLabel "two";},[]));
                 Repeat
                   (Times (numExpr "15"),
                    Action
@@ -2892,9 +2892,9 @@ module Daiouzyou =
                       [Fire
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "22.5")),
-                          None,BulletRef ({bulletRefLabel = "two";},[]))])); Vanish])]);
+                          None,BulletRef ({bulletRefLabel = BulletLabel "two";},[]))])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "two";},None,None,
+          ({bulletLabel = Some (BulletLabel "two");},None,None,
            [Action
               ({actionLabel = None;},
                [Fire
@@ -2918,7 +2918,7 @@ module Daiouzyou =
         bulletmlName = Some "怒首領蜂大往生二周目一面ボス、その五 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "2"),
                Action
@@ -2927,32 +2927,32 @@ module Daiouzyou =
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
                       Some (Speed (None,numExpr "4")),
-                      BulletRef ({bulletRefLabel = "seed";},[])); Wait (numExpr "500")]));
+                      BulletRef ({bulletRefLabel = BulletLabel "seed";},[])); Wait (numExpr "500")]));
             Wait (numExpr "200")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "seed";},None,None,
+          ({bulletLabel = Some (BulletLabel "seed");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "9");
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),None,
-                   BulletRef ({bulletRefLabel = "seed2";},[]));
+                   BulletRef ({bulletRefLabel = BulletLabel "seed2";},[]));
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "180")),None,
-                   BulletRef ({bulletRefLabel = "seed2";},[])); Vanish])]);
+                   BulletRef ({bulletRefLabel = BulletLabel "seed2";},[])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "seed2";},None,Some (Speed (None,numExpr "18")),
+          ({bulletLabel = Some (BulletLabel "seed2");},None,Some (Speed (None,numExpr "18")),
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "1");
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "90")),None,
-                   BulletRef ({bulletRefLabel = "seed3";},[])); Vanish])]);
+                   BulletRef ({bulletRefLabel = BulletLabel "seed3";},[])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "seed3";},None,Some (Speed (None,numExpr "0.8")),
+          ({bulletLabel = Some (BulletLabel "seed3");},None,Some (Speed (None,numExpr "0.8")),
            [Action
               ({actionLabel = None;},
                [ChangeDirection
@@ -2991,10 +2991,10 @@ module Daiouzyou =
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},None,None,
-                          BulletRef ({bulletRefLabel = "tw";},[])); Wait (numExpr "138")]));
+                          BulletRef ({bulletRefLabel = BulletLabel "tw";},[])); Wait (numExpr "138")]));
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "tw";},None,None,
+          ({bulletLabel = Some (BulletLabel "tw");},None,None,
            [Action
               ({actionLabel = None;},
                [Fire

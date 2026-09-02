@@ -16,53 +16,53 @@ module Xsoldier =
         bulletmlName = Some "XSoldierの8面ボスの主砲 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
                Some (Speed (None,numExpr "0")),
-               BulletRef ({bulletRefLabel = "dummy";},["90"]));
+               BulletRef ({bulletRefLabel = BulletLabel "dummy";},["90"]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
                Some (Speed (None,numExpr "0")),
-               BulletRef ({bulletRefLabel = "dummy";},["270"]));
+               BulletRef ({bulletRefLabel = BulletLabel "dummy";},["270"]));
             Wait (numExpr "100 - $rank * 90");
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
                Some (Speed (None,numExpr "0")),
-               BulletRef ({bulletRefLabel = "allway";},["0"; "1.5"])); Wait (numExpr "5");
+               BulletRef ({bulletRefLabel = BulletLabel "allway";},["0"; "1.5"])); Wait (numExpr "5");
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
                Some (Speed (None,numExpr "0")),
-               BulletRef ({bulletRefLabel = "allway";},["2.5"; "1.8"])); Wait (numExpr "20")]);
+               BulletRef ({bulletRefLabel = BulletLabel "allway";},["2.5"; "1.8"])); Wait (numExpr "20")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "dummy";},None,None,
+          ({bulletLabel = Some (BulletLabel "dummy");},None,None,
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
-                   Some (Speed (None,numExpr "0")),BulletRef ({bulletRefLabel = "bit";},[]));
+                   Some (Speed (None,numExpr "0")),BulletRef ({bulletRefLabel = BulletLabel "bit";},[]));
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
                    Some (Speed (None,numExpr "0.5")),
-                   BulletRef ({bulletRefLabel = "bit";},[]));
+                   BulletRef ({bulletRefLabel = BulletLabel "bit";},[]));
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
                    Some (Speed (None,numExpr "1.0")),
-                   BulletRef ({bulletRefLabel = "bit";},[]));
+                   BulletRef ({bulletRefLabel = BulletLabel "bit";},[]));
                 Fire
                   ({fireLabel = None;},
                    Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
                    Some (Speed (None,numExpr "1.5")),
-                   BulletRef ({bulletRefLabel = "bit";},[])); Vanish])]);
+                   BulletRef ({bulletRefLabel = BulletLabel "bit";},[])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "allway";},None,None,
+          ({bulletLabel = Some (BulletLabel "allway");},None,None,
            [Action
               ({actionLabel = None;},
                [Fire
@@ -80,7 +80,7 @@ module Xsoldier =
                           Some (Speed (None,numExpr "$2")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "bit";},None,None,
+          ({bulletLabel = Some (BulletLabel "bit");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "20"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"));

@@ -16,7 +16,7 @@ module Strikers1999 =
         bulletmlName = Some "ストライカーズ1999の花火かも。by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "3"),
                Action
@@ -25,10 +25,10 @@ module Strikers1999 =
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
                       Some (Speed (None,numExpr "3")),
-                      BulletRef ({bulletRefLabel = "fastHanabi";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "fastHanabi";},[]));
                    Wait (numExpr "110-$rank*60")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "fastFour";},
+          ({actionLabel = Some (ActionLabel "fastFour");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "5")),
@@ -50,7 +50,7 @@ module Strikers1999 =
                Some (Speed (None,numExpr "1.5+$rank")),
                Bullet ({bulletLabel = None;},None,None,[]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "slowFour";},
+          ({actionLabel = Some (ActionLabel "slowFour");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "5")),
@@ -72,7 +72,7 @@ module Strikers1999 =
                Some (Speed (None,numExpr "0.7+$rank*0.8")),
                Bullet ({bulletLabel = None;},None,None,[]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "fastHanabi";},None,None,
+          ({bulletLabel = Some (BulletLabel "fastHanabi");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "15");
@@ -81,7 +81,7 @@ module Strikers1999 =
                    Some (Direction (Some {directionType = Aim;},numExpr "0")),
                    Some (Speed (None,numExpr "2.5+$rank")),
                    Bullet ({bulletLabel = None;},None,None,[]));
-                Action.ActionRef ({actionRefLabel = "fastFour";},[]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "fastFour";},[]);
                 Repeat
                   (Times (numExpr "16"),
                    Action
@@ -91,10 +91,10 @@ module Strikers1999 =
                           Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "32.5")),
                           Some (Speed (None,numExpr "2.5+$rank")),
                           Bullet ({bulletLabel = None;},None,None,[]));
-                       Action.ActionRef ({actionRefLabel = "fastFour";},[])]));
-                FireRef ({fireRefLabel = "slowHanabi";},[]); Vanish])]);
+                       Action.ActionRef ({actionRefLabel = ActionLabel "fastFour";},[])]));
+                FireRef ({fireRefLabel = FireLabel "slowHanabi";},[]); Vanish])]);
         BulletmlElm.Fire
-          ({fireLabel = Some "slowHanabi";},None,None,
+          ({fireLabel = Some (FireLabel "slowHanabi");},None,None,
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
@@ -104,7 +104,7 @@ module Strikers1999 =
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
                       Some (Speed (None,numExpr "1.3+$rank*0.8")),
                       Bullet ({bulletLabel = None;},None,None,[]));
-                   Action.ActionRef ({actionRefLabel = "slowFour";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "slowFour";},[]);
                    Repeat
                      (Times (numExpr "16"),
                       Action
@@ -115,4 +115,4 @@ module Strikers1999 =
                                (Direction (Some {directionType = DirectionType.Sequence;},numExpr "32.5")),
                              Some (Speed (None,numExpr "1.3+$rank*0.8")),
                              Bullet ({bulletLabel = None;},None,None,[]));
-                          Action.ActionRef ({actionRefLabel = "slowFour";},[])])); Vanish])]))])
+                          Action.ActionRef ({actionRefLabel = ActionLabel "slowFour";},[])])); Vanish])]))])

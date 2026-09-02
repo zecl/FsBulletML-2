@@ -16,17 +16,17 @@ module Garegga =
         bulletmlName = Some "バトルガレッガのBlackHeartMk2のワインダー。by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "135")),None,
-               BulletRef ({bulletRefLabel = "winder";},[]));
+               BulletRef ({bulletRefLabel = BulletLabel "winder";},[]));
             Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "225")),None,
-               BulletRef ({bulletRefLabel = "winder";},[])); Wait (numExpr "220")]);
+               BulletRef ({bulletRefLabel = BulletLabel "winder";},[])); Wait (numExpr "220")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "winder";},None,Some (Speed (None,numExpr "2.3")),
+          ({bulletLabel = Some (BulletLabel "winder");},None,Some (Speed (None,numExpr "2.3")),
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "10"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"));
@@ -36,12 +36,12 @@ module Garegga =
                    Bullet
                      ({bulletLabel = None;},None,None,
                       [Action ({actionLabel = None;},[Vanish])]));
-                Action.ActionRef ({actionRefLabel = "move";},["0"; "40"]);
-                Action.ActionRef ({actionRefLabel = "move";},["0.7+$rank"; "20"]);
-                Action.ActionRef ({actionRefLabel = "move";},["-0.7-$rank"; "40"]);
-                Action.ActionRef ({actionRefLabel = "move";},["0.7+$rank"; "20"]); Vanish])]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "move";},["0"; "40"]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "move";},["0.7+$rank"; "20"]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "move";},["-0.7-$rank"; "40"]);
+                Action.ActionRef ({actionRefLabel = ActionLabel "move";},["0.7+$rank"; "20"]); Vanish])]);
         BulletmlElm.Action
-          ({actionLabel = Some "move";},
+          ({actionLabel = Some (ActionLabel "move");},
            [Repeat
               (Times (numExpr "$2"),
                Action

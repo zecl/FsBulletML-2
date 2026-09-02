@@ -26,7 +26,7 @@ type StepTop() =
       Tops = tops }
 
   let top children =
-    let s = RecBulletml.Action ({ actionLabel = Some "top" }, children)
+    let s = RecBulletml.Action ({ actionLabel = Some (ActionLabel "top") }, children)
     s, Progress.initial s, FireContext.zero
 
   [<Test>]

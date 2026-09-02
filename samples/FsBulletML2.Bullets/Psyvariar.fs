@@ -16,7 +16,7 @@ module Psyvariar =
         bulletmlName = Some "サイヴァリア4-Dボス、MZIQかも。by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "add11";},
+          ({actionLabel = Some (ActionLabel "add11");},
            [Repeat
               (Times (numExpr "11"),
                Action
@@ -27,7 +27,7 @@ module Psyvariar =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "30"),
                Action
@@ -37,7 +37,7 @@ module Psyvariar =
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-11")),
                       Some (Speed (None,numExpr "1+$rank")),
                       Bullet ({bulletLabel = None;},None,None,[]));
-                   Action.ActionRef ({actionRefLabel = "add11";},[]);
+                   Action.ActionRef ({actionRefLabel = ActionLabel "add11";},[]);
                    Repeat
                      (Times (numExpr "3"),
                       Action
@@ -49,7 +49,7 @@ module Psyvariar =
                                (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-5+30")),
                              Some (Speed (None,numExpr "1+$rank")),
                              Bullet ({bulletLabel = None;},None,None,[]));
-                          Action.ActionRef ({actionRefLabel = "add11";},[])]));
+                          Action.ActionRef ({actionRefLabel = ActionLabel "add11";},[])]));
                    Wait (numExpr "4-$rank*2+$rand")])); Wait (numExpr "30-$rank*30")])])
 
   /// サイヴァリア、多分最終面ボス。by 白い弾幕くん
@@ -62,7 +62,7 @@ module Psyvariar =
         bulletmlName = Some "サイヴァリア、多分最終面ボス。by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "600"),
                Action
@@ -83,35 +83,35 @@ module Psyvariar =
         bulletmlName = Some "サイヴァリア、多分最終面ボス。by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Bullet
-          ({bulletLabel = Some "winderBullet";},None,Some (Speed (None,numExpr "3")),[]);
+          ({bulletLabel = Some (BulletLabel "winderBullet");},None,Some (Speed (None,numExpr "3")),[]);
         BulletmlElm.Fire
-          ({fireLabel = Some "fireWinder";},
+          ({fireLabel = Some (FireLabel "fireWinder");},
            Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$1")),None,
-           BulletRef ({bulletRefLabel = "winderBullet";},[]));
+           BulletRef ({bulletRefLabel = BulletLabel "winderBullet";},[]));
         BulletmlElm.Action
-          ({actionLabel = Some "roundWinder";},
-           [FireRef ({fireRefLabel = "fireWinder";},["$1"]);
+          ({actionLabel = Some (ActionLabel "roundWinder");},
+           [FireRef ({fireRefLabel = FireLabel "fireWinder";},["$1"]);
             Repeat
               (Times (numExpr "11"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "fireWinder";},["30"])])); Wait (numExpr "5")]);
+                  [FireRef ({fireRefLabel = FireLabel "fireWinder";},["30"])])); Wait (numExpr "5")]);
         BulletmlElm.Action
-          ({actionLabel = Some "winderSequence";},
-           [Repeat (Times (numExpr "12"),ActionRef ({actionRefLabel = "roundWinder";},["30"]));
-            Repeat (Times (numExpr "12"),ActionRef ({actionRefLabel = "roundWinder";},["$1"]));
-            Repeat (Times (numExpr "12"),ActionRef ({actionRefLabel = "roundWinder";},["30"]))]);
+          ({actionLabel = Some (ActionLabel "winderSequence");},
+           [Repeat (Times (numExpr "12"),ActionRef ({actionRefLabel = ActionLabel "roundWinder";},["30"]));
+            Repeat (Times (numExpr "12"),ActionRef ({actionRefLabel = ActionLabel "roundWinder";},["$1"]));
+            Repeat (Times (numExpr "12"),ActionRef ({actionRefLabel = ActionLabel "roundWinder";},["30"]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top1";},
+          ({actionLabel = Some (ActionLabel "top1");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "2")),None,
-               BulletRef ({bulletRefLabel = "winderBullet";},[]));
-            Action.ActionRef ({actionRefLabel = "winderSequence";},["30.9+0.1*$rank"])]);
+               BulletRef ({bulletRefLabel = BulletLabel "winderBullet";},[]));
+            Action.ActionRef ({actionRefLabel = ActionLabel "winderSequence";},["30.9+0.1*$rank"])]);
         BulletmlElm.Action
-          ({actionLabel = Some "top2";},
+          ({actionLabel = Some (ActionLabel "top2");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-2")),None,
-               BulletRef ({bulletRefLabel = "winderBullet";},[]));
-            Action.ActionRef ({actionRefLabel = "winderSequence";},["29.1-0.1*$rank"])])])
+               BulletRef ({bulletRefLabel = BulletLabel "winderBullet";},[]));
+            Action.ActionRef ({actionRefLabel = ActionLabel "winderSequence";},["29.1-0.1*$rank"])])])

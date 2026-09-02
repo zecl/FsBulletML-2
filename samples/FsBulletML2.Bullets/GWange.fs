@@ -16,15 +16,15 @@ module GWange =
         bulletmlName = Some "G-わんげスレの957氏、回転ガラ by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top1";},
+          ({actionLabel = Some (ActionLabel "top1");},
            [Repeat
               (Times (numExpr "600/(3-$rank*2)"),
                Action
                  ({actionLabel = None;},
-                  [Action.ActionRef ({actionRefLabel = "line";},[]);
+                  [Action.ActionRef ({actionRefLabel = ActionLabel "line";},[]);
                    Wait (numExpr "3-$rank*2+$rand")]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "line";},
+          ({actionLabel = Some (ActionLabel "line");},
            [Fire
               ({fireLabel = None;},
                Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-7")),
@@ -42,7 +42,7 @@ module GWange =
                       Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.3")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "top2";},
+          ({actionLabel = Some (ActionLabel "top2");},
            [Repeat
               (Times (numExpr "20"),
                Action
@@ -66,18 +66,18 @@ module GWange =
         bulletmlName = Some "G-わんげスレの966氏考案、往復ビット by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Fire
               ({fireLabel = None;},None,None,
                BulletRef
-                 ({bulletRefLabel = "src";},["5"; "91"]));
+                 ({bulletRefLabel = BulletLabel "src";},["5"; "91"]));
             Fire
               ({fireLabel = None;},None,None,
                BulletRef
-                 ({bulletRefLabel = "src";},["4"; "-91"]));
+                 ({bulletRefLabel = BulletLabel "src";},["4"; "-91"]));
             Wait (numExpr "600")]);
         BulletmlElm.Action
-          ({actionLabel = Some "Xway";},
+          ({actionLabel = Some (ActionLabel "Xway");},
            [Fire
               ({fireLabel = None;},
                Some
@@ -97,11 +97,11 @@ module GWange =
                       Some (Speed (None,numExpr "1.6")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
-          ({actionLabel = Some "fire";},
-           [Action.ActionRef ({actionRefLabel = "Xway";},["3"]); Wait (numExpr "15");
-            Action.ActionRef ({actionRefLabel = "Xway";},["5"]); Wait (numExpr "15")]);
+          ({actionLabel = Some (ActionLabel "fire");},
+           [Action.ActionRef ({actionRefLabel = ActionLabel "Xway";},["3"]); Wait (numExpr "15");
+            Action.ActionRef ({actionRefLabel = ActionLabel "Xway";},["5"]); Wait (numExpr "15")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "src";},
+          ({bulletLabel = Some (BulletLabel "src");},
            Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$2")),
            Some (Speed (None,numExpr "$1")),
            [Action
@@ -113,22 +113,22 @@ module GWange =
                       [ChangeSpeed
                          (Speed (None,numExpr "0.01"),
                           Term (numExpr "30"));
-                       Action.ActionRef ({actionRefLabel = "fire";},[]);
+                       Action.ActionRef ({actionRefLabel = ActionLabel "fire";},[]);
                        ChangeDirection
                          (Direction
                             (Some {directionType = DirectionType.Absolute;},numExpr "-$2"),
                           Term (numExpr "1"));
                        ChangeSpeed
                          (Speed (None,numExpr "$1"),Term (numExpr "30"));
-                       Action.ActionRef ({actionRefLabel = "fire";},[]);
+                       Action.ActionRef ({actionRefLabel = ActionLabel "fire";},[]);
                        ChangeSpeed
                          (Speed (None,numExpr "0.01"),
                           Term (numExpr "30"));
-                       Action.ActionRef ({actionRefLabel = "fire";},[]);
+                       Action.ActionRef ({actionRefLabel = ActionLabel "fire";},[]);
                        ChangeDirection
                          (Direction
                             (Some {directionType = DirectionType.Absolute;},numExpr "$2"),
                           Term (numExpr "1"));
                        ChangeSpeed
                          (Speed (None,numExpr "$1"),Term (numExpr "30"));
-                       Action.ActionRef ({actionRefLabel = "fire";},[])]))])])])
+                       Action.ActionRef ({actionRefLabel = ActionLabel "fire";},[])]))])])])

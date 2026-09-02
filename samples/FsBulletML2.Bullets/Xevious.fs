@@ -16,7 +16,7 @@ module Xevious =
         bulletmlName = Some "ゼビウス、らしい。 by 白い弾幕くん";
         bulletmlDescription = None},
        [BulletmlElm.Action
-          ({actionLabel = Some "top";},
+          ({actionLabel = Some (ActionLabel "top");},
            [Repeat
               (Times (numExpr "10"),
                Action
@@ -25,10 +25,10 @@ module Xevious =
                      ({fireLabel = None;},
                       Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
                       Some (Speed (None,numExpr "3")),
-                      BulletRef ({bulletRefLabel = "gzc";},[]));
+                      BulletRef ({bulletRefLabel = BulletLabel "gzc";},[]));
                    Wait (numExpr "20-$rank*10+$rand*10")])); Wait (numExpr "60")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "gzc";},None,None,
+          ({bulletLabel = Some (BulletLabel "gzc");},None,None,
            [Action
               ({actionLabel = None;},
                [Wait (numExpr "10+$rand*10");
@@ -40,7 +40,7 @@ module Xevious =
                          ({fireLabel = None;},
                           Some
                             (Direction (Some {directionType = DirectionType.Sequence;},numExpr "360/16")),
-                          None,BulletRef ({bulletRefLabel = "spr";},[]))]));
+                          None,BulletRef ({bulletRefLabel = BulletLabel "spr";},[]))]));
                 Repeat
                   (Times (numExpr "4"),
                    Action
@@ -48,11 +48,11 @@ module Xevious =
                       [Fire
                          ({fireLabel = None;},
                           Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "90")),
-                          None,BulletRef ({bulletRefLabel = "hrmSpr";},[]))]));
+                          None,BulletRef ({bulletRefLabel = BulletLabel "hrmSpr";},[]))]));
                 Vanish])]);
-        BulletmlElm.Bullet ({bulletLabel = Some "spr";},None,Some (Speed (None,numExpr "2")),[]);
+        BulletmlElm.Bullet ({bulletLabel = Some (BulletLabel "spr");},None,Some (Speed (None,numExpr "2")),[]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "hrmSpr";},None,Some (Speed (None,numExpr "0")),
+          ({bulletLabel = Some (BulletLabel "hrmSpr");},None,Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},[ChangeSpeed (Speed (None,numExpr "2"),Term (numExpr "60"))]);
             Action

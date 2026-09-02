@@ -142,11 +142,11 @@ type StepFire() =
   member _.``bulletRef は 1 段だけ解く``() =
     let target = bullet None (Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "7")))
     let resolvers : Step.Resolvers =
-      { Bullet = (fun label _ -> if label = "b1" then Some target else None)
+      { Bullet = (fun label _ -> if label = BulletLabel "b1" then Some target else None)
         Action = fun _ _ -> None }
     let script =
       RecBulletml.Fire ({ fireLabel = None }, None, None,
-                        RecBulletml.BulletRef ({ bulletRefLabel = "b1" }, []))
+                        RecBulletml.BulletRef ({ bulletRefLabel = BulletLabel "b1" }, []))
     let _, _, w = Sim.run env state (Step.fire resolvers script (PFire false) FireContext.zero)
     match w with
     | [ Spawn b ] -> b.Speed |> should (equalWithin 0.0001) 7.0f
@@ -166,11 +166,11 @@ type StepFire() =
       RecBulletml.Bullet ({ bulletLabel = None }, None, None,
                           [ RecBulletml.Action ({ actionLabel = None }, [ RecBulletml.Wait (numExpr "5") ]) ])
     let resolvers : Step.Resolvers =
-      { Bullet = (fun label _ -> if label = "b1" then Some target else None)
+      { Bullet = (fun label _ -> if label = BulletLabel "b1" then Some target else None)
         Action = fun _ _ -> None }
     let script =
       RecBulletml.Fire ({ fireLabel = None }, None, None,
-                        RecBulletml.BulletRef ({ bulletRefLabel = "b1" }, []))
+                        RecBulletml.BulletRef ({ bulletRefLabel = BulletLabel "b1" }, []))
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let _, _, w = Sim.run counting state (Step.fire resolvers script (PFire false) FireContext.zero)

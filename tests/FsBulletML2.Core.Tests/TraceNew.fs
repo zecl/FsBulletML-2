@@ -49,7 +49,7 @@ module TraceNew =
       |> List.filter (function
         | RecBulletml.Action (attrs, _) ->
             match attrs.actionLabel with
-            | Some label -> label.StartsWith "top"
+            | Some label -> (ActionLabel.text label).StartsWith "top"
             | None -> false
         | _ -> false)
       |> List.map (IntermediateParser.convertRefBulletml rec')

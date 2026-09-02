@@ -9,7 +9,7 @@ module Others =
   let AllWay = 
     createBulletmlInfo <|
     Bulletml({ bulletmlXmlns = None; bulletmlType = Some ShootingDirection.BulletVertical; bulletmlName = Some "全方位弾"; bulletmlDescription = None},
-        [BulletmlElm.Action ({actionLabel = Some "circle";},
+        [BulletmlElm.Action ({actionLabel = Some (ActionLabel "circle");},
             [Action.Repeat
                 (Times (numExpr "$1"),
                 Action ({actionLabel = None;},
@@ -17,17 +17,17 @@ module Others =
                       Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "360/$1")),
                       None,
                       Bullet ({bulletLabel = None;}, None, None,[]))]))]);
-          BulletmlElm.Action ({actionLabel = Some "top";},
+          BulletmlElm.Action ({actionLabel = Some (ActionLabel "top");},
             [Action.Repeat
                 (Times (numExpr "30"),
                 ActionElm.Action ({actionLabel = None;},
-                    [Action.ActionRef ({actionRefLabel = "circle";}, ["20"]); Wait (numExpr "20")]))])])
+                    [Action.ActionRef ({actionRefLabel = ActionLabel "circle";}, ["20"]); Wait (numExpr "20")]))])])
 
   /// 前方5way弾
   let b5way = 
     createBulletmlInfo <|
     Bulletml ({bulletmlXmlns = None; bulletmlType = Some BulletVertical; bulletmlName = Some "前方5way弾"; bulletmlDescription = None},
-        [BulletmlElm.Action ({actionLabel = Some "top";},
+        [BulletmlElm.Action ({actionLabel = Some (ActionLabel "top");},
             [Fire ({fireLabel = None;},
                 Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-20+180")),
                 None,
@@ -44,6 +44,6 @@ module Others =
   let homingOne = 
     createBulletmlInfo <|
     Bulletml({bulletmlXmlns = None; bulletmlType = None; bulletmlName = Some "初期方向Aim弾１発"; bulletmlDescription = None},
-        [BulletmlElm.Action ({actionLabel = Some "top";},
+        [BulletmlElm.Action ({actionLabel = Some (ActionLabel "top");},
            [Fire ({fireLabel = None;},None,None,
                 Bullet ({bulletLabel = None;},None,None,[]))])])

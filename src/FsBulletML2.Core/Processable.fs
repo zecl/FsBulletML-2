@@ -116,10 +116,10 @@ module Processable =
     let original : Bulletml option ref = ref None
     /// 輪のために展開を止めた bulletRef を、走らせる側から 1 段だけ解く入口。
     /// label と param を渡すと、その bullet を 1 段展開したものが返る
-    let resolveBulletRef : (string -> string list -> RecBulletml option) ref = ref (defaultof<_>)
+    let resolveBulletRef : (BulletLabel -> string list -> RecBulletml option) ref = ref (defaultof<_>)
     /// 輪のために展開を止めた actionRef を、走らせる側から 1 段だけ解く入口。
     /// label と param を渡すと、その action を 1 段展開したものが返る
-    let resolveActionRef : (string -> string list -> RecBulletml option) ref = ref (defaultof<_>)
+    let resolveActionRef : (ActionLabel -> string list -> RecBulletml option) ref = ref (defaultof<_>)
 
     member internal _.ResolveBulletRef with get () = resolveBulletRef.Value
                                         and set (v) = resolveBulletRef.Value <- v

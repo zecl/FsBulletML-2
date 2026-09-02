@@ -5,17 +5,17 @@ open FsBulletML2.DTD
 
 [<AutoOpen>]
 module Attribute = 
-  let actionAttr = { actionLabel = Some "actionName" } 
-  let actionRefAttr = { actionRefLabel = "actionRefName" } 
-  let bulletAttr = { bulletLabel = Some "bulletName" } 
+  let actionAttr = { actionLabel = Some (ActionLabel "actionName") } 
+  let actionRefAttr = { actionRefLabel = ActionLabel "actionRefName" } 
+  let bulletAttr = { bulletLabel = Some (BulletLabel "bulletName") } 
   let bulletmlAttr = { bulletmlXmlns = Some "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml"; 
                        bulletmlType = Some ShootingDirection.BulletVertical 
                        bulletmlName = Some "No Name"
                        bulletmlDescription = None} 
-  let bulletRefAttr = { bulletRefLabel = "bulletRefName" } 
+  let bulletRefAttr = { bulletRefLabel = BulletLabel "bulletRefName" } 
   let directionAttr = { directionType = DirectionType.Aim } 
-  let fireAttr = { fireLabel = Some "fireName" } 
-  let fireRefAttr = { fireRefLabel = "fireRefName" } 
+  let fireAttr = { fireLabel = Some (FireLabel "fireName") } 
+  let fireRefAttr = { fireRefLabel = FireLabel "fireRefName" } 
   let horizontalAttr = { horizontalType = HorizontalType.Absolute } 
   let speedAttr = { speedType = SpeedType.Absolute } 
   let verticalAttr = { verticalType = VerticalType.Absolute } 
@@ -33,33 +33,33 @@ module Top =
 
 [<AutoOpen>]
 module BulletElm = 
-  let bulletElm_bullet = BulletElm.Bullet ({ bulletLabel = Some "bulletName" }, 
+  let bulletElm_bullet = BulletElm.Bullet ({ bulletLabel = Some (BulletLabel "bulletName") }, 
                              None, 
                              None, 
                              []) 
-  let bulletElm_bulletRef = BulletElm.BulletRef ({ bulletRefLabel = "bulletRefName" },
+  let bulletElm_bulletRef = BulletElm.BulletRef ({ bulletRefLabel = BulletLabel "bulletRefName" },
                                 []) 
   
 [<AutoOpen>]
 module BulletmlElm = 
-  let bulletmlElm_action= BulletmlElm.Action ({ actionLabel = Some "actionName" }, 
+  let bulletmlElm_action= BulletmlElm.Action ({ actionLabel = Some (ActionLabel "actionName") }, 
                               []) 
 
-  let bulletmlElm_bullet = BulletmlElm.Bullet ({ bulletLabel = Some "bulletName" },
+  let bulletmlElm_bullet = BulletmlElm.Bullet ({ bulletLabel = Some (BulletLabel "bulletName") },
                                None,
                                None,
                                []) 
 
-  let bulletmlElm_fire = BulletmlElm.Fire  ({ fireLabel = Some "fireName" }, 
+  let bulletmlElm_fire = BulletmlElm.Fire  ({ fireLabel = Some (FireLabel "fireName") }, 
                              None,
                              None,
                              bulletElm_bullet) 
 
 [<AutoOpen>]
 module ActionElm =
-  let actionElm_action = ActionElm.Action ({ actionLabel = Some "actionName" },
+  let actionElm_action = ActionElm.Action ({ actionLabel = Some (ActionLabel "actionName") },
                              []) 
-  let actionElm_actionRef =  ActionElm.ActionRef ({ actionRefLabel = "actionRefName" },
+  let actionElm_actionRef =  ActionElm.ActionRef ({ actionRefLabel = ActionLabel "actionRefName" },
                                  []) 
   
 [<AutoOpen>]
@@ -69,10 +69,10 @@ module Action =
                          None,
                          Term (numExpr "1")) 
 
-  let action_action = Action.Action ({ actionLabel = Some "actionName" },
+  let action_action = Action.Action ({ actionLabel = Some (ActionLabel "actionName") },
                           []) 
 
-  let action_actionRef = Action.ActionRef ({ actionRefLabel = "actionRefName" },
+  let action_actionRef = Action.ActionRef ({ actionRefLabel = ActionLabel "actionRefName" },
                              []) 
 
   let action_changeDirection = Action.ChangeDirection ( 
@@ -83,12 +83,12 @@ module Action =
                                Speed ( Some speedAttr, numExpr "1"), 
                                Term (numExpr "1")) 
 
-  let action_fire = Action.Fire ({ fireLabel = Some "fireName" },
+  let action_fire = Action.Fire ({ fireLabel = Some (FireLabel "fireName") },
                         None, 
                         None, 
                         bulletElm_bullet) 
 
-  let action_fireRef = Action.FireRef ({ fireRefLabel = "fireRefName" },
+  let action_fireRef = Action.FireRef ({ fireRefLabel = FireLabel "fireRefName" },
                            []) 
 
   let repeat = Action.Repeat ( 
