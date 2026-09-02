@@ -36,18 +36,16 @@ type Enemy (life) as this =
       let self = this :> IEnemy
       if self.Used then
         this.bullet <- new EnemyBullet()
-        (this.bullet :> IBulletmlObject).IsBullet <- true
+        (this.bullet :> IBullet).IsBullet <- true
         Manager.addEnemyBulletPos(this.bullet, Vector2(self.X, self.Y))
-        this.bullet.SetTask(this.bulletBulletmlInfo.BulletmlTaskOption()) 
+        this.bullet.SetScript(Some (this.bulletBulletmlInfo.Script (loadEnv ())))
 
     member this.Update () = 
       this.timer <- this.timer + 1       
 
-      let finish = 
-        if this.bullet :> obj = null then false else
-          (this.bullet:>IBullet).Task |> function
-          | None -> false 
-          | Some x -> x.Finish 
+      let finish =
+        if this.bullet :> obj = null then false
+        else (this.bullet :> IBullet).Finished
       if not this.second || finish then
         this.second <- true
         this.timer <- 0
@@ -57,8 +55,8 @@ type Enemy (life) as this =
       let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
       base.RunTask(System.Action<_,_>(apply))
 
-  member this.SetMoveBulletmlInfo(bulletmlInfo:BulletmlInfo) = 
-    (this :> IEnemy).Task <- bulletmlInfo.BulletmlTaskOption()
+  member this.SetMoveBulletmlInfo(bulletmlInfo:BulletmlInfo) =
+    (this :> IEnemy).SetScript(Some (bulletmlInfo.Script (loadEnv ())), None)
 
   member this.SetBulletTask(bulletName, bulletmlInfo) = 
     this.bulletName <- bulletName

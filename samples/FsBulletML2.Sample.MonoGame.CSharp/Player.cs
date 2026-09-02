@@ -76,37 +76,37 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
 
         private void Shoot2WayLeftBullet () 
         {
-            var task = BulletRunner.ConvertBulletmlTaskOption(Player.b2wayLeftBullet);
+            var script = Runner.Load(BulletmlLoad.loadEnv(), Player.b2wayLeftBullet);
 
             if (this.Timer > 0)
             {
                 var bullet = new PlayerBullet();
                 Manager.AddPlayerBulletPos(bullet, new Vector2(this.Pos.X - 10, this.Pos.Y + 1));
-                bullet.SetTask(task);
+                bullet.SetScript(script);
             }
         }
 
         private void Shoot2WayRightBullet()
         {
-            var task = BulletRunner.ConvertBulletmlTaskOption(Player.b2wayRightBullet);
+            var script = Runner.Load(BulletmlLoad.loadEnv(), Player.b2wayRightBullet);
 
             if (this.Timer > 0)
             {
                 var bullet = new PlayerBullet();
                 Manager.AddPlayerBulletPos(bullet, new Vector2(this.Pos.X + 10, this.Pos.Y + 1));
-                bullet.SetTask(task);
+                bullet.SetScript(script);
             }
         }
 
         private void ShootHomingBullet()
         {
-            var task = BulletRunner.ConvertBulletmlTaskOption(Player.homing);
+            var script = Runner.Load(BulletmlLoad.loadEnv(), Player.homing);
 
             if (this.Timer > 60)
             {
                 var bullet = new PlayerBullet();
                 Manager.AddPlayerBulletPos(bullet, this.Pos);
-                bullet.SetTask(task);
+                bullet.SetScript(script);
             }
         }
     }

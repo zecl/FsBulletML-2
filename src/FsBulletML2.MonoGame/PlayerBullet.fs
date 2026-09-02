@@ -10,10 +10,11 @@ type PlayerBullet () as this =
   inherit BaseBullet ()
 
   do 
-    let self = this :> IBulletmlObject
+    let self = this :> IBullet
     self.Init()
     self.IsBullet <- true
     self.BulletType <- BulletType.Player 
 
-  member this.SetTask(bulletmlTask) =
-    (this :> IBullet).Task <- bulletmlTask
+  /// 弾幕を割り当てる。根から始めるので実行状態は Core に作らせる
+  member this.SetScript(script) =
+    (this :> IBullet).SetScript(script, None)

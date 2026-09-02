@@ -22,27 +22,27 @@ type Player () as this =
     Path.Combine(AppContext.BaseDirectory, "Content", "xml", "PlayerBullet", name)
 
   let shoot2WayLeftBullet (player:Player) =
-    let ``2wayLeftBullet`` = Xml.readXml (playerXml "2wayLeft.xml") |> BulletRunner.convertBulletmlTask |> Some
+    let ``2wayLeftBullet`` = Runner.load (loadEnv ()) (Xml.readXml (playerXml "2wayLeft.xml")) |> Some
     if player.timer > 0 then
       let bullet = new PlayerBullet()
       Manager.addPlayerBulletPos(bullet, new Vector2(this.pos.X - 10.f, this.pos.Y + 1.f))
-      bullet.SetTask(``2wayLeftBullet``) 
+      bullet.SetScript(``2wayLeftBullet``) 
 
   let shoot2WayRightBullet (player:Player) =
-    let ``2wayRightBullet`` = Xml.readXml (playerXml "2wayRight.xml") |> BulletRunner.convertBulletmlTask |> Some
+    let ``2wayRightBullet`` = Runner.load (loadEnv ()) (Xml.readXml (playerXml "2wayRight.xml")) |> Some
     if player.timer > 0 then
       let bullet = new PlayerBullet()
       Manager.addPlayerBulletPos(bullet, new Vector2(this.pos.X + 10.f, this.pos.Y + 1.f ))
-      bullet.SetTask(``2wayRightBullet``) 
+      bullet.SetScript(``2wayRightBullet``) 
 
   let shootHomingBullet (player:Player) = 
     let homingBullet = 
-      Xml.readXml (playerXml "homing.xml") |> BulletRunner.convertBulletmlTask |> Some
+      Runner.load (loadEnv ()) (Xml.readXml (playerXml "homing.xml")) |> Some
 
     if player.timer > 60 then
       let bullet = new PlayerBullet()
       Manager.addPlayerBulletPos(bullet, this.pos)
-      bullet.SetTask(homingBullet) 
+      bullet.SetScript(homingBullet) 
 
   do
     this.pos <- new Vector2()

@@ -66,9 +66,16 @@ type CallingConvention() =
   let relative (p: string) =
     p.Substring(repoRoot.Length).Replace('\\', '/').TrimStart('/')
 
-  /// run を呼ぶ行と、返り値を座標へ入れる行
-  let callsRun = Regex(@"BulletRunner\.run\b")
-  let usesResult = Regex(@"result\.[XY]\b")
+  /// 1 コマ進める呼び出しと、返り値を座標へ入れる行。
+  ///
+  /// 経路が 2 本 ある。**両方 当てないと、片方へ移したフロントが控えから
+  /// 黙って消える**（実際に MonoGame を新 API へ移したとき、差分を足す行が
+  /// 網から外れて 3 行 が控えから落ちた）。
+  ///
+  ///   旧  BulletRunner.run  → RunResult.X / .Y
+  ///   新  Runner.step       → Frame.Delta.X / .Y
+  let callsRun = Regex(@"BulletRunner\.run\b|Runner\.step\b|Runner\.Step\b")
+  let usesResult = Regex(@"result\.[XY]\b|\.Delta\.[XY]\b")
   /// `self.X <- self.X + ...` / `self.X = self.X + ...` の形（足しているか代入か）
   let movesPos = Regex(@"\.[XY]\s*(<-|=)\s*[^;]*\.[XY]\s*[+\-]")
 

@@ -1,116 +1,171 @@
-﻿namespace FsBulletML2.MonoGame
+namespace FsBulletML2.MonoGame
 
 open System
-open System.Collections.Generic 
+open System.Collections.Generic
 open Microsoft.Xna.Framework
 open Microsoft.FSharp.Core.Operators.Unchecked
 open FsBulletML2
+open FsBulletML2.Domain
 
 type BaseBullet () as this =
   [<DefaultValue>]val mutable pos : Vector2
   [<DefaultValue>]val mutable private self : IBullet
-  
-  interface IBullet with 
-    member this.Pos with get () = this.pos 
-                     and set (v) = this.pos <- v  
-    member this.X with get () = this.pos.X 
-                    and set (v) = this.pos.X <- v  
+
+  /// 走らせている弾幕と、その実行状態。旧の Task option を 2 つ に割ったもの
+  let mutable script : BulletmlScript option = None
+  let mutable run : BulletRun option = None
+  /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish の置き場所
+  let mutable finished = false
+
+  /// 自機を狙う向き。旧 GetAimDir の式そのまま。
+  /// 旧はエンジンが IBulletmlObject.GetAimDir を呼び返していたが、
+  /// いまは Env を組むためにフロントが自分で呼ぶ
+  let aimDirAt (x: float32) (y: float32) =
+    float32 (Math.Atan2(float (BulletMLManager.GetPlayerPosX() - x),
+                        float -(BulletMLManager.GetPlayerPosY() - y)))
+
+  /// 産まれる弾の位置から見た向き。旧 GetSpawnAimDir。
+  ///
+  /// 産まれた弾がどこに出るかは下の Spawn が決めていて、位置を入れずに
+  /// 作るので原点。同じ式に原点を入れる。**片方だけ直すと軌跡が割れる**
+  let spawnAimDir () = aimDirAt 0.0f 0.0f
+
+  /// 旧 GetSpawnEnemyAimDir。産まれたばかりの弾は TargetEnemy を持たないので、
+  /// 原点にいちばん近い敵をその場で選ぶ
+  let spawnEnemyAimDir () =
+    if ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then 0.0f
+    else
+      let mutable md = Single.MaxValue
+      let mutable target = defaultof<IBullet>
+      for enemy in Manager.enemies do
+        let d = Vector2.Distance (Vector2(0.0f, 0.0f), Vector2(enemy.X, enemy.Y))
+        if md > d then
+          target <- enemy
+          md <- d
+      float32 (Math.Atan2(float (target.X - 0.0f), -1.0 * float (target.Y - 0.0f)))
+
+  interface IBullet with
+    member this.Pos with get () = this.pos
+                     and set (v) = this.pos <- v
+    member this.X with get () = this.pos.X
+                    and set (v) = this.pos.X <- v
     member this.Y with get () = this.pos.Y
-                    and set (v) = this.pos.Y <- v  
+                    and set (v) = this.pos.Y <- v
     member val AccelerationX = 0.f with get, set
     member val AccelerationY = 0.f with get, set
     member val Speed = 0.f with get, set
     member val Dir = 0.f with get, set
     member val Used = false with get, set
     member val IsBullet = false with get, set
-    member val BulletRoot = false with get, set
     member val BulletType = BulletType.Enemy with get, set
-    // Core の既定（BulletRunner.convertBulletmlTask）と揃えてある。
-    // run が <bulletml type> を届けるので、ふつうはすぐ上書きされる。
-    // この値が出るのは、まだ 1 度も run を通していない弾だけ
+    // Core の既定（Runner.load）と揃えてある。走らせた弾は
+    // script.ShootingDirection で上書きされるので、この値が出るのは
+    // まだ 1 度も走らせていない弾だけ
     member val ShootingDirection = ShootingDirection.BulletVertical with get, set
-    member val Task = None with get, set
     member val TargetEnemy = defaultof<IBullet> with get, set
     member val Radius = 0.f with get, set
+
+    member _.Script = script
+    member _.Finished = finished
+
+    member _.SetScript (s, r) =
+      script <- s
+      finished <- false
+      run <- match r with
+             | Some _ -> r
+             | None -> s |> Option.map Runner.newRoot
+
     member this.Vanish () = this.self.Used <- false
-    member this.GetNewBullet() = 
-      this.self.BulletRoot <- true
 
-      let newBullet = new BaseBullet() :> IBullet
-      newBullet.IsBullet <- true
-      newBullet.Radius <- 4.5f
-      newBullet.BulletType <- this.self.BulletType
-      match newBullet.BulletType with
-      | Player -> Manager.addPlayerBullet(newBullet)
-      | Enemy -> Manager.addEnemyBullet(newBullet)
-      newBullet :> IBulletmlObject
-
-    member this.GetAimDir () : float32 =
-      let dir = Math.Atan2( float (BulletMLManager.GetPlayerPosX() - this.self.X),float -(BulletMLManager.GetPlayerPosY() - this.self.Y))
-      float32 dir
-
-    /// GetNewBullet は new BaseBullet() を位置を入れずに返すので、産まれた弾は
-    /// 原点に居る。GetAimDir と同じ式に、その弾の位置として (0, 0) を入れる
-    member this.GetSpawnAimDir () : float32 =
-      let dir = Math.Atan2( float (BulletMLManager.GetPlayerPosX() - 0.f), float -(BulletMLManager.GetPlayerPosY() - 0.f))
-      float32 dir
-
-    /// 同上。産まれたばかりの弾は TargetEnemy を持たない（new BaseBullet() の
-    /// 既定が null）ので、旧はその場で Manager.enemies から原点に最も近い敵を
-    /// 選んでいた。同じ選び方をここで行う。
-    ///
-    /// 旧はそのとき newBullet.TargetEnemy に選んだ相手を書き込んでいたが、
-    /// ここには書き込む先の弾がまだ無いので、その代入だけは起きない。
-    /// 次のコマでその弾が GetEnemyAimDir を通れば、同じ探し方でまた選ばれる
-    member this.GetSpawnEnemyAimDir () : float32 =
-      if ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then 0.f
-      else
-        let mutable md = Single.MaxValue
-        let mutable target = defaultof<IBullet>
-        for enemy in Manager.enemies do
-          let d = Vector2.Distance (Vector2(0.f, 0.f), Vector2(enemy.X, enemy.Y))
-          if md > d then
-            target <- enemy
-            md <- d
-        float32 (Math.Atan2( float (target.X - 0.f), -1. * float (target.Y - 0.f)))
-
-    member this.GetEnemyAimDir() : float32 = 
-      let mutable md = Single.MaxValue 
-      if this.self.TargetEnemy :> obj <> null then
-        let dir = Math.Atan2( float (this.self.TargetEnemy.X - this.self.X), -1. * float (this.self.TargetEnemy.Y - this.self.Y))
-        float32 dir
-      else
-        if  ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then
-          0.f
-        else
-          for enemy in Manager.enemies do
-            let d = Vector2.Distance (Vector2(this.self.X, this.self.Y), Vector2(enemy.X, enemy.Y))
-            if md > d then
-              this.self.TargetEnemy <- enemy
-              md <- d
-          let dir = Math.Atan2( float (this.self.TargetEnemy.X - this.self.X), -1. * float (this.self.TargetEnemy.Y - this.self.Y))
-          float32 dir
-
-    member this.Init () = 
+    member this.Init () =
       this.self.Used <- true
-      this.self.BulletRoot <- false
 
-    member this.Update () = 
+    member this.Update () =
       let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
       this.RunTask(FSharpFunc.ToAction2 apply)
 
+  /// いちばん近い敵を狙う向き。旧 GetEnemyAimDir の式そのまま。
+  /// 選んだ相手を TargetEnemy に覚えるところも旧と同じ
+  /// （覚えないと毎コマ選び直して相手が入れ替わり、軌跡が変わる）
+  member private this.EnemyAimDirAt (x: float32) (y: float32) =
+    if this.self.TargetEnemy :> obj <> null then
+      float32 (Math.Atan2(float (this.self.TargetEnemy.X - x),
+                          -1.0 * float (this.self.TargetEnemy.Y - y)))
+    elif ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then 0.0f
+    else
+      let mutable md = Single.MaxValue
+      for enemy in Manager.enemies do
+        let d = Vector2.Distance (Vector2(x, y), Vector2(enemy.X, enemy.Y))
+        if md > d then
+          this.self.TargetEnemy <- enemy
+          md <- d
+      float32 (Math.Atan2(float (this.self.TargetEnemy.X - x),
+                          -1.0 * float (this.self.TargetEnemy.Y - y)))
+
+  /// このコマの Env を、いまの位置から組む。旧 BulletRunner.envOfGlobal の写し。
+  /// **組む位置が変わると aim がずれる**ので、step の直前（差分を足す前）に組む
+  member private this.EnvAt (x: float32) (y: float32) : Env =
+    { Rand = BulletMLManager.GetRandom
+      Rank = BulletMLManager.GetRank ()
+      AimDir = aimDirAt x y
+      EnemyAimDir = this.EnemyAimDirAt x y
+      SpawnAimDir = spawnAimDir ()
+      SpawnEnemyAimDir = spawnEnemyAimDir () }
+
+  /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ。
+  ///
+  /// 旧はエンジンが GetNewBullet を呼び返して、返ってきた実体へ位置・向き・
+  /// 速さを書き込んでいた。いまは Frame.Spawned で値として受け取るので、
+  /// フロントが自分の都合で実体を作って値を移すだけ
+  member private this.Spawn (child: BulletRun) =
+    let body = child.Body
+    let newBullet = new BaseBullet() :> IBullet
+    newBullet.Init ()
+    newBullet.IsBullet <- true
+    newBullet.Radius <- 4.5f
+    newBullet.BulletType <- this.self.BulletType
+    match newBullet.BulletType with
+    | Player -> Manager.addPlayerBullet(newBullet)
+    | Enemy -> Manager.addEnemyBullet(newBullet)
+    // 弾幕は親と同じものを引き継ぐ。引き継がないと、弾の中に残った
+    // bulletRef / actionRef を誰も解けない
+    newBullet.SetScript (script, Some child)
+    newBullet.X <- body.Pos.X
+    newBullet.Y <- body.Pos.Y
+    newBullet.Dir <- body.Dir
+    newBullet.Speed <- body.Speed
+
   member this.RunTask(apply:Action<_,_>) =
     let apply = Action.toFSharpFunc2 apply
-    match this.self.Task with
-    | None -> ()
-    | Some task -> 
-      let result = BulletRunner.run this
-      if result.Processed then
-        apply result.X result.Y
-        // 位置を更新したあとの this.self から組む（envOfGlobal は位置を読むので、
-        // apply より前の値を使い回すと aim がずれる）
-        this.self.Task |> Option.iter (fun x -> x.Init(BulletRunner.envOfGlobal this.self))
-      else apply result.X result.Y
+    match script, run with
+    | Some sc, Some rn ->
+        this.self.ShootingDirection <- sc.ShootingDirection
+        // 物理量はフロントが持っている。毎コマ入れ直す（旧 stateOfBullet）
+        let body =
+          { rn.Body with
+              Pos = { X = this.self.X; Y = this.self.Y }
+              Speed = this.self.Speed
+              Dir = this.self.Dir
+              Accel = { X = this.self.AccelerationX; Y = this.self.AccelerationY }
+              Kind = this.self.BulletType
+              IsBullet = this.self.IsBullet }
+        let f = Runner.step sc (this.EnvAt this.self.X this.self.Y) (rn.WithBody body)
+        let after = f.Run.Body
+        this.self.Speed <- after.Speed
+        this.self.Dir <- after.Dir
+        this.self.AccelerationX <- after.Accel.X
+        this.self.AccelerationY <- after.Accel.Y
+        apply f.Delta.X f.Delta.Y
+        finished <- f.Finished
+        for child in f.Spawned do this.Spawn child
+        if f.Vanished then this.self.Vanish ()
+        if f.Retired then this.self.Used <- false
+        // 走らせ直しの Env は、位置を更新したあとの自分から組む
+        // （旧 BaseBullet が apply のあとで envOfGlobal を呼ぶのと同じ順）
+        run <-
+          if f.Finished then Some (Runner.restart (this.EnvAt this.self.X this.self.Y) f.Run)
+          else Some f.Run
+    | _ -> ()
 
     if (this.pos.X < 0.f || this.pos.X > Settings.Display.Width || this.pos.Y < 0.f || this.pos.Y > Settings.Display.Height) then
       this.self.Used <- false

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -19,9 +19,9 @@
     <Compile Include="Processable.fs" />
     <Compile Include="IntermediateParser.fs" />
     <Compile Include="Step.fs" />
+    <Compile Include="Api.fs" />
     <Compile Include="BulletRunner.fs" />
     <Compile Include="Xml.fs" />
     <Compile Include="BulletmlInfo.fs" />
-    <Compile Include="Api.fs" />
   </ItemGroup>
 </Project>

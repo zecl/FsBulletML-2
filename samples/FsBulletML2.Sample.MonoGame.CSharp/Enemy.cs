@@ -39,9 +39,9 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
           if (this.self.Used)
           {
             this.Bullet = new EnemyBullet();
-            ((IBulletmlObject)this.Bullet).IsBullet = true;
+            ((IBullet)this.Bullet).IsBullet = true;
             Manager.AddEnemyBulletPos(this.Bullet, new Vector2(self.X, self.Y));
-            this.Bullet.SetTask(this.BulletmlInfo.BulletmlTaskOption());
+            this.Bullet.SetScript(this.BulletmlInfo.Script(BulletmlLoad.loadEnv()));
           }
         }
 
@@ -68,19 +68,14 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
             }
             else
             {
-                var task = ((IBullet)this.Bullet).Task;
-                if (Microsoft.FSharp.Core.OptionModule.IsNone(task))
-                {
-                    return false;
-                }
-                return task.Value.Finish;
+                return ((IBullet)this.Bullet).Finished;
             }
        
         }
 
         public void SetMoveBulletmlInfo(BulletmlInfo bulletmlInfo) 
         {
-            ((IEnemy)this).Task = bulletmlInfo.BulletmlTaskOption();
+            ((IEnemy)this).SetScript(bulletmlInfo.Script(BulletmlLoad.loadEnv()), null);
         }
 
         public void SetBulletmlInfo(string bulletName, BulletmlInfo bulletmlInfo) 

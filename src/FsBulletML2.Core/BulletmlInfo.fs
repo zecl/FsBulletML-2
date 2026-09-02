@@ -8,6 +8,13 @@ type BulletmlInfo =
     { Name = match bulletml.Name with | Some x -> x | None -> ""
       Bulletml = bulletml }
 
+  /// 新 API。走らせる材料を組む。
+  ///
+  /// rootEnv を受け取るのは、木を組む段が wait の term をその場で引くため
+  /// （Runner.load の但し書き）。省くとグローバルから引くことになる。
+  member this.Script (rootEnv: Domain.Env) =
+    Runner.load rootEnv this.Bulletml
+
   member this.BulletmlTask () =
     BulletRunner.convertBulletmlTask this.Bulletml
 
