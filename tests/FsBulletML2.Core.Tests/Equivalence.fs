@@ -187,6 +187,29 @@ type Equivalence() =
     report.Ng |> should equal 0
     report.Skipped |> should equal 3
 
+  /// 段階 4 の合格条件。**公開 API だけで 227 本 が走り、旧経路と一致する。**
+  ///
+  /// TraceApi は internal を 1 つも使わない（あちらの docstring 参照）ので、
+  /// これが緑ということは「フロントは IBulletmlObject の 19 メンバを
+  /// 実装せずに弾幕を走らせられる」ということ。
+  ///
+  /// 上の「BulletRunner 経由 対 Step.step 直接呼び」と同じく、定数の $rand
+  /// では引く回数の割れは見えない。回数の割れは下の橋（旧エンジンとの
+  /// 突き合わせ）が見る。
+  [<Test>]
+  member _.``227 本を、BulletRunner 経由と公開 API で突き合わせると全部 一致する``() =
+    let rand, rank, px, py = 0.5f, 0.5f, 30.0f, 100.0f
+    let viaRunner (xml: string) =
+      BulletMLManager.Init(FixedManager(rand, rank, px, py))
+      Trace.run xml 60
+    let viaApi (xml: string) = TraceApi.run (fun () -> rand) rank px py xml 60
+    let report = Equivalence.RunBoth viaRunner viaApi
+    TestContext.WriteLine report.Text
+    report.Total |> should equal 227
+    report.Ok |> should equal 224
+    report.Ng |> should equal 0
+    report.Skipped |> should equal 3
+
   /// 定数の $rand（上のテスト）は「引く回数・引く順」の割れを見せない。
   /// getValue は式の中身に関わらず env.Rand() を呼ぶが、FixedManager は
   /// 何回・どの順で呼ばれても同じ値しか返さないので、引きが 1 つ 足りない・

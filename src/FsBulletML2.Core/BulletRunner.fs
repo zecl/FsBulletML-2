@@ -61,7 +61,7 @@ module BulletRunner =
   /// ResolveActionRef（RecBulletml を返す関数）をそのまま Step.Resolvers の
   /// 形に包むだけ。Step.Resolvers は Processable.fs より後で compile される
   /// ため、この変換は BulletmlTask 側には置けない
-  let private resolversOf (task: BulletmlTask) : Step.Resolvers =
+  let internal resolversOf (task: BulletmlTask) : Step.Resolvers =
     { Bullet = task.ResolveBulletRef
       Action = task.ResolveActionRef }
 

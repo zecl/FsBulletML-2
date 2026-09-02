@@ -86,8 +86,19 @@ type CallingConvention() =
 
     let read = files |> List.map (fun f -> relative f, File.ReadAllLines f)
 
+    // コメントだけの行は外す。**この門が見たいのは呼び出しで、散文の中の
+    // 言及ではない。** 網（BulletRunner\.run）は文字で当てるので、
+    // 「BulletRunner.run に渡す」と書いた doc コメントにも当たり、
+    // 説明を書き足しただけで控えが割れる（実際に割れた）。
+    //
+    // 外して安全なのは、`//` で始まる行が F# でも C# でも定義上 呼び出しに
+    // ならないため。**行の途中から始まるコメントは外していない** ——
+    // そこは同じ行に呼び出しが在りうるので、狭めると本物を落とす。
+    let isCommentOnly (l: string) = l.Trim().StartsWith "//"
+
     let pick (lines: string[]) =
       lines
+      |> Array.filter (isCommentOnly >> not)
       |> Array.filter (fun l -> callsRun.IsMatch l || usesResult.IsMatch l || movesPos.IsMatch l)
       // 行番号は入れない。行を動かしただけで赤くしても意味が無い
       |> Array.map (fun l -> Regex.Replace(l.Trim(), @"\s+", " "))

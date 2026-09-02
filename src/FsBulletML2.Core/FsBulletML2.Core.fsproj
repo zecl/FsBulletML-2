@@ -22,5 +22,6 @@
     <Compile Include="BulletRunner.fs" />
     <Compile Include="Xml.fs" />
     <Compile Include="BulletmlInfo.fs" />
+    <Compile Include="Api.fs" />
   </ItemGroup>
 </Project>
