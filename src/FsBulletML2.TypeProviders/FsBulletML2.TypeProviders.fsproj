@@ -10,6 +10,11 @@
          to speed up incremental builds) is not usable here - consumers would load stub bodies
          and every provider member throws. -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <!-- This project builds clean, but "builds" is the only thing anything checks about it.
+         The one place that consumes the generated types - samples/FsBulletML2.Sample.TypeProviders.Debug -
+         does not build (FS1108) and is not in FsBulletML2.sln, so nothing here is exercised as a
+         type provider. The vendored ProvidedTypes.fs is the .NET Framework-era SDK. See that
+         sample's README.md before changing anything in here. -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
