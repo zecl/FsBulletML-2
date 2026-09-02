@@ -1,4 +1,4 @@
-namespace FsBulletML2
+﻿namespace FsBulletML2
 
 open FsBulletML2.DTD
 open FsBulletML2.Domain
@@ -10,6 +10,16 @@ open FsBulletML2.Domain
 /// **フロントが自分で動かした結果を入れてよい**（画面外へ弾いた、
 /// 親の位置へ移した、など）。旧の runWithEnv も毎コマ弾から読み直していて、
 /// その規約をここへ移してある。
+///
+/// **[<Struct>] にしてある。** フロントは 1 弾 1 コマ ごとに run.Body で読み、
+/// WithBody で書き戻す。参照型のままだとその往復で毎回 ヒープを踏み、
+/// 弾の数に比例して確保が増える。
+///
+/// 実測（同じプロセスで旧 API と並べた）: struct にする前は 5way で確保が
+/// 旧の +33%、時間が +25% だった。**確保の増え方と遅さが同じ台本に同じ形で
+/// 出て、弾 1 個 の move では逆に減っていた**ので、往復の割り当てが
+/// 出どころと読んだ。
+[<Struct>]
 type Body =
   { Pos : Vec2
     Speed : float32
@@ -43,6 +53,39 @@ module Body =
 type BulletRun internal (state: BulletState) =
 
   member internal _.State = state
+
+  /// 走らせる台本が 1 本 も無い。**このコマは aim を読まない。**
+  ///
+  /// 撃たれただけで自分の action を持たない弾（5way / 10Way では 96.7%）が
+  /// これに当たる。フロントは Env を組む前にここを見て、**読まれないと
+  /// 分かっている aim を計算しないで済む** ——
+  ///
+  ///   let env =
+  ///     if run.HasNoScript then { Rand = r; Rank = k
+  ///                               AimDir = 0.0f; EnemyAimDir = 0.0f
+  ///                               SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
+  ///     else 本物の aim を組む
+  ///
+  /// **なぜ「生きている top が無い」ではなく「台本が無い」なのか。**
+  /// step だけなら前者でよい（StepTop の門がその前提を留めている）が、
+  /// フロントは Finished のコマで restart も呼ぶ。restart は
+  /// changeDirection type="aim" の term を引き直すので **aim を読みうる**。
+  /// 台本が空なら restart は空を歩くだけなので、両方 まとめて安全。
+  ///
+  /// 効きの大きさ（実測・5way 60 コマ）: Env を 1 回 組むのが 23.02 ns。
+  /// 1 走行の Env 構築が 17,820 回 で、うち 96.7% がこれに当たるので、
+  /// 積は 397 us。走行そのものが 1,578 us なので **時間の 25%** が上界。
+  /// 実測は 1,578 → 1,197 us（−24.2%）で、ほぼ天井まで取れた。
+  ///
+  /// **確保は 1 バイト も減らない。** 同梱フロントの noAimEnv は「aim を 0 に
+  /// した Env を組む」ので、record の割り当てはそのまま残る。省けているのは
+  /// Atan2 4 本 の計算だけ。実測でも 5,722.33 → 5,722.34 KB と動いていない。
+  /// **確保は決定的な数なので、この「動かなかった」は結果として読める**
+  /// —— 動いていたら skip 以外の何かも一緒に変わっている。
+  ///
+  /// move と homing は死んだコマが 0 なので効かない（`--counts` の「対照」）。
+  /// 実測も −4.2% / −1.2% で、この台のノイズ床のうち。
+  member _.HasNoScript = List.isEmpty state.Tops
 
   member _.Body : Body =
     { Pos = state.Pos
@@ -183,18 +226,46 @@ module Runner =
             |> List.map (fun (s, _, fc) -> s, Step.resetChildActionElm env s, fc) }
 
   /// 1 コマ進める
-  [<CompiledName "Step">]
-  let step (script: BulletmlScript) (env: Env) (run: BulletRun) : Frame =
-    let r = Step.step script.Resolvers env run.State
+  let inline private toFrame (r: StepResult) : Frame =
     let mutable vanished = false
-    let spawned = ResizeArray<BulletRun>()
+    let mutable spawned = []
     for effect in r.Effects do
       match effect with
       | Vanished -> vanished <- true
-      | Spawn child -> spawned.Add (BulletRun child)
+      | Spawn child -> spawned <- BulletRun child :: spawned
     { Run = BulletRun r.State
       Delta = r.Delta
-      Spawned = List.ofSeq spawned
+      Spawned = List.rev spawned
       Vanished = vanished
       Finished = r.Finished
       Retired = r.Retired }
+
+  [<CompiledName "Step">]
+  let step (script: BulletmlScript) (env: Env) (run: BulletRun) : Frame =
+    toFrame (Step.step script.Resolvers env run.State)
+
+  /// 物理量を入れ替えてから 1 コマ進める。**フロントはふつうこちらを使う。**
+  ///
+  /// `step script env (run.WithBody body)` と答えは同じだが、**中間の
+  /// BulletRun を作らない。**
+  ///
+  /// なぜ分けたか。フロントは弾の位置を自分で持っていて、毎コマ入れ直す
+  /// （旧 stateOfBullet の規約）。それを WithBody で書くと 1 弾 1 コマ ごとに
+  /// BulletRun が 1 個 余分に出る。**弾の数に比例するので、弾幕では効く。**
+  ///
+  /// 実測（同じプロセスで旧 API と並べた 5way / 60 コマ）:
+  ///   WithBody 経由  6,211 KB   旧 API 比 +13.2%
+  ///   こちら         5,722 KB   旧 API 比  +4.3%
+  [<CompiledName "StepWith">]
+  let stepWith (script: BulletmlScript) (env: Env) (run: BulletRun) (b: Body) : Frame =
+    let st = run.State
+    let st =
+      { st with
+          Pos = b.Pos
+          Speed = b.Speed
+          Dir = b.Dir
+          Accel = b.Accel
+          Kind = b.Kind
+          IsBullet = b.IsBullet
+          HasFired = b.HasFired }
+    toFrame (Step.step script.Resolvers env st)

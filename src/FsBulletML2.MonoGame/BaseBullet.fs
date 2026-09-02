@@ -1,4 +1,4 @@
-namespace FsBulletML2.MonoGame
+﻿namespace FsBulletML2.MonoGame
 
 open System
 open System.Collections.Generic
@@ -149,7 +149,11 @@ type BaseBullet () as this =
               Accel = { X = this.self.AccelerationX; Y = this.self.AccelerationY }
               Kind = this.self.BulletType
               IsBullet = this.self.IsBullet }
-        let f = Runner.step sc (this.EnvAt this.self.X this.self.Y) (rn.WithBody body)
+        // 台本が無い弾は aim を読まない（BulletRun.HasNoScript の但し書き）。
+        // 旧 BulletRunner.envWithoutAim と同じ狙いで、段階 4 で Env を組む
+        // 責任がフロントへ移ったぶん、判断もフロントに来た
+        let env = if rn.HasNoScript then noAimEnv () else this.EnvAt this.self.X this.self.Y
+        let f = Runner.stepWith sc env rn body
         let after = f.Run.Body
         this.self.Speed <- after.Speed
         this.self.Dir <- after.Dir
@@ -163,7 +167,11 @@ type BaseBullet () as this =
         // 走らせ直しの Env は、位置を更新したあとの自分から組む
         // （旧 BaseBullet が apply のあとで envOfGlobal を呼ぶのと同じ順）
         run <-
-          if f.Finished then Some (Runner.restart (this.EnvAt this.self.X this.self.Y) f.Run)
+          if f.Finished then
+            let renv =
+              if f.Run.HasNoScript then noAimEnv ()
+              else this.EnvAt this.self.X this.self.Y
+            Some (Runner.restart renv f.Run)
           else Some f.Run
     | _ -> ()
 

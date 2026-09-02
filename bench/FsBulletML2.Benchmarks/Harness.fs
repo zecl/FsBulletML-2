@@ -1,4 +1,4 @@
-namespace FsBulletML2.Benchmarks
+﻿namespace FsBulletML2.Benchmarks
 
 open System.Collections.Generic
 open System.IO
@@ -105,6 +105,116 @@ module Harness =
   let runFramesOf (doc: Bulletml) (frames: int) : int =
     runPrepared (prepare doc) frames
 
+  // ---------------------------------------------------------------------
+  // 新 API（Runner.load / step / restart）で同じ走行を回す。
+  //
+  // **出荷する経路はこちら。** 上の prepare / runPrepared は旧 API
+  // （[<Obsolete>] を付けた BulletRunner.run）を測っている。旧を残すのは、
+  // 消すと「段階 4 で遅くなったか」を同じプロセスで比べられなくなるため
+  // —— 別プロセスの引き算は効きにならない（README の「測るときの約束」）。
+  //
+  // 弾の実体は同じ FakeBullet を借りる。新経路が使うのは位置と物理量だけ。
+  // aim は FakeBullet.GetAimDir と**同じ式**をここで組む —— 片方だけ直すと、
+  // 旧と新で違うものを測ることになる。
+  //
+  // 並びは ResizeArray で持ち、その場で書き換える。**リストを毎回 組み直すと
+  // 1 コマ O(n²) になり、600 発 の台本では測定器のほうが対象より重くなる**
+  // （最初にそう書いて、走らせる前に気づいた）。
+  // ---------------------------------------------------------------------
+
+  type LiveApi =
+    { Bullet : FakeBullet
+      mutable Run : BulletRun }
+
+  type PreparedApi =
+    { Script : BulletmlScript
+      Live : List<LiveApi>
+      Born : List<FakeBullet> }
+
+  let private aimDirAt (x: float32) (y: float32) =
+    float32 (System.Math.Atan2(float (BulletMLManager.GetPlayerPosX() - x),
+                               float -(BulletMLManager.GetPlayerPosY() - y)))
+
+  let private enemyAimDirAt (x: float32) (y: float32) =
+    float32 (System.Math.Atan2(float (FakeEnemy.X - x), -1.0 * float (FakeEnemy.Y - y)))
+
+  /// Env を 1 回 組む費用を測るための口。中身は envAt と同じ。
+  ///
+  /// **Env の遅延化に伸びしろが在るかを、見積もりでなく掛け算で出すため。**
+  /// 天井 = これ × 1 走行で組む回数（countEnvBuilds）。
+  /// aim を遅延にしても、実際に読まれるぶんは残るので、これは上界。
+  let envCost (x: float32) (y: float32) : Domain.Env =
+    { Rand = BulletMLManager.GetRandom
+      Rank = BulletMLManager.GetRank ()
+      AimDir = aimDirAt x y
+      EnemyAimDir = enemyAimDirAt x y
+      SpawnAimDir = aimDirAt 0.0f 0.0f
+      SpawnEnemyAimDir = enemyAimDirAt 0.0f 0.0f }
+
+  let private envAt (x: float32) (y: float32) : Domain.Env =
+    { Rand = BulletMLManager.GetRandom
+      Rank = BulletMLManager.GetRank ()
+      AimDir = aimDirAt x y
+      EnemyAimDir = enemyAimDirAt x y
+      // 産まれた弾は原点に出る（FakeBullet.GetNewBullet が位置を入れずに作る）。
+      // 旧経路と同じ値になるようにしてある
+      SpawnAimDir = aimDirAt 0.0f 0.0f
+      SpawnEnemyAimDir = enemyAimDirAt 0.0f 0.0f }
+
+  /// 木を組む段の Env。aim はこの段では読まれない
+  let loadEnv () : Domain.Env =
+    { Rand = BulletMLManager.GetRandom
+      Rank = BulletMLManager.GetRank ()
+      AimDir = 0.0f
+      EnemyAimDir = 0.0f
+      SpawnAimDir = 0.0f
+      SpawnEnemyAimDir = 0.0f }
+
+  let prepareApi (doc: Bulletml) : PreparedApi =
+    let script = Runner.load (loadEnv ()) doc
+    let born = List<FakeBullet>()
+    let root = FakeBullet(0, born)
+    (root :> IBulletmlObject).Init()
+    let live = List<LiveApi>()
+    live.Add { Bullet = root; Run = Runner.newRoot script }
+    { Script = script; Live = live; Born = born }
+
+  let runPreparedApi (p: PreparedApi) (frames: int) : int =
+    for _ in 0 .. frames - 1 do
+      // このコマで回す顔ぶれを先に固める。産まれた弾は次のコマから
+      let count = p.Live.Count
+      for i in 0 .. count - 1 do
+        let it = p.Live.[i]
+        let bo = it.Bullet :> IBulletmlObject
+        if bo.Used then
+          let body = { it.Run.Body with Pos = { X = bo.X; Y = bo.Y } }
+          // 台本が無い弾は aim を読まない（BulletRun.HasNoScript の但し書き）
+          let env = if it.Run.HasNoScript then loadEnv () else envAt bo.X bo.Y
+          let f = Runner.stepWith p.Script env it.Run body
+          bo.X <- bo.X + f.Delta.X
+          bo.Y <- bo.Y + f.Delta.Y
+          let after = f.Run.Body
+          bo.Speed <- after.Speed
+          bo.Dir <- after.Dir
+          if f.Vanished || f.Retired then bo.Used <- false
+          it.Run <-
+            if f.Finished then
+              let renv = if f.Run.HasNoScript then loadEnv () else envAt bo.X bo.Y
+              Runner.restart renv f.Run
+            else f.Run
+          for child in f.Spawned do
+            let cb = FakeBullet(p.Born.Count + 1, p.Born)
+            let cbo = cb :> IBulletmlObject
+            cbo.Init()
+            cbo.IsBullet <- true
+            cbo.X <- child.Body.Pos.X
+            cbo.Y <- child.Body.Pos.Y
+            cbo.Dir <- child.Body.Dir
+            cbo.Speed <- child.Body.Speed
+            p.Born.Add cb
+            p.Live.Add { Bullet = cb; Run = child }
+    p.Born.Count
+
   /// XML から直に回す。読む段まで入るので、走行だけを測りたい側では使わない。
   /// CorpusBenchmarks（227 本 を 1 周）はこちらを使う —— あちらは 1 本ずつの
   /// 前後比較ではなく「選んだ 4 本 の外で起きた変化」を見る広い網で、
@@ -112,6 +222,54 @@ module Harness =
   /// 走行の一部として数えたいため
   let runFrames (xml: string) (frames: int) : int =
     runFramesOf (parseXml xml) frames
+
+  /// 1 走行（60 コマ）で Env を何回 組むか。
+  ///
+  /// runPreparedApi と同じ形で回して、envAt を呼ぶ場所を数えるだけ。
+  /// step の中身は本物を通す（通さないと弾が増えず、回数が実物と変わる）。
+  ///
+  /// **Env 遅延化の天井 = envCost × この数。** 掛け算で出せる形にしてあるのは、
+  /// 「たぶん小さい」で判断しないため。
+  let countEnvBuilds (doc: Bulletml) (frames: int) : int =
+    let mutable builds = 0
+    let script = Runner.load (loadEnv ()) doc
+    let born = List<FakeBullet>()
+    let root = FakeBullet(0, born)
+    (root :> IBulletmlObject).Init()
+    let live = List<LiveApi>()
+    live.Add { Bullet = root; Run = Runner.newRoot script }
+    for _ in 0 .. frames - 1 do
+      let count = live.Count
+      for i in 0 .. count - 1 do
+        let it = live.[i]
+        let bo = it.Bullet :> IBulletmlObject
+        if bo.Used then
+          let body = { it.Run.Body with Pos = { X = bo.X; Y = bo.Y } }
+          builds <- builds + 1
+          let f = Runner.step script (envAt bo.X bo.Y) (it.Run.WithBody body)
+          bo.X <- bo.X + f.Delta.X
+          bo.Y <- bo.Y + f.Delta.Y
+          let after = f.Run.Body
+          bo.Speed <- after.Speed
+          bo.Dir <- after.Dir
+          if f.Vanished || f.Retired then bo.Used <- false
+          it.Run <-
+            if f.Finished then
+              builds <- builds + 1
+              Runner.restart (envAt bo.X bo.Y) f.Run
+            else f.Run
+          for child in f.Spawned do
+            let cb = FakeBullet(born.Count + 1, born)
+            let cbo = cb :> IBulletmlObject
+            cbo.Init()
+            cbo.IsBullet <- true
+            cbo.X <- child.Body.Pos.X
+            cbo.Y <- child.Body.Pos.Y
+            cbo.Dir <- child.Body.Dir
+            cbo.Speed <- child.Body.Speed
+            born.Add cb
+            live.Add { Bullet = cb; Run = child }
+    builds
 
   /// その台本が、その変更を見られるのかを数える。
   ///

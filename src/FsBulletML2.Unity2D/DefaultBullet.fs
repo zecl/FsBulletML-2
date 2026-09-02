@@ -1,4 +1,4 @@
-namespace FsBulletML2.Unity2D
+﻿namespace FsBulletML2.Unity2D
 
 open UnityEngine
 open System
@@ -159,7 +159,9 @@ type DefaultBullet (transform:Transform) as this =
               Accel = { X = me.AccelerationX; Y = me.AccelerationY }
               Kind = me.BulletType
               IsBullet = me.IsBullet }
-        let f = Runner.step sc (this.EnvNow ()) (rn.WithBody body)
+        // 台本が無い弾は aim を読まない（BulletRun.HasNoScript の但し書き）
+        let env = if rn.HasNoScript then noAimEnv () else this.EnvNow ()
+        let f = Runner.stepWith sc env rn body
         let after = f.Run.Body
         me.Speed <- after.Speed
         me.Dir <- after.Dir
@@ -173,6 +175,8 @@ type DefaultBullet (transform:Transform) as this =
         // 走らせ直しの Env は、位置を更新したあとの自分から組む
         // （旧 DefaultBullet が apply のあとで envOfGlobal を呼ぶのと同じ順）
         run <-
-          if f.Finished then Some (Runner.restart (this.EnvNow ()) f.Run)
+          if f.Finished then
+            let renv = if f.Run.HasNoScript then noAimEnv () else this.EnvNow ()
+            Some (Runner.restart renv f.Run)
           else Some f.Run
     | _ -> ()

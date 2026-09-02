@@ -53,3 +53,8 @@ module BulletmlLoad =
       EnemyAimDir = 0.0f
       SpawnAimDir = 0.0f
       SpawnEnemyAimDir = 0.0f }
+
+  /// aim を読まないと分かっているコマの Env。中身は loadEnv と同じだが
+  /// **意味が違うので名前を分けてある**（MonoGame 側の同名と同じ理由）。
+  /// 使ってよい条件は BulletRun.HasNoScript の但し書き
+  let noAimEnv () : FsBulletML2.Domain.Env = loadEnv ()

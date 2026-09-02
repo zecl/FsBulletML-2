@@ -72,9 +72,19 @@ type CallingConvention() =
   /// 黙って消える**（実際に MonoGame を新 API へ移したとき、差分を足す行が
   /// 網から外れて 3 行 が控えから落ちた）。
   ///
-  ///   旧  BulletRunner.run  → RunResult.X / .Y
-  ///   新  Runner.step       → Frame.Delta.X / .Y
-  let callsRun = Regex(@"BulletRunner\.run\b|Runner\.step\b|Runner\.Step\b")
+  ///   旧  BulletRunner.run          → RunResult.X / .Y
+  ///   新  Runner.step / stepWith    → Frame.Delta.X / .Y
+  ///
+  /// **入口の名前で当てる網は、入口が増えるたびに漏れる。** 三度 踏んだ ——
+  /// 新 API を足したとき、Obsolete の説明文に当たったとき、そして
+  /// `Runner.step` → `Runner.stepWith` に移したとき（`\b` が効いて
+  /// stepWith に当たらず、控えから 2 行 消えた）。
+  ///
+  /// だから `Runner\.[Ss]tep` で始まりだけを見る。名前の続きは問わない。
+  /// **控えの行数が減ったら、まず網が漏れていないかを疑うこと**
+  /// —— 減った行は「消えた呼び出し」ではなく「見えなくなった呼び出し」で
+  /// あることが、ここでは 3 回中 3 回 だった。
+  let callsRun = Regex(@"BulletRunner\.run\b|Runner\.[Ss]tep")
   let usesResult = Regex(@"result\.[XY]\b|\.Delta\.[XY]\b")
   /// `self.X <- self.X + ...` / `self.X = self.X + ...` の形（足しているか代入か）
   let movesPos = Regex(@"\.[XY]\s*(<-|=)\s*[^;]*\.[XY]\s*[+\-]")

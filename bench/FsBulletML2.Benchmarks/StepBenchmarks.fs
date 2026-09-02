@@ -50,9 +50,14 @@ type StepBenchmarks() =
     | Some p -> System.IO.File.ReadAllText p
     | None -> failwithf "台本が見つかりません: %s（samples の下を探した: %s）" suffix Corpus.samplesDir
 
-  /// 読んだ木を走行のあいだ使い回す。使い回して答えが変わらないことを、
-  /// 読み直した木との弾数の一致で確かめてから返す。ここが黙って通ると、
-  /// 2 回目 以降だけ違うものを測っていても誰も気づかない
+  /// 読んだ木を走行のあいだ使い回す。**2 つ を Setup で確かめてから返す。**
+  ///
+  /// 1. 使い回して答えが変わらないこと（読み直した木との弾数の一致）。
+  ///    黙って通ると、2 回目 以降だけ違うものを測っていても誰も気づかない
+  /// 2. **新 API と旧 API が同じものを走らせていること**（弾数の一致）。
+  ///    ここが割れたまま並べると、速い遅いではなく別の走行を比べることになる。
+  ///    値そのものの一致は tests の TraceApi が 227 本 で見ているので、
+  ///    ここは「ベンチの 2 本 の回し方がずれていないか」を見る
   let loadDoc suffix =
     let xml = load suffix
     let doc = parseXml xml
@@ -62,6 +67,10 @@ type StepBenchmarks() =
     if reused1 <> fresh || reused2 <> fresh then
       failwithf "木を使い回すと弾数が変わる: %s（読み直し %d、使い回し 1 回目 %d、2 回目 %d）"
                 suffix fresh reused1 reused2
+    let viaApi = runPreparedApi (prepareApi doc) 60
+    if viaApi <> fresh then
+      failwithf "新 API と旧 API で弾数が違う: %s（旧 %d、新 %d）。別の走行を比べている"
+                suffix fresh viaApi
     doc
 
   [<GlobalSetup>]
@@ -72,17 +81,33 @@ type StepBenchmarks() =
     way10 <- loadDoc "Content/xml/EnemyBullet/10Way.xml"
     homing <- loadDoc "Content/xml/EnemyBullet/[G_DARIUS]_homing_laser.xml"
 
+  // 新 API（Runner.step）。**出荷する経路。**
   [<Benchmark(Description = "move（撃たない）")>]
-  member _.Move() = runFramesOf move 60
+  member _.Move() = runPreparedApi (prepareApi move) 60
 
   [<Benchmark(Description = "5way（300 発）")>]
-  member _.Way5() = runFramesOf way5 60
+  member _.Way5() = runPreparedApi (prepareApi way5) 60
 
   [<Benchmark(Description = "10Way（600 発）")>]
-  member _.Way10() = runFramesOf way10 60
+  member _.Way10() = runPreparedApi (prepareApi way10) 60
 
   [<Benchmark(Description = "homing laser（毎コマ 引き直す）")>]
-  member _.Homing() = runFramesOf homing 60
+  member _.Homing() = runPreparedApi (prepareApi homing) 60
+
+  // 旧 API（BulletRunner.run）。**同じプロセスで並べるために残す。**
+  // 消すと「段階 4 で遅くなったか」を別プロセスの引き算でしか見られなくなり、
+  // それは効きにならない（README の「測るときの約束」）
+  [<Benchmark(Description = "move（旧 API）")>]
+  member _.MoveOld() = runFramesOf move 60
+
+  [<Benchmark(Description = "5way（旧 API）")>]
+  member _.Way5Old() = runFramesOf way5 60
+
+  [<Benchmark(Description = "10Way（旧 API）")>]
+  member _.Way10Old() = runFramesOf way10 60
+
+  [<Benchmark(Description = "homing laser（旧 API）")>]
+  member _.HomingOld() = runFramesOf homing 60
 
 
 /// 下ごしらえが、いくら掛かるのか。
@@ -126,6 +151,15 @@ type SetupBenchmarks() =
 
   [<Benchmark(Description = "5way: task を組む（測定区間の中）")>]
   member _.Way5Prepare() = prepare way5Doc
+
+  /// Env を 1 回 組む費用。aim 4 本 の atan2 がここ。
+  ///
+  /// **Env を遅延にしたときの天井 = これ × --counts の「Env 構築」回数。**
+  /// 遅延にしても実際に読まれるぶんは残るので、その積は上界。
+  /// 掛け算で出せる形にしてあるのは、伸びしろを「たぶん小さい」で
+  /// 判断しないため
+  [<Benchmark(Description = "Env を 1 回 組む（aim 4 本）")>]
+  member _.EnvBuild() = envCost 12.0f 34.0f
 
 
 /// 227 本 を 1 周 する費用。橋と控えが見ているのと同じ母集団。

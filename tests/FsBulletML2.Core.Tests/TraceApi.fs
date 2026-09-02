@@ -64,6 +64,12 @@ module TraceApi =
     let rootEnv : Env =
       { Rand = rand; Rank = rank; AimDir = 0.0f; EnemyAimDir = 0.0f
         SpawnAimDir = spawnAim; SpawnEnemyAimDir = spawnEnemyAim }
+
+    /// aim を読まないと分かっているコマの Env。同梱フロントの noAimEnv と
+    /// 同じ形（aim 4 本 を 0 に、Rand / Rank はそのまま）
+    let noAimEnv () : Env =
+      { Rand = rand; Rank = rank; AimDir = 0.0f; EnemyAimDir = 0.0f
+        SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
     let script = Runner.load rootEnv (readXmlString xml)
 
     let all = List<Live>()
@@ -79,13 +85,19 @@ module TraceApi =
         if b.Alive then
           // 物理量はフロントが持っている。毎コマ入れ直す（旧の stateOfBullet）
           let body = { b.Run.Body with Pos = { X = b.X; Y = b.Y } }
-          let f = Runner.step script (envAt b.X b.Y) (b.Run.WithBody body)
+          // **同梱フロントと同じ skip をここでも通す。** 通さないと、この橋は
+          // 本番と違う経路を見ることになり、skip の条件が間違っていても
+          // 227 本 が緑のまま通ってしまう（BulletRun.HasNoScript の但し書き）
+          let env = if b.Run.HasNoScript then noAimEnv () else envAt b.X b.Y
+          let f = Runner.stepWith script env b.Run body
           b.X <- f.Run.Body.Pos.X + f.Delta.X
           b.Y <- f.Run.Body.Pos.Y + f.Delta.Y
           // 走らせ直しの Env は、移動したあとの位置から組む（旧 BaseBullet が
           // apply のあとで envOfGlobal を呼ぶのと同じ順）
           b.Run <-
-            if f.Finished then Runner.restart (envAt b.X b.Y) f.Run
+            if f.Finished then
+              let renv = if f.Run.HasNoScript then noAimEnv () else envAt b.X b.Y
+              Runner.restart renv f.Run
             else f.Run
           if f.Vanished || f.Retired then b.Alive <- false
           let mark = if f.Finished then "P+" else "P-"

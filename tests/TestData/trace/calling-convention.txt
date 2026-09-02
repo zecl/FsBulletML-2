@@ -20,13 +20,13 @@ src/FsBulletML2.Core/BulletRunner.fs
 
 src/FsBulletML2.MonoGame/BaseBullet.fs
     let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
-    let f = Runner.step sc (this.EnvAt this.self.X this.self.Y) (rn.WithBody body)
+    let f = Runner.stepWith sc env rn body
     apply f.Delta.X f.Delta.Y
 
 src/FsBulletML2.Unity2D/DefaultBullet.fs
     me.X <- me.X + (x / Settings.Display.PixcelsToUnits)
     me.Y <- me.Y - (y / Settings.Display.PixcelsToUnits)
-    let f = Runner.step sc (this.EnvNow ()) (rn.WithBody body)
+    let f = Runner.stepWith sc env rn body
     apply f.Delta.X f.Delta.Y
 
 run の経路に居ないが、座標を足している所（件数だけ）:

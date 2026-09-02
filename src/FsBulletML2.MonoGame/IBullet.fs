@@ -61,3 +61,13 @@ module BulletmlLoad =
       EnemyAimDir = 0.0f
       SpawnAimDir = 0.0f
       SpawnEnemyAimDir = 0.0f }
+
+  /// aim を読まないと分かっているコマの Env。中身は loadEnv と同じだが、
+  /// **意味が違うので名前を分けてある** —— あちらは「木を組む段はまだ
+  /// 弾の位置が無いので 0」、こちらは「この弾はこのコマ aim を読まないので
+  /// 計算しない」。片方の理由が消えたときに、もう片方まで一緒に消さないため。
+  ///
+  /// 使ってよい条件は BulletRun.HasNoScript の但し書きにある。
+  /// 旧 BulletRunner.envWithoutAim と同じ狙いで、段階 4 で Env を組む責任が
+  /// フロントへ移ったぶん、判断もフロントに来た
+  let noAimEnv () : FsBulletML2.Domain.Env = loadEnv ()
