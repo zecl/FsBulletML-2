@@ -85,6 +85,10 @@ type BulletRun internal (state: BulletState) =
   ///
   /// move と homing は死んだコマが 0 なので効かない（`--counts` の「対照」）。
   /// 実測も −4.2% / −1.2% で、この台のノイズ床のうち。
+  ///
+  /// **時間だけが消えて確保が動かない**のは、費用の中身がレコードではなく
+  /// Atan2 だから —— aim 4 本 を組む 29.8 ns のうち 28.5 ns（96%）が Atan2 で、
+  /// レコードの確保は 1.3 ns。内訳は bench/FsBulletML2.Benchmarks/BREAKDOWN.md
   member _.HasNoScript = List.isEmpty state.Tops
 
   member _.Body : Body =
