@@ -20,38 +20,38 @@ module ChaosSeed =
            [Action
               ({actionLabel = None;},
                [ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Sequence;},"3"),Term "10000");
-                ChangeSpeed (Speed (None,"2"),Term "60"); Wait "60";
-                ChangeSpeed (Speed (None,"1.8"),Term "40"); Wait "40";
-                ChangeSpeed (Speed (None,"2"),Term "30"); Wait "30";
+                  (Direction (Some {directionType = DirectionType.Sequence;},numExpr "3"),Term (numExpr "10000"));
+                ChangeSpeed (Speed (None,numExpr "2"),Term (numExpr "60")); Wait (numExpr "60");
+                ChangeSpeed (Speed (None,numExpr "1.8"),Term (numExpr "40")); Wait (numExpr "40");
+                ChangeSpeed (Speed (None,numExpr "2"),Term (numExpr "30")); Wait (numExpr "30");
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Sequence;},"2"),Term "10000");
+                  (Direction (Some {directionType = DirectionType.Sequence;},numExpr "2"),Term (numExpr "10000"));
                 ChangeSpeed
-                  (Speed (Some {speedType = SpeedType.Sequence;},"0.01"),Term "100000")])]);
+                  (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.01"),Term (numExpr "100000"))])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "explosionBullet";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "30";
+               [Wait (numExpr "30");
                 Repeat
-                  (Times "12",
+                  (Times (numExpr "12"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"30")),
-                          Some (Speed (None,"1.2")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "30")),
+                          Some (Speed (None,numExpr "1.2")),
                           BulletRef ({bulletRefLabel = "roll";},[]))])); Vanish])]);
 
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "3+$rank*6",
+              (Times (numExpr "3+$rank*6"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = Aim;},"-90+180*$rand")),
-                      Some (Speed (None,"$rand*3+1")),
+                      Some (Direction (Some {directionType = Aim;},numExpr "-90+180*$rand")),
+                      Some (Speed (None,numExpr "$rand*3+1")),
                       BulletRef ({bulletRefLabel = "explosionBullet";},[]));
-                   Wait "90-$rank*60"]))])])
+                   Wait (numExpr "90-$rank*60")]))])])

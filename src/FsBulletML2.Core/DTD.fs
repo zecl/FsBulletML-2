@@ -38,11 +38,20 @@ module DTD =
         let tuple = FSharpValue.MakeTuple(elements, tupleType)
         sprintf "%s %A" typeName tuple
 
+  /// 文字列を数値式として読む。XML の #PCDATA や内部 DSL で書いた文字列を
+  /// DU へ入れる入口はここ 1 本 にする。
+  ///
+  /// 木は Expr.NumExpr が持つ（もとの文字列と、読んだ木と、$rand / $rank を
+  /// 使うかの旗）。走行中に読み直さないので、読むのはこの入口を通る 1 回だけ。
+  /// 実引数の置き換えだけは文字でやる必要があるので、そこは
+  /// Expr.NumExpr.mapSource が「置き換えてから読み直す」形で通る
+  let numExpr (s: string) : Expr.NumExpr = Expr.NumExpr.ofString s
+
   /// BulletML DTD
   /// <!ELEMENT vertical (#PCDATA)>
   /// <!ATTLIST vertical type (absolute|relative|sequence) "absolute">
   type Vertical =
-  | Vertical of VerticalAttrs option * string 
+  | Vertical of VerticalAttrs option * Expr.NumExpr 
   and VerticalAttrs = { verticalType : VerticalType }
   and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]VerticalType = 
   | Absolute 
@@ -71,11 +80,20 @@ module DTD =
       List.iter f [1..param.Count]
       !result
 
+    /// 実引数を式へ入れる。**文字で置き換えてから読み直す。**
+    ///
+    /// 木の節として差し込むと優先順位が変わる。実引数 "1+2" を仮引数
+    /// "$1*3" へ入れると、文字なら 1+2*3 = 7、節なら (1+2)*3 = 9 になる。
+    /// 同梱 227 本 のうち 50 本 が、トップレベルに二項の + / - を持つ
+    /// 実引数を含んでいるので、ここを節に変えるとその 50 本 の軌跡が動く
+    let replaceIn (param: Map<string, string>) (e: Expr.NumExpr) : Expr.NumExpr =
+      Expr.NumExpr.mapSource (fun t -> replace t param) e
+
   /// BulletML DTD
   /// <!ELEMENT speed (#PCDATA)>
   /// <!ATTLIST speed type (absolute|relative|sequence) "absolute">
   type Speed =
-  | Speed of SpeedAttrs option * string
+  | Speed of SpeedAttrs option * Expr.NumExpr
   and SpeedAttrs = { speedType : SpeedType }
   and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]SpeedType = 
   | Absolute 
@@ -88,7 +106,7 @@ module DTD =
   /// <!ELEMENT direction (#PCDATA)>
   /// <!ATTLIST direction type (aim|absolute|relative|sequence) "aim">
   type Direction = 
-  | Direction of DirectionAttrs option * string
+  | Direction of DirectionAttrs option * Expr.NumExpr
   and DirectionAttrs = { directionType : DirectionType }
   and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]DirectionType =
   | Aim | Absolute | Relative | Sequence
@@ -97,17 +115,17 @@ module DTD =
 
   /// BulletML DTD
   /// <!ELEMENT term (#PCDATA)>
-  type Term = Term of string
+  type Term = Term of Expr.NumExpr
 
   /// BulletML DTD
   /// <!ELEMENT times (#PCDATA)>
-  type Times = Times of string
+  type Times = Times of Expr.NumExpr
 
   /// BulletML DTD
   /// <!ELEMENT horizontal (#PCDATA)>
   /// <!ATTLIST horizontal type (absolute|relative|sequence) "absolute">
   type Horizontal = 
-  | Horizontal of HorizontalAttrs option * string
+  | Horizontal of HorizontalAttrs option * Expr.NumExpr
   and HorizontalAttrs = { horizontalType : HorizontalType }
   and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]HorizontalType = 
   | Absolute // Default
@@ -162,7 +180,7 @@ module DTD =
     | FireRef of FireRefAttrs * Params
   /// BulletML DTD
   /// <!ELEMENT wait (#PCDATA)>
-    | Wait of string
+    | Wait of Expr.NumExpr
   /// BulletML DTD
   /// <!ELEMENT vanish (#PCDATA)>
     | Vanish 
@@ -250,7 +268,7 @@ module DTD =
           match times with
           | Times s ->
             writer.WriteStartElement("times")
-            writer.WriteString(s)
+            writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
 
           write child
@@ -279,7 +297,7 @@ module DTD =
                   | DirectionType.Sequence -> "sequence"
                 writer.WriteAttributeString(localName, t)
               | None -> ()
-              writer.WriteString(s)
+              writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
           | None -> ()
 
@@ -298,7 +316,7 @@ module DTD =
                   | SpeedType.Sequence -> "sequence"
                 writer.WriteAttributeString(localName, t)
               | None -> ()
-              writer.WriteString(s)
+              writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
           | None -> ()
           write child
@@ -335,7 +353,7 @@ module DTD =
                   | DirectionType.Sequence -> "sequence"
                 writer.WriteAttributeString(localName, t)
               | None -> ()
-              writer.WriteString(s)
+              writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
           | None -> ()
           speed |> function
@@ -353,7 +371,7 @@ module DTD =
                   | SpeedType.Sequence -> "sequence"
                 writer.WriteAttributeString(localName, t)
               | None -> ()
-              writer.WriteString(s)
+              writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
           | None -> ()
           children |> Seq.iter (fun child -> write child)
@@ -383,12 +401,12 @@ module DTD =
                 | DirectionType.Sequence -> "sequence"
               writer.WriteAttributeString(localName, t)
             | None -> ()
-            writer.WriteString(s)
+            writer.WriteString(Expr.NumExpr.text s)
           writer.WriteEndElement()
           match term with
           | Term s ->
             writer.WriteStartElement("term")
-            writer.WriteString(s)
+            writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
           writer.WriteEndElement()
         | RecBulletml.ChangeSpeed (speed, term) ->
@@ -406,12 +424,12 @@ module DTD =
                 | SpeedType.Sequence -> "sequence"
               writer.WriteAttributeString(localName, t)
             | None -> ()
-            writer.WriteString(s)
+            writer.WriteString(Expr.NumExpr.text s)
           writer.WriteEndElement()
           match term with
           | Term s ->
             writer.WriteStartElement("term")
-            writer.WriteString(s)
+            writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
           writer.WriteEndElement()
         | RecBulletml.Accel (horizontal, vertical, term) ->
@@ -429,7 +447,7 @@ module DTD =
                 | HorizontalType.Sequence -> "sequence"
               writer.WriteAttributeString(localName, t)
             | None -> ()
-            writer.WriteString(s)
+            writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
           | _ -> ()
           match vertical with
@@ -445,18 +463,18 @@ module DTD =
                 | VerticalType.Sequence -> "sequence"
               writer.WriteAttributeString(localName, t)
             | None -> ()
-            writer.WriteString(s)
+            writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
           | _ -> ()
           match term with
           | Term s ->
             writer.WriteStartElement("term")
-            writer.WriteString(s)
+            writer.WriteString(Expr.NumExpr.text s)
             writer.WriteEndElement()
           writer.WriteEndElement()
         | RecBulletml.Wait (s) ->
           writer.WriteStartElement("wait")
-          writer.WriteString(s)
+          writer.WriteString(Expr.NumExpr.text s)
           writer.WriteEndElement()
         | RecBulletml.Vanish ->
           writer.WriteStartElement("vanish")
@@ -520,7 +538,7 @@ module DTD =
   | FireRef of FireRefAttrs * Params
 /// BulletML DTD
 /// <!ELEMENT wait (#PCDATA)>
-  | Wait of string
+  | Wait of Expr.NumExpr
 /// BulletML DTD
 /// <!ELEMENT vanish (#PCDATA)>
   | Vanish 
@@ -579,7 +597,7 @@ module DTD =
   | Vanish 
   | ChangeSpeed of Speed * Term
   | Repeat of Times * ActionElm 
-  | Wait of string
+  | Wait of Expr.NumExpr
   | Fire of FireAttrs * Direction option * Speed option * BulletElm 
   | FireRef of FireRefAttrs * Params
   | Action of ActionAttrs * Action list 

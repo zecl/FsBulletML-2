@@ -31,7 +31,7 @@ type StepTop() =
 
   [<Test>]
   member _.``差分は、加速度と 速さ かける 向き の和``() =
-    let t = top [ RecBulletml.Wait "10" ]
+    let t = top [ RecBulletml.Wait (numExpr "10") ]
     let r = Step.step noResolvers env (stateWith [ t ])
     // dir = 0 なので sin 0 = 0、-cos 0 = -1。速さ 2 なので (0, -2)。加速度 (1, 0) を足す
     r.Delta.X |> should (equalWithin 0.0001) 1.0f
@@ -39,7 +39,7 @@ type StepTop() =
 
   [<Test>]
   member _.``ある top が止まっても、後ろの top は同じフレームで回る``() =
-    let t1 = top [ RecBulletml.Wait "10" ]
+    let t1 = top [ RecBulletml.Wait (numExpr "10") ]
     let t2 = top [ RecBulletml.Vanish ]
     let r = Step.step noResolvers env (stateWith [ t1; t2 ])
     r.Effects |> should equal [ Vanished ]
@@ -52,7 +52,7 @@ type StepTop() =
 
   [<Test>]
   member _.``止まっている top があるうちは Finished ではない``() =
-    let t = top [ RecBulletml.Wait "10" ]
+    let t = top [ RecBulletml.Wait (numExpr "10") ]
     let r = Step.step noResolvers env (stateWith [ t ])
     r.Finished |> should equal false
 
@@ -96,7 +96,7 @@ type StepTop() =
   /// 振り出しに戻り、いつまでも Ended にならない
   [<Test>]
   member _.``Progress は次のコマへ持ち越される: wait は 2 コマ目で終わる``() =
-    let t = top [ RecBulletml.Wait "1" ]
+    let t = top [ RecBulletml.Wait (numExpr "1") ]
     let r1 = Step.step noResolvers env (stateWith [ t ])
     r1.Finished |> should equal false
     let r2 = Step.step noResolvers env r1.State
@@ -119,12 +119,12 @@ type StepTop() =
     let fire1 =
       RecBulletml.Fire ({ fireLabel = None }, None,
                         None,
-                        bullet None (Some (Speed (Some { speedType = SpeedType.Absolute }, "5"))))
+                        bullet None (Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "5"))))
     let fire2 =
       RecBulletml.Fire ({ fireLabel = None }, None,
-                        Some (Speed (Some { speedType = SpeedType.Sequence }, "3")),
+                        Some (Speed (Some { speedType = SpeedType.Sequence }, numExpr "3")),
                         bullet None None)
-    let t = top [ fire1; RecBulletml.Wait "1"; fire2 ]
+    let t = top [ fire1; RecBulletml.Wait (numExpr "1"); fire2 ]
     let r1 = Step.step noResolvers env (stateWith [ t ])
     match r1.Effects with
     | [ Spawn b1 ] -> b1.Speed |> should (equalWithin 0.0001) 5.0f
@@ -143,11 +143,11 @@ type StepTop() =
     let bullet = RecBulletml.Bullet ({ bulletLabel = None }, None, None, [])
     let fire =
       RecBulletml.Fire ({ fireLabel = None },
-                        Some (Direction (Some { directionType = DirectionType.Absolute }, "0")),
-                        Some (Speed (Some { speedType = SpeedType.Absolute }, "1")),
+                        Some (Direction (Some { directionType = DirectionType.Absolute }, numExpr "0")),
+                        Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "1")),
                         bullet)
     let body = RecBulletml.Action ({ actionLabel = None }, [ fire ])
-    let t = top [ RecBulletml.Repeat (Times "9999", body) ]
+    let t = top [ RecBulletml.Repeat (Times (numExpr "9999"), body) ]
     let r = Step.step noResolvers env (stateWith [ t ])
     r.Effects |> List.length |> should equal 9999
     r.Finished |> should equal true

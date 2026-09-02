@@ -19,20 +19,20 @@ module Garegga =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"135")),None,
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "135")),None,
                BulletRef ({bulletRefLabel = "winder";},[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"225")),None,
-               BulletRef ({bulletRefLabel = "winder";},[])); Wait "220"]);
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "225")),None,
+               BulletRef ({bulletRefLabel = "winder";},[])); Wait (numExpr "220")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "winder";},None,Some (Speed (None,"2.3")),
+          ({bulletLabel = Some "winder";},None,Some (Speed (None,numExpr "2.3")),
            [Action
               ({actionLabel = None;},
-               [Wait "10"; ChangeSpeed (Speed (None,"0"),Term "1");
+               [Wait (numExpr "10"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"230")),None,
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "230")),None,
                    Bullet
                      ({bulletLabel = None;},None,None,
                       [Action ({actionLabel = None;},[Vanish])]));
@@ -43,23 +43,23 @@ module Garegga =
         BulletmlElm.Action
           ({actionLabel = Some "move";},
            [Repeat
-              (Times "$2",
+              (Times (numExpr "$2"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"$1-100")),
-                      Some (Speed (None,"5")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$1-100")),
+                      Some (Speed (None,numExpr "5")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Repeat
-                     (Times "4",
+                     (Times (numExpr "4"),
                       Action
                         ({actionLabel = None;},
                          [Fire
                             ({fireLabel = None;},
                              Some
-                               (Direction (Some {directionType = DirectionType.Sequence;},"25")),
-                             Some (Speed (None,"5")),
+                               (Direction (Some {directionType = DirectionType.Sequence;},numExpr "25")),
+                             Some (Speed (None,numExpr "5")),
                              Bullet ({bulletLabel = None;},None,None,[]))]));
-                   Wait "2"]))])])
+                   Wait (numExpr "2")]))])])
 

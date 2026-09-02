@@ -18,34 +18,34 @@ module GDarius =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "20",
+              (Times (numExpr "20"),
                Action
                  ({actionLabel = None;},
                   [Fire
-                     ({fireLabel = None;},Some (Direction (None,"-60+$rand*120")),
+                     ({fireLabel = None;},Some (Direction (None,numExpr "-60+$rand*120")),
                       None,BulletRef ({bulletRefLabel = "hmgLsr";},[]));
                    Repeat
-                     (Times "8",
+                     (Times (numExpr "8"),
                       Action
                         ({actionLabel = None;},
-                         [Wait "1";
+                         [Wait (numExpr "1");
                           Fire
                             ({fireLabel = None;},
-                             Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
+                             Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
                              None,BulletRef ({bulletRefLabel = "hmgLsr";},[]))]));
-                   Wait "10"])); Wait "60"]);
+                   Wait (numExpr "10")])); Wait (numExpr "60")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "hmgLsr";},None,Some (Speed (None,"2")),
+          ({bulletLabel = Some "hmgLsr";},None,Some (Speed (None,numExpr "2")),
            [Action
               ({actionLabel = None;},
-               [ChangeSpeed (Speed (None,"0.3"),Term "30"); Wait "100";
-                ChangeSpeed (Speed (None,"5"),Term "100")]);
+               [ChangeSpeed (Speed (None,numExpr "0.3"),Term (numExpr "30")); Wait (numExpr "100");
+                ChangeSpeed (Speed (None,numExpr "5"),Term (numExpr "100"))]);
             Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "12",
+                  (Times (numExpr "12"),
                    Action
                      ({actionLabel = None;},
                       [ChangeDirection
-                         (Direction (Some {directionType = Aim;},"0"),
-                          Term "45-$rank*30"); Wait "5"]))])])])
+                         (Direction (Some {directionType = Aim;},numExpr "0"),
+                          Term (numExpr "45-$rank*30")); Wait (numExpr "5")]))])])])

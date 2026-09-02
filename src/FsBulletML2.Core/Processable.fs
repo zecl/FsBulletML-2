@@ -29,7 +29,26 @@ module Processable =
     static member GetPlayerPosX() = ib.GetPlayerPosX()
     static member GetPlayerPosY() = ib.GetPlayerPosY()
 
-  let getValue (env: Domain.Env) (s:string) =
+  /// 式の値。走行中はここを通る。
+  ///
+  /// 木は Expr.NumExpr が読んだ時点で組んであるので、ここは評価するだけ。
+  /// **乱数は式の中身によらず 1 回 だけ引く**（$rand が何個 あっても、
+  /// 1 個 も無くても 1 回）。引く回数は乱数の並びを進めるので、
+  /// 下の getValueByXPath と揃っていなければ全弾幕の軌跡がずれる
+  let getValue (env: Domain.Env) (e: Expr.NumExpr) =
+    Expr.NumExpr.eval env.Rand env.Rank e
+
+  /// 旧実装。文字列を毎回 XPath で評価する。
+  ///
+  /// **走行はもうここを通らない。** 残してあるのは ExprTests が
+  /// 「木が同じ値を返すか」を突き合わせる相手として要るから。消すと、
+  /// 木が正しいことを確かめる基準が無くなる。
+  ///
+  /// この実装には穴が 2 つ ある（どちらも ExprTests が名指しで固定している）。
+  ///   - $rand / $rank が 1e-4 未満だと ToString が "1E-07" を吐き、
+  ///     xpathNumber の空白入れがそれを割って XPathException になる
+  ///   - 読めない式で例外になる（木のほうは NaN）
+  let getValueByXPath (env: Domain.Env) (s:string) =
     let rand = env.Rand ()
     let rank = env.Rank
     let s = s.Replace("$rand", rand.ToString(CultureInfo.InvariantCulture))

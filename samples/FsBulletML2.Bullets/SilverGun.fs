@@ -19,50 +19,50 @@ module SilverGun =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"100")),
-               Some (Speed (None,"4")),BulletRef ({bulletRefLabel = "arm";},[]));
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "100")),
+               Some (Speed (None,numExpr "4")),BulletRef ({bulletRefLabel = "arm";},[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"-100")),
-               Some (Speed (None,"4")),BulletRef ({bulletRefLabel = "arm";},[]));
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-100")),
+               Some (Speed (None,numExpr "4")),BulletRef ({bulletRefLabel = "arm";},[]));
             Repeat
-              (Times "400",
+              (Times (numExpr "400"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"7")),
-                      Some (Speed (None,"1.5")),
-                      Bullet ({bulletLabel = None;},None,None,[])); Wait "1"]));
-            Wait "60"]);
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "7")),
+                      Some (Speed (None,numExpr "1.5")),
+                      Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1")]));
+            Wait (numExpr "60")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "arm";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "12"; ChangeSpeed (Speed (None,"0"),Term "1");
+               [Wait (numExpr "12"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"));
                 Repeat
-                  (Times "7",
+                  (Times (numExpr "7"),
                    Action
                      ({actionLabel = None;},
-                      [Wait "60";
+                      [Wait (numExpr "60");
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = Aim;},"-15")),
-                          Some (Speed (None,"1.8")),
+                          Some (Direction (Some {directionType = Aim;},numExpr "-15")),
+                          Some (Speed (None,numExpr "1.8")),
                           BulletRef ({bulletRefLabel = "homing";},[]));
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"30")),
-                          Some (Speed (None,"1.8")),
-                          BulletRef ({bulletRefLabel = "homing";},[])); Wait "2"]));
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "30")),
+                          Some (Speed (None,numExpr "1.8")),
+                          BulletRef ({bulletRefLabel = "homing";},[])); Wait (numExpr "2")]));
                 Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "homing";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "60";
+               [Wait (numExpr "60");
                 ChangeDirection
-                  (Direction (Some {directionType = Aim;},"0"),Term "15-$rank*10");
-                Wait "15-$rank*10";
+                  (Direction (Some {directionType = Aim;},numExpr "0"),Term (numExpr "15-$rank*10"));
+                Wait (numExpr "15-$rank*10");
                 ChangeDirection
-                  (Direction (Some {directionType = Aim;},"0"),Term "15-$rank*10")])])])
+                  (Direction (Some {directionType = Aim;},numExpr "0"),Term (numExpr "15-$rank*10"))])])])

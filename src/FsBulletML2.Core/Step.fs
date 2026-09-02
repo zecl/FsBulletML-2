@@ -27,6 +27,14 @@ module internal Step =
     elif (float dir < 0.) then dir + float32 (2. * System.Math.PI)
     else dir
 
+  /// 型の上では届くが実際には来ない腕の既定値。"0" を毎回 読み直さないよう
+  /// 1 つ 持っておく。
+  ///
+  /// **ここを定数 0.0f に置き換えてはいけない。** getValue は式の中身に
+  /// よらず乱数を 1 回 引くので、呼び出しを消すと引く回数が変わり、
+  /// 全弾幕の軌跡がずれる
+  let private zeroExpr = numExpr "0"
+
   /// wait。現行の waitCommand を写す。
   ///
   ///   term >= 0 なら 1 減らす
@@ -82,7 +90,7 @@ module internal Step =
       let h, v, term =
         match script with
         | RecBulletml.Accel (h, v, Term t) -> h, v, t
-        | _ -> None, None, "0"
+        | _ -> None, None, zeroExpr
       let started, left, dx, dy =
         match p with
         | PAccel (s, l, x, y) -> s, l, x, y
@@ -103,7 +111,7 @@ module internal Step =
                     | _ -> (value - self.Accel.X) / t
                 | None -> (value - self.Accel.X) / t
             | None ->
-                let value = getValue env "0"
+                let value = getValue env zeroExpr
                 (value - self.Accel.X) / t
           let dy =
             match v with
@@ -117,7 +125,7 @@ module internal Step =
                     | _ -> (value - self.Accel.Y) / t
                 | None -> (value - self.Accel.Y) / t
             | None ->
-                let value = getValue env "0"
+                let value = getValue env zeroExpr
                 (value - self.Accel.Y) / t
           t, dx, dy
       let left = left - 1.0f
@@ -140,7 +148,7 @@ module internal Step =
       let dir, term =
         match script with
         | RecBulletml.ChangeDirection (d, Term t) -> d, t
-        | _ -> Direction (None, "0"), "0"
+        | _ -> Direction (None, zeroExpr), zeroExpr
       let started, left, delta =
         match p with
         | PChangeDir (s, _, l, d) -> s, l, d
@@ -189,7 +197,7 @@ module internal Step =
       let spd, term =
         match script with
         | RecBulletml.ChangeSpeed (s, Term t) -> s, t
-        | _ -> Speed (None, "0"), "0"
+        | _ -> Speed (None, zeroExpr), zeroExpr
       let started, left, delta =
         match p with
         | PChangeSpeed (s, _, l, d) -> s, l, d
@@ -528,7 +536,7 @@ module internal Step =
       let timesStr, body =
         match script with
         | RecBulletml.Repeat (Times t, b) -> t, b
-        | _ -> "0", RecBulletml.NotCommand
+        | _ -> zeroExpr, RecBulletml.NotCommand
       let times = getValue env timesStr |> int
       let num0, done0, child0 =
         match p with

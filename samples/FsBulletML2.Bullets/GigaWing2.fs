@@ -18,47 +18,47 @@ module GigaWing2 =
        [BulletmlElm.Action
           ({actionLabel = Some "add2";},
            [Repeat
-              (Times "2",
+              (Times (numExpr "2"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"9")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"0")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "9")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
           ({actionLabel = Some "top1";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"9")),None,
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "9")),None,
                Bullet
                  ({bulletLabel = None;},None,None,
                   [Action ({actionLabel = None;},[Vanish])]));
             Repeat
-              (Times "150",
+              (Times (numExpr "150"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"7-18")),
-                      Some (Speed (None,"1.8")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "7-18")),
+                      Some (Speed (None,numExpr "1.8")),
                       Bullet ({bulletLabel = None;},None,None,[]));
-                   Action.ActionRef ({actionRefLabel = "add2";},[]); Wait "4-$rank*2+$rand"]))]);
+                   Action.ActionRef ({actionRefLabel = "add2";},[]); Wait (numExpr "4-$rank*2+$rand")]))]);
         BulletmlElm.Action
           ({actionLabel = Some "top2";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"9")),None,
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "9")),None,
                Bullet
                  ({bulletLabel = None;},None,None,
                   [Action ({actionLabel = None;},[Vanish])]));
             Repeat
-              (Times "150",
+              (Times (numExpr "150"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"-7-18")),
-                      Some (Speed (None,"1.8")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-7-18")),
+                      Some (Speed (None,numExpr "1.8")),
                       Bullet ({bulletLabel = None;},None,None,[]));
-                   Action.ActionRef ({actionRefLabel = "add2";},[]); Wait "4-$rank*2+$rand"]))])])
+                   Action.ActionRef ({actionRefLabel = "add2";},[]); Wait (numExpr "4-$rank*2+$rand")]))])])

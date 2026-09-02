@@ -29,8 +29,8 @@ module IntermediateParser =
       | None -> new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName) |> raise
     | None -> new BulletmlDTDViolationException(sprintf "[%s] element should have [%s] element." parentElementName elementName) |> raise
 
-  let internal createTerm children parentElementName = getElement children parentElementName "term" (Term)
-  let internal createTimes children parentElementName = getElement children parentElementName "times" (Times)
+  let internal createTerm children parentElementName = getElement children parentElementName "term" (numExpr >> Term)
+  let internal createTimes children parentElementName = getElement children parentElementName "times" (numExpr >> Times)
 
   let internal getParam xml =
     match xml with
@@ -84,11 +84,11 @@ module IntermediateParser =
               | x -> new BulletmlDTDViolationException(sprintf "not support DirectionType.:[%s]" x) |> raise 
             let attr = { DirectionAttrs.directionType = attr |> toDirectionType }
             match tryFindPCData children with
-            | Some text -> Direction(Some attr, text) |> Some
+            | Some text -> Direction(Some attr, numExpr text) |> Some
             | None -> new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName) |> raise
           | None -> 
             match tryFindPCData children with
-            | Some text -> Direction(None, text) |> Some
+            | Some text -> Direction(None, numExpr text) |> Some
             | None -> new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName) |> raise
         | _ -> None
       | _ -> new BulletmlDTDViolationException("not support element.") |> raise
@@ -104,11 +104,11 @@ module IntermediateParser =
           | Some attr -> 
             let attr = { SpeedAttrs.speedType = attr |> toSpeedType }
             match tryFindPCData children with
-            | Some text -> Speed(Some attr, text) |> Some
+            | Some text -> Speed(Some attr, numExpr text) |> Some
             | None -> new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName) |> raise
           | None -> 
             match tryFindPCData children with
-            | Some text -> Speed(None, text) |> Some
+            | Some text -> Speed(None, numExpr text) |> Some
             | None -> new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName) |> raise
         | _ -> None
       | _ -> new BulletmlDTDViolationException("not support element.") |> raise
@@ -131,12 +131,12 @@ module IntermediateParser =
             let attr = { HorizontalAttrs.horizontalType = attr |> toHorizontalType }
             match tryFindPCData children with
             | Some text -> 
-              Horizontal(Some attr, text) |> Some
+              Horizontal(Some attr, numExpr text) |> Some
             | None -> new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName) |> raise   
           | None -> 
             match tryFindPCData children with
             | Some text -> 
-              Horizontal(None, text) |> Some
+              Horizontal(None, numExpr text) |> Some
             | None -> new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName) |> raise   
         | _ -> None
       | _ -> new BulletmlDTDViolationException("not support element.") |> raise
@@ -159,12 +159,12 @@ module IntermediateParser =
             let attr = { VerticalAttrs.verticalType = attr |> toVerticalType }
             match tryFindPCData children with
             | Some text -> 
-              Vertical(Some attr, text) |> Some
+              Vertical(Some attr, numExpr text) |> Some
             | None -> new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName) |> raise   
           | None ->
             match tryFindPCData children with
             | Some text -> 
-              Vertical(None, text) |> Some
+              Vertical(None, numExpr text) |> Some
             | None -> new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName) |> raise   
         | _ -> None
       | _ -> new BulletmlDTDViolationException("not support element.") |> raise
@@ -446,7 +446,7 @@ module IntermediateParser =
         new BulletmlDTDViolationException (sprintf "this element has no attributes.:[%s]" elementName) |> raise
       | false -> 
         match tryFindPCData children with
-        | Some text -> Bulletml.Wait(text)
+        | Some text -> Bulletml.Wait(numExpr text)
         | None -> new BulletmlDTDViolationException (sprintf "[%s] element should have #PCDATA." elementName) |> raise
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise 
 
@@ -610,26 +610,26 @@ module IntermediateParser =
     | _ -> new BulletmlDTDViolationException("convert error.") |> raise
 
   let internal convertDirectionOption  = fun prams -> function
-    | Some (Direction(attrs,s)) -> Direction(attrs, Param.replace s prams) |> Some
+    | Some (Direction(attrs,s)) -> Direction(attrs, Param.replaceIn prams s) |> Some
     | None -> None
 
-  let internal convertDirection  = fun prams -> function Direction(attrs,s) -> Direction(attrs, Param.replace s prams) 
+  let internal convertDirection  = fun prams -> function Direction(attrs,s) -> Direction(attrs, Param.replaceIn prams s) 
 
   let internal convertSpeedOption = fun prams -> function
-    | Some (Speed(attrs,s)) -> Speed(attrs, Param.replace s prams) |> Some
+    | Some (Speed(attrs,s)) -> Speed(attrs, Param.replaceIn prams s) |> Some
     | None -> None
 
-  let internal convertSpeed = fun prams -> function Speed(attrs,s) -> Speed(attrs, Param.replace s prams) 
-  let internal convertTerm = fun prams -> function Term(s) -> Term(Param.replace s prams)
-  let internal convertTimes = fun prams -> function | Times(s) -> Times(Param.replace s prams)
+  let internal convertSpeed = fun prams -> function Speed(attrs,s) -> Speed(attrs, Param.replaceIn prams s) 
+  let internal convertTerm = fun prams -> function Term(s) -> Term(Param.replaceIn prams s)
+  let internal convertTimes = fun prams -> function | Times(s) -> Times(Param.replaceIn prams s)
   let internal convertParam = fun prams -> List.map (fun s -> Param.replace s prams) 
-  let internal convertWait = fun prams -> function | s -> Param.replace s prams
+  let internal convertWait = fun prams -> function | s -> Param.replaceIn prams s
 
   let internal convertHorizontalOption = fun prams -> function 
-    | Some(Horizontal(attrs,s)) -> Horizontal(attrs,Param.replace s prams) |> Some
+    | Some(Horizontal(attrs,s)) -> Horizontal(attrs, Param.replaceIn prams s) |> Some
     | None -> None
   let internal convertVerticalOption = fun prams -> function 
-    | Some(Vertical(attrs,s)) -> Vertical(attrs,Param.replace s prams) |> Some
+    | Some(Vertical(attrs,s)) -> Vertical(attrs, Param.replaceIn prams s) |> Some
     | None -> None
  
   let private convertRecBulletml' bulletml test = 
@@ -639,31 +639,31 @@ module IntermediateParser =
     let toStr (single: float32) =
       if test then single.ToString(CultureInfo.InvariantCulture)
       else single.ToString("F10", CultureInfo.InvariantCulture)
-    let rep s x (y:Lazy<'T>) = if (s:string).Contains("$") then x else y.Force()
+    let rep (s: Expr.NumExpr) x (y:Lazy<'T>) = if (Expr.NumExpr.text s).Contains("$") then x else y.Force()
     let repDir direction = direction |> function
       | Some d -> d |> function 
-        | Direction(a,x) -> rep x direction (lazy (Some (Direction(a,TryParse.eval x |> toStr))))
+        | Direction(a,x) -> rep x direction (lazy (Some (Direction(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr))))
       | None -> direction
 
     let repSpd speed = speed |> function
       | Some s -> s |> function 
-        | Speed(a,x) -> rep x speed (lazy (Some (Speed(a,TryParse.eval x |> toStr))))
+        | Speed(a,x) -> rep x speed (lazy (Some (Speed(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr))))
       | None -> speed
 
     let repTimes times = times |> function 
-      | Times(x) -> rep x times (lazy (Times(TryParse.eval x |> toStr)))
+      | Times(x) -> rep x times (lazy (Times(TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
 
     let repTerm term = term |> function 
-      | Term(x) -> rep x term (lazy (Term(TryParse.eval x |> toStr)))
+      | Term(x) -> rep x term (lazy (Term(TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
 
     let repHorizontal horizontal = horizontal |> function
       | Some h -> h |> function 
-        | Horizontal(a,x) -> rep x horizontal (lazy (Some (Horizontal(a,TryParse.eval x |> toStr))))
+        | Horizontal(a,x) -> rep x horizontal (lazy (Some (Horizontal(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr))))
       | None -> horizontal
 
     let repVertical vertical = vertical |> function
       | Some v -> v |> function 
-        | Vertical(a,x) -> rep x vertical (lazy (Some (Vertical(a,TryParse.eval x |> toStr))))
+        | Vertical(a,x) -> rep x vertical (lazy (Some (Vertical(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr))))
       | None -> vertical
 
     let rec convert = function 
@@ -690,17 +690,17 @@ module IntermediateParser =
       RecBulletml.BulletRef (attrs, prams)
     | Bulletml.ChangeDirection (direction, term) ->
       let direction' = direction |> function 
-        | Direction(a,x) -> rep x direction (lazy (Direction(a,TryParse.eval x |> toStr)))
+        | Direction(a,x) -> rep x direction (lazy (Direction(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
       RecBulletml.ChangeDirection(direction', repTerm term)
     | Bulletml.ChangeSpeed (speed, term) ->
       let speed' = speed |> function 
-        | Speed(a,x) -> rep x speed (lazy (Speed(a,TryParse.eval x |> toStr)))
+        | Speed(a,x) -> rep x speed (lazy (Speed(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
       RecBulletml.ChangeSpeed (speed', repTerm term)
     | Bulletml.FireRef (attrs, prams) ->
       RecBulletml.FireRef (attrs, prams)
     | Bulletml.Vanish -> RecBulletml.Vanish 
     | Bulletml.Wait(times) -> 
-      let times' = rep times times (lazy (TryParse.eval times |> toStr))
+      let times' = rep times times (lazy (TryParse.eval (Expr.NumExpr.text times) |> toStr |> numExpr))
       RecBulletml.Wait(times') 
     | Bulletml.NotCommand -> RecBulletml.NotCommand 
     convert bulletml

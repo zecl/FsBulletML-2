@@ -18,49 +18,49 @@ module Xevious =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "10",
+              (Times (numExpr "10"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"180")),
-                      Some (Speed (None,"3")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+                      Some (Speed (None,numExpr "3")),
                       BulletRef ({bulletRefLabel = "gzc";},[]));
-                   Wait "20-$rank*10+$rand*10"])); Wait "60"]);
+                   Wait (numExpr "20-$rank*10+$rand*10")])); Wait (numExpr "60")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "gzc";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "10+$rand*10";
+               [Wait (numExpr "10+$rand*10");
                 Repeat
-                  (Times "16",
+                  (Times (numExpr "16"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Sequence;},"360/16")),
+                            (Direction (Some {directionType = DirectionType.Sequence;},numExpr "360/16")),
                           None,BulletRef ({bulletRefLabel = "spr";},[]))]));
                 Repeat
-                  (Times "4",
+                  (Times (numExpr "4"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"90")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "90")),
                           None,BulletRef ({bulletRefLabel = "hrmSpr";},[]))]));
                 Vanish])]);
-        BulletmlElm.Bullet ({bulletLabel = Some "spr";},None,Some (Speed (None,"2")),[]);
+        BulletmlElm.Bullet ({bulletLabel = Some "spr";},None,Some (Speed (None,numExpr "2")),[]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "hrmSpr";},None,Some (Speed (None,"0")),
+          ({bulletLabel = Some "hrmSpr";},None,Some (Speed (None,numExpr "0")),
            [Action
-              ({actionLabel = None;},[ChangeSpeed (Speed (None,"2"),Term "60")]);
+              ({actionLabel = None;},[ChangeSpeed (Speed (None,numExpr "2"),Term (numExpr "60"))]);
             Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "9999",
+                  (Times (numExpr "9999"),
                    Action
                      ({actionLabel = None;},
                       [ChangeDirection
-                         (Direction (Some {directionType = Aim;},"0"),Term "40");
-                       Wait "1"]))])])])
+                         (Direction (Some {directionType = Aim;},numExpr "0"),Term (numExpr "40"));
+                       Wait (numExpr "1")]))])])])

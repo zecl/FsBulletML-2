@@ -24,12 +24,12 @@ module Attribute =
 module Top = 
   let bulletml = Bulletml({ bulletmlXmlns = Some "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml"; bulletmlType = Some ShootingDirection.BulletVertical; bulletmlName = Some "No Name"; bulletmlDescription = None}, 
                     []) 
-  let horizontal = Horizontal ( Some { horizontalType = HorizontalType.Absolute }, "1") 
-  let vertical = Vertical ( Some { verticalType = VerticalType.Absolute }, "1") 
-  let term = Term ("1") 
-  let times = Times ("1") 
-  let direction = Direction( Some { directionType = DirectionType.Aim } , "1") 
-  let speed = Speed ( Some { speedType = SpeedType.Absolute } , "1") 
+  let horizontal = Horizontal ( Some { horizontalType = HorizontalType.Absolute }, numExpr "1") 
+  let vertical = Vertical ( Some { verticalType = VerticalType.Absolute }, numExpr "1") 
+  let term = Term (numExpr "1") 
+  let times = Times (numExpr "1") 
+  let direction = Direction( Some { directionType = DirectionType.Aim } , numExpr "1") 
+  let speed = Speed ( Some { speedType = SpeedType.Absolute } , numExpr "1") 
 
 [<AutoOpen>]
 module BulletElm = 
@@ -67,7 +67,7 @@ module Action =
   let action_accel = Action.Accel (
                          None,
                          None,
-                         Term ("1")) 
+                         Term (numExpr "1")) 
 
   let action_action = Action.Action ({ actionLabel = Some "actionName" },
                           []) 
@@ -76,12 +76,12 @@ module Action =
                              []) 
 
   let action_changeDirection = Action.ChangeDirection ( 
-                                   Direction( Some directionAttr, "1"),
-                                   Term ("1")) 
+                                   Direction( Some directionAttr, numExpr "1"),
+                                   Term (numExpr "1")) 
 
   let aciton_changeSpeed = Action.ChangeSpeed ( 
-                               Speed ( Some speedAttr, "1"), 
-                               Term ("1")) 
+                               Speed ( Some speedAttr, numExpr "1"), 
+                               Term (numExpr "1")) 
 
   let action_fire = Action.Fire ({ fireLabel = Some "fireName" },
                         None, 
@@ -92,9 +92,9 @@ module Action =
                            []) 
 
   let repeat = Action.Repeat ( 
-                   Times("1"), 
+                   Times(numExpr "1"), 
                    actionElm_action) 
 
   let action_vanish = Action.Vanish   
-  let action_wait = Action.Wait("1") 
+  let action_wait = Action.Wait(numExpr "1") 
 

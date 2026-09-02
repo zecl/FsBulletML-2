@@ -19,89 +19,89 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
-               None,BulletRef ({bulletRefLabel = "centerbit";},[])); Wait "800"]);
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
+               None,BulletRef ({bulletRefLabel = "centerbit";},[])); Wait (numExpr "800")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "centerbit";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"180")),
-           Some (Speed (None,"0.9")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+           Some (Speed (None,numExpr "0.9")),
            [Action
               ({actionLabel = None;},
-               [Wait "40"; ChangeSpeed (Speed (None,"0.0"),Term "1"); Wait "5";
+               [Wait (numExpr "40"); ChangeSpeed (Speed (None,numExpr "0.0"),Term (numExpr "1")); Wait (numExpr "5");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
                    None,BulletRef ({bulletRefLabel = "pillarbit";},[]));
                 Repeat
-                  (Times "17",
+                  (Times (numExpr "17"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"5")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "5")),
                           None,BulletRef ({bulletRefLabel = "dummybit";},[]))]));
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"5")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "5")),
                           None,BulletRef ({bulletRefLabel = "pillarbit";},[]));
                        Repeat
-                         (Times "17",
+                         (Times (numExpr "17"),
                           Action
                             ({actionLabel = None;},
                              [Fire
                                 ({fireLabel = None;},
                                  Some
-                                   (Direction (Some {directionType = DirectionType.Sequence;},"5")),
+                                   (Direction (Some {directionType = DirectionType.Sequence;},numExpr "5")),
                                  None,BulletRef ({bulletRefLabel = "dummybit";},[]))]))]));
-                Wait "120";
+                Wait (numExpr "120");
                 Repeat
-                  (Times "140",
+                  (Times (numExpr "140"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
-                          Some (Speed (None,"0.2")),
-                          BulletRef ({bulletRefLabel = "weak";},["240"])); Wait "2"]));
+                               (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
+                          Some (Speed (None,numExpr "0.2")),
+                          BulletRef ({bulletRefLabel = "weak";},["240"])); Wait (numExpr "2")]));
                 Repeat
-                  (Times "70",
+                  (Times (numExpr "70"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
-                          Some (Speed (None,"2.0")),
+                               (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
+                          Some (Speed (None,numExpr "2.0")),
                           BulletRef ({bulletRefLabel = "weak";},["24"]));
                        Repeat
-                         (Times "4",
+                         (Times (numExpr "4"),
                           Action
                             ({actionLabel = None;},
                              [Fire
                                 ({fireLabel = None;},
                                  Some
-                                   (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-                                 Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.2")),
+                                   (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+                                 Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.2")),
                                  BulletRef ({bulletRefLabel = "weak";},["24"]))]));
-                       Wait "2"])); Vanish])]);
+                       Wait (numExpr "2")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "pillarbit";},None,Some (Speed (None,"0.6")),
+          ({bulletLabel = Some "pillarbit";},None,Some (Speed (None,numExpr "0.6")),
            [Action
               ({actionLabel = None;},
-               [Wait "120"; ChangeSpeed (Speed (None,"0.001"),Term "1"); Wait "120";
+               [Wait (numExpr "120"); ChangeSpeed (Speed (None,numExpr "0.001"),Term (numExpr "1")); Wait (numExpr "120");
                 Repeat
-                  (Times "300 / (35 - 33 * $rank)",
+                  (Times (numExpr "300 / (35 - 33 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Repeat
-                         (Times "10",
+                         (Times (numExpr "10"),
                           Action
                             ({actionLabel = None;},
                              [Fire
@@ -109,40 +109,40 @@ module Original =
                                  Some
                                    (Direction
                                       (Some {directionType = DirectionType.Absolute;},
-                                       "360 * $rand")),Some (Speed (None,"2.0")),
+                                       numExpr "360 * $rand")),Some (Speed (None,numExpr "2.0")),
                                  BulletRef ({bulletRefLabel = "weak";},["15"]))]));
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Relative;},"-45 + 90 * $rand")),
+                               (Some {directionType = DirectionType.Relative;},numExpr "-45 + 90 * $rand")),
                           Some
                             (Speed
-                               (None,"(2.5 + 1.0 * $rand) * (0.25 + 0.75 * $rank)")),
+                               (None,numExpr "(2.5 + 1.0 * $rand) * (0.25 + 0.75 * $rank)")),
                           Bullet ({bulletLabel = None;},None,None,[]));
-                       Wait "35 - 33 * $rank"])); Vanish])]);
+                       Wait (numExpr "35 - 33 * $rank")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "dummybit";},None,Some (Speed (None,"0.6")),
+          ({bulletLabel = Some "dummybit";},None,Some (Speed (None,numExpr "0.6")),
            [Action
               ({actionLabel = None;},
-               [Wait "120"; ChangeSpeed (Speed (None,"0.001"),Term "1"); Wait "120";
+               [Wait (numExpr "120"); ChangeSpeed (Speed (None,numExpr "0.001"),Term (numExpr "1")); Wait (numExpr "120");
                 Repeat
-                  (Times "300 / (35 - 33 * $rank)",
+                  (Times (numExpr "300 / (35 - 33 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Relative;},"-45 + 90 * $rand")),
+                               (Some {directionType = DirectionType.Relative;},numExpr "-45 + 90 * $rand")),
                           Some
                             (Speed
-                               (None,"(2.5 + 1.0 * $rand) * (0.25 + 0.75 * $rank)")),
+                               (None,numExpr "(2.5 + 1.0 * $rand) * (0.25 + 0.75 * $rank)")),
                           Bullet ({bulletLabel = None;},None,None,[]));
-                       Wait "35 - 33 * $rank"])); Vanish])]);
+                       Wait (numExpr "35 - 33 * $rank")])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "weak";},None,None,
-           [Action ({actionLabel = None;},[Wait "$1"; Vanish])])])
+           [Action ({actionLabel = None;},[Wait (numExpr "$1"); Vanish])])])
 
   /// 大原さんのオリジナル、風の精 by 白い弾幕くん
   /// [Original]_air_elemental.xml
@@ -157,224 +157,224 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "parentbit";},[])); Wait "650"]);
+               BulletRef ({bulletRefLabel = "parentbit";},[])); Wait (numExpr "650")]);
         BulletmlElm.Action
           ({actionLabel = Some "slash";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
-               Some (Speed (None,"0.22")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
+               Some (Speed (None,numExpr "0.22")),
                BulletRef ({bulletRefLabel = "spiralbit";},["150"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"120")),
-               Some (Speed (None,"0.22")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "120")),
+               Some (Speed (None,numExpr "0.22")),
                BulletRef ({bulletRefLabel = "spiralbit";},["150"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"120")),
-               Some (Speed (None,"0.22")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "120")),
+               Some (Speed (None,numExpr "0.22")),
                BulletRef ({bulletRefLabel = "spiralbit";},["150"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"180")),
-               Some (Speed (None,"0.2")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "180")),
+               Some (Speed (None,numExpr "0.2")),
                BulletRef ({bulletRefLabel = "spiralbit";},["120"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"120")),
-               Some (Speed (None,"0.2")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "120")),
+               Some (Speed (None,numExpr "0.2")),
                BulletRef ({bulletRefLabel = "spiralbit";},["120"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"120")),
-               Some (Speed (None,"0.2")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "120")),
+               Some (Speed (None,numExpr "0.2")),
                BulletRef ({bulletRefLabel = "spiralbit";},["120"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"150")),
-               Some (Speed (None,"0.17")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "150")),
+               Some (Speed (None,numExpr "0.17")),
                BulletRef ({bulletRefLabel = "spiralbit";},["-150"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"120")),
-               Some (Speed (None,"0.17")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "120")),
+               Some (Speed (None,numExpr "0.17")),
                BulletRef ({bulletRefLabel = "spiralbit";},["-150"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"120")),
-               Some (Speed (None,"0.17")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "120")),
+               Some (Speed (None,numExpr "0.17")),
                BulletRef ({bulletRefLabel = "spiralbit";},["-150"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"180")),
-               Some (Speed (None,"0.25")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "180")),
+               Some (Speed (None,numExpr "0.25")),
                BulletRef ({bulletRefLabel = "spiralbit";},["-120"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"120")),
-               Some (Speed (None,"0.25")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "120")),
+               Some (Speed (None,numExpr "0.25")),
                BulletRef ({bulletRefLabel = "spiralbit";},["-120"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"120")),
-               Some (Speed (None,"0.25")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "120")),
+               Some (Speed (None,numExpr "0.25")),
                BulletRef ({bulletRefLabel = "spiralbit";},["-120"]));
             Repeat
-              (Times "18",
+              (Times (numExpr "18"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                      Some (Speed (Some {speedType = SpeedType.Absolute;},"1.0")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                      Some (Speed (Some {speedType = SpeedType.Absolute;},numExpr "1.0")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.1")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.1")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.1")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                      Some (Speed (Some {speedType = SpeedType.Absolute;},"1.0")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                      Some (Speed (Some {speedType = SpeedType.Absolute;},numExpr "1.0")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.3")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.3")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.1")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.1")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.1")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "parentbit";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"170 + 20 * $rand")),
-           Some (Speed (None,"1.8")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "170 + 20 * $rand")),
+           Some (Speed (None,numExpr "1.8")),
            [Action
               ({actionLabel = None;},
-               [Wait "40"; ChangeSpeed (Speed (None,"0.0001"),Term "1"); Wait "5";
+               [Wait (numExpr "40"); ChangeSpeed (Speed (None,numExpr "0.0001"),Term (numExpr "1")); Wait (numExpr "5");
                 Action.ActionRef ({actionRefLabel = "arrow";},[]);
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
-                      [Wait "5"; ChangeSpeed (Speed (None,"1.8"),Term "1");
+                      [Wait (numExpr "5"); ChangeSpeed (Speed (None,numExpr "1.8"),Term (numExpr "1"));
                        ChangeDirection
                          (Direction
-                            (Some {directionType = DirectionType.Relative;},"170 + 20 * $rand"),
-                          Term "1"); Wait "40";
-                       ChangeSpeed (Speed (None,"0.0001"),Term "1"); Wait "5";
-                       Action.ActionRef ({actionRefLabel = "arrow";},[])])); Wait "80";
-                ChangeSpeed (Speed (None,"1.8"),Term "1");
+                            (Some {directionType = DirectionType.Relative;},numExpr "170 + 20 * $rand"),
+                          Term (numExpr "1")); Wait (numExpr "40");
+                       ChangeSpeed (Speed (None,numExpr "0.0001"),Term (numExpr "1")); Wait (numExpr "5");
+                       Action.ActionRef ({actionRefLabel = "arrow";},[])])); Wait (numExpr "80");
+                ChangeSpeed (Speed (None,numExpr "1.8"),Term (numExpr "1"));
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Relative;},"170 + 20 * $rand"),
-                   Term "1"); Wait "40";
-                ChangeSpeed (Speed (None,"0.0001"),Term "1"); Wait "5";
-                Action.ActionRef ({actionRefLabel = "slash";},[]); Wait "150";
-                ChangeSpeed (Speed (None,"1.8"),Term "1");
+                  (Direction (Some {directionType = DirectionType.Relative;},numExpr "170 + 20 * $rand"),
+                   Term (numExpr "1")); Wait (numExpr "40");
+                ChangeSpeed (Speed (None,numExpr "0.0001"),Term (numExpr "1")); Wait (numExpr "5");
+                Action.ActionRef ({actionRefLabel = "slash";},[]); Wait (numExpr "150");
+                ChangeSpeed (Speed (None,numExpr "1.8"),Term (numExpr "1"));
                 ChangeDirection
-                  (Direction (Some {directionType = Aim;},"-30 + 60 * $rand"),
-                   Term "1"); Wait "15";
-                ChangeSpeed (Speed (None,"0.0001"),Term "1"); Wait "5";
+                  (Direction (Some {directionType = Aim;},numExpr "-30 + 60 * $rand"),
+                   Term (numExpr "1")); Wait (numExpr "15");
+                ChangeSpeed (Speed (None,numExpr "0.0001"),Term (numExpr "1")); Wait (numExpr "5");
                 Action.ActionRef ({actionRefLabel = "slash";},[]); Vanish])]);
         BulletmlElm.Action
           ({actionLabel = Some "arrow";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"0")),
-               Some (Speed (Some {speedType = SpeedType.Absolute;},"1.3")),
+               Some (Direction (Some {directionType = Aim;},numExpr "0")),
+               Some (Speed (Some {speedType = SpeedType.Absolute;},numExpr "1.3")),
                Bullet ({bulletLabel = None;},None,None,[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-               Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.1")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+               Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
                Bullet ({bulletLabel = None;},None,None,[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"-3")),
-               Some (Speed (Some {speedType = SpeedType.Sequence;},"0.0")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-3")),
+               Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.0")),
                Bullet ({bulletLabel = None;},None,None,[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"6")),
-               Some (Speed (Some {speedType = SpeedType.Sequence;},"0.0")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "6")),
+               Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.0")),
                Bullet ({bulletLabel = None;},None,None,[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"-3")),
-               Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.1")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-3")),
+               Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
                Bullet ({bulletLabel = None;},None,None,[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-               Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.1")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+               Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
                Bullet ({bulletLabel = None;},None,None,[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-               Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.1")),
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+               Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.1")),
                Bullet ({bulletLabel = None;},None,None,[]))]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "spiralbit";},None,None,
            [Action
               ({actionLabel = None;},
                [ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Relative;},"$1"),Term "90");
+                  (Direction (Some {directionType = DirectionType.Relative;},numExpr "$1"),Term (numExpr "90"));
                 Repeat
-                  (Times "2 + 6 * $rank",
+                  (Times (numExpr "2 + 6 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
                           None,BulletRef ({bulletRefLabel = "spiral";},["-$1"]));
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"90")),
-                          Some (Speed (Some {speedType = SpeedType.Relative;},"0.6")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "90")),
+                          Some (Speed (Some {speedType = SpeedType.Relative;},numExpr "0.6")),
                           Bullet ({bulletLabel = None;},None,None,[]));
-                       Wait "10 - 7 * $rank";
+                       Wait (numExpr "10 - 7 * $rank");
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
                           None,BulletRef ({bulletRefLabel = "spiral";},["$1"]));
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"-90")),
-                          Some (Speed (Some {speedType = SpeedType.Relative;},"0.6")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-90")),
+                          Some (Speed (Some {speedType = SpeedType.Relative;},numExpr "0.6")),
                           Bullet ({bulletLabel = None;},None,None,[]));
-                       Wait "10 - 7 * $rank"])); Vanish])]);
+                       Wait (numExpr "10 - 7 * $rank")])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "spiral";},None,
-           Some (Speed (Some {speedType = SpeedType.Relative;},"0.8")),
+           Some (Speed (Some {speedType = SpeedType.Relative;},numExpr "0.8")),
            [Action
               ({actionLabel = None;},
-               [Wait "20";
+               [Wait (numExpr "20");
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Relative;},"$1"),Term "90")])])])
+                  (Direction (Some {directionType = DirectionType.Relative;},numExpr "$1"),Term (numExpr "90"))])])])
   
   /// オリジナル。後ろに弾を撃つ人々。 by 白い弾幕くん
   /// [Original]_backfire.xml
@@ -388,48 +388,48 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "5+$rank*10",
+              (Times (numExpr "5+$rank*10"),
                Action
                  ({actionLabel = None;},[FireRef ({fireRefLabel = "backFire";},[])]));
-            Wait "300"]);
+            Wait (numExpr "300")]);
         BulletmlElm.Fire
           ({fireLabel = Some "backFire";},
-           Some (Direction (None,"50-$rand*100")),
-           Some (Speed (None,"1.2")),
+           Some (Direction (None,numExpr "50-$rand*100")),
+           Some (Speed (None,numExpr "1.2")),
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
                  ({actionLabel = None;},
                   [Repeat
-                     (Times "10",
+                     (Times (numExpr "10"),
                       Action
                         ({actionLabel = None;},
                          [ChangeDirection
-                            (Direction (None,"150-$rand*300"),
-                             Term "30");
+                            (Direction (None,numExpr "150-$rand*300"),
+                             Term (numExpr "30"));
                           Repeat
-                            (Times "5",
+                            (Times (numExpr "5"),
                              Action
                                ({actionLabel = None;},
-                                [Wait "6";
+                                [Wait (numExpr "6");
                                  Fire
                                    ({fireLabel = None;},
                                     Some
                                       (Direction
-                                         (Some {directionType = DirectionType.Relative;},"180")),
-                                    Some (Speed (None,"1.2")),
+                                         (Some {directionType = DirectionType.Relative;},numExpr "180")),
+                                    Some (Speed (None,numExpr "1.2")),
                                     Bullet ({bulletLabel = None;},None,None,[]))]))]));
                    Repeat
-                     (Times "999",
+                     (Times (numExpr "999"),
                       Action
                         ({actionLabel = None;},
-                         [Wait "6";
+                         [Wait (numExpr "6");
                           Fire
                             ({fireLabel = None;},
                              Some
                                (Direction
-                                  (Some {directionType = DirectionType.Relative;},"180")),
-                             Some (Speed (None,"1.2")),
+                                  (Some {directionType = DirectionType.Relative;},numExpr "180")),
+                             Some (Speed (None,numExpr "1.2")),
                              Bullet ({bulletLabel = None;},None,None,[]))]))])]))])
 
   /// 大原さんのオリジナル、ふきだしボム by 白い弾幕くん
@@ -444,96 +444,96 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "3 + 17 * $rank",
+              (Times (numExpr "3 + 17 * $rank"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Absolute;},"120 + 120 * $rand")),
-                      Some (Speed (None,"1.0 + 0.3 * $rand")),
+                           (Some {directionType = DirectionType.Absolute;},numExpr "120 + 120 * $rand")),
+                      Some (Speed (None,numExpr "1.0 + 0.3 * $rand")),
                       BulletRef
                         ({bulletRefLabel = "balloon";},["0.6 + 1.2 * $rank"]));
-                   Wait "43 - 30 * $rank"])); Wait "200 - 100 * $rank"]);
+                   Wait (numExpr "43 - 30 * $rank")])); Wait (numExpr "200 - 100 * $rank")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "balloon";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "20"; ChangeSpeed (Speed (None,"0"),Term "1"); Wait "5";
+               [Wait (numExpr "20"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "5");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
-                   Some (Speed (None,"$1 * 0.88")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
+                   Some (Speed (None,numExpr "$1 * 0.88")),
                    BulletRef ({bulletRefLabel = "balloonbit";},["$1 * 0.88"]));
                 Repeat
-                  (Times "2",
+                  (Times (numExpr "2"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"120")),
-                          Some (Speed (None,"$1 * 0.88")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "120")),
+                          Some (Speed (None,numExpr "$1 * 0.88")),
                           BulletRef ({bulletRefLabel = "balloonbit";},["$1 * 0.88"]))]));
                 Repeat
-                  (Times "24",
+                  (Times (numExpr "24"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"15")),
-                          Some (Speed (None,"$1")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "15")),
+                          Some (Speed (None,numExpr "$1")),
                           BulletRef
                             ({bulletRefLabel = "curvebit";},["10"; "40"; "$1"]))]));
-                Wait "5";
+                Wait (numExpr "5");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                   Some (Speed (None,"$1")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                   Some (Speed (None,numExpr "$1")),
                    BulletRef ({bulletRefLabel = "curvebit";},["10"; "40"; "$1"]));
                 Repeat
-                  (Times "23",
+                  (Times (numExpr "23"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"15")),
-                          Some (Speed (None,"$1")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "15")),
+                          Some (Speed (None,numExpr "$1")),
                           BulletRef
                             ({bulletRefLabel = "curvebit";},["10"; "40"; "$1"]))]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-3")),
-                   Some (Speed (None,"$1 * 0.88")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-3")),
+                   Some (Speed (None,numExpr "$1 * 0.88")),
                    BulletRef ({bulletRefLabel = "balloonbit";},["$1 * 0.88"]));
                 Repeat
-                  (Times "2",
+                  (Times (numExpr "2"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"120")),
-                          Some (Speed (None,"$1 * 0.88")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "120")),
+                          Some (Speed (None,numExpr "$1 * 0.88")),
                           BulletRef ({bulletRefLabel = "balloonbit";},["$1 * 0.88"]))]));
                 Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "balloonbit";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "4";
+               [Wait (numExpr "4");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"-60")),
-                   Some (Speed (None,"$1")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-60")),
+                   Some (Speed (None,numExpr "$1")),
                    BulletRef ({bulletRefLabel = "curvebit";},["5"; "-50"; "$1"]));
                 Repeat
-                  (Times "9",
+                  (Times (numExpr "9"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"13")),
-                          Some (Speed (None,"$1")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "13")),
+                          Some (Speed (None,numExpr "$1")),
                           BulletRef
                             ({bulletRefLabel = "curvebit";},["5"; "-50"; "$1"]))]));
                 Vanish])]);
@@ -541,11 +541,11 @@ module Original =
           ({bulletLabel = Some "curvebit";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "$1";
+               [Wait (numExpr "$1");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"$2")),
-                   Some (Speed (None,"$3")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "$2")),
+                   Some (Speed (None,numExpr "$3")),
                    Bullet ({bulletLabel = None;},None,None,[])); Vanish])])])
 
   /// 大原さんのオリジナル、原点回帰その一 by 白い弾幕くん
@@ -560,59 +560,59 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "2",
+              (Times (numExpr "2"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "nway";},
-                         ["(8 + 28 * $rank * $rank)"; "0.4"; "0"])); Wait "20";
+                         ["(8 + 28 * $rank * $rank)"; "0.4"; "0"])); Wait (numExpr "20");
                    Fire
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "nway";},
                          ["(8 + 28 * $rank * $rank)"; "0.4";
-                          "(360 / (8 + 28 * $rank * $rank)) * (3/4)"])); Wait "20";
+                          "(360 / (8 + 28 * $rank * $rank)) * (3/4)"])); Wait (numExpr "20");
                    Fire
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "nway";},
                          ["(8 + 28 * $rank * $rank)"; "0.4";
-                          "(360 / (8 + 28 * $rank * $rank)) * (1/2)"])); Wait "20";
+                          "(360 / (8 + 28 * $rank * $rank)) * (1/2)"])); Wait (numExpr "20");
                    Fire
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "nway";},
                          ["(8 + 28 * $rank * $rank)"; "0.4";
-                          "(360 / (8 + 28 * $rank * $rank)) * (3/4)"])); Wait "20";
+                          "(360 / (8 + 28 * $rank * $rank)) * (3/4)"])); Wait (numExpr "20");
                    Fire
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "nway";},
                          ["(8 + 28 * $rank * $rank)"; "0.4";
-                          "(360 / (8 + 28 * $rank * $rank))"])); Wait "20";
+                          "(360 / (8 + 28 * $rank * $rank))"])); Wait (numExpr "20");
                    Fire
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "nway";},
                          ["(8 + 28 * $rank * $rank)"; "0.4";
-                          "(360 / (8 + 28 * $rank * $rank)) * (1/4)"])); Wait "20";
+                          "(360 / (8 + 28 * $rank * $rank)) * (1/4)"])); Wait (numExpr "20");
                    Fire
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "nway";},
                          ["(8 + 28 * $rank * $rank)"; "0.4";
-                          "(360 / (8 + 28 * $rank * $rank)) * (1/2)"])); Wait "20";
+                          "(360 / (8 + 28 * $rank * $rank)) * (1/2)"])); Wait (numExpr "20");
                    Fire
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "nway";},
                          ["(8 + 28 * $rank * $rank)"; "0.4";
-                          "(360 / (8 + 28 * $rank * $rank)) * (1/4)"])); Wait "20"]));
-            Wait "80";
+                          "(360 / (8 + 28 * $rank * $rank)) * (1/4)"])); Wait (numExpr "20")]));
+            Wait (numExpr "80");
             Repeat
-              (Times "10",
+              (Times (numExpr "10"),
                Action
                  ({actionLabel = None;},
                   [Fire
@@ -632,48 +632,48 @@ module Original =
                       BulletRef
                         ({bulletRefLabel = "nwayaim";},
                          ["(8 + 28 * $rank * $rank)"; "1.2 + 0.6 * $rank"; "0"]));
-                   Wait "30"])); Wait "60"]);
+                   Wait (numExpr "30")])); Wait (numExpr "60")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "nway";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"$3")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$3")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "$1",
+                  (Times (numExpr "$1"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Sequence;},"360 / $1")),
-                          Some (Speed (None,"$2")),
+                            (Direction (Some {directionType = DirectionType.Sequence;},numExpr "360 / $1")),
+                          Some (Speed (None,numExpr "$2")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "nwayaim";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = Aim;},"$3")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = Aim;},numExpr "$3")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "$1",
+                  (Times (numExpr "$1"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Sequence;},"360 / $1")),
-                          Some (Speed (None,"$2")),
+                            (Direction (Some {directionType = DirectionType.Sequence;},numExpr "360 / $1")),
+                          Some (Speed (None,numExpr "$2")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])])])
 
   /// 大原さんのオリジナル、原点回帰その二 by 白い弾幕くん
@@ -688,7 +688,7 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "280 / ((50 - 43 * $rank) * 4)",
+              (Times (numExpr "280 / ((50 - 43 * $rank) * 4)"),
                Action
                  ({actionLabel = None;},
                   [Fire
@@ -703,7 +703,7 @@ module Original =
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "vaim";},["-18"; "0.7 + 0.9 * $rank"]));
-                   Wait "(50 - 43 * $rank)";
+                   Wait (numExpr "(50 - 43 * $rank)");
                    Fire
                      ({fireLabel = None;},None,None,
                       BulletRef
@@ -731,7 +731,7 @@ module Original =
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "vabsolute";},
-                         ["300"; "0.7 + 0.9 * $rank"])); Wait "(50 - 43 * $rank)";
+                         ["300"; "0.7 + 0.9 * $rank"])); Wait (numExpr "(50 - 43 * $rank)");
                    Fire
                      ({fireLabel = None;},None,None,
                       BulletRef
@@ -744,7 +744,7 @@ module Original =
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "vaimrev";},["-18"; "0.7 + 0.9 * $rank"]));
-                   Wait "(50 - 43 * $rank)";
+                   Wait (numExpr "(50 - 43 * $rank)");
                    Fire
                      ({fireLabel = None;},None,None,
                       BulletRef
@@ -772,143 +772,143 @@ module Original =
                      ({fireLabel = None;},None,None,
                       BulletRef
                         ({bulletRefLabel = "vabsolute";},
-                         ["330"; "0.7 + 0.9 * $rank"])); Wait "(50 - 43 * $rank)"]));
-            Wait "60"]);
+                         ["330"; "0.7 + 0.9 * $rank"])); Wait (numExpr "(50 - 43 * $rank)")]));
+            Wait (numExpr "60")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "vaim";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = Aim;},"$1")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = Aim;},numExpr "$1")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
-                Wait "7 - 4 * $rank";
+                Wait (numExpr "7 - 4 * $rank");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"3")),
-                   Some (Speed (None,"$2")),
-                   Bullet ({bulletLabel = None;},None,None,[]));
-                Fire
-                  ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-6")),
-                   Some (Speed (None,"$2")),
-                   Bullet ({bulletLabel = None;},None,None,[]));
-                Wait "7 - 4 * $rank";
-                Fire
-                  ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"9")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "3")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-12")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-6")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
-                Wait "7 - 4 * $rank";
+                Wait (numExpr "7 - 4 * $rank");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"15")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "9")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-18")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-12")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
-                Wait "7 - 4 * $rank"; Vanish])]);
+                Wait (numExpr "7 - 4 * $rank");
+                Fire
+                  ({fireLabel = None;},
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "15")),
+                   Some (Speed (None,numExpr "$2")),
+                   Bullet ({bulletLabel = None;},None,None,[]));
+                Fire
+                  ({fireLabel = None;},
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-18")),
+                   Some (Speed (None,numExpr "$2")),
+                   Bullet ({bulletLabel = None;},None,None,[]));
+                Wait (numExpr "7 - 4 * $rank"); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "vaimrev";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = Aim;},"$1")),
-                   Some (Speed (None,"$2")),BulletRef ({bulletRefLabel = "red";},[]));
-                Wait "7 - 4 * $rank";
+                   Some (Direction (Some {directionType = Aim;},numExpr "$1")),
+                   Some (Speed (None,numExpr "$2")),BulletRef ({bulletRefLabel = "red";},[]));
+                Wait (numExpr "7 - 4 * $rank");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"3")),
-                   Some (Speed (None,"$2 * 1.1")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "3")),
+                   Some (Speed (None,numExpr "$2 * 1.1")),
                    BulletRef ({bulletRefLabel = "red";},[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-6")),
-                   Some (Speed (None,"$2 * 1.1")),
-                   BulletRef ({bulletRefLabel = "red";},[])); Wait "7 - 4 * $rank";
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-6")),
+                   Some (Speed (None,numExpr "$2 * 1.1")),
+                   BulletRef ({bulletRefLabel = "red";},[])); Wait (numExpr "7 - 4 * $rank");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"9")),
-                   Some (Speed (None,"$2 * 1.21")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "9")),
+                   Some (Speed (None,numExpr "$2 * 1.21")),
                    BulletRef ({bulletRefLabel = "red";},[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-12")),
-                   Some (Speed (None,"$2 * 1.21")),
-                   BulletRef ({bulletRefLabel = "red";},[])); Wait "7 - 4 * $rank";
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-12")),
+                   Some (Speed (None,numExpr "$2 * 1.21")),
+                   BulletRef ({bulletRefLabel = "red";},[])); Wait (numExpr "7 - 4 * $rank");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"15")),
-                   Some (Speed (None,"$2 * 1.331")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "15")),
+                   Some (Speed (None,numExpr "$2 * 1.331")),
                    BulletRef ({bulletRefLabel = "red";},[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-18")),
-                   Some (Speed (None,"$2 * 1.331")),
-                   BulletRef ({bulletRefLabel = "red";},[])); Wait "7 - 4 * $rank";
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-18")),
+                   Some (Speed (None,numExpr "$2 * 1.331")),
+                   BulletRef ({bulletRefLabel = "red";},[])); Wait (numExpr "7 - 4 * $rank");
                 Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "vabsolute";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"$1")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
-                Wait "7 - 4 * $rank";
+                Wait (numExpr "7 - 4 * $rank");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"3")),
-                   Some (Speed (None,"$2")),
-                   Bullet ({bulletLabel = None;},None,None,[]));
-                Fire
-                  ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-6")),
-                   Some (Speed (None,"$2")),
-                   Bullet ({bulletLabel = None;},None,None,[]));
-                Wait "7 - 4 * $rank";
-                Fire
-                  ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"9")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "3")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-12")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-6")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
-                Wait "7 - 4 * $rank";
+                Wait (numExpr "7 - 4 * $rank");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"15")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "9")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-18")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-12")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
-                Wait "7 - 4 * $rank"; Vanish])]);
+                Wait (numExpr "7 - 4 * $rank");
+                Fire
+                  ({fireLabel = None;},
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "15")),
+                   Some (Speed (None,numExpr "$2")),
+                   Bullet ({bulletLabel = None;},None,None,[]));
+                Fire
+                  ({fireLabel = None;},
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-18")),
+                   Some (Speed (None,numExpr "$2")),
+                   Bullet ({bulletLabel = None;},None,None,[]));
+                Wait (numExpr "7 - 4 * $rank"); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "red";},None,None,
-           [Action ({actionLabel = None;},[Wait "1000"; Vanish])])])
+           [Action ({actionLabel = None;},[Wait (numExpr "1000"); Vanish])])])
 
   /// 大原さんのオリジナル、原点回帰その三 by 白い弾幕くん
   /// [Original]_btb_3.xml
@@ -927,25 +927,25 @@ module Original =
             Fire
               ({fireLabel = None;},None,None,
                BulletRef ({bulletRefLabel = "half";},["-1"]));
-            Wait "90 + 100 / (5 - 4 * $rank)"]);
+            Wait (numExpr "90 + 100 / (5 - 4 * $rank)")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "half";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
                    Some
                      (Direction
-                        (Some {directionType = DirectionType.Absolute;},"4 * (5 - 4 * $rank) * $1")),
-                   None,BulletRef ({bulletRefLabel = "laser";},["0.8"])); Wait "1";
+                        (Some {directionType = DirectionType.Absolute;},numExpr "4 * (5 - 4 * $rank) * $1")),
+                   None,BulletRef ({bulletRefLabel = "laser";},["0.8"])); Wait (numExpr "1");
                 Repeat
-                  (Times "30 / (5 - 4 * $rank)",
+                  (Times (numExpr "30 / (5 - 4 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Repeat
-                         (Times "2",
+                         (Times (numExpr "2"),
                           Action
                             ({actionLabel = None;},
                              [Fire
@@ -953,19 +953,19 @@ module Original =
                                  Some
                                    (Direction
                                       (Some {directionType = DirectionType.Sequence;},
-                                       "6 * (5 - 4 * $rank) * $1")),None,
+                                       numExpr "6 * (5 - 4 * $rank) * $1")),None,
                                  BulletRef ({bulletRefLabel = "laser";},["0.8"]))]));
-                       Wait "1"]));
+                       Wait (numExpr "1")]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = Aim;},"0")),None,
-                   BulletRef ({bulletRefLabel = "laser";},["0.9"])); Wait "1";
+                   Some (Direction (Some {directionType = Aim;},numExpr "0")),None,
+                   BulletRef ({bulletRefLabel = "laser";},["0.9"])); Wait (numExpr "1");
                 Repeat
-                  (Times "30 / (5 - 4 * $rank)",
+                  (Times (numExpr "30 / (5 - 4 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Repeat
-                         (Times "2",
+                         (Times (numExpr "2"),
                           Action
                             ({actionLabel = None;},
                              [Fire
@@ -973,19 +973,19 @@ module Original =
                                  Some
                                    (Direction
                                       (Some {directionType = DirectionType.Sequence;},
-                                       "6 * (5 - 4 * $rank) * $1")),None,
+                                       numExpr "6 * (5 - 4 * $rank) * $1")),None,
                                  BulletRef ({bulletRefLabel = "laser";},["0.9"]))]));
-                       Wait "1"]));
+                       Wait (numExpr "1")]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"11 * $1")),
-                   None,BulletRef ({bulletRefLabel = "laser";},["1.2"])); Wait "1";
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "11 * $1")),
+                   None,BulletRef ({bulletRefLabel = "laser";},["1.2"])); Wait (numExpr "1");
                 Repeat
-                  (Times "30 / (5 - 4 * $rank)",
+                  (Times (numExpr "30 / (5 - 4 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Repeat
-                         (Times "2",
+                         (Times (numExpr "2"),
                           Action
                             ({actionLabel = None;},
                              [Fire
@@ -993,29 +993,29 @@ module Original =
                                  Some
                                    (Direction
                                       (Some {directionType = DirectionType.Sequence;},
-                                       "6 * (5 - 4 * $rank) * $1")),None,
+                                       numExpr "6 * (5 - 4 * $rank) * $1")),None,
                                  BulletRef ({bulletRefLabel = "laser";},["1.2"]))]));
-                       Wait "1"])); Vanish])]);
+                       Wait (numExpr "1")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "laser";},None,Some (Speed (None,"0.01")),
+          ({bulletLabel = Some "laser";},None,Some (Speed (None,numExpr "0.01")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1")),
-                   Bullet ({bulletLabel = None;},None,None,[])); Wait "3";
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1")),
+                   Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "3");
                 Repeat
-                  (Times "4",
+                  (Times (numExpr "4"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Sequence;},"2.5 - 2.0 * $rank")),
-                          Some (Speed (None,"$1")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "3"]));
+                               (Some {directionType = DirectionType.Sequence;},numExpr "2.5 - 2.0 * $rank")),
+                          Some (Speed (None,numExpr "$1")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "3")]));
                 Vanish])])])
 
   /// 大原さんのオリジナル、原点回帰その四 by 白い弾幕くん
@@ -1033,24 +1033,24 @@ module Original =
               ({fireLabel = None;},None,None,
                BulletRef
                  ({bulletRefLabel = "dummy";},
-                  ["8 + 28 * $rank"; "0.6 + 0.9 * $rank"])); Wait "440 - 90 * $rank"]);
+                  ["8 + 28 * $rank"; "0.6 + 0.9 * $rank"])); Wait (numExpr "440 - 90 * $rank")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "dummy";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "12",
+                  (Times (numExpr "12"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},None,None,
                           BulletRef
                             ({bulletRefLabel = "nwayabsolute";},["$1"; "$2"; "0"]));
-                       Wait "3";
+                       Wait (numExpr "3");
                        Repeat
-                         (Times "2 + 3 * $rank",
+                         (Times (numExpr "2 + 3 * $rank"),
                           Action
                             ({actionLabel = None;},
                              [Fire
@@ -1058,14 +1058,14 @@ module Original =
                                  BulletRef
                                    ({bulletRefLabel = "nwayabsolute";},
                                     ["$1 / 3"; "$2 * (0.9 + 0.4 * $rand)";
-                                     "(360 / 12)"]))])); Wait "3";
+                                     "(360 / 12)"]))])); Wait (numExpr "3");
                        Fire
                          ({fireLabel = None;},None,None,
                           BulletRef
                             ({bulletRefLabel = "nwayabsolute";},
-                             ["$1"; "$2"; "(360 / 36) * (1/4)"])); Wait "3";
+                             ["$1"; "$2"; "(360 / 36) * (1/4)"])); Wait (numExpr "3");
                        Repeat
-                         (Times "2 + 3 * $rank",
+                         (Times (numExpr "2 + 3 * $rank"),
                           Action
                             ({actionLabel = None;},
                              [Fire
@@ -1073,14 +1073,14 @@ module Original =
                                  BulletRef
                                    ({bulletRefLabel = "nwayabsolute";},
                                     ["$1 / 3"; "$2 * (0.9 + 0.4 * $rand)";
-                                     "(360 / 12) * (3/4)"]))])); Wait "3";
+                                     "(360 / 12) * (3/4)"]))])); Wait (numExpr "3");
                        Fire
                          ({fireLabel = None;},None,None,
                           BulletRef
                             ({bulletRefLabel = "nwayabsolute";},
-                             ["$1"; "$2"; "(360 / 36) * (1/2)"])); Wait "3";
+                             ["$1"; "$2"; "(360 / 36) * (1/2)"])); Wait (numExpr "3");
                        Repeat
-                         (Times "2 + 3 * $rank",
+                         (Times (numExpr "2 + 3 * $rank"),
                           Action
                             ({actionLabel = None;},
                              [Fire
@@ -1088,14 +1088,14 @@ module Original =
                                  BulletRef
                                    ({bulletRefLabel = "nwayabsolute";},
                                     ["$1 / 3"; "$2 * (0.9 + 0.4 * $rand)";
-                                     "(360 / 12) * (1/2)"]))])); Wait "3";
+                                     "(360 / 12) * (1/2)"]))])); Wait (numExpr "3");
                        Fire
                          ({fireLabel = None;},None,None,
                           BulletRef
                             ({bulletRefLabel = "nwayabsolute";},
-                             ["$1"; "$2"; "(360 / 36) * (3/4)"])); Wait "3";
+                             ["$1"; "$2"; "(360 / 36) * (3/4)"])); Wait (numExpr "3");
                        Repeat
-                         (Times "2 + 3 * $rank",
+                         (Times (numExpr "2 + 3 * $rank"),
                           Action
                             ({actionLabel = None;},
                              [Fire
@@ -1103,28 +1103,28 @@ module Original =
                                  BulletRef
                                    ({bulletRefLabel = "nwayabsolute";},
                                     ["$1 / 3"; "$2 * (0.9 + 0.4 * $rand)";
-                                     "(360 / 12) * (1/4)"]))])); Wait "3"])); Vanish])]);
+                                     "(360 / 12) * (1/4)"]))])); Wait (numExpr "3")])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "nwayabsolute";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"$3")),
-                   Some (Speed (None,"$2")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$3")),
+                   Some (Speed (None,numExpr "$2")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "$1",
+                  (Times (numExpr "$1"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Sequence;},"(360 / $1) + (3 + 12 * (1 - $rank) * (1 - $rank)) * (-1 + 2 * $rand)")),
-                          Some (Speed (None,"$2")),
+                               (Some {directionType = DirectionType.Sequence;},numExpr "(360 / $1) + (3 + 12 * (1 - $rank) * (1 - $rank)) * (-1 + 2 * $rand)")),
+                          Some (Speed (None,numExpr "$2")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])])])
 
   /// 大原さんのオリジナル、原点回帰その五 by 白い弾幕くん
@@ -1140,69 +1140,69 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "dummy";},["72 * $rand"])); Wait "880"]);
+               BulletRef ({bulletRefLabel = "dummy";},["72 * $rand"])); Wait (numExpr "880")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "dummy";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"$1")),None,
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),None,
                    BulletRef ({bulletRefLabel = "winder";},["2.0"]));
                 Repeat
-                  (Times "4",
+                  (Times (numExpr "4"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"72")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "72")),
                           None,BulletRef ({bulletRefLabel = "winder";},["2.0"]))]));
-                Wait "420";
+                Wait (numExpr "420");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"$1 + 96")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1 + 96")),
                    None,
                    BulletRef ({bulletRefLabel = "shotgun";},["1.0 + 1.0 * $rank"]));
                 Repeat
-                  (Times "4",
+                  (Times (numExpr "4"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"72")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "72")),
                           None,
                           BulletRef
                             ({bulletRefLabel = "shotgun";},["1.0 + 1.0 * $rank"]))]));
-                Wait "350";
+                Wait (numExpr "350");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"$1 - 24")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1 - 24")),
                    None,
                    BulletRef ({bulletRefLabel = "shotgun";},["1.0 + 1.0 * $rank"]));
                 Repeat
-                  (Times "4",
+                  (Times (numExpr "4"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"72")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "72")),
                           None,
                           BulletRef
                             ({bulletRefLabel = "shotgun";},["1.0 + 1.0 * $rank"]))]));
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "shotgun";},None,Some (Speed (None,"0.001")),
+          ({bulletLabel = Some "shotgun";},None,Some (Speed (None,numExpr "0.001")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"-34")),
-                   Some (Speed (None,"$1 * 0.93")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-34")),
+                   Some (Speed (None,numExpr "$1 * 0.93")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "68 / (12 - 10 * $rank * $rank)",
+                  (Times (numExpr "68 / (12 - 10 * $rank * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Fire
@@ -1210,16 +1210,16 @@ module Original =
                           Some
                             (Direction
                                (Some {directionType = DirectionType.Sequence;},
-                                "12 - 10 * $rank * $rank")),
-                          Some (Speed (None,"$1 * 0.93")),
-                          Bullet ({bulletLabel = None;},None,None,[]))])); Wait "5";
+                                numExpr "12 - 10 * $rank * $rank")),
+                          Some (Speed (None,numExpr "$1 * 0.93")),
+                          Bullet ({bulletLabel = None;},None,None,[]))])); Wait (numExpr "5");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-1")),
-                   Some (Speed (None,"$1")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-1")),
+                   Some (Speed (None,numExpr "$1")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "66 / (12 - 10 * $rank * $rank)",
+                  (Times (numExpr "66 / (12 - 10 * $rank * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Fire
@@ -1227,100 +1227,100 @@ module Original =
                           Some
                             (Direction
                                (Some {directionType = DirectionType.Sequence;},
-                                "-(12 - 10 * $rank * $rank)")),
-                          Some (Speed (None,"$1")),
+                                numExpr "-(12 - 10 * $rank * $rank)")),
+                          Some (Speed (None,numExpr "$1")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "winder";},None,Some (Speed (None,"0.001")),
+          ({bulletLabel = Some "winder";},None,Some (Speed (None,numExpr "0.001")),
            [Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "10",
+                  (Times (numExpr "10"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
                           None,BulletRef ({bulletRefLabel = "laser";},["$1"]));
-                       Wait "14"]));
+                       Wait (numExpr "14")]));
                 Repeat
-                  (Times "15",
+                  (Times (numExpr "15"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"4")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "4")),
                           None,BulletRef ({bulletRefLabel = "laser";},["$1"]));
-                       Wait "14"]));
+                       Wait (numExpr "14")]));
                 Repeat
-                  (Times "10",
+                  (Times (numExpr "10"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
                           None,BulletRef ({bulletRefLabel = "laser";},["$1"]));
-                       Wait "14"]));
+                       Wait (numExpr "14")]));
                 Repeat
-                  (Times "15",
+                  (Times (numExpr "15"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"-8")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-8")),
                           None,BulletRef ({bulletRefLabel = "laser";},["$1"]));
-                       Wait "14"]));
+                       Wait (numExpr "14")]));
                 Repeat
-                  (Times "10",
+                  (Times (numExpr "10"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
                           None,BulletRef ({bulletRefLabel = "laser";},["$1"]));
-                       Wait "14"])); Vanish])]);
+                       Wait (numExpr "14")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "laser";},None,Some (Speed (None,"0.01")),
+          ({bulletLabel = Some "laser";},None,Some (Speed (None,numExpr "0.01")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"1")),
-                   Some (Speed (None,"$1")),
-                   Bullet ({bulletLabel = None;},None,None,[])); Wait "1";
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "1")),
+                   Some (Speed (None,numExpr "$1")),
+                   Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1");
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"2")),
-                          Some (Speed (None,"$1")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "1";
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "2")),
+                          Some (Speed (None,numExpr "$1")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1");
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"-2")),
-                          Some (Speed (None,"$1")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "1"]));
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-2")),
+                          Some (Speed (None,numExpr "$1")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1")]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"-2")),
-                   Some (Speed (None,"$1")),
-                   Bullet ({bulletLabel = None;},None,None,[])); Wait "1";
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-2")),
+                   Some (Speed (None,numExpr "$1")),
+                   Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1");
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"-2")),
-                          Some (Speed (None,"$1")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "1";
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-2")),
+                          Some (Speed (None,numExpr "$1")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1");
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"2")),
-                          Some (Speed (None,"$1")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "1"]));
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "2")),
+                          Some (Speed (None,numExpr "$1")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1")]));
                 Vanish])])])
 
   /// 大原さんのオリジナル、原点回帰その六 by 白い弾幕くん
@@ -1383,11 +1383,11 @@ module Original =
             Fire
               ({fireLabel = None;},None,None,
                BulletRef ({bulletRefLabel = "halfwinder";},["1.8"; "2"; "0"; "7"]));
-            Wait "700"]);
+            Wait (numExpr "700")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "halfwinder";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
@@ -1400,48 +1400,48 @@ module Original =
                 Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "changecolor";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
-               [Wait "$2 * 2";
+               [Wait (numExpr "$2 * 2");
                 Fire
                   ({fireLabel = None;},None,None,
                    BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "$3"; "$4"]));
                 Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "bit";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"$3")),None,
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$3")),None,
                    BulletRef ({bulletRefLabel = "laser";},["$1"; "$2"]));
-                Wait "$2 * (15 - 9 * $rank)";
+                Wait (numExpr "$2 * (15 - 9 * $rank)");
                 Repeat
-                  (Times "300 / (15 - 9 * $rank)",
+                  (Times (numExpr "300 / (15 - 9 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"$4")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$4")),
                           None,BulletRef ({bulletRefLabel = "laser";},["$1"; "$2"]));
-                       Wait "$2 * (15 - 9 * $rank)"])); Vanish])]);
+                       Wait (numExpr "$2 * (15 - 9 * $rank)")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "laser";},None,Some (Speed (None,"0.01")),
+          ({bulletLabel = Some "laser";},None,Some (Speed (None,numExpr "0.01")),
            [Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "1 + 3 * $rank",
+                  (Times (numExpr "1 + 3 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                          Some (Speed (None,"$1 * (0.5 + 0.5 * $rank)")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "$2"]));
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                          Some (Speed (None,numExpr "$1 * (0.5 + 0.5 * $rank)")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "$2")]));
                 Vanish])])])
 
   /// 大原さんのオリジナル、検閲済 by 白い弾幕くん
@@ -1457,40 +1457,40 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"180")),
-               Some (Speed (None,"3.0")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+               Some (Speed (None,numExpr "3.0")),
                BulletRef ({bulletRefLabel = "center";},["0"]));
-            Wait "800 - 50 * $rank"]);
+            Wait (numExpr "800 - 50 * $rank")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "center";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "15";
+               [Wait (numExpr "15");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"-10 + $1")),
-                   Some (Speed (None,"2.0")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-10 + $1")),
+                   Some (Speed (None,numExpr "2.0")),
                    BulletRef ({bulletRefLabel = "arm";},[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"80 + $1")),
-                   Some (Speed (None,"2.0")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "80 + $1")),
+                   Some (Speed (None,numExpr "2.0")),
                    BulletRef ({bulletRefLabel = "arm";},[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"170 + $1")),
-                   Some (Speed (None,"2.0")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "170 + $1")),
+                   Some (Speed (None,numExpr "2.0")),
                    BulletRef ({bulletRefLabel = "arm";},[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"260 + $1")),
-                   Some (Speed (None,"2.0")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "260 + $1")),
+                   Some (Speed (None,numExpr "2.0")),
                    BulletRef ({bulletRefLabel = "arm";},[])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "arm";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "25"; ChangeSpeed (Speed (None,"0"),Term "1"); Wait "5";
+               [Wait (numExpr "25"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "5");
                 Fire
                   ({fireLabel = None;},None,None,
                    BulletRef ({bulletRefLabel = "halfwinder";},["330"; "-8"]));
@@ -1511,8 +1511,8 @@ module Original =
                    BulletRef ({bulletRefLabel = "halfwinder";},["30"; "8"])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "halfwinder";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
@@ -1524,36 +1524,36 @@ module Original =
                 Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "changecolor";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
-               [Wait "(62 - 50 * $rank)/3";
+               [Wait (numExpr "(62 - 50 * $rank)/3");
                 Fire
                   ({fireLabel = None;},None,None,
                    BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "bit";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"$1")),
-                   Some (Speed (None,"0.7 + 1.1 * $rank")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
+                   Some (Speed (None,numExpr "0.7 + 1.1 * $rank")),
                    Bullet ({bulletLabel = None;},None,None,[]));
-                Wait "62 - 50 * $rank";
+                Wait (numExpr "62 - 50 * $rank");
                 Repeat
-                  (Times "600 / (62 - 50 * $rank)",
+                  (Times (numExpr "600 / (62 - 50 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"$2")),
-                          Some (Speed (None,"0.7 + 1.1 * $rank")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$2")),
+                          Some (Speed (None,numExpr "0.7 + 1.1 * $rank")),
                           Bullet ({bulletLabel = None;},None,None,[]));
-                       Wait "62 - 50 * $rank"])); Vanish])])])
+                       Wait (numExpr "62 - 50 * $rank")])); Vanish])])])
 
   /// 大原さんのオリジナル、キメラ by 白い弾幕くん
   /// [Original]_chimera.xml
@@ -1568,51 +1568,51 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"0")),None,
-               BulletRef ({bulletRefLabel = "centerbit";},[])); Wait "450"]);
+               Some (Direction (Some {directionType = Aim;},numExpr "0")),None,
+               BulletRef ({bulletRefLabel = "centerbit";},[])); Wait (numExpr "450")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "centerbit";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"180")),
-           Some (Speed (None,"3.0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+           Some (Speed (None,numExpr "3.0")),
            [Action
               ({actionLabel = None;},
-               [Wait "40"; ChangeSpeed (Speed (None,"0.001"),Term "1"); Wait "5";
+               [Wait (numExpr "40"); ChangeSpeed (Speed (None,numExpr "0.001"),Term (numExpr "1")); Wait (numExpr "5");
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Absolute;},"160 + 40 * $rand"),
-                   Term "90");
+                  (Direction (Some {directionType = DirectionType.Absolute;},numExpr "160 + 40 * $rand"),
+                   Term (numExpr "90"));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"60")),None,
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "60")),None,
                    BulletRef ({bulletRefLabel = "sidebit";},["-40"]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"-60")),None,
-                   BulletRef ({bulletRefLabel = "sidebit";},["40"])); Wait "90";
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-60")),None,
+                   BulletRef ({bulletRefLabel = "sidebit";},["40"])); Wait (numExpr "90");
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
                       [ChangeDirection
-                         (Direction (Some {directionType = Aim;},"170 + 20 * $rand"),
-                          Term "1"); ChangeSpeed (Speed (None,"0.85"),Term "1");
-                       Wait "40"; ChangeSpeed (Speed (None,"0.001"),Term "1");
-                       Wait "5";
+                         (Direction (Some {directionType = Aim;},numExpr "170 + 20 * $rand"),
+                          Term (numExpr "1")); ChangeSpeed (Speed (None,numExpr "0.85"),Term (numExpr "1"));
+                       Wait (numExpr "40"); ChangeSpeed (Speed (None,numExpr "0.001"),Term (numExpr "1"));
+                       Wait (numExpr "5");
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = Aim;},"60")),None,
+                          Some (Direction (Some {directionType = Aim;},numExpr "60")),None,
                           BulletRef ({bulletRefLabel = "sidebit";},["-40"]));
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = Aim;},"-60")),None,
+                          Some (Direction (Some {directionType = Aim;},numExpr "-60")),None,
                           BulletRef ({bulletRefLabel = "sidebit";},["40"]));
-                       Wait "45"])); Vanish])]);
+                       Wait (numExpr "45")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "sidebit";},None,Some (Speed (None,"0.5")),
+          ({bulletLabel = Some "sidebit";},None,Some (Speed (None,numExpr "0.5")),
            [Action
               ({actionLabel = None;},
-               [Wait "30"; ChangeSpeed (Speed (None,"0.001"),Term "1"); Wait "5";
+               [Wait (numExpr "30"); ChangeSpeed (Speed (None,numExpr "0.001"),Term (numExpr "1")); Wait (numExpr "5");
                 Repeat
-                  (Times "30 + 220 * $rank * $rank",
+                  (Times (numExpr "30 + 220 * $rank * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
@@ -1620,8 +1620,8 @@ module Original =
                           Some
                             (Direction
                                (Some {directionType = DirectionType.Relative;},
-                                "$1 - 45 + 90 * $rand")),
-                          Some (Speed (None,"3.5 + 1.0 * $rand")),
+                                numExpr "$1 - 45 + 90 * $rand")),
+                          Some (Speed (None,numExpr "3.5 + 1.0 * $rand")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])])])
 
   /// オリジナル、円を描きながらの自機狙い3way by 白い弾幕くん
@@ -1637,37 +1637,37 @@ module Original =
           ({actionLabel = Some "5sp";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"$1")),
-               Some (Speed (None,"1")),Bullet ({bulletLabel = None;},None,None,[]));
+               Some (Direction (Some {directionType = Aim;},numExpr "$1")),
+               Some (Speed (None,numExpr "1")),Bullet ({bulletLabel = None;},None,None,[]));
             Repeat
-              (Times "3",
+              (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},None,
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"0.4")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.4")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Fire
           ({fireLabel = Some "maru";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"90")),
-           Some (Speed (None,"4")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
+           Some (Speed (None,numExpr "4")),
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
                  ({actionLabel = None;},
                   [ChangeDirection
-                     (Direction (Some {directionType = DirectionType.Sequence;},"4"),Term "1000");
+                     (Direction (Some {directionType = DirectionType.Sequence;},numExpr "4"),Term (numExpr "1000"));
                    Repeat
-                     (Times "90",
+                     (Times (numExpr "90"),
                       Action
                         ({actionLabel = None;},
                          [Action.ActionRef ({actionRefLabel = "5sp";},["0"]);
                           Action.ActionRef ({actionRefLabel = "5sp";},["70-$rank*40"]);
                           Action.ActionRef ({actionRefLabel = "5sp";},["-70+$rank*40"]);
-                          Wait "3"])); Vanish])]));
+                          Wait (numExpr "3")])); Vanish])]));
         BulletmlElm.Action
           ({actionLabel = Some "top";},
-           [FireRef ({fireRefLabel = "maru";},[]); Wait "320"])])
+           [FireRef ({fireRefLabel = "maru";},[]); Wait (numExpr "320")])])
 
   /// オリジナル、どかんと一発 by 白い弾幕くん         
   /// [Original]_dokkaan.xml
@@ -1681,13 +1681,13 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "200+200*$rank",
+              (Times (numExpr "200+200*$rank"),
                Action
                  ({actionLabel = None;},
                   [Fire
-                     ({fireLabel = None;},Some (Direction (None,"120*$rand-60")),
-                      Some (Speed (None,"0.5+$rand*2")),
-                      Bullet ({bulletLabel = None;},None,None,[]))])); Wait "150"])])
+                     ({fireLabel = None;},Some (Direction (None,numExpr "120*$rand-60")),
+                      Some (Speed (None,numExpr "0.5+$rand*2")),
+                      Bullet ({bulletLabel = None;},None,None,[]))])); Wait (numExpr "150")])])
 
 
 
@@ -1705,157 +1705,157 @@ module Original =
            [Fire
               ({fireLabel = None;},
                Some
-                 (Direction (Some {directionType = DirectionType.Absolute;},"215 + 20 * $rand")),
-               Some (Speed (None,"2.0")),
+                 (Direction (Some {directionType = DirectionType.Absolute;},numExpr "215 + 20 * $rand")),
+               Some (Speed (None,numExpr "2.0")),
                BulletRef
                  ({bulletRefLabel = "bit";},
                   ["0.8"; "1.4 * (0.5 + 0.5 * $rank)"; "30 - 20 * $rank"]));
-            Wait "40";
+            Wait (numExpr "40");
             Fire
               ({fireLabel = None;},
                Some
-                 (Direction (Some {directionType = DirectionType.Absolute;},"145 - 20 * $rand")),
-               Some (Speed (None,"2.0")),
+                 (Direction (Some {directionType = DirectionType.Absolute;},numExpr "145 - 20 * $rand")),
+               Some (Speed (None,numExpr "2.0")),
                BulletRef
                  ({bulletRefLabel = "bit";},
                   ["0.8"; "1.4 * (0.5 + 0.5 * $rank)"; "30 - 20 * $rank"]));
-            Wait "40";
+            Wait (numExpr "40");
             Fire
               ({fireLabel = None;},
                Some
-                 (Direction (Some {directionType = DirectionType.Absolute;},"170 + 20 * $rand")),
-               Some (Speed (None,"2.0")),
+                 (Direction (Some {directionType = DirectionType.Absolute;},numExpr "170 + 20 * $rand")),
+               Some (Speed (None,numExpr "2.0")),
                BulletRef
                  ({bulletRefLabel = "bit";},
                   ["0.8"; "1.4 * (0.5 + 0.5 * $rank)"; "30 - 20 * $rank"]));
-            Wait "600 - 250 * $rank"]);
+            Wait (numExpr "600 - 250 * $rank")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "bit";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "15"; ChangeSpeed (Speed (None,"0"),Term "1"); Wait "15";
+               [Wait (numExpr "15"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "15");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
                    None,BulletRef ({bulletRefLabel = "ellipse";},["$1"; "$2"; "$3"]));
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "ellipse";},None,Some (Speed (None,"0.001")),
+          ({bulletLabel = Some "ellipse";},None,Some (Speed (None,numExpr "0.001")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"5")),
-                   Some (Speed (None,"$1")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "5")),
+                   Some (Speed (None,numExpr "$1")),
                    BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]));
                 Repeat
-                  (Times "6",
+                  (Times (numExpr "6"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"-($1 * 0.04)")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-($1 * 0.04)")),
                           BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]))]));
                 Repeat
-                  (Times "2",
+                  (Times (numExpr "2"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"-($1 * 0.01)")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-($1 * 0.01)")),
                           BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]))]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                   Some (Speed (Some {speedType = SpeedType.Sequence;},"0")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                   Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                    BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]));
                 Repeat
-                  (Times "2",
+                  (Times (numExpr "2"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"($1 * 0.01)")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "($1 * 0.01)")),
                           BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]))]));
                 Repeat
-                  (Times "6",
+                  (Times (numExpr "6"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"($1 * 0.04)")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "($1 * 0.04)")),
                           BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]))]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                   Some (Speed (Some {speedType = SpeedType.Sequence;},"0")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                   Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                    BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]));
                 Repeat
-                  (Times "6",
+                  (Times (numExpr "6"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"-($1 * 0.04)")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-($1 * 0.04)")),
                           BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]))]));
                 Repeat
-                  (Times "2",
+                  (Times (numExpr "2"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"-($1 * 0.01)")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-($1 * 0.01)")),
                           BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]))]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                   Some (Speed (Some {speedType = SpeedType.Sequence;},"0")),
+                   Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                   Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                    BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]));
                 Repeat
-                  (Times "2",
+                  (Times (numExpr "2"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"($1 * 0.01)")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "($1 * 0.01)")),
                           BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]))]));
                 Repeat
-                  (Times "6",
+                  (Times (numExpr "6"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"($1 * 0.04)")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "($1 * 0.04)")),
                           BulletRef ({bulletRefLabel = "red";},["$2"; "$3"]))]));
                 Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "red";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "35"; ChangeSpeed (Speed (None,"0.001"),Term "1"); Wait "5";
-                Wait "$2";
+               [Wait (numExpr "35"); ChangeSpeed (Speed (None,numExpr "0.001"),Term (numExpr "1")); Wait (numExpr "5");
+                Wait (numExpr "$2");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"140")),
-                   Some (Speed (None,"$1")),
-                   Bullet ({bulletLabel = None;},None,None,[])); Wait "$2";
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "140")),
+                   Some (Speed (None,numExpr "$1")),
+                   Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "$2");
                 Repeat
-                  (Times "12",
+                  (Times (numExpr "12"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"7")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"$1 * 0.03")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "$2"]));
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "7")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "$1 * 0.03")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "$2")]));
                 Vanish])])])
 
   /// 大原さんのオリジナル、EntangledSpace by 白い弾幕くん
@@ -1886,146 +1886,146 @@ module Original =
                BulletRef
                  ({bulletRefLabel = "dummy";},
                   ["0.5"; "1.8 * (0.5 + 0.5 * $rank)"; "5 * (3.5 - 2.5 * $rank)";
-                   "0"; "6"])); Wait "1050 - 150 * $rank"]);
+                   "0"; "6"])); Wait (numExpr "1050 - 150 * $rank")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "dummy";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"180")),
-           Some (Speed (None,"2.0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+           Some (Speed (None,numExpr "2.0")),
            [Action
               ({actionLabel = None;},
-               [Wait "15"; ChangeSpeed (Speed (None,"0"),Term "1"); Wait "15";
+               [Wait (numExpr "15"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "15");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
-                   Some (Speed (None,"$1")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
+                   Some (Speed (None,numExpr "$1")),
                    BulletRef ({bulletRefLabel = "bit";},["$2"; "$3"; "$4"; "$5"]));
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"90")),
-                          Some (Speed (None,"$1")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "90")),
+                          Some (Speed (None,numExpr "$1")),
                           BulletRef
                             ({bulletRefLabel = "bit";},["$2"; "$3"; "$4"; "$5"]))]));
-                Wait "20";
+                Wait (numExpr "20");
                 Repeat
-                  (Times "2",
+                  (Times (numExpr "2"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"30")),
-                          Some (Speed (None,"$1")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "30")),
+                          Some (Speed (None,numExpr "$1")),
                           BulletRef
                             ({bulletRefLabel = "bit";},["$2"; "$3"; "$4"; "$5"]));
                        Repeat
-                         (Times "3",
+                         (Times (numExpr "3"),
                           Action
                             ({actionLabel = None;},
                              [Fire
                                 ({fireLabel = None;},
                                  Some
                                    (Direction
-                                      (Some {directionType = DirectionType.Sequence;},"90")),
-                                 Some (Speed (None,"$1")),
+                                      (Some {directionType = DirectionType.Sequence;},numExpr "90")),
+                                 Some (Speed (None,numExpr "$1")),
                                  BulletRef
                                    ({bulletRefLabel = "bit";},
-                                    ["$2"; "$3"; "$4"; "$5"]))])); Wait "20"]));
+                                    ["$2"; "$3"; "$4"; "$5"]))])); Wait (numExpr "20")]));
                 Repeat
-                  (Times "200 / $3",
+                  (Times (numExpr "200 / $3"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Sequence;},"$5 * 2.5")),
-                          Some (Speed (None,"$2 * 0.6")),
+                            (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$5 * 2.5")),
+                          Some (Speed (None,numExpr "$2 * 0.6")),
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Repeat
-                         (Times "3",
+                         (Times (numExpr "3"),
                           Action
                             ({actionLabel = None;},
                              [Fire
                                 ({fireLabel = None;},
                                  Some
-                                   (Direction (Some {directionType = DirectionType.Sequence;},"0")),
+                                   (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
                                  Some
-                                   (Speed (Some {speedType = SpeedType.Sequence;},"$2 * 0.05")),
+                                   (Speed (Some {speedType = SpeedType.Sequence;},numExpr "$2 * 0.05")),
                                  Bullet ({bulletLabel = None;},None,None,[]))]));
                        Repeat
-                         (Times "2",
+                         (Times (numExpr "2"),
                           Action
                             ({actionLabel = None;},
                              [Fire
                                 ({fireLabel = None;},
                                  Some
                                    (Direction
-                                      (Some {directionType = DirectionType.Sequence;},"120")),
-                                 Some (Speed (None,"$2 * 0.6")),
+                                      (Some {directionType = DirectionType.Sequence;},numExpr "120")),
+                                 Some (Speed (None,numExpr "$2 * 0.6")),
                                  Bullet ({bulletLabel = None;},None,None,[]));
                               Repeat
-                                (Times "3",
+                                (Times (numExpr "3"),
                                  Action
                                    ({actionLabel = None;},
                                     [Fire
                                        ({fireLabel = None;},
                                         Some
                                           (Direction
-                                             (Some {directionType = DirectionType.Sequence;},"0")),
+                                             (Some {directionType = DirectionType.Sequence;},numExpr "0")),
                                         Some
                                           (Speed
                                              (Some {speedType = SpeedType.Sequence;},
-                                              "$2 * 0.05")),
+                                              numExpr "$2 * 0.05")),
                                         Bullet ({bulletLabel = None;},None,None,[]))]))]));
-                       Wait "$3 * 3"])); Vanish])]);
+                       Wait (numExpr "$3 * 3")])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "bit";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "15"; ChangeSpeed (Speed (None,"0.001"),Term "1"); Wait "1";
+               [Wait (numExpr "15"); ChangeSpeed (Speed (None,numExpr "0.001"),Term (numExpr "1")); Wait (numExpr "1");
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Relative;},"-(17 * $4)"),
-                   Term "1"); Wait "1"; Wait "200 - 100 * $rank";
-                ChangeSpeed (Speed (None,"0.13"),Term "1"); Wait "1";
+                  (Direction (Some {directionType = DirectionType.Relative;},numExpr "-(17 * $4)"),
+                   Term (numExpr "1")); Wait (numExpr "1"); Wait (numExpr "200 - 100 * $rank");
+                ChangeSpeed (Speed (None,numExpr "0.13"),Term (numExpr "1")); Wait (numExpr "1");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"$3")),
-                   Some (Speed (None,"$1")),
-                   Bullet ({bulletLabel = None;},None,None,[])); Wait "$2";
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "$3")),
+                   Some (Speed (None,numExpr "$1")),
+                   Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "$2");
                 Repeat
-                  (Times "96 / $2",
+                  (Times (numExpr "96 / $2"),
                    Action
                      ({actionLabel = None;},
                       [Repeat
-                         (Times "3",
+                         (Times (numExpr "3"),
                           Action
                             ({actionLabel = None;},
                              [Fire
                                 ({fireLabel = None;},
                                  Some
                                    (Direction
-                                      (Some {directionType = DirectionType.Sequence;},"$4")),
+                                      (Some {directionType = DirectionType.Sequence;},numExpr "$4")),
                                  Some
                                    (Speed
-                                      (Some {speedType = SpeedType.Sequence;},"-($1 * 0.1)")),
+                                      (Some {speedType = SpeedType.Sequence;},numExpr "-($1 * 0.1)")),
                                  Bullet ({bulletLabel = None;},None,None,[]));
-                              Wait "$2"]));
+                              Wait (numExpr "$2")]));
                        Repeat
-                         (Times "3",
+                         (Times (numExpr "3"),
                           Action
                             ({actionLabel = None;},
                              [Fire
                                 ({fireLabel = None;},
                                  Some
                                    (Direction
-                                      (Some {directionType = DirectionType.Sequence;},"$4")),
+                                      (Some {directionType = DirectionType.Sequence;},numExpr "$4")),
                                  Some
                                    (Speed
-                                      (Some {speedType = SpeedType.Sequence;},"($1 * 0.1)")),
+                                      (Some {speedType = SpeedType.Sequence;},numExpr "($1 * 0.1)")),
                                  Bullet ({bulletLabel = None;},None,None,[]));
-                              Wait "$2"]))])); Vanish])])])
+                              Wait (numExpr "$2")]))])); Vanish])])])
 
   /// 大原さんのオリジナル、邪眼 by 白い弾幕くん
   /// [Original]_evil_eye.xml
@@ -2040,106 +2040,106 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"90")),
-               Some (Speed (None,"0.02")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
+               Some (Speed (None,numExpr "0.02")),
                BulletRef ({bulletRefLabel = "cannonbit";},[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"90")),
-               Some (Speed (None,"0.06")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
+               Some (Speed (None,numExpr "0.06")),
                BulletRef ({bulletRefLabel = "cannonbit";},[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"90")),
-               Some (Speed (None,"0.10")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
+               Some (Speed (None,numExpr "0.10")),
                BulletRef ({bulletRefLabel = "cannonbit";},[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"-90")),
-               Some (Speed (None,"0.02")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
+               Some (Speed (None,numExpr "0.02")),
                BulletRef ({bulletRefLabel = "cannonbit";},[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"-90")),
-               Some (Speed (None,"0.06")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
+               Some (Speed (None,numExpr "0.06")),
                BulletRef ({bulletRefLabel = "cannonbit";},[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"-90")),
-               Some (Speed (None,"0.10")),
-               BulletRef ({bulletRefLabel = "cannonbit";},[])); Wait "120";
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
+               Some (Speed (None,numExpr "0.10")),
+               BulletRef ({bulletRefLabel = "cannonbit";},[])); Wait (numExpr "120");
             Repeat
-              (Times "5 + 10 * $rank",
+              (Times (numExpr "5 + 10 * $rank"),
                Action
                  ({actionLabel = None;},
                   [Action.ActionRef ({actionRefLabel = "5way";},["30"]);
-                   Wait "27 - 20 * $rank";
+                   Wait (numExpr "27 - 20 * $rank");
                    Action.ActionRef ({actionRefLabel = "5way";},["20"]);
-                   Wait "27 - 20 * $rank"])); Wait "60"]);
+                   Wait (numExpr "27 - 20 * $rank")])); Wait (numExpr "60")]);
         BulletmlElm.Action
           ({actionLabel = Some "5way";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"$1 * (-2)")),
-               Some (Speed (None,"1.3")),
+               Some (Direction (Some {directionType = Aim;},numExpr "$1 * (-2)")),
+               Some (Speed (None,numExpr "1.3")),
                BulletRef ({bulletRefLabel = "bit";},["$1 * 2"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"$1 * (-1)")),
-               Some (Speed (None,"1.3")),
+               Some (Direction (Some {directionType = Aim;},numExpr "$1 * (-1)")),
+               Some (Speed (None,numExpr "1.3")),
                BulletRef ({bulletRefLabel = "bit";},["$1 * 1"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"0")),
-               Some (Speed (None,"1.3")),BulletRef ({bulletRefLabel = "bit";},["0"]));
+               Some (Direction (Some {directionType = Aim;},numExpr "0")),
+               Some (Speed (None,numExpr "1.3")),BulletRef ({bulletRefLabel = "bit";},["0"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"$1 * 1")),
-               Some (Speed (None,"1.3")),
+               Some (Direction (Some {directionType = Aim;},numExpr "$1 * 1")),
+               Some (Speed (None,numExpr "1.3")),
                BulletRef ({bulletRefLabel = "bit";},["$1 * (-1)"]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"$1 * 2")),
-               Some (Speed (None,"1.3")),
+               Some (Direction (Some {directionType = Aim;},numExpr "$1 * 2")),
+               Some (Speed (None,numExpr "1.3")),
                BulletRef ({bulletRefLabel = "bit";},["$1 * (-2)"]))]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "bit";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "30";
+               [Wait (numExpr "30");
                 Fire
                   ({fireLabel = None;},
                    Some
                      (Direction
-                        (Some {directionType = DirectionType.Relative;},"$1 - 15 + 30 * $rand")),
-                   Some (Speed (None,"1.3 + 1.0 * $rank")),
+                        (Some {directionType = DirectionType.Relative;},numExpr "$1 - 15 + 30 * $rand")),
+                   Some (Speed (None,numExpr "1.3 + 1.0 * $rank")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "2 + 3 * $rank",
+                  (Times (numExpr "2 + 3 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"0.1")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.1")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "cannonbit";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "60";
+               [Wait (numExpr "60");
                 Repeat
-                  (Times "80",
+                  (Times (numExpr "80"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Absolute;},"180")),
-                          Some (Speed (None,"0.0001 + 12.0 * $rand")),
+                          Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+                          Some (Speed (None,numExpr "0.0001 + 12.0 * $rand")),
                           BulletRef ({bulletRefLabel = "weak";},[]))])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "weak";},None,None,
-           [Action ({actionLabel = None;},[Wait "10"; Vanish])])])
+           [Action ({actionLabel = None;},[Wait (numExpr "10"); Vanish])])])
 
   /// 大原さんのオリジナル、偽婦人乱舞 by 白い弾幕くん
   /// [Original]_fujin_ranbu_fake.xml
@@ -2157,123 +2157,123 @@ module Original =
                BulletRef
                  ({bulletRefLabel = "dummy";},
                   ["0.6 + 0.6 * $rank"; "48 - 41 * $rank"; "8 * $rank"]));
-            Wait "400 - 100 * $rank"]);
+            Wait (numExpr "400 - 100 * $rank")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "dummy";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Absolute;},"180"),Term "1");
-                ChangeSpeed (Speed (None,"2"),Term "20");
+                  (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180"),Term (numExpr "1"));
+                ChangeSpeed (Speed (None,numExpr "2"),Term (numExpr "20"));
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 + 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 + 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "$3"]));
-                       Wait "10";
+                       Wait (numExpr "10");
                        Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 - 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 - 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "-$3"]));
-                       Wait "10"])); ChangeSpeed (Speed (None,"0"),Term "20");
+                       Wait (numExpr "10")])); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "20"));
                 Repeat
-                  (Times "1",
+                  (Times (numExpr "1"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 + 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 + 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "$3"]));
-                       Wait "10";
+                       Wait (numExpr "10");
                        Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 - 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 - 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "-$3"]));
-                       Wait "10"]));
+                       Wait (numExpr "10")]));
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Absolute;},"0"),Term "1");
-                ChangeSpeed (Speed (None,"2"),Term "30");
+                  (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0"),Term (numExpr "1"));
+                ChangeSpeed (Speed (None,numExpr "2"),Term (numExpr "30"));
                 Repeat
-                  (Times "999",
+                  (Times (numExpr "999"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 + 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 + 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "$3"]));
-                       Wait "10";
+                       Wait (numExpr "10");
                        Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 - 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 - 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "-$3"]));
-                       Wait "10"])); Vanish])]);
+                       Wait (numExpr "10")])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "bit";},None,None,
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = Aim;},"0")),None,
-                   BulletRef ({bulletRefLabel = "shotgun";},["$1"])); Wait "$2";
+                   Some (Direction (Some {directionType = Aim;},numExpr "0")),None,
+                   BulletRef ({bulletRefLabel = "shotgun";},["$1"])); Wait (numExpr "$2");
                 Repeat
-                  (Times "200",
+                  (Times (numExpr "200"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"$3")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$3")),
                           None,BulletRef ({bulletRefLabel = "shotgun";},["$1"]));
-                       Wait "$2"])); Vanish])]);
+                       Wait (numExpr "$2")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "shotgun";},None,Some (Speed (None,"0.001")),
+          ({bulletLabel = Some "shotgun";},None,Some (Speed (None,numExpr "0.001")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1 * 1.1")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1 * 1.1")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1 * 1.21")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1 * 1.21")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1 * 1.331")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1 * 1.331")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1 * 1.4641")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1 * 1.4641")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1 * 1.610510")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1 * 1.610510")),
                    Bullet ({bulletLabel = None;},None,None,[])); Vanish])])])
 
   /// 大原さんのオリジナル、真婦人乱舞 by 白い弾幕くん
@@ -2292,123 +2292,123 @@ module Original =
                BulletRef
                  ({bulletRefLabel = "dummy";},
                   ["0.6 + 0.6 * $rank"; "48 - 41 * $rank"; "8 * $rank"]));
-            Wait "400 - 100 * $rank"]);
+            Wait (numExpr "400 - 100 * $rank")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "dummy";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Absolute;},"180"),Term "1");
-                ChangeSpeed (Speed (None,"2"),Term "20");
+                  (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180"),Term (numExpr "1"));
+                ChangeSpeed (Speed (None,numExpr "2"),Term (numExpr "20"));
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 + 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 + 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "-$3"]));
-                       Wait "10";
+                       Wait (numExpr "10");
                        Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 - 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 - 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "$3"]));
-                       Wait "10"])); ChangeSpeed (Speed (None,"0"),Term "20");
+                       Wait (numExpr "10")])); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "20"));
                 Repeat
-                  (Times "1",
+                  (Times (numExpr "1"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 + 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 + 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "-$3"]));
-                       Wait "10";
+                       Wait (numExpr "10");
                        Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 - 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 - 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "$3"]));
-                       Wait "10"]));
+                       Wait (numExpr "10")]));
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Absolute;},"0"),Term "1");
-                ChangeSpeed (Speed (None,"2"),Term "30");
+                  (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0"),Term (numExpr "1"));
+                ChangeSpeed (Speed (None,numExpr "2"),Term (numExpr "30"));
                 Repeat
-                  (Times "999",
+                  (Times (numExpr "999"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 + 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 + 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "-$3"]));
-                       Wait "10";
+                       Wait (numExpr "10");
                        Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Absolute;},"180 - 60")),
+                            (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 - 60")),
                           None,
                           BulletRef ({bulletRefLabel = "bit";},["$1"; "$2"; "$3"]));
-                       Wait "10"])); Vanish])]);
+                       Wait (numExpr "10")])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "bit";},None,None,
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = Aim;},"0")),None,
-                   BulletRef ({bulletRefLabel = "shotgun";},["$1"])); Wait "$2";
+                   Some (Direction (Some {directionType = Aim;},numExpr "0")),None,
+                   BulletRef ({bulletRefLabel = "shotgun";},["$1"])); Wait (numExpr "$2");
                 Repeat
-                  (Times "200",
+                  (Times (numExpr "200"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"$3")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$3")),
                           None,BulletRef ({bulletRefLabel = "shotgun";},["$1"]));
-                       Wait "$2"])); Vanish])]);
+                       Wait (numExpr "$2")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "shotgun";},None,Some (Speed (None,"0.001")),
+          ({bulletLabel = Some "shotgun";},None,Some (Speed (None,numExpr "0.001")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1 * 1.1")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1 * 1.1")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1 * 1.21")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1 * 1.21")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1 * 1.331")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1 * 1.331")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1 * 1.4641")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1 * 1.4641")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"$1 * 1.610510")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "$1 * 1.610510")),
                    Bullet ({bulletLabel = None;},None,None,[])); Vanish])])])
 
   /// オリジナル、ぐるぐる by 白い弾幕くん
@@ -2423,40 +2423,40 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "issyuu";},
            [Repeat
-              (Times "360/(20-$rank*10)+1",
+              (Times (numExpr "360/(20-$rank*10)+1"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
-                        (Direction (Some {directionType = DirectionType.Sequence;},"18-$rank*6")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"0")),
+                        (Direction (Some {directionType = DirectionType.Sequence;},numExpr "18-$rank*6")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Fire
-          ({fireLabel = Some "guruguru";},None,Some (Speed (None,"0.3")),
+          ({fireLabel = Some "guruguru";},None,Some (Speed (None,numExpr "0.3")),
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
                  ({actionLabel = None;},
                   [Fire
-                     ({fireLabel = None;},None,Some (Speed (None,"0.7")),
+                     ({fireLabel = None;},None,Some (Speed (None,numExpr "0.7")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef ({actionRefLabel = "issyuu";},[]);
                    Repeat
-                     (Times "30",
+                     (Times (numExpr "30"),
                       Action
                         ({actionLabel = None;},
-                         [Wait "12";
+                         [Wait (numExpr "12");
                           Fire
                             ({fireLabel = None;},
                              Some
-                               (Direction (Some {directionType = DirectionType.Sequence;},"-356")),
-                             Some (Speed (Some {speedType = SpeedType.Sequence;},"0")),
+                               (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-356")),
+                             Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                              Bullet ({bulletLabel = None;},None,None,[]));
                           Action.ActionRef ({actionRefLabel = "issyuu";},[])])); Vanish])]));
         BulletmlElm.Action
           ({actionLabel = Some "top";},
-           [FireRef ({fireRefLabel = "guruguru";},[]); Wait "500"])])
+           [FireRef ({fireRefLabel = "guruguru";},[]); Wait (numExpr "500")])])
 
   /// オリジナル。ぐるちょ。 by 白い弾幕くん
   /// [Original]_gurutyo.xml
@@ -2469,28 +2469,28 @@ module Original =
         bulletmlDescription = None},
        [BulletmlElm.Fire
           ({fireLabel = Some "gurutyo";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"90")),
-           Some (Speed (None,"$1*(3+$rank*4)")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
+           Some (Speed (None,numExpr "$1*(3+$rank*4)")),
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
                  ({actionLabel = None;},
                   [ChangeDirection
-                     (Direction (Some {directionType = DirectionType.Sequence;},"$1*6"),
-                      Term "1000");
+                     (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$1*6"),
+                      Term (numExpr "1000"));
                    Repeat
-                     (Times "500",
+                     (Times (numExpr "500"),
                       Action
                         ({actionLabel = None;},
                          [Fire
                             ({fireLabel = None;},
-                             Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
+                             Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
                              None,Bullet ({bulletLabel = None;},None,None,[]));
-                          Wait "1"])); Vanish])]));
+                          Wait (numExpr "1")])); Vanish])]));
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [FireRef ({fireRefLabel = "gurutyo";},["1"]);
-            FireRef ({fireRefLabel = "gurutyo";},["-1"]); Wait "550"])])
+            FireRef ({fireRefLabel = "gurutyo";},["-1"]); Wait (numExpr "550")])])
 
   /// オリジナル。逆噴射。by 白い弾幕くん
   /// [Original]_gyakuhunsya.xml
@@ -2504,29 +2504,29 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "gyakuhunsya";},
            [ChangeDirection
-              (Direction (Some {directionType = DirectionType.Absolute;},"180"),Term "1");
-            ChangeSpeed (Speed (None,"2"),Term "20"); Wait "60";
-            ChangeSpeed (Speed (None,"0"),Term "20"); Wait "20";
+              (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180"),Term (numExpr "1"));
+            ChangeSpeed (Speed (None,numExpr "2"),Term (numExpr "20")); Wait (numExpr "60");
+            ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "20")); Wait (numExpr "20");
             ChangeDirection
-              (Direction (Some {directionType = DirectionType.Absolute;},"0"),Term "1");
-            ChangeSpeed (Speed (None,"2"),Term "30");
+              (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0"),Term (numExpr "1"));
+            ChangeSpeed (Speed (None,numExpr "2"),Term (numExpr "30"));
             Fire
-              ({fireLabel = None;},None,Some (Speed (None,"0.6")),
+              ({fireLabel = None;},None,Some (Speed (None,numExpr "0.6")),
                Bullet ({bulletLabel = None;},None,None,[]));
             Repeat
-              (Times "80",
+              (Times (numExpr "80"),
                Action
                  ({actionLabel = None;},
                   [Repeat
-                     (Times "2+$rank*2",
+                     (Times (numExpr "2+$rank*2"),
                       Action
                         ({actionLabel = None;},
                          [Fire
                             ({fireLabel = None;},
-                             Some (Direction (None,"$rand*120-60")),
-                             Some (Speed (Some {speedType = SpeedType.Sequence;},"0.005")),
+                             Some (Direction (None,numExpr "$rand*120-60")),
+                             Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.005")),
                              Bullet ({bulletLabel = None;},None,None,[]))]));
-                   Wait "1"])); ChangeSpeed (Speed (None,"0"),Term "1"); Wait "10"]);
+                   Wait (numExpr "1")])); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "10")]);
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Action.ActionRef ({actionRefLabel = "gyakuhunsya";},[])])])
@@ -2543,82 +2543,82 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "2",
+              (Times (numExpr "2"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"180 - 60")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 - 60")),
                       None,BulletRef ({bulletRefLabel = "wave";},["5"; "42"]));
-                   Wait "30 - 15 * $rank";
+                   Wait (numExpr "30 - 15 * $rank");
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"180 + 60")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 + 60")),
                       None,BulletRef ({bulletRefLabel = "wave";},["-5"; "-42"]));
-                   Wait "30 - 15 * $rank";
+                   Wait (numExpr "30 - 15 * $rank");
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"180 - 62")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 - 62")),
                       None,BulletRef ({bulletRefLabel = "wave";},["5"; "40"]));
-                   Wait "30 - 15 * $rank";
+                   Wait (numExpr "30 - 15 * $rank");
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"180 + 62")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 + 62")),
                       None,BulletRef ({bulletRefLabel = "wave";},["-5"; "-40"]));
-                   Wait "30 - 15 * $rank";
+                   Wait (numExpr "30 - 15 * $rank");
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"180 - 58")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 - 58")),
                       None,BulletRef ({bulletRefLabel = "wave";},["5"; "40"]));
-                   Wait "30 - 15 * $rank";
+                   Wait (numExpr "30 - 15 * $rank");
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"180 + 58")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180 + 58")),
                       None,BulletRef ({bulletRefLabel = "wave";},["-5"; "-40"]));
-                   Wait "30 - 15 * $rank"])); Wait "300 - 50 * $rank"]);
+                   Wait (numExpr "30 - 15 * $rank")])); Wait (numExpr "300 - 50 * $rank")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "wave";},None,Some (Speed (None,"1.0")),
+          ({bulletLabel = Some "wave";},None,Some (Speed (None,numExpr "1.0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"$2")),
-                   Some (Speed (None,"0.3")),
-                   BulletRef ({bulletRefLabel = "cross";},[])); Wait "3";
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "$2")),
+                   Some (Speed (None,numExpr "0.3")),
+                   BulletRef ({bulletRefLabel = "cross";},[])); Wait (numExpr "3");
                 Repeat
-                  (Times "10 + 20 * $rank * $rank",
+                  (Times (numExpr "10 + 20 * $rank * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"$1")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"0.05")),
-                          BulletRef ({bulletRefLabel = "cross";},[])); Wait "3"]));
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$1")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.05")),
+                          BulletRef ({bulletRefLabel = "cross";},[])); Wait (numExpr "3")]));
                 Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "cross";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "100";
+               [Wait (numExpr "100");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (Some {speedType = SpeedType.Relative;},"0.6 * $rank")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (Some {speedType = SpeedType.Relative;},numExpr "0.6 * $rank")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"90")),
-                   Some (Speed (Some {speedType = SpeedType.Relative;},"0.6 * $rank")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "90")),
+                   Some (Speed (Some {speedType = SpeedType.Relative;},numExpr "0.6 * $rank")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"180")),
-                   Some (Speed (Some {speedType = SpeedType.Relative;},"0.6 * $rank")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "180")),
+                   Some (Speed (Some {speedType = SpeedType.Relative;},numExpr "0.6 * $rank")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"270")),
-                   Some (Speed (Some {speedType = SpeedType.Relative;},"0.6 * $rank")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "270")),
+                   Some (Speed (Some {speedType = SpeedType.Relative;},numExpr "0.6 * $rank")),
                    Bullet ({bulletLabel = None;},None,None,[])); Vanish])])])
 
   /// オリジナル。はさみ。by 白い弾幕くん
@@ -2634,37 +2634,37 @@ module Original =
           ({actionLabel = Some "curve";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"$1")),
-               Some (Speed (None,"1.2+$rank*0.6")),
+               Some (Direction (Some {directionType = Aim;},numExpr "$1")),
+               Some (Speed (None,numExpr "1.2+$rank*0.6")),
                Bullet
                  ({bulletLabel = None;},None,None,
                   [Action
                      ({actionLabel = None;},
                       [ChangeDirection
                          (Direction
-                            (Some {directionType = Aim;},"$1*-1.5"),
-                          Term "100")])]));
+                            (Some {directionType = Aim;},numExpr "$1*-1.5"),
+                          Term (numExpr "100"))])]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"-$1")),
-               Some (Speed (None,"1.3+$rank*0.4")),
+               Some (Direction (Some {directionType = Aim;},numExpr "-$1")),
+               Some (Speed (None,numExpr "1.3+$rank*0.4")),
                Bullet
                  ({bulletLabel = None;},None,None,
                   [Action
                      ({actionLabel = None;},
                       [ChangeDirection
                          (Direction
-                            (Some {directionType = Aim;},"$1*1.5"),
-                          Term "100")])]))]);
+                            (Some {directionType = Aim;},numExpr "$1*1.5"),
+                          Term (numExpr "100"))])]))]);
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "200",
+              (Times (numExpr "200"),
                Action
                  ({actionLabel = None;},
-                  [Wait "2";
+                  [Wait (numExpr "2");
                    Action.ActionRef ({actionRefLabel = "curve";},["$rand*90"])]));
-            Wait "50"])])
+            Wait (numExpr "50")])])
                         
   /// オリジナル。ひらひら。by 白い弾幕くん  
   /// [Original]_hirahira.xml
@@ -2678,38 +2678,38 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "5way";},
            [Repeat
-              (Times "4",
+              (Times (numExpr "4"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"20")),None,
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "20")),None,
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
           ({actionLabel = Some "hira";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"-40+$1*60")),None,
+               Some (Direction (Some {directionType = Aim;},numExpr "-40+$1*60")),None,
                Bullet ({bulletLabel = None;},None,None,[]));
             Action.ActionRef ({actionRefLabel = "5way";},[]);
             Repeat
-              (Times "60",
+              (Times (numExpr "60"),
                Action
                  ({actionLabel = None;},
-                  [Wait "8-$rank*2";
+                  [Wait (numExpr "8-$rank*2");
                    Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Sequence;},"-80-$1*2+$rand-0.5")),
+                           (Some {directionType = DirectionType.Sequence;},numExpr "-80-$1*2+$rand-0.5")),
                       None,Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef ({actionRefLabel = "5way";},[])]))]);
         BulletmlElm.Action
           ({actionLabel = Some "top1";},
-           [Action.ActionRef ({actionRefLabel = "hira";},["-1"]); Wait "60"]);
+           [Action.ActionRef ({actionRefLabel = "hira";},["-1"]); Wait (numExpr "60")]);
         BulletmlElm.Action
           ({actionLabel = Some "top2";},
-           [Action.ActionRef ({actionRefLabel = "hira";},["1"]); Wait "60"])])
+           [Action.ActionRef ({actionRefLabel = "hira";},["1"]); Wait (numExpr "60")])])
 
   /// オリジナル。放水っぽい感じ。by 白い弾幕くん
   /// [Original]_housya.xml
@@ -2723,14 +2723,14 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Fire
-              ({fireLabel = None;},Some (Direction (None,"-80")),None,
+              ({fireLabel = None;},Some (Direction (None,numExpr "-80")),None,
                Bullet ({bulletLabel = None;},None,None,[]));
             Repeat
-              (Times "70",
+              (Times (numExpr "70"),
                Action
                  ({actionLabel = None;},
                   [Repeat
-                     (Times "3*($rank+0.5)",
+                     (Times (numExpr "3*($rank+0.5)"),
                       Action
                         ({actionLabel = None;},
                          [Fire
@@ -2738,12 +2738,12 @@ module Original =
                              Some
                                (Direction
                                   (Some {directionType = DirectionType.Sequence;},
-                                   "($rand*20-9)/($rank+0.5)")),
+                                   numExpr "($rand*20-9)/($rank+0.5)")),
                              Some
                                (Speed
-                                  (Some {speedType = SpeedType.Sequence;},"0.01/($rank+0.5)")),
+                                  (Some {speedType = SpeedType.Sequence;},numExpr "0.01/($rank+0.5)")),
                              Bullet ({bulletLabel = None;},None,None,[]))]));
-                   Wait "1"]))])])
+                   Wait (numExpr "1")]))])])
 
   /// 大原さんのオリジナル、カゴメ by 白い弾幕くん
   /// [Original]_kagome.xml
@@ -2757,67 +2757,67 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "10 + 10 * $rank",
+              (Times (numExpr "10 + 10 * $rank"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"75")),
-                      Some (Speed (None,"1.1")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "75")),
+                      Some (Speed (None,numExpr "1.1")),
                       BulletRef ({bulletRefLabel = "matrixbit";},[]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"255")),
-                      Some (Speed (None,"1.1")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "255")),
+                      Some (Speed (None,numExpr "1.1")),
                       BulletRef ({bulletRefLabel = "matrixbit";},[]));
-                   Wait "30 * (2.0 - 1.0 * $rank)"])); Wait "150"]);
+                   Wait (numExpr "30 * (2.0 - 1.0 * $rank)")])); Wait (numExpr "150")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "matrixbit";},None,Some (Speed (None,"0.5")),
+          ({bulletLabel = Some "matrixbit";},None,Some (Speed (None,numExpr "0.5")),
            [Action
               ({actionLabel = None;},
-               [Wait "30 * (2.0 - 1.0 * $rank)";
+               [Wait (numExpr "30 * (2.0 - 1.0 * $rank)");
                 Repeat
-                  (Times "999",
+                  (Times (numExpr "999"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"90")),
-                          Some (Speed (None,"1.1")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "90")),
+                          Some (Speed (None,numExpr "1.1")),
                           BulletRef ({bulletRefLabel = "finalbit";},[]));
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"-90")),
-                          Some (Speed (None,"1.1")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-90")),
+                          Some (Speed (None,numExpr "1.1")),
                           BulletRef ({bulletRefLabel = "finalbit";},[]));
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = Aim;},"-10 + 20 * $rand")),
-                          Some (Speed (None,"1.1")),
+                               (Some {directionType = Aim;},numExpr "-10 + 20 * $rand")),
+                          Some (Speed (None,numExpr "1.1")),
                           Bullet ({bulletLabel = None;},None,None,[]));
-                       Wait "60 * (2.0 - 1.0 * $rank)"]))])]);
+                       Wait (numExpr "60 * (2.0 - 1.0 * $rank)")]))])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "finalbit";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "30 * (2.0 - 1.0 * $rank)";
+               [Wait (numExpr "30 * (2.0 - 1.0 * $rank)");
                 Repeat
-                  (Times "999",
+                  (Times (numExpr "999"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"30")),
-                          Some (Speed (None,"1.1 * (2 / 1.7320508)")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "30")),
+                          Some (Speed (None,numExpr "1.1 * (2 / 1.7320508)")),
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"-30")),
-                          Some (Speed (None,"1.1 * (2 / 1.7320508)")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-30")),
+                          Some (Speed (None,numExpr "1.1 * (2 / 1.7320508)")),
                           Bullet ({bulletLabel = None;},None,None,[]));
-                       Wait "60 * (2.0 - 1.0 * $rank)"]))])])])
+                       Wait (numExpr "60 * (2.0 - 1.0 * $rank)")]))])])])
 
   /// 大原さんのオリジナル、毛玉 by 白い弾幕くん
   /// [Original]_kedama.xml
@@ -2831,43 +2831,43 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "3",
+              (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = Aim;},"90")),None,
+                      Some (Direction (Some {directionType = Aim;},numExpr "90")),None,
                       BulletRef ({bulletRefLabel = "bit";},["1"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = Aim;},"-90")),None,
-                      BulletRef ({bulletRefLabel = "bit";},["-1"])); Wait "90"]));
-            Wait "250"]);
+                      Some (Direction (Some {directionType = Aim;},numExpr "-90")),None,
+                      BulletRef ({bulletRefLabel = "bit";},["-1"])); Wait (numExpr "90")]));
+            Wait (numExpr "250")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "bit";},None,Some (Speed (None,"3.0")),
+          ({bulletLabel = Some "bit";},None,Some (Speed (None,numExpr "3.0")),
            [Action
               ({actionLabel = None;},
-               [Wait "10"; ChangeSpeed (Speed (None,"0.6"),Term "1"); Wait "5";
+               [Wait (numExpr "10"); ChangeSpeed (Speed (None,numExpr "0.6"),Term (numExpr "1")); Wait (numExpr "5");
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Relative;},"-105 * $1"),Term "1");
-                Wait "5";
+                  (Direction (Some {directionType = DirectionType.Relative;},numExpr "-105 * $1"),Term (numExpr "1"));
+                Wait (numExpr "5");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"60 * $1")),
-                   Some (Speed (None,"0.6 + 0.7 * $rank")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "60 * $1")),
+                   Some (Speed (None,numExpr "0.6 + 0.7 * $rank")),
                    Bullet ({bulletLabel = None;},None,None,[]));
-                Wait "12 - 10 * $rank";
+                Wait (numExpr "12 - 10 * $rank");
                 Repeat
-                  (Times "999",
+                  (Times (numExpr "999"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
-                            (Direction (Some {directionType = DirectionType.Sequence;},"113 * $1")),
-                          Some (Speed (None,"0.6 + 0.7 * $rank")),
+                            (Direction (Some {directionType = DirectionType.Sequence;},numExpr "113 * $1")),
+                          Some (Speed (None,numExpr "0.6 + 0.7 * $rank")),
                           Bullet ({bulletLabel = None;},None,None,[]));
-                       Wait "12 - 10 * $rank"]))])])])
+                       Wait (numExpr "12 - 10 * $rank")]))])])])
 
   /// 大原さんのオリジナル、弾幕の騎士その一 by 白い弾幕くん
   /// [Original]_knight_1.xml
@@ -2882,85 +2882,85 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "bit";},[])); Wait "450"]);
+               BulletRef ({bulletRefLabel = "bit";},[])); Wait (numExpr "450")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "bit";},
-           Some (Direction (Some {directionType = Aim;},"0")),
-           Some (Speed (None,"0.5")),
+           Some (Direction (Some {directionType = Aim;},numExpr "0")),
+           Some (Speed (None,numExpr "0.5")),
            [Action
               ({actionLabel = None;},
-               [ChangeSpeed (Speed (None,"1.1"),Term "120");
+               [ChangeSpeed (Speed (None,numExpr "1.1"),Term (numExpr "120"));
                 Repeat
-                  (Times "4",
+                  (Times (numExpr "4"),
                    Action
                      ({actionLabel = None;},
                       [Repeat
-                         (Times "6",
+                         (Times (numExpr "6"),
                           Action
                             ({actionLabel = None;},
                              [ChangeDirection
-                                (Direction (Some {directionType = Aim;},"0"),
-                                 Term "10"); Wait "10"]));
+                                (Direction (Some {directionType = Aim;},numExpr "0"),
+                                 Term (numExpr "10")); Wait (numExpr "10")]));
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = Aim;},"-70 + 20 * $rand")),
+                               (Some {directionType = Aim;},numExpr "-70 + 20 * $rand")),
                           None,BulletRef ({bulletRefLabel = "kick";},[]))])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "kick";},None,Some (Speed (None,"4.0")),
+          ({bulletLabel = Some "kick";},None,Some (Speed (None,numExpr "4.0")),
            [Action
               ({actionLabel = None;},
-               [ChangeSpeed (Speed (None,"0.001"),Term "30"); Wait "30";
+               [ChangeSpeed (Speed (None,numExpr "0.001"),Term (numExpr "30")); Wait (numExpr "30");
                 ChangeDirection
-                  (Direction (Some {directionType = Aim;},"0"),Term "1"); Wait "5";
+                  (Direction (Some {directionType = Aim;},numExpr "0"),Term (numExpr "1")); Wait (numExpr "5");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"-20")),
-                   Some (Speed (None,"0.7")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-20")),
+                   Some (Speed (None,numExpr "0.7")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "4 + 25 * $rank",
+                  (Times (numExpr "4 + 25 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Sequence;},"10 - 8 * $rank")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"0.05")),
-                          Bullet ({bulletLabel = None;},None,None,[]))])); Wait "10";
+                               (Some {directionType = DirectionType.Sequence;},numExpr "10 - 8 * $rank")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.05")),
+                          Bullet ({bulletLabel = None;},None,None,[]))])); Wait (numExpr "10");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"0.7")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "0.7")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "4 + 25 * $rank",
+                  (Times (numExpr "4 + 25 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Sequence;},"10 - 8 * $rank")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"0.05")),
-                          Bullet ({bulletLabel = None;},None,None,[]))])); Wait "10";
+                               (Some {directionType = DirectionType.Sequence;},numExpr "10 - 8 * $rank")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.05")),
+                          Bullet ({bulletLabel = None;},None,None,[]))])); Wait (numExpr "10");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"20")),
-                   Some (Speed (None,"0.7")),
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "20")),
+                   Some (Speed (None,numExpr "0.7")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "4 + 25 * $rank",
+                  (Times (numExpr "4 + 25 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Sequence;},"10 - 8 * $rank")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"0.05")),
+                               (Some {directionType = DirectionType.Sequence;},numExpr "10 - 8 * $rank")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.05")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])])])
 
   /// 大原さんのオリジナル、弾幕の騎士その二 by 白い弾幕くん
@@ -2976,37 +2976,37 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"120")),None,
-               BulletRef ({bulletRefLabel = "bit";},["90"; "1.0"])); Wait "10";
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "120")),None,
+               BulletRef ({bulletRefLabel = "bit";},["90"; "1.0"])); Wait (numExpr "10");
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"150")),None,
-               BulletRef ({bulletRefLabel = "bit";},["70"; "1.2"])); Wait "10";
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "150")),None,
+               BulletRef ({bulletRefLabel = "bit";},["70"; "1.2"])); Wait (numExpr "10");
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"180")),None,
-               BulletRef ({bulletRefLabel = "bit";},["50"; "1.4"])); Wait "10";
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),None,
+               BulletRef ({bulletRefLabel = "bit";},["50"; "1.4"])); Wait (numExpr "10");
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"210")),None,
-               BulletRef ({bulletRefLabel = "bit";},["30"; "1.6"])); Wait "10";
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "210")),None,
+               BulletRef ({bulletRefLabel = "bit";},["30"; "1.6"])); Wait (numExpr "10");
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"240")),None,
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "240")),None,
                BulletRef ({bulletRefLabel = "bit";},["10"; "1.8"]));
-            Wait "300 - 100 * $rank"]);
+            Wait (numExpr "300 - 100 * $rank")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "bit";},None,Some (Speed (None,"2.5")),
+          ({bulletLabel = Some "bit";},None,Some (Speed (None,numExpr "2.5")),
            [Action
               ({actionLabel = None;},
-               [Wait "30"; ChangeSpeed (Speed (None,"0"),Term "1"); Wait "$1";
+               [Wait (numExpr "30"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "$1");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = Aim;},"0")),
-                   Some (Speed (None,"$2 * (0.5 + 0.5 * $rank)")),
+                   Some (Direction (Some {directionType = Aim;},numExpr "0")),
+                   Some (Speed (None,numExpr "$2 * (0.5 + 0.5 * $rank)")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "19 + 100 * $rank",
+                  (Times (numExpr "19 + 100 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
@@ -3014,8 +3014,8 @@ module Original =
                           Some
                             (Direction
                                (Some {directionType = DirectionType.Sequence;},
-                                "360 / (19 + 100 * $rank)")),
-                          Some (Speed (None,"$2 * (0.5 + 0.5 * $rank)")),
+                                numExpr "360 / (19 + 100 * $rank)")),
+                          Some (Speed (None,numExpr "$2 * (0.5 + 0.5 * $rank)")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])])])
 
   /// 大原さんのオリジナル、弾幕の騎士その三 by 白い弾幕くん
@@ -3031,83 +3031,83 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"60")),None,
-               BulletRef ({bulletRefLabel = "bit";},[])); Wait "300"]);
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "60")),None,
+               BulletRef ({bulletRefLabel = "bit";},[])); Wait (numExpr "300")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "bit";},None,Some (Speed (None,"3.0")),
+          ({bulletLabel = Some "bit";},None,Some (Speed (None,numExpr "3.0")),
            [Action
               ({actionLabel = None;},
-               [Wait "20"; ChangeSpeed (Speed (None,"0"),Term "1"); Wait "2";
+               [Wait (numExpr "20"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "2");
                 Fire
                   ({fireLabel = None;},None,None,
-                   BulletRef ({bulletRefLabel = "groundbit";},[])); Wait "30";
+                   BulletRef ({bulletRefLabel = "groundbit";},[])); Wait (numExpr "30");
                 Fire
                   ({fireLabel = None;},None,None,
                    BulletRef ({bulletRefLabel = "skybit";},[])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "skybit";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"210")),
-           Some (Speed (None,"3.0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "210")),
+           Some (Speed (None,numExpr "3.0")),
            [Action
               ({actionLabel = None;},
-               [Wait "30";
+               [Wait (numExpr "30");
                 Repeat
-                  (Times "4",
+                  (Times (numExpr "4"),
                    Action
                      ({actionLabel = None;},
-                      [Wait "10";
+                      [Wait (numExpr "10");
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"110 + 20 * $rand")),
+                               (Some {directionType = DirectionType.Absolute;},numExpr "110 + 20 * $rand")),
                           None,BulletRef ({bulletRefLabel = "dummy";},[]))]));
                 Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "groundbit";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"180")),
-           Some (Speed (None,"3.0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+           Some (Speed (None,numExpr "3.0")),
            [Action
               ({actionLabel = None;},
-               [Wait "20";
+               [Wait (numExpr "20");
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
-                      [Wait "10";
+                      [Wait (numExpr "10");
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"230 + 20 * $rand")),
+                               (Some {directionType = DirectionType.Absolute;},numExpr "230 + 20 * $rand")),
                           None,BulletRef ({bulletRefLabel = "dummy";},[]))]));
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "dummy";},None,Some (Speed (None,"0.001")),
+          ({bulletLabel = Some "dummy";},None,Some (Speed (None,numExpr "0.001")),
            [Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "5 + 15 * $rank",
+                  (Times (numExpr "5 + 15 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Relative;},"-10 + 20 * $rand")),
-                          Some (Speed (None,"1.0 + 1.4 * $rank")),
+                               (Some {directionType = DirectionType.Relative;},numExpr "-10 + 20 * $rand")),
+                          Some (Speed (None,numExpr "1.0 + 1.4 * $rank")),
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Repeat
-                         (Times "5",
+                         (Times (numExpr "5"),
                           Action
                             ({actionLabel = None;},
                              [Fire
                                 ({fireLabel = None;},
                                  Some
-                                   (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-                                 Some (Speed (Some {speedType = SpeedType.Sequence;},"0.1")),
+                                   (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+                                 Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.1")),
                                  Bullet ({bulletLabel = None;},None,None,[]))]));
-                       Wait "12 - 10 * $rank"])); Vanish])])])
+                       Wait (numExpr "12 - 10 * $rank")])); Vanish])])])
 
   /// 大原さんのオリジナル、弾幕の騎士その四 by 白い弾幕くん
   /// [Original]_knight_4.xml
@@ -3122,44 +3122,44 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"120")),None,
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "120")),None,
                BulletRef ({bulletRefLabel = "parentbit";},["1.6"]));
-            Wait "300 - 100 * $rank"]);
+            Wait (numExpr "300 - 100 * $rank")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "parentbit";},
-           Some (Direction (Some {directionType = Aim;},"0")),
-           Some (Speed (None,"1.5")),
+           Some (Direction (Some {directionType = Aim;},numExpr "0")),
+           Some (Speed (None,numExpr "1.5")),
            [Action
               ({actionLabel = None;},
-               [Wait "20 + 10 * $rand";
+               [Wait (numExpr "20 + 10 * $rand");
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"60")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "60")),
                           None,BulletRef ({bulletRefLabel = "bit";},["-120"; "$1"]));
-                       Wait "10";
+                       Wait (numExpr "10");
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"-60")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-60")),
                           None,BulletRef ({bulletRefLabel = "bit";},["120"; "$1"]));
-                       Wait "10"])); Vanish])]);
+                       Wait (numExpr "10")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "bit";},None,Some (Speed (None,"2.5")),
+          ({bulletLabel = Some "bit";},None,Some (Speed (None,numExpr "2.5")),
            [Action
               ({actionLabel = None;},
-               [Wait "10"; ChangeSpeed (Speed (None,"0.0001"),Term "1"); Wait "5";
+               [Wait (numExpr "10"); ChangeSpeed (Speed (None,numExpr "0.0001"),Term (numExpr "1")); Wait (numExpr "5");
                 Repeat
-                  (Times "4 + 4 * $rank",
+                  (Times (numExpr "4 + 4 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"$1")),
-                          Some (Speed (None,"$2 * (0.5 + 0.5 * $rank)")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "5"]));
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "$1")),
+                          Some (Speed (None,numExpr "$2 * (0.5 + 0.5 * $rank)")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "5")]));
                 Vanish])])])
 
   /// オリジナル。固体。 by 白い弾幕くん
@@ -3175,44 +3175,44 @@ module Original =
           ({bulletLabel = Some "src";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "10";
+               [Wait (numExpr "10");
                 Repeat
-                  (Times "25",
+                  (Times (numExpr "25"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"$rand*360")),
-                          Some (Speed (None,"$rand*10")),
+                               (Some {directionType = DirectionType.Absolute;},numExpr "$rand*360")),
+                          Some (Speed (None,numExpr "$rand*10")),
                           Bullet
                             ({bulletLabel = None;},None,None,
                              [Action
                                 ({actionLabel = None;},
-                                 [Wait "1";
+                                 [Wait (numExpr "1");
                                   Fire
                                     ({fireLabel = None;},
                                      Some
                                        (Direction
-                                          (Some {directionType = DirectionType.Absolute;},"180")),
-                                     Some (Speed (None,"1.8")),
+                                          (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+                                     Some (Speed (None,numExpr "1.8")),
                                      Bullet ({bulletLabel = None;},None,None,[]));
                                   Vanish])]))]))])]);
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "350/(10-$rank*6)",
+              (Times (numExpr "350/(10-$rank*6)"),
                Action
                  ({actionLabel = None;},
-                  [Wait "10-$rank*6";
+                  [Wait (numExpr "10-$rank*6");
                    Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Absolute;},"90")),
-                      Some (Speed (None,"-10+$rand*20")),
-                      BulletRef ({bulletRefLabel = "src";},[]))])); Wait "30"])])
+                           (Some {directionType = DirectionType.Absolute;},numExpr "90")),
+                      Some (Speed (None,numExpr "-10+$rand*20")),
+                      BulletRef ({bulletRefLabel = "src";},[]))])); Wait (numExpr "30")])])
 
   /// 大原さんのオリジナル、鯨幕砲 by 白い弾幕くん
   /// [Original]_kujira.xml
@@ -3230,121 +3230,121 @@ module Original =
                BulletRef ({bulletRefLabel = "bit";},["2"; "1.0"]));
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "bit";},["-2"; "1.0"])); Wait "10";
+               BulletRef ({bulletRefLabel = "bit";},["-2"; "1.0"])); Wait (numExpr "10");
             Fire
               ({fireLabel = None;},None,None,
                BulletRef ({bulletRefLabel = "bit";},["2.5"; "1.05"]));
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "bit";},["-2.5"; "1.05"])); Wait "10";
+               BulletRef ({bulletRefLabel = "bit";},["-2.5"; "1.05"])); Wait (numExpr "10");
             Fire
               ({fireLabel = None;},None,None,
                BulletRef ({bulletRefLabel = "bit";},["3"; "1.1"]));
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "bit";},["-3"; "1.1"])); Wait "10";
+               BulletRef ({bulletRefLabel = "bit";},["-3"; "1.1"])); Wait (numExpr "10");
             Fire
               ({fireLabel = None;},None,None,
                BulletRef ({bulletRefLabel = "bit";},["3.5"; "1.15"]));
             Fire
               ({fireLabel = None;},None,None,
-               BulletRef ({bulletRefLabel = "bit";},["-3.5"; "1.15"])); Wait "160";
+               BulletRef ({bulletRefLabel = "bit";},["-3.5"; "1.15"])); Wait (numExpr "160");
             Repeat
-              (Times "5",
+              (Times (numExpr "5"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"30")),
-                      Some (Speed (None,"1.55")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "30")),
+                      Some (Speed (None,numExpr "1.55")),
                       BulletRef ({bulletRefLabel = "kujira";},["179"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"40")),
-                      Some (Speed (None,"1.4")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "40")),
+                      Some (Speed (None,numExpr "1.4")),
                       BulletRef ({bulletRefLabel = "kujira";},["170"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"50")),
-                      Some (Speed (None,"1.25")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "50")),
+                      Some (Speed (None,numExpr "1.25")),
                       BulletRef ({bulletRefLabel = "kujira";},["160"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"60")),
-                      Some (Speed (None,"1.1")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "60")),
+                      Some (Speed (None,numExpr "1.1")),
                       BulletRef ({bulletRefLabel = "kujira";},["150"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"70")),
-                      Some (Speed (None,"0.95")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "70")),
+                      Some (Speed (None,numExpr "0.95")),
                       BulletRef ({bulletRefLabel = "kujira";},["140"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"80")),
-                      Some (Speed (None,"0.8")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "80")),
+                      Some (Speed (None,numExpr "0.8")),
                       BulletRef ({bulletRefLabel = "kujira";},["130"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"-30")),
-                      Some (Speed (None,"1.55")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-30")),
+                      Some (Speed (None,numExpr "1.55")),
                       BulletRef ({bulletRefLabel = "kujira";},["-179"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"-40")),
-                      Some (Speed (None,"1.4")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-40")),
+                      Some (Speed (None,numExpr "1.4")),
                       BulletRef ({bulletRefLabel = "kujira";},["-170"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"-50")),
-                      Some (Speed (None,"1.25")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-50")),
+                      Some (Speed (None,numExpr "1.25")),
                       BulletRef ({bulletRefLabel = "kujira";},["-160"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"-60")),
-                      Some (Speed (None,"1.1")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-60")),
+                      Some (Speed (None,numExpr "1.1")),
                       BulletRef ({bulletRefLabel = "kujira";},["-150"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"-70")),
-                      Some (Speed (None,"0.95")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-70")),
+                      Some (Speed (None,numExpr "0.95")),
                       BulletRef ({bulletRefLabel = "kujira";},["-140"]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"-80")),
-                      Some (Speed (None,"0.8")),
-                      BulletRef ({bulletRefLabel = "kujira";},["-130"])); Wait "2"]));
-            Wait "250 - 100 * $rank"]);
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-80")),
+                      Some (Speed (None,numExpr "0.8")),
+                      BulletRef ({bulletRefLabel = "kujira";},["-130"])); Wait (numExpr "2")]));
+            Wait (numExpr "250 - 100 * $rank")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "kujira";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "5";
+               [Wait (numExpr "5");
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Relative;},"$1"),Term "60");
-                Wait "60 + 5";
-                ChangeSpeed (Speed (None,"3.5 * (0.75 + 0.25 * $rank)"),Term "30");
+                  (Direction (Some {directionType = DirectionType.Relative;},numExpr "$1"),Term (numExpr "60"));
+                Wait (numExpr "60 + 5");
+                ChangeSpeed (Speed (None,numExpr "3.5 * (0.75 + 0.25 * $rank)"),Term (numExpr "30"));
                 Repeat
-                  (Times "10 / (2.0 - 1.0 * $rank)",
+                  (Times (numExpr "10 / (2.0 - 1.0 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [ChangeDirection
-                         (Direction (Some {directionType = Aim;},"0"),
-                          Term "8 * (2.0 - 1.0 * $rank)");
-                       Wait "8 * (2.0 - 1.0 * $rank)"]))])]);
+                         (Direction (Some {directionType = Aim;},numExpr "0"),
+                          Term (numExpr "8 * (2.0 - 1.0 * $rank)"));
+                       Wait (numExpr "8 * (2.0 - 1.0 * $rank)")]))])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "bit";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0.0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0.0")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-                   Some (Speed (None,"$2 * (0.5 + 0.5 * $rank)")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+                   Some (Speed (None,numExpr "$2 * (0.5 + 0.5 * $rank)")),
                    Bullet ({bulletLabel = None;},None,None,[]));
-                Wait "2 * (3.5 - 2.5 * $rank)";
+                Wait (numExpr "2 * (3.5 - 2.5 * $rank)");
                 Repeat
-                  (Times "100 / (3.5 - 2.5 * $rank)",
+                  (Times (numExpr "100 / (3.5 - 2.5 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Fire
@@ -3352,10 +3352,10 @@ module Original =
                           Some
                             (Direction
                                (Some {directionType = DirectionType.Sequence;},
-                                "$1 * (3.5 - 2.5 * $rank)")),
-                          Some (Speed (None,"$2 * (0.5 + 0.5 * $rank)")),
+                                numExpr "$1 * (3.5 - 2.5 * $rank)")),
+                          Some (Speed (None,numExpr "$2 * (0.5 + 0.5 * $rank)")),
                           Bullet ({bulletLabel = None;},None,None,[]));
-                       Wait "2 * (3.5 - 2.5 * $rank)"])); Vanish])])])
+                       Wait (numExpr "2 * (3.5 - 2.5 * $rank)")])); Vanish])])])
 
   /// オリジナル。くねくね。by 白い弾幕くん
   /// [Original]_kunekune.xml
@@ -3370,50 +3370,50 @@ module Original =
           ({actionLabel = Some "fire";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-               Some (Speed (Some {speedType = SpeedType.Relative;},"-0.5")),
+               Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+               Some (Speed (Some {speedType = SpeedType.Relative;},numExpr "-0.5")),
                Bullet ({bulletLabel = None;},None,None,[]))]);
         BulletmlElm.Fire
-          ({fireLabel = Some "src";},Some (Direction (None,"(30+$rank*20)*$1")),
-           Some (Speed (None,"2")),
+          ({fireLabel = Some "src";},Some (Direction (None,numExpr "(30+$rank*20)*$1")),
+           Some (Speed (None,numExpr "2")),
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
                  ({actionLabel = None;},
                   [Repeat
-                     (Times "10",
+                     (Times (numExpr "10"),
                       Action
                         ({actionLabel = None;},
                          [Accel
                             (Some
                                (Horizontal
-                                  (Some {horizontalType = Relative;},"$1*4")),None,
-                             Term "20");
+                                  (Some {horizontalType = Relative;},numExpr "$1*4")),None,
+                             Term (numExpr "20"));
                           Repeat
-                            (Times "10",
+                            (Times (numExpr "10"),
                              Action
                                ({actionLabel = None;},
                                 [Action.ActionRef ({actionRefLabel = "fire";},["$1"]);
-                                 Wait "2"]));
+                                 Wait (numExpr "2")]));
                           Accel
                             (Some
                                (Horizontal
-                                  (Some {horizontalType = Relative;},"-$1*4")),None,
-                             Term "20");
+                                  (Some {horizontalType = Relative;},numExpr "-$1*4")),None,
+                             Term (numExpr "20"));
                           Repeat
-                            (Times "10",
+                            (Times (numExpr "10"),
                              Action
                                ({actionLabel = None;},
                                 [Action.ActionRef ({actionRefLabel = "fire";},["$1"]);
-                                 Wait "2"]))]))])]));
+                                 Wait (numExpr "2")]))]))])]));
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "3",
+              (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
                   [FireRef ({fireRefLabel = "src";},["1"]);
-                   FireRef ({fireRefLabel = "src";},["-1"]); Wait "80"])); Wait "60"])])
+                   FireRef ({fireRefLabel = "src";},["-1"]); Wait (numExpr "80")])); Wait (numExpr "60")])])
 
   /// オリジナル。扇状弾二つ。by 白い弾幕くん
   /// [Original]_oogi_hutatsu.xml
@@ -3427,36 +3427,36 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "oogiSeq";},
            [Repeat
-              (Times "20",
+              (Times (numExpr "20"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"8")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"0")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "8")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
           ({actionLabel = Some "oogi";},
            [Fire
-              ({fireLabel = None;},Some (Direction (None,"-80")),
-               Some (Speed (None,"$2")),Bullet ({bulletLabel = None;},None,None,[]));
+              ({fireLabel = None;},Some (Direction (None,numExpr "-80")),
+               Some (Speed (None,numExpr "$2")),Bullet ({bulletLabel = None;},None,None,[]));
             Action.ActionRef ({actionRefLabel = "oogiSeq";},[]);
             Repeat
-              (Times "10+$rank*10",
+              (Times (numExpr "10+$rank*10"),
                Action
                  ({actionLabel = None;},
-                  [Wait "2";
+                  [Wait (numExpr "2");
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"-$1")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.04")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-$1")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.04")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef ({actionRefLabel = "oogiSeq";},[])]))]);
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Action.ActionRef ({actionRefLabel = "oogi";},["161"; "0.8+$rank*0.4"]);
-            Wait "30"; Action.ActionRef ({actionRefLabel = "oogi";},["159"; "1+$rank*0.6"]);
-            Wait "150"])])
+            Wait (numExpr "30"); Action.ActionRef ({actionRefLabel = "oogi";},["159"; "1+$rank*0.6"]);
+            Wait (numExpr "150")])])
 
   /// 大原さんのオリジナル、光学探査兵器 by 白い弾幕くん
   /// [Original]_optic_seeker.xml
@@ -3470,67 +3470,67 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "2 + 8 * $rank",
+              (Times (numExpr "2 + 8 * $rank"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
-                        (Direction (Some {directionType = Aim;},"-30 + 60 * $rand")),
-                      Some (Speed (None,"3.0 + 2.0 * $rank")),
+                        (Direction (Some {directionType = Aim;},numExpr "-30 + 60 * $rand")),
+                      Some (Speed (None,numExpr "3.0 + 2.0 * $rank")),
                       BulletRef ({bulletRefLabel = "seal";},[]));
-                   Wait "25 - 20 * $rank";
+                   Wait (numExpr "25 - 20 * $rank");
                    Repeat
-                     (Times "3",
+                     (Times (numExpr "3"),
                       Action
                         ({actionLabel = None;},
                          [Fire
                             ({fireLabel = None;},
                              Some
                                (Direction
-                                  (Some {directionType = Aim;},"-60 + 120 * $rand")),
-                             Some (Speed (None,"3.0 + 2.0 * $rank")),
+                                  (Some {directionType = Aim;},numExpr "-60 + 120 * $rand")),
+                             Some (Speed (None,numExpr "3.0 + 2.0 * $rank")),
                              BulletRef ({bulletRefLabel = "reflect";},[]));
-                          Wait "25 - 20 * $rank"]))])); Wait "100"]);
+                          Wait (numExpr "25 - 20 * $rank")]))])); Wait (numExpr "100")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "reflect";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "(30 + 20 * $rand) * (1.0 - 0.5 * $rank)";
+               [Wait (numExpr "(30 + 20 * $rand) * (1.0 - 0.5 * $rank)");
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
                       [ChangeDirection
                          (Direction
-                            (Some {directionType = DirectionType.Relative;},"60 + 240 * $rand"),
-                          Term "1"); Wait "(10 + 10 * $rand) * (1.0 - 0.5 * $rank)"]));
+                            (Some {directionType = DirectionType.Relative;},numExpr "60 + 240 * $rand"),
+                          Term (numExpr "1")); Wait (numExpr "(10 + 10 * $rand) * (1.0 - 0.5 * $rank)")]));
                 ChangeDirection
-                  (Direction (Some {directionType = Aim;},"0"),Term "1")])]);
+                  (Direction (Some {directionType = Aim;},numExpr "0"),Term (numExpr "1"))])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "seal";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "10 + 10 * $rand"; ChangeSpeed (Speed (None,"0"),Term "1");
-                Wait "5";
+               [Wait (numExpr "10 + 10 * $rand"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"));
+                Wait (numExpr "5");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = Aim;},"0")),
-                   Some (Speed (None,"3.0 + 2.0 * $rank")),
-                   Bullet ({bulletLabel = None;},None,None,[])); Wait "5";
+                   Some (Direction (Some {directionType = Aim;},numExpr "0")),
+                   Some (Speed (None,numExpr "3.0 + 2.0 * $rank")),
+                   Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "5");
                 Repeat
-                  (Times "7",
+                  (Times (numExpr "7"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"45")),
-                          Some (Speed (None,"3.0 + 2.0 * $rank")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "5"]));
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "45")),
+                          Some (Speed (None,numExpr "3.0 + 2.0 * $rank")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "5")]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = Aim;},"0")),
-                   Some (Speed (None,"3.0 + 2.0 * $rank")),
+                   Some (Direction (Some {directionType = Aim;},numExpr "0")),
+                   Some (Speed (None,numExpr "3.0 + 2.0 * $rank")),
                    Bullet ({bulletLabel = None;},None,None,[])); Vanish])])])
   
   /// オリジナル。ぱん。by 白い弾幕くん
@@ -3546,53 +3546,53 @@ module Original =
           ({bulletLabel = Some "pan";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "10";
+               [Wait (numExpr "10");
                 Fire
                   ({fireLabel = None;},
                    Some
                      (Direction
-                        (Some {directionType = DirectionType.Relative;},"95*$1")),
-                   Some (Speed (None,"1.8+$rank")),
+                        (Some {directionType = DirectionType.Relative;},numExpr "95*$1")),
+                   Some (Speed (None,numExpr "1.8+$rank")),
                    Bullet ({bulletLabel = None;},None,None,[])); Vanish])]);
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"-90")),
-               Some (Speed (None,"0.001")),
+               Some (Direction (Some {directionType = Aim;},numExpr "-90")),
+               Some (Speed (None,numExpr "0.001")),
                BulletRef ({bulletRefLabel = "pan";},["1"]));
             Repeat
-              (Times "20",
+              (Times (numExpr "20"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Sequence;},"3")),
+                           (Some {directionType = DirectionType.Sequence;},numExpr "3")),
                       Some
                         (Speed
-                           (Some {speedType = SpeedType.Sequence;},"0.2+$rank*0.4")),
+                           (Some {speedType = SpeedType.Sequence;},numExpr "0.2+$rank*0.4")),
                       BulletRef ({bulletRefLabel = "pan";},["1"]))]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"90")),
-               Some (Speed (None,"0.001")),
+               Some (Direction (Some {directionType = Aim;},numExpr "90")),
+               Some (Speed (None,numExpr "0.001")),
                BulletRef ({bulletRefLabel = "pan";},["-1"]));
             Repeat
-              (Times "20",
+              (Times (numExpr "20"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Sequence;},"-3")),
+                           (Some {directionType = DirectionType.Sequence;},numExpr "-3")),
                       Some
                         (Speed
-                           (Some {speedType = SpeedType.Sequence;},"0.2+$rank*0.4")),
+                           (Some {speedType = SpeedType.Sequence;},numExpr "0.2+$rank*0.4")),
                       BulletRef ({bulletRefLabel = "pan";},["-1"]))]));
-            Wait "40"])])
+            Wait (numExpr "40")])])
 
   /// オリジナル。弱誘導弾から左右に弾幕。by 白い弾幕くん
   /// [Original]_progear_cheap_fake.xml
@@ -3605,49 +3605,49 @@ module Original =
         bulletmlDescription = None},
        [BulletmlElm.Fire
           ({fireLabel = Some "weekHoming";},
-           Some (Direction (Some {directionType = Aim;},"0")),
-           Some (Speed (None,"0.1")),
+           Some (Direction (Some {directionType = Aim;},numExpr "0")),
+           Some (Speed (None,numExpr "0.1")),
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
                  ({actionLabel = None;},
                   [Repeat
-                     (Times "3",
+                     (Times (numExpr "3"),
                       Action
                         ({actionLabel = None;},
-                         [ChangeSpeed (Speed (None,"1.5"),Term "30"); Wait "30";
+                         [ChangeSpeed (Speed (None,numExpr "1.5"),Term (numExpr "30")); Wait (numExpr "30");
                           Repeat
-                            (Times "2+$rank*4",
+                            (Times (numExpr "2+$rank*4"),
                              Action
                                ({actionLabel = None;},
                                 [Fire
                                    ({fireLabel = None;},
                                     Some
                                       (Direction
-                                         (Some {directionType = DirectionType.Relative;},"90")),
-                                    Some (Speed (None,"1.3")),
+                                         (Some {directionType = DirectionType.Relative;},numExpr "90")),
+                                    Some (Speed (None,numExpr "1.3")),
                                     Bullet ({bulletLabel = None;},None,None,[]));
                                  Fire
                                    ({fireLabel = None;},
                                     Some
                                       (Direction
-                                         (Some {directionType = DirectionType.Relative;},"-90")),
-                                    Some (Speed (None,"1.3")),
+                                         (Some {directionType = DirectionType.Relative;},numExpr "-90")),
+                                    Some (Speed (None,numExpr "1.3")),
                                     Bullet ({bulletLabel = None;},None,None,[]));
-                                 Wait "2"]));
+                                 Wait (numExpr "2")]));
                           ChangeDirection
-                            (Direction (Some {directionType = Aim;},"60-120*$rand"),
-                             Term "20"); ChangeSpeed (Speed (None,"0.1"),Term "20");
-                          Wait "20"])); ChangeSpeed (Speed (None,"1.5"),Term "30");
-                   Wait "30"])]));
+                            (Direction (Some {directionType = Aim;},numExpr "60-120*$rand"),
+                             Term (numExpr "20")); ChangeSpeed (Speed (None,numExpr "0.1"),Term (numExpr "20"));
+                          Wait (numExpr "20")])); ChangeSpeed (Speed (None,numExpr "1.5"),Term (numExpr "30"));
+                   Wait (numExpr "30")])]));
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "10",
+              (Times (numExpr "10"),
                Action
                  ({actionLabel = None;},
-                  [FireRef ({fireRefLabel = "weekHoming";},[]); Wait "60-$rank*30"]));
-            Wait "180"])])
+                  [FireRef ({fireRefLabel = "weekHoming";},[]); Wait (numExpr "60-$rank*30")]));
+            Wait (numExpr "180")])])
 
   /// オリジナル。炸裂弾。by 白い弾幕くん
   /// [Original]_sakuretudan.xml
@@ -3661,45 +3661,45 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "10",
+              (Times (numExpr "10"),
                Action
                  ({actionLabel = None;},
                   [Fire
-                     ({fireLabel = None;},Some (Direction (None,"$rand*360")),
-                      Some (Speed (None,"2")),
+                     ({fireLabel = None;},Some (Direction (None,numExpr "$rand*360")),
+                      Some (Speed (None,numExpr "2")),
                       Bullet
                         ({bulletLabel = None;},None,None,
                          [Action
                             ({actionLabel = None;},
-                             [ChangeDirection (Direction (None,"0"),Term "60");
-                              Wait "60";
+                             [ChangeDirection (Direction (None,numExpr "0"),Term (numExpr "60"));
+                              Wait (numExpr "60");
                               Repeat
-                                (Times "15+$rank*20",
+                                (Times (numExpr "15+$rank*20"),
                                  Action
                                    ({actionLabel = None;},
                                     [Repeat
-                                       (Times "2",
+                                       (Times (numExpr "2"),
                                         Action
                                           ({actionLabel = None;},
                                            [Fire
                                               ({fireLabel = None;},
-                                               Some (Direction (None,"360*$rand")),
-                                               Some (Speed (None,"5")),
+                                               Some (Direction (None,numExpr "360*$rand")),
+                                               Some (Speed (None,numExpr "5")),
                                                Bullet
                                                  ({bulletLabel = None;},None,None,
                                                   [Action
                                                      ({actionLabel = None;},
-                                                      [Wait "$rand*5";
+                                                      [Wait (numExpr "$rand*5");
                                                        Fire
                                                          ({fireLabel = None;},None,
                                                           Some
                                                             (Speed
-                                                               (None,"$rand*4+0.5")),
+                                                               (None,numExpr "$rand*4+0.5")),
                                                           Bullet
                                                             ({bulletLabel = None;},
                                                              None,None,[])); Vanish])]))]));
-                                     Wait "1"])); Vanish])])); Wait "60"]));
-            Wait "100"])])
+                                     Wait (numExpr "1")])); Vanish])])); Wait (numExpr "60")]));
+            Wait (numExpr "100")])])
 
   /// 大原さんのオリジナル、シューティングスター by 白い弾幕くん
   /// [Original]_shooting_star.xml
@@ -3714,106 +3714,106 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"75 + 10 * $rand")),
-               Some (Speed (None,"1.5")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "75 + 10 * $rand")),
+               Some (Speed (None,numExpr "1.5")),
                BulletRef ({bulletRefLabel = "star";},["215 + 10 * $rand"]));
-            Wait "50";
+            Wait (numExpr "50");
             Fire
               ({fireLabel = None;},
                Some
-                 (Direction (Some {directionType = DirectionType.Absolute;},"-(75 + 10 * $rand)")),
-               Some (Speed (None,"1.5")),
+                 (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-(75 + 10 * $rand)")),
+               Some (Speed (None,numExpr "1.5")),
                BulletRef ({bulletRefLabel = "star";},["-(215 + 10 * $rand)"]));
-            Wait "30";
+            Wait (numExpr "30");
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"75 + 10 * $rand")),
-               Some (Speed (None,"1.5")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "75 + 10 * $rand")),
+               Some (Speed (None,numExpr "1.5")),
                BulletRef ({bulletRefLabel = "star";},["215 + 10 * $rand"]));
-            Wait "10";
+            Wait (numExpr "10");
             Fire
               ({fireLabel = None;},
                Some
-                 (Direction (Some {directionType = DirectionType.Absolute;},"-(75 + 10 * $rand)")),
-               Some (Speed (None,"1.5")),
+                 (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-(75 + 10 * $rand)")),
+               Some (Speed (None,numExpr "1.5")),
                BulletRef ({bulletRefLabel = "star";},["-(215 + 10 * $rand)"]));
-            Wait "650 - 150 * $rank"]);
+            Wait (numExpr "650 - 150 * $rank")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "star";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "45"; ChangeSpeed (Speed (None,"0"),Term "1"); Wait "15";
+               [Wait (numExpr "45"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "15");
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Absolute;},"$1"),Term "1");
-                ChangeSpeed (Speed (None,"2.0"),Term "180"); Wait "1";
+                  (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1"),Term (numExpr "1"));
+                ChangeSpeed (Speed (None,numExpr "2.0"),Term (numExpr "180")); Wait (numExpr "1");
                 Repeat
-                  (Times "180",
+                  (Times (numExpr "180"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Relative;},"150 + 60 * $rand")),
+                               (Some {directionType = DirectionType.Relative;},numExpr "150 + 60 * $rand")),
                           None,
                           BulletRef
                             ({bulletRefLabel = "tail";},
-                             ["1.5 * (0.25 + 0.75 * $rank)"])); Wait "1"]));
+                             ["1.5 * (0.25 + 0.75 * $rank)"])); Wait (numExpr "1")]));
                 Fire
                   ({fireLabel = None;},None,None,
                    BulletRef ({bulletRefLabel = "head";},[])); Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "head";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+           Some (Speed (None,numExpr "0")),
            [Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "20 * (0.25 + 0.75 * $rank)",
+                  (Times (numExpr "20 * (0.25 + 0.75 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
+                               (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
                           Some
                             (Speed
-                               (None,"(0.3 + 0.3 * $rand) * (0.25 + 0.75 * $rank)")),
+                               (None,numExpr "(0.3 + 0.3 * $rand) * (0.25 + 0.75 * $rank)")),
                           Bullet ({bulletLabel = None;},None,None,[]))]));
                 Repeat
-                  (Times "30 * (0.25 + 0.75 * $rank)",
+                  (Times (numExpr "30 * (0.25 + 0.75 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
+                               (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
                           Some
                             (Speed
-                               (None,"(0.5 + 0.5 * $rand) * (0.25 + 0.75 * $rank)")),
+                               (None,numExpr "(0.5 + 0.5 * $rand) * (0.25 + 0.75 * $rank)")),
                           Bullet ({bulletLabel = None;},None,None,[]))]));
                 Repeat
-                  (Times "50 * (0.25 + 0.75 * $rank)",
+                  (Times (numExpr "50 * (0.25 + 0.75 * $rank)"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
+                               (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
                           Some
                             (Speed
-                               (None,"(0.8 + 0.8 * $rand) * (0.25 + 0.75 * $rank)")),
+                               (None,numExpr "(0.8 + 0.8 * $rand) * (0.25 + 0.75 * $rank)")),
                           Bullet ({bulletLabel = None;},None,None,[]))]));
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
-                   Some (Speed (None,"1.6 * (0.25 + 0.75 * $rank)")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
+                   Some (Speed (None,numExpr "1.6 * (0.25 + 0.75 * $rank)")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "12 + 24 * $rank",
+                  (Times (numExpr "12 + 24 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
@@ -3821,25 +3821,25 @@ module Original =
                           Some
                             (Direction
                                (Some {directionType = DirectionType.Sequence;},
-                                "360 / (12 + 24 * $rank)")),
-                          Some (Speed (None,"1.6 * (0.25 + 0.75 * $rank)")),
+                                numExpr "360 / (12 + 24 * $rank)")),
+                          Some (Speed (None,numExpr "1.6 * (0.25 + 0.75 * $rank)")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "tail";},None,Some (Speed (None,"0.001")),
+          ({bulletLabel = Some "tail";},None,Some (Speed (None,numExpr "0.001")),
            [Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "1 + 3 * $rank * $rank",
+                  (Times (numExpr "1 + 3 * $rank * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Relative;},"-3 + 6 * $rand")),
+                               (Some {directionType = DirectionType.Relative;},numExpr "-3 + 6 * $rand")),
                           Some
-                            (Speed (None,"$1 * (1.0 + (0.1 + 0.2 * $rank) * $rand)")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "1"]));
+                            (Speed (None,numExpr "$1 * (1.0 + (0.1 + 0.2 * $rank) * $rand)")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1")]));
                 Vanish])])])
 
   /// 大原さんのオリジナル、あの空に星を by 白い弾幕くん
@@ -3855,55 +3855,55 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
                None,BulletRef ({bulletRefLabel = "dummy";},[]));
             Repeat
-              (Times "11",
+              (Times (numExpr "11"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"30")),None,
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "30")),None,
                       BulletRef ({bulletRefLabel = "dummy";},[]))]));
-            Wait "450 - 200 * $rank"]);
+            Wait (numExpr "450 - 200 * $rank")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "dummy";},None,Some (Speed (None,"0.0001")),
+          ({bulletLabel = Some "dummy";},None,Some (Speed (None,numExpr "0.0001")),
            [Action
               ({actionLabel = None;},
                [Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"0")),
-                   Some (Speed (None,"0.6")),
-                   BulletRef ({bulletRefLabel = "star";},[])); Wait "2";
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "0")),
+                   Some (Speed (None,numExpr "0.6")),
+                   BulletRef ({bulletRefLabel = "star";},[])); Wait (numExpr "2");
                 Repeat
-                  (Times "7",
+                  (Times (numExpr "7"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"-7")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"0.05")),
-                          BulletRef ({bulletRefLabel = "star";},[])); Wait "2"]));
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-7")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.05")),
+                          BulletRef ({bulletRefLabel = "star";},[])); Wait (numExpr "2")]));
                 Vanish])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "star";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "55"; ChangeSpeed (Speed (None,"0.0001"),Term "1"); Wait "5";
+               [Wait (numExpr "55"); ChangeSpeed (Speed (None,numExpr "0.0001"),Term (numExpr "1")); Wait (numExpr "5");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Relative;},"-170")),
-                   Some (Speed (None,"0.6 + 0.7 * $rank")),
-                   Bullet ({bulletLabel = None;},None,None,[])); Wait "5";
+                   Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-170")),
+                   Some (Speed (None,numExpr "0.6 + 0.7 * $rank")),
+                   Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "5");
                 Repeat
-                  (Times "3 * 4 * $rank",
+                  (Times (numExpr "3 * 4 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"11")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"0.05")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "5"]));
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "11")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.05")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "5")]));
                 Vanish])])])
 
   /// オリジナル。池に落ちた石六個。 by 白い弾幕くん
@@ -3919,47 +3919,47 @@ module Original =
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"150")),
-               Some (Speed (None,"4")),BulletRef ({bulletRefLabel = "roll";},[]));
-            Wait "2";
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "150")),
+               Some (Speed (None,numExpr "4")),BulletRef ({bulletRefLabel = "roll";},[]));
+            Wait (numExpr "2");
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"210")),
-               Some (Speed (None,"4")),BulletRef ({bulletRefLabel = "roll";},[]));
-            Wait "2";
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "210")),
+               Some (Speed (None,numExpr "4")),BulletRef ({bulletRefLabel = "roll";},[]));
+            Wait (numExpr "2");
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"135")),
-               Some (Speed (None,"3")),BulletRef ({bulletRefLabel = "roll";},[]));
-            Wait "2";
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "135")),
+               Some (Speed (None,numExpr "3")),BulletRef ({bulletRefLabel = "roll";},[]));
+            Wait (numExpr "2");
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"225")),
-               Some (Speed (None,"3")),BulletRef ({bulletRefLabel = "roll";},[]));
-            Wait "2";
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "225")),
+               Some (Speed (None,numExpr "3")),BulletRef ({bulletRefLabel = "roll";},[]));
+            Wait (numExpr "2");
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"135")),
-               Some (Speed (None,"2")),BulletRef ({bulletRefLabel = "roll";},[]));
-            Wait "2";
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "135")),
+               Some (Speed (None,numExpr "2")),BulletRef ({bulletRefLabel = "roll";},[]));
+            Wait (numExpr "2");
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"225")),
-               Some (Speed (None,"2")),BulletRef ({bulletRefLabel = "roll";},[]));
-            Wait "60"]);
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "225")),
+               Some (Speed (None,numExpr "2")),BulletRef ({bulletRefLabel = "roll";},[]));
+            Wait (numExpr "60")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "roll";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "10"; ChangeSpeed (Speed (None,"0"),Term "1");
+               [Wait (numExpr "10"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"));
                 Repeat
-                  (Times "45",
+                  (Times (numExpr "45"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"8")),
-                          Some (Speed (None,"1.3+$rank")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "8")),
+                          Some (Speed (None,numExpr "1.3+$rank")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])])])
 
   /// オリジナル。道を探せ。by 白い弾幕くん
@@ -3975,19 +3975,19 @@ module Original =
           ({bulletLabel = Some "stopAndRun";},None,None,
            [Action
               ({actionLabel = None;},
-               [ChangeSpeed (Speed (None,"0"),Term "60"); Wait "180-$rank*120";
-                Accel (None,Some (Vertical (None,"3")),Term "120"); Wait "120"])]);
+               [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "60")); Wait (numExpr "180-$rank*120");
+                Accel (None,Some (Vertical (None,numExpr "3")),Term (numExpr "120")); Wait (numExpr "120")])]);
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "200",
+              (Times (numExpr "200"),
                Action
                  ({actionLabel = None;},
                   [Fire
-                     ({fireLabel = None;},Some (Direction (None,"$rand*360")),
-                      Some (Speed (None,"3*$rand+0.5")),
+                     ({fireLabel = None;},Some (Direction (None,numExpr "$rand*360")),
+                      Some (Speed (None,numExpr "3*$rand+0.5")),
                       BulletRef ({bulletRefLabel = "stopAndRun";},[]))]));
-            Wait "260-$rank*120"])])
+            Wait (numExpr "260-$rank*120")])])
 
   /// 大原さんのオリジナル、時空転換 by 白い弾幕くん
   /// [Original]_time_twist.xml
@@ -4000,81 +4000,81 @@ module Original =
         bulletmlDescription = None},
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
-           [Action.ActionRef ({actionRefLabel = "ancient";},[]); Wait "60 - 40 * $rank";
-            Action.ActionRef ({actionRefLabel = "future";},[]); Wait "60 - 40 * $rank";
-            Action.ActionRef ({actionRefLabel = "modern";},[]); Wait "60 - 40 * $rank";
-            Action.ActionRef ({actionRefLabel = "medieval";},[]); Wait "60 - 40 * $rank";
-            Action.ActionRef ({actionRefLabel = "primal";},[]); Wait "450"]);
+           [Action.ActionRef ({actionRefLabel = "ancient";},[]); Wait (numExpr "60 - 40 * $rank");
+            Action.ActionRef ({actionRefLabel = "future";},[]); Wait (numExpr "60 - 40 * $rank");
+            Action.ActionRef ({actionRefLabel = "modern";},[]); Wait (numExpr "60 - 40 * $rank");
+            Action.ActionRef ({actionRefLabel = "medieval";},[]); Wait (numExpr "60 - 40 * $rank");
+            Action.ActionRef ({actionRefLabel = "primal";},[]); Wait (numExpr "450")]);
         BulletmlElm.Action
           ({actionLabel = Some "ancient";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"90")),
-               Some (Speed (None,"1.5")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
+               Some (Speed (None,numExpr "1.5")),
                BulletRef ({bulletRefLabel = "ancientBit";},[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"-90")),
-               Some (Speed (None,"1.5")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-90")),
+               Some (Speed (None,numExpr "1.5")),
                BulletRef ({bulletRefLabel = "ancientBit";},[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-               Some (Speed (None,"0.0")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+               Some (Speed (None,numExpr "0.0")),
                BulletRef ({bulletRefLabel = "ancientBit";},[]))]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "ancientBit";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "30"; ChangeSpeed (Speed (None,"0"),Term "1"); Wait "5";
+               [Wait (numExpr "30"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "5");
                 Repeat
-                  (Times "40",
+                  (Times (numExpr "40"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Absolute;},"180")),
-                          Some (Speed (None,"2.0")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "5"]));
+                          Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+                          Some (Speed (None,numExpr "2.0")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "5")]));
                 Vanish])]);
         BulletmlElm.Action
           ({actionLabel = Some "modern";},
            [Repeat
-              (Times "20",
+              (Times (numExpr "20"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Absolute;},"-45 + 90 * $rand")),
-                      None,BulletRef ({bulletRefLabel = "modernBit";},[])); Wait "6"]))]);
+                           (Some {directionType = DirectionType.Absolute;},numExpr "-45 + 90 * $rand")),
+                      None,BulletRef ({bulletRefLabel = "modernBit";},[])); Wait (numExpr "6")]))]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "modernBit";},None,Some (Speed (None,"0.5")),
+          ({bulletLabel = Some "modernBit";},None,Some (Speed (None,numExpr "0.5")),
            [Action
               ({actionLabel = None;},
                [ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Absolute;},"160 + 40 * $rand"),
-                   Term "90"); Wait "30";
+                  (Direction (Some {directionType = DirectionType.Absolute;},numExpr "160 + 40 * $rand"),
+                   Term (numExpr "90")); Wait (numExpr "30");
                 Repeat
-                  (Times "5 + 5 * $rank",
+                  (Times (numExpr "5 + 5 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"-45 + 90 * $rand")),
+                               (Some {directionType = DirectionType.Absolute;},numExpr "-45 + 90 * $rand")),
                           None,BulletRef ({bulletRefLabel = "modernScore";},[]));
-                       Wait "3"])); Vanish])]);
+                       Wait (numExpr "3")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "modernScore";},None,Some (Speed (None,"0.5")),
+          ({bulletLabel = Some "modernScore";},None,Some (Speed (None,numExpr "0.5")),
            [Action
               ({actionLabel = None;},
                [ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Absolute;},"160 + 40 * $rand"),
-                   Term "90");
-                ChangeSpeed (Speed (None,"1.0 + 2.0 * $rank"),Term "300")])]);
+                  (Direction (Some {directionType = DirectionType.Absolute;},numExpr "160 + 40 * $rand"),
+                   Term (numExpr "90"));
+                ChangeSpeed (Speed (None,numExpr "1.0 + 2.0 * $rank"),Term (numExpr "300"))])]);
         BulletmlElm.Action
           ({actionLabel = Some "future";},
            [Fire
@@ -4082,53 +4082,53 @@ module Original =
                BulletRef ({bulletRefLabel = "futureBit";},[]))]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "futureBit";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"180")),
-           Some (Speed (None,"1.5")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+           Some (Speed (None,numExpr "1.5")),
            [Action
               ({actionLabel = None;},
-               [Wait "30";
+               [Wait (numExpr "30");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
                    None,BulletRef ({bulletRefLabel = "futureTriangle";},[]));
                 Repeat
-                  (Times "10",
+                  (Times (numExpr "10"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"120")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "120")),
                           None,BulletRef ({bulletRefLabel = "futureTriangle";},[]))]));
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "futureTriangle";},None,Some (Speed (None,"1.1")),
+          ({bulletLabel = Some "futureTriangle";},None,Some (Speed (None,numExpr "1.1")),
            [Action
               ({actionLabel = None;},
-               [Wait "30";
+               [Wait (numExpr "30");
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Relative;},"120"),Term "1");
-                Wait "5";
+                  (Direction (Some {directionType = DirectionType.Relative;},numExpr "120"),Term (numExpr "1"));
+                Wait (numExpr "5");
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Relative;},"150"),Term "60");
+                  (Direction (Some {directionType = DirectionType.Relative;},numExpr "150"),Term (numExpr "60"));
                 Repeat
-                  (Times "20",
+                  (Times (numExpr "20"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"45")),
-                          Some (Speed (None,"0.8")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "1";
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "45")),
+                          Some (Speed (None,numExpr "0.8")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1");
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"-45")),
-                          Some (Speed (None,"1.0")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "1";
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-45")),
+                          Some (Speed (None,numExpr "1.0")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1");
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"-60")),
-                          Some (Speed (None,"1.2")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "1"]))])]);
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-60")),
+                          Some (Speed (None,numExpr "1.2")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "1")]))])]);
         BulletmlElm.Action
           ({actionLabel = Some "medieval";},
            [Fire
@@ -4136,38 +4136,38 @@ module Original =
                BulletRef ({bulletRefLabel = "medievalBit";},[]))]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "medievalBit";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"180")),
-           Some (Speed (None,"1.5")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+           Some (Speed (None,numExpr "1.5")),
            [Action
               ({actionLabel = None;},
-               [Wait "60"; ChangeSpeed (Speed (None,"0.0"),Term "1"); Wait "5";
+               [Wait (numExpr "60"); ChangeSpeed (Speed (None,numExpr "0.0"),Term (numExpr "1")); Wait (numExpr "5");
                 Repeat
-                  (Times "50",
+                  (Times (numExpr "50"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
+                               (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
                           None,BulletRef ({bulletRefLabel = "medievalStar";},["90"]));
                        Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
+                               (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
                           None,
                           BulletRef ({bulletRefLabel = "medievalStar";},["-90"]));
-                       Wait "2"])); Vanish])]);
+                       Wait (numExpr "2")])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "medievalStar";},None,Some (Speed (None,"1.1")),
+          ({bulletLabel = Some "medievalStar";},None,Some (Speed (None,numExpr "1.1")),
            [Action
               ({actionLabel = None;},
-               [Wait "60";
+               [Wait (numExpr "60");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"$1")),
-                   Some (Speed (None,"1.1")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
+                   Some (Speed (None,numExpr "1.1")),
                    Bullet ({bulletLabel = None;},None,None,[])); Vanish])]);
         BulletmlElm.Action
           ({actionLabel = Some "primal";},
@@ -4176,27 +4176,27 @@ module Original =
                BulletRef ({bulletRefLabel = "primalBit";},[]))]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "primalBit";},
-           Some (Direction (Some {directionType = Aim;},"0")),
-           Some (Speed (None,"0.5")),
+           Some (Direction (Some {directionType = Aim;},numExpr "0")),
+           Some (Speed (None,numExpr "0.5")),
            [Action
               ({actionLabel = None;},
-               [ChangeSpeed (Speed (None,"1.1"),Term "120");
+               [ChangeSpeed (Speed (None,numExpr "1.1"),Term (numExpr "120"));
                 Repeat
-                  (Times "24",
+                  (Times (numExpr "24"),
                    Action
                      ({actionLabel = None;},
                       [ChangeDirection
-                         (Direction (Some {directionType = Aim;},"0"),Term "5");
-                       Wait "5"])); ChangeSpeed (Speed (None,"0.0"),Term "120");
+                         (Direction (Some {directionType = Aim;},numExpr "0"),Term (numExpr "5"));
+                       Wait (numExpr "5")])); ChangeSpeed (Speed (None,numExpr "0.0"),Term (numExpr "120"));
                 Repeat
-                  (Times "24",
+                  (Times (numExpr "24"),
                    Action
                      ({actionLabel = None;},
                       [ChangeDirection
-                         (Direction (Some {directionType = Aim;},"0"),Term "5");
-                       Wait "5"])); Wait "60";
+                         (Direction (Some {directionType = Aim;},numExpr "0"),Term (numExpr "5"));
+                       Wait (numExpr "5")])); Wait (numExpr "60");
                 Repeat
-                  (Times "80 + 220 * $rank",
+                  (Times (numExpr "80 + 220 * $rank"),
                    Action
                      ({actionLabel = None;},
                       [Action.ActionRef
@@ -4208,11 +4208,11 @@ module Original =
           ({actionLabel = Some "primalRock";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"$1 * $2")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1 * $2")),
                Some
                  (Speed
                     (None,
-                     "
+                     numExpr "
           (0.8 + 1.1*$1*(180-$1)/(90*90)) * (0.5+0.5*$rand) * (0.5+0.5*$rank)
         ")),
                Bullet ({bulletLabel = None;},None,None,[]))])])
@@ -4229,97 +4229,97 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "80+$rank*120",
+              (Times (numExpr "80+$rank*120"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
-                        (Direction (Some {directionType = DirectionType.Absolute;},"360 * $rand")),
-                      Some (Speed (None,"0.6 - 0.5 * $rank + 0.15 * $rand")),
+                        (Direction (Some {directionType = DirectionType.Absolute;},numExpr "360 * $rand")),
+                      Some (Speed (None,numExpr "0.6 - 0.5 * $rank + 0.15 * $rand")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Absolute;},"60 + 240 * $rand")),
-                      Some (Speed (None,"0.6 - 0.5 * $rank + 0.15 * $rand")),
+                           (Some {directionType = DirectionType.Absolute;},numExpr "60 + 240 * $rand")),
+                      Some (Speed (None,numExpr "0.6 - 0.5 * $rank + 0.15 * $rand")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Absolute;},"120 + 120 * $rand")),
-                      Some (Speed (None,"0.6 - 0.5 * $rank + 0.15 * $rand")),
-                      Bullet ({bulletLabel = None;},None,None,[])); Wait "2"]));
-            Wait "10 + 210 * $rank * $rank";
+                           (Some {directionType = DirectionType.Absolute;},numExpr "120 + 120 * $rand")),
+                      Some (Speed (None,numExpr "0.6 - 0.5 * $rank + 0.15 * $rand")),
+                      Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "2")]));
+            Wait (numExpr "10 + 210 * $rank * $rank");
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"70 + 40 * $rand")),
-               Some (Speed (None,"0.6 - 0.3 * $rank")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "70 + 40 * $rand")),
+               Some (Speed (None,numExpr "0.6 - 0.3 * $rank")),
                BulletRef ({bulletRefLabel = "layer1";},[]));
             Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},"180")),
-               Some (Speed (None,"0.6 - 0.3 * $rank")),
-               BulletRef ({bulletRefLabel = "layer1";},[])); Wait "600"]);
+               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "180")),
+               Some (Speed (None,numExpr "0.6 - 0.3 * $rank")),
+               BulletRef ({bulletRefLabel = "layer1";},[])); Wait (numExpr "600")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "layer1";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "15";
+               [Wait (numExpr "15");
                 Repeat
-                  (Times "100",
+                  (Times (numExpr "100"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"90")),
-                          Some (Speed (None,"0.8 - 0.4 * $rank")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "90")),
+                          Some (Speed (None,numExpr "0.8 - 0.4 * $rank")),
                           BulletRef ({bulletRefLabel = "layer2";},[]));
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"-90")),
-                          Some (Speed (None,"0.8 - 0.4 * $rank")),
-                          BulletRef ({bulletRefLabel = "layer2";},[])); Wait "60"]))])]);
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-90")),
+                          Some (Speed (None,numExpr "0.8 - 0.4 * $rank")),
+                          BulletRef ({bulletRefLabel = "layer2";},[])); Wait (numExpr "60")]))])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "layer2";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "15";
+               [Wait (numExpr "15");
                 Repeat
-                  (Times "100",
+                  (Times (numExpr "100"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"45")),
-                          Some (Speed (None,"1.0 - 0.5 * $rank")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "45")),
+                          Some (Speed (None,numExpr "1.0 - 0.5 * $rank")),
                           BulletRef ({bulletRefLabel = "layer3";},[]));
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"-45")),
-                          Some (Speed (None,"1.0 - 0.5 * $rank")),
-                          BulletRef ({bulletRefLabel = "layer3";},[])); Wait "60"]))])]);
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-45")),
+                          Some (Speed (None,numExpr "1.0 - 0.5 * $rank")),
+                          BulletRef ({bulletRefLabel = "layer3";},[])); Wait (numExpr "60")]))])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "layer3";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "15";
+               [Wait (numExpr "15");
                 Repeat
-                  (Times "100",
+                  (Times (numExpr "100"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"30")),
-                          Some (Speed (None,"0.2 + 0.3 * $rank * $rand")),
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "30")),
+                          Some (Speed (None,numExpr "0.2 + 0.3 * $rank * $rand")),
                           Bullet ({bulletLabel = None;},None,None,[]));
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Relative;},"-30")),
-                          Some (Speed (None,"0.2 + 0.3 * $rank * $rand")),
-                          Bullet ({bulletLabel = None;},None,None,[])); Wait "60"]))])])])
+                          Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-30")),
+                          Some (Speed (None,numExpr "0.2 + 0.3 * $rank * $rand")),
+                          Bullet ({bulletLabel = None;},None,None,[])); Wait (numExpr "60")]))])])])
 
   /// オリジナル。二つ十字。by 白い弾幕くん
   /// [Original]_two_cross.xml
@@ -4333,40 +4333,40 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "add3";},
            [Repeat
-              (Times "3",
+              (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"90")),None,
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "90")),None,
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Fire
-          ({fireLabel = Some "slow";},Some (Direction (None,"(50-$rank*20)*$1")),
-           Some (Speed (None,"2")),
+          ({fireLabel = Some "slow";},Some (Direction (None,numExpr "(50-$rank*20)*$1")),
+           Some (Speed (None,numExpr "2")),
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
                  ({actionLabel = None;},
-                  [Wait "5";
+                  [Wait (numExpr "5");
                    Repeat
-                     (Times "100",
+                     (Times (numExpr "100"),
                       Action
                         ({actionLabel = None;},
                          [Fire
                             ({fireLabel = None;},
                              Some
-                               (Direction (Some {directionType = DirectionType.Sequence;},"4*$1")),
+                               (Direction (Some {directionType = DirectionType.Sequence;},numExpr "4*$1")),
                              None,Bullet ({bulletLabel = None;},None,None,[]));
-                          Action.ActionRef ({actionRefLabel = "add3";},[]); Wait "4"]))])]));
+                          Action.ActionRef ({actionRefLabel = "add3";},[]); Wait (numExpr "4")]))])]));
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "3",
+              (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
                   [FireRef ({fireRefLabel = "slow";},["1"]);
-                   FireRef ({fireRefLabel = "slow";},["-1"]); Wait "80"]));
-            Wait "60"])])    
+                   FireRef ({fireRefLabel = "slow";},["-1"]); Wait (numExpr "80")]));
+            Wait (numExpr "60")])])    
     
   /// オリジナル。うねりを作る。by 白い弾幕くん
   /// [Original]_uneri.xml
@@ -4381,31 +4381,31 @@ module Original =
           ({actionLabel = Some "src";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = Aim;},"$1")),
-               Some (Speed (None,"1.5")),
+               Some (Direction (Some {directionType = Aim;},numExpr "$1")),
+               Some (Speed (None,numExpr "1.5")),
                Bullet ({bulletLabel = None;},None,None,[]));
             Repeat
-              (Times "450/(4-$rank*2)",
+              (Times (numExpr "450/(4-$rank*2)"),
                Action
                  ({actionLabel = None;},
-                  [Wait "4.5-$rank*3+$rand";
+                  [Wait (numExpr "4.5-$rank*3+$rand");
                    Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Sequence;},"$rand*10-5")),
-                      Some (Speed (None,"1.5")),
+                           (Some {directionType = DirectionType.Sequence;},numExpr "$rand*10-5")),
+                      Some (Speed (None,numExpr "1.5")),
                       Bullet ({bulletLabel = None;},None,None,[]))])); Vanish]);
         BulletmlElm.Fire
           ({fireLabel = Some "srcFire";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"90")),
-           Some (Speed (None,"$1")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
+           Some (Speed (None,numExpr "$1")),
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
                  ({actionLabel = None;},
-                  [Wait "5";
-                   ChangeSpeed (Speed (None,"0"),Term "1");
+                  [Wait (numExpr "5");
+                   ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1"));
                    Action.ActionRef ({actionRefLabel = "src";},["$2"])])]));
         BulletmlElm.Action
           ({actionLabel = Some "top";},
@@ -4414,7 +4414,7 @@ module Original =
             FireRef ({fireRefLabel = "srcFire";},["8"; "20"]);
             FireRef ({fireRefLabel = "srcFire";},["-4"; "-10"]);
             FireRef ({fireRefLabel = "srcFire";},["-8"; "-20"]);
-            Wait "500"])])    
+            Wait (numExpr "500")])])    
         
   /// オリジナル。ワナ。by 白い弾幕くん
   /// [Original]_wana.xml
@@ -4428,22 +4428,22 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "XWayFan";},
            [Repeat
-              (Times "$1-1",
+              (Times (numExpr "$1-1"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Sequence;},"$2")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"$3")),
+                           (Some {directionType = DirectionType.Sequence;},numExpr "$2")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "$3")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
           ({actionLabel = Some "top2";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"-10")),
-               Some (Speed (None,"0")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "-10")),
+               Some (Speed (None,numExpr "0")),
                Bullet
                  ({bulletLabel = None;},None,None,
                   [Action ({actionLabel = None;},[Vanish])]));
@@ -4460,8 +4460,8 @@ module Original =
           ({actionLabel = Some "top1";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"215")),
-               Some (Speed (None,"0")),
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "215")),
+               Some (Speed (None,numExpr "0")),
                Bullet
                  ({bulletLabel = None;},None,None,
                   [Action ({actionLabel = None;},[Vanish])]));
@@ -4477,47 +4477,47 @@ module Original =
         BulletmlElm.Action
           ({actionLabel = Some "main";},
            [Repeat
-              (Times "$1",
+              (Times (numExpr "$1"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Sequence;},"36+$2")),
-                      Some (Speed (None,"$3")),
+                           (Some {directionType = DirectionType.Sequence;},numExpr "36+$2")),
+                      Some (Speed (None,numExpr "$3")),
                       Bullet ({bulletLabel = None;},None,None,[]));
                    Action.ActionRef
                      ({actionRefLabel = "XWayFan";},
                       ["5"; "1"; "$4"]);
                    Repeat
-                     (Times "4",
+                     (Times (numExpr "4"),
                       Action
                         ({actionLabel = None;},
                          [Fire
                             ({fireLabel = None;},
                              Some
                                (Direction
-                                  (Some {directionType = DirectionType.Sequence;},"36")),
-                             Some (Speed (None,"$3")),
+                                  (Some {directionType = DirectionType.Sequence;},numExpr "36")),
+                             Some (Speed (None,numExpr "$3")),
                              Bullet ({bulletLabel = None;},None,None,[]));
                           Action.ActionRef
                             ({actionRefLabel = "XWayFan";},
                              ["5"; "1"; "$4"])]));
                    Repeat
-                     (Times "4",
+                     (Times (numExpr "4"),
                       Action
                         ({actionLabel = None;},
                          [Fire
                             ({fireLabel = None;},
                              Some
                                (Direction
-                                  (Some {directionType = DirectionType.Sequence;},"36")),
-                             Some (Speed (None,"$5")),
+                                  (Some {directionType = DirectionType.Sequence;},numExpr "36")),
+                             Some (Speed (None,numExpr "$5")),
                              Bullet ({bulletLabel = None;},None,None,[]));
                           Action.ActionRef
                             ({actionRefLabel = "XWayFan";},
-                             ["5"; "1"; "$6"])])); Wait "15"]))])])
+                             ["5"; "1"; "$6"])])); Wait (numExpr "15")]))])])
 
   /// オリジナル。横加速。by 白い弾幕くん
   /// [Original]_yokokasoku.xml
@@ -4530,35 +4530,35 @@ module Original =
         bulletmlDescription = None},
        [BulletmlElm.Fire
           ({fireLabel = Some "accelShot";},
-           Some (Direction (Some {directionType = DirectionType.Absolute;},"90")),
-           Some (Speed (None,"0")),
+           Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "90")),
+           Some (Speed (None,numExpr "0")),
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
                  ({actionLabel = None;},
-                  [Accel (Some (Horizontal (None,"3*$1")),None,Term "80")])]));
+                  [Accel (Some (Horizontal (None,numExpr "3*$1")),None,Term (numExpr "80"))])]));
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "20",
+              (Times (numExpr "20"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = Aim;},"$rand*90-45")),
-                      Some (Speed (None,"1")),
+                      Some (Direction (Some {directionType = Aim;},numExpr "$rand*90-45")),
+                      Some (Speed (None,numExpr "1")),
                       Bullet
                         ({bulletLabel = None;},None,None,
                          [Action
                             ({actionLabel = None;},
                              [Repeat
-                                (Times "9999",
+                                (Times (numExpr "9999"),
                                  Action
                                    ({actionLabel = None;},
-                                    [Wait "$rand*20+30-$rank*20";
+                                    [Wait (numExpr "$rand*20+30-$rank*20");
                                      FireRef ({fireRefLabel = "accelShot";},["1"]);
                                      FireRef ({fireRefLabel = "accelShot";},["-1"])]))])]));
-                   Wait "10"])); Wait "120"])])
+                   Wait (numExpr "10")])); Wait (numExpr "120")])])
 
   /// オリジナル。雑魚で突撃。by 白い弾幕くん
   /// [Original]_zako_atack.xml
@@ -4572,31 +4572,31 @@ module Original =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "40+$rank*20",
+              (Times (numExpr "40+$rank*20"),
                Action
                  ({actionLabel = None;},
-                  [Wait "4";
+                  [Wait (numExpr "4");
                    Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = Aim;},"$rand*180-90")),
-                      Some (Speed (None,"1.5")),
+                           (Some {directionType = Aim;},numExpr "$rand*180-90")),
+                      Some (Speed (None,numExpr "1.5")),
                       Bullet
                         ({bulletLabel = None;},None,None,
                          [Action
                             ({actionLabel = None;},
                              [Repeat
-                                (Times "3",
+                                (Times (numExpr "3"),
                                  Action
                                    ({actionLabel = None;},
                                     [Fire
                                        ({fireLabel = None;},
                                         Some
                                           (Direction
-                                             (Some {directionType = Aim;},"(0.5-$rand)*$rank*10")),
+                                             (Some {directionType = Aim;},numExpr "(0.5-$rand)*$rank*10")),
                                         Some
-                                          (Speed (None,"1.5")),
+                                          (Speed (None,numExpr "1.5")),
                                         Bullet ({bulletLabel = None;},None,None,[]));
-                                     Wait "20+$rand*$rank*40"]))])]))]))])])                        
+                                     Wait (numExpr "20+$rand*$rank*40")]))])]))]))])])                        
                             

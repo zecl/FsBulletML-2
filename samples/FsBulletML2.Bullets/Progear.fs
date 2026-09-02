@@ -21,45 +21,45 @@ module Progear =
               ({fireLabel = None;},
                Some
                  (Direction
-                    (Some {directionType = DirectionType.Absolute;},"270-(4+$rank*6)*15/2")),None,
+                    (Some {directionType = DirectionType.Absolute;},numExpr "270-(4+$rank*6)*15/2")),None,
                BulletRef ({bulletRefLabel = "seed";},[]));
             Repeat
-              (Times "4+$rank*6",
+              (Times (numExpr "4+$rank*6"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"15")),None,
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "15")),None,
                       BulletRef ({bulletRefLabel = "seed";},[]))]))]);
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "4",
+              (Times (numExpr "4"),
                Action
                  ({actionLabel = None;},
-                  [Action.ActionRef ({actionRefLabel = "oogi";},[]); Wait "40"]));
-            Wait "40";
+                  [Action.ActionRef ({actionRefLabel = "oogi";},[]); Wait (numExpr "40")]));
+            Wait (numExpr "40");
             Repeat
-              (Times "8",
+              (Times (numExpr "8"),
                Action
                  ({actionLabel = None;},
-                  [Action.ActionRef ({actionRefLabel = "oogi";},[]); Wait "20"]));
-            Wait "30"]);
+                  [Action.ActionRef ({actionRefLabel = "oogi";},[]); Wait (numExpr "20")]));
+            Wait (numExpr "30")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "seed";},None,Some (Speed (None,"1.5")),
+          ({bulletLabel = Some "seed";},None,Some (Speed (None,numExpr "1.5")),
            [Action
               ({actionLabel = None;},
-               [ChangeSpeed (Speed (None,"0"),Term "60"); Wait "60";
+               [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "60")); Wait (numExpr "60");
                 Fire
-                  ({fireLabel = None;},None,Some (Speed (None,"0.75")),
+                  ({fireLabel = None;},None,Some (Speed (None,numExpr "0.75")),
                    Bullet ({bulletLabel = None;},None,None,[]));
                 Repeat
-                  (Times "4+$rank*4",
+                  (Times (numExpr "4+$rank*4"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},None,
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"0.3")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.3")),
                           Bullet ({bulletLabel = None;},None,None,[]))])); Vanish])])])
 
   /// CAVEのプロギアの嵐、二面ボス、発狂モード。by 白い弾幕くん
@@ -74,27 +74,27 @@ module Progear =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "1000",
+              (Times (numExpr "1000"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"180")),None,
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "180")),None,
                       BulletRef ({bulletRefLabel = "changeStraight";},[]));
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"159")),None,
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "159")),None,
                       BulletRef ({bulletRefLabel = "changeStraight";},[]));
-                   Wait "1+(1-$rank)*3*$rand"])); Wait "180"]);
+                   Wait (numExpr "1+(1-$rank)*3*$rand")])); Wait (numExpr "180")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "changeStraight";},None,Some (Speed (None,"0.8")),
+          ({bulletLabel = Some "changeStraight";},None,Some (Speed (None,numExpr "0.8")),
            [Action
               ({actionLabel = None;},
-               [Wait "20+$rand*100";
+               [Wait (numExpr "20+$rand*100");
                 ChangeDirection
-                  (Direction (Some {directionType = DirectionType.Absolute;},"270"),Term "60");
-                ChangeSpeed (Speed (None,"0"),Term "40"); Wait "40";
-                ChangeSpeed (Speed (None,"0.5+$rand*0.7"),Term "20")])])])
+                  (Direction (Some {directionType = DirectionType.Absolute;},numExpr "270"),Term (numExpr "60"));
+                ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "40")); Wait (numExpr "40");
+                ChangeSpeed (Speed (None,numExpr "0.5+$rand*0.7"),Term (numExpr "20"))])])])
     
   /// CAVEのプロギアの嵐、三面ボス。by 白い弾幕くん
   /// [Progear]_round_3_boss_back_burst.xml
@@ -108,39 +108,39 @@ module Progear =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "200",
+              (Times (numExpr "200"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
                         (Direction
-                           (Some {directionType = DirectionType.Absolute;},"220+$rand*100")),None,
+                           (Some {directionType = DirectionType.Absolute;},numExpr "220+$rand*100")),None,
                       BulletRef ({bulletRefLabel = "backBurst";},[]));
-                   Wait "4-$rank*2"])); Wait "60"]);
+                   Wait (numExpr "4-$rank*2")])); Wait (numExpr "60")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "backBurst";},None,Some (Speed (None,"1.2")),
+          ({bulletLabel = Some "backBurst";},None,Some (Speed (None,numExpr "1.2")),
            [Action
               ({actionLabel = None;},
-               [ChangeSpeed (Speed (None,"0"),Term "80"); Wait "60+$rand*20";
+               [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "80")); Wait (numExpr "60+$rand*20");
                 Repeat
-                  (Times "2",
+                  (Times (numExpr "2"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
                           Some
                             (Direction
-                               (Some {directionType = DirectionType.Absolute;},"60+$rand*60")),
+                               (Some {directionType = DirectionType.Absolute;},numExpr "60+$rand*60")),
                           None,BulletRef ({bulletRefLabel = "downAccel";},[]))]));
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "downAccel";},None,Some (Speed (None,"1.8")),
+          ({bulletLabel = Some "downAccel";},None,Some (Speed (None,numExpr "1.8")),
            [Action
               ({actionLabel = None;},
                [Accel
-                  (Some (Horizontal (Some {horizontalType = Relative;},"-7")),None,
-                   Term "250")])])])
+                  (Some (Horizontal (Some {horizontalType = Relative;},numExpr "-7")),None,
+                   Term (numExpr "250"))])])])
 
   /// CAVEのプロギアの嵐、三面ボス。by 白い弾幕くん
   /// [Progear]_round_3_boss_wave_bullets.xml
@@ -154,35 +154,35 @@ module Progear =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "10",
+              (Times (numExpr "10"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"310")),None,
-                      BulletRef ({bulletRefLabel = "wave";},["-3"])); Wait "30";
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "310")),None,
+                      BulletRef ({bulletRefLabel = "wave";},["-3"])); Wait (numExpr "30");
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"230")),None,
-                      BulletRef ({bulletRefLabel = "wave";},["3"])); Wait "30"]));
-            Wait "60"]);
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "230")),None,
+                      BulletRef ({bulletRefLabel = "wave";},["3"])); Wait (numExpr "30")]));
+            Wait (numExpr "60")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "wave";},None,Some (Speed (None,"1.5")),
+          ({bulletLabel = Some "wave";},None,Some (Speed (None,numExpr "1.5")),
            [Action
               ({actionLabel = None;},
                [Fire
-                  ({fireLabel = None;},Some (Direction (None,"0")),None,
+                  ({fireLabel = None;},Some (Direction (None,numExpr "0")),None,
                    BulletRef ({bulletRefLabel = "nrm";},[]));
                 Repeat
-                  (Times "12+$rank*12",
+                  (Times (numExpr "12+$rank*12"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"$1")),
-                          None,BulletRef ({bulletRefLabel = "nrm";},[])); Wait "3"]));
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "$1")),
+                          None,BulletRef ({bulletRefLabel = "nrm";},[])); Wait (numExpr "3")]));
                 Vanish])]);
-        BulletmlElm.Bullet ({bulletLabel = Some "nrm";},None,Some (Speed (None,"1")),[])])
+        BulletmlElm.Bullet ({bulletLabel = Some "nrm";},None,Some (Speed (None,numExpr "1")),[])])
 
   /// CAVEのプロギアの嵐、四面ボス。by 白い弾幕くん
   /// [Progear]_round_4_boss_fast_rocket.xml
@@ -197,54 +197,54 @@ module Progear =
           ({actionLabel = Some "fireRoot";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"$1")),
-               Some (Speed (None,"0.2")),BulletRef ({bulletRefLabel = "rootBl";},[]));
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
+               Some (Speed (None,numExpr "0.2")),BulletRef ({bulletRefLabel = "rootBl";},[]));
             Repeat
-              (Times "3",
+              (Times (numExpr "3"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"$1")),
-                      Some (Speed (Some {speedType = SpeedType.Sequence;},"0.5")),
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$1")),
+                      Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.5")),
                       BulletRef ({bulletRefLabel = "rootBl";},[]))]))]);
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Action.ActionRef ({actionRefLabel = "fireRoot";},["$rand*16"]);
-            Action.ActionRef ({actionRefLabel = "fireRoot";},["180+$rand*16"]); Wait "120"]);
+            Action.ActionRef ({actionRefLabel = "fireRoot";},["180+$rand*16"]); Wait (numExpr "120")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "rootBl";},None,None,
            [Action
               ({actionLabel = None;},
-               [Wait "40";
+               [Wait (numExpr "40");
                 Fire
                   ({fireLabel = None;},
-                   Some (Direction (Some {directionType = DirectionType.Absolute;},"274+$rand*4")),
+                   Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "274+$rand*4")),
                    None,BulletRef ({bulletRefLabel = "rocket";},[])); Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "rocket";},None,Some (Speed (None,"5+$rand")),
+          ({bulletLabel = Some "rocket";},None,Some (Speed (None,numExpr "5+$rand")),
            [Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "9999",
+                  (Times (numExpr "9999"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Absolute;},"0")),
-                          Some (Speed (None,"1")),
+                          Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+                          Some (Speed (None,numExpr "1")),
                           BulletRef ({bulletRefLabel = "downAccel";},[]));
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Absolute;},"60")),
-                          Some (Speed (None,"1.8")),
+                          Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "60")),
+                          Some (Speed (None,numExpr "1.8")),
                           BulletRef ({bulletRefLabel = "downAccel";},[]));
-                       Wait "5-$rank*4"]))])]);
+                       Wait (numExpr "5-$rank*4")]))])]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "downAccel";},None,None,
            [Action
               ({actionLabel = None;},
-               [Accel (None,Some (Vertical (None,"2.7")),Term "120")])])])
+               [Accel (None,Some (Vertical (None,numExpr "2.7")),Term (numExpr "120"))])])])
 
   /// CAVEのプロギアの嵐、五面ボス。by 白い弾幕くん
   /// [Progear]_round_5_boss_last_round_wave.xml
@@ -258,29 +258,29 @@ module Progear =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "4",
+              (Times (numExpr "4"),
                Action
                  ({actionLabel = None;},
                   [Repeat
-                     (Times "2+$rank*1.5",
+                     (Times (numExpr "2+$rank*1.5"),
                       Action
                         ({actionLabel = None;},
                          [Fire
                             ({fireLabel = None;},None,None,
-                             BulletRef ({bulletRefLabel = "rfRkt";},[])); Wait "45"]));
-                   Wait "100"]))]);
+                             BulletRef ({bulletRefLabel = "rfRkt";},[])); Wait (numExpr "45")]));
+                   Wait (numExpr "100")]))]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "rfRkt";},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "9999",
+                  (Times (numExpr "9999"),
                    Action
                      ({actionLabel = None;},
-                      [Wait "2";
+                      [Wait (numExpr "2");
                        Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"15")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "15")),
                           None,Bullet ({bulletLabel = None;},None,None,[]))]))])])])
 
   /// CAVEのプロギアの嵐、五面ボス。by 白い弾幕くん
@@ -295,28 +295,28 @@ module Progear =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "50",
+              (Times (numExpr "50"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},"270")),None,
-                      BulletRef ({bulletRefLabel = "rocket";},[])); Wait "10"]));
-            Wait "120"]);
+                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "270")),None,
+                      BulletRef ({bulletRefLabel = "rocket";},[])); Wait (numExpr "10")]));
+            Wait (numExpr "120")]);
         BulletmlElm.Bullet
           ({bulletLabel = Some "rocket";},None,None,
            [Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "9999",
+                  (Times (numExpr "9999"),
                    Action
                      ({actionLabel = None;},
-                      [FireRef ({fireRefLabel = "udBlt";},["90"]); Wait "20-$rank*8";
+                      [FireRef ({fireRefLabel = "udBlt";},["90"]); Wait (numExpr "20-$rank*8");
                        FireRef ({fireRefLabel = "udBlt";},["-90"]);
-                       Wait "$rand*10+15-$rank*8"]))])]);
+                       Wait (numExpr "$rand*10+15-$rank*8")]))])]);
         BulletmlElm.Fire
           ({fireLabel = Some "udBlt";},
-           Some (Direction (Some {directionType = DirectionType.Relative;},"$1-25+$rand*50")),None,
+           Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "$1-25+$rand*50")),None,
            Bullet ({bulletLabel = None;},None,None,[]))])
 
   /// CAVEのプロギアの嵐、二周目一面ボス(嘘) by 白い弾幕くん
@@ -331,26 +331,26 @@ module Progear =
        [BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Repeat
-              (Times "25",
+              (Times (numExpr "25"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
-                        (Direction (Some {directionType = DirectionType.Absolute;},"190+$rand*30")),
+                        (Direction (Some {directionType = DirectionType.Absolute;},numExpr "190+$rand*30")),
                       None,BulletRef ({bulletRefLabel = "seed";},["1"]));
-                   Wait "15-$rank*5";
+                   Wait (numExpr "15-$rank*5");
                    Fire
                      ({fireLabel = None;},
                       Some
-                        (Direction (Some {directionType = DirectionType.Absolute;},"350-$rand*30")),
+                        (Direction (Some {directionType = DirectionType.Absolute;},numExpr "350-$rand*30")),
                       None,BulletRef ({bulletRefLabel = "seed";},["-1"]));
-                   Wait "15-$rank*5"])); Wait "60"]);
+                   Wait (numExpr "15-$rank*5")])); Wait (numExpr "60")]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "seed";},None,Some (Speed (None,"1")),
+          ({bulletLabel = Some "seed";},None,Some (Speed (None,numExpr "1")),
            [Action
               ({actionLabel = None;},
-               [ChangeSpeed (Speed (None,"0"),Term "60"); Wait "60";
+               [ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "60")); Wait (numExpr "60");
                 Fire
                   ({fireLabel = None;},None,None,
                    Bullet ({bulletLabel = None;},None,None,[]));
@@ -358,23 +358,23 @@ module Progear =
                   ({fireLabel = None;},
                    Some
                      (Direction
-                        (Some {directionType = DirectionType.Absolute;},"270+30*$1+$rand*50*$1")),
+                        (Some {directionType = DirectionType.Absolute;},numExpr "270+30*$1+$rand*50*$1")),
                    None,BulletRef ({bulletRefLabel = "downAccel";},["$1"]));
                 Repeat
-                  (Times "3",
+                  (Times (numExpr "3"),
                    Action
                      ({actionLabel = None;},
                       [Fire
                          ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},"0")),
-                          Some (Speed (Some {speedType = SpeedType.Sequence;},"-0.4")),
+                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "0")),
+                          Some (Speed (Some {speedType = SpeedType.Sequence;},numExpr "-0.4")),
                           BulletRef ({bulletRefLabel = "downAccel";},["$1"]))]));
                 Vanish])]);
         BulletmlElm.Bullet
-          ({bulletLabel = Some "downAccel";},None,Some (Speed (None,"2.5")),
+          ({bulletLabel = Some "downAccel";},None,Some (Speed (None,numExpr "2.5")),
            [Action
               ({actionLabel = None;},
-               [Accel (None,Some (Vertical (None,"4*$1")),Term "120")])])])
+               [Accel (None,Some (Vertical (None,numExpr "4*$1")),Term (numExpr "120"))])])])
 
   /// CAVEのプロギアの嵐、二周目四面ボス。by 白い弾幕くん
   /// [Progear]_round_9_boss.xml
@@ -390,47 +390,47 @@ module Progear =
            [Action
               ({actionLabel = None;},
                [ChangeSpeed
-                  (Speed (Some {speedType = SpeedType.Sequence;},"0.03"),Term "9999");
-                Wait "9999"])]);
+                  (Speed (Some {speedType = SpeedType.Sequence;},numExpr "0.03"),Term (numExpr "9999"));
+                Wait (numExpr "9999")])]);
         BulletmlElm.Action
           ({actionLabel = Some "top";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"80")),None,
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "80")),None,
                Bullet
                  ({bulletLabel = None;},None,None,
-                  [Action ({actionLabel = None;},[Wait "20"; Vanish])]));
+                  [Action ({actionLabel = None;},[Wait (numExpr "20"); Vanish])]));
             Repeat
-              (Times "4",
+              (Times (numExpr "4"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"40")),
-                      Some (Speed (None,"5")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "40")),
+                      Some (Speed (None,numExpr "5")),
                       Bullet
                         ({bulletLabel = None;},None,None,
                          [Action
                             ({actionLabel = None;},
                              [Repeat
-                                (Times "9999",
+                                (Times (numExpr "9999"),
                                  Action
                                    ({actionLabel = None;},
                                     [Fire
                                        ({fireLabel = None;},
                                         Some
                                           (Direction
-                                             (Some {directionType = DirectionType.Absolute;},"0")),
-                                        Some (Speed (None,"0.5")),
+                                             (Some {directionType = DirectionType.Absolute;},numExpr "0")),
+                                        Some (Speed (None,numExpr "0.5")),
                                         BulletRef ({bulletRefLabel = "accel";},[]));
                                      Fire
                                        ({fireLabel = None;},
                                         Some
                                           (Direction
-                                             (Some {directionType = DirectionType.Absolute;},"180")),
-                                        Some (Speed (None,"0.5")),
+                                             (Some {directionType = DirectionType.Absolute;},numExpr "180")),
+                                        Some (Speed (None,numExpr "0.5")),
                                         BulletRef ({bulletRefLabel = "accel";},[]));
-                                     Wait "4-$rank*2+$rand"]))])]))])); Wait "120"])])
+                                     Wait (numExpr "4-$rank*2+$rand")]))])]))])); Wait (numExpr "120")])])
 
   /// CAVEのプロギアの嵐、ラスボスの雰囲気。by 白い弾幕くん
   /// [Progear]_round_10_boss_before_final.xml
@@ -443,60 +443,60 @@ module Progear =
         bulletmlDescription = None},
        [BulletmlElm.Fire
           ({fireLabel = Some "rollOut";},
-           Some (Direction (Some {directionType = DirectionType.Relative;},"90")),
-           Some (Speed (None,"0.0001")),
+           Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "90")),
+           Some (Speed (None,numExpr "0.0001")),
            Bullet
              ({bulletLabel = None;},None,None,
               [Action
                  ({actionLabel = None;},
-                  [Wait "350"; ChangeSpeed (Speed (None,"1"),Term "100");
+                  [Wait (numExpr "350"); ChangeSpeed (Speed (None,numExpr "1"),Term (numExpr "100"));
                    ChangeDirection
-                     (Direction (Some {directionType = DirectionType.Relative;},"50-$rank*40"),
-                      Term "100"); Wait "1000"])]));
+                     (Direction (Some {directionType = DirectionType.Relative;},numExpr "50-$rank*40"),
+                      Term (numExpr "100")); Wait (numExpr "1000")])]));
         BulletmlElm.Bullet
-          ({bulletLabel = Some "setter";},None,Some (Speed (None,"3")),
+          ({bulletLabel = Some "setter";},None,Some (Speed (None,numExpr "3")),
            [Action
               ({actionLabel = None;},
                [Repeat
-                  (Times "999",
+                  (Times (numExpr "999"),
                    Action
                      ({actionLabel = None;},
-                      [Wait "5"; FireRef ({fireRefLabel = "rollOut";},[])]))])]);
+                      [Wait (numExpr "5"); FireRef ({fireRefLabel = "rollOut";},[])]))])]);
         BulletmlElm.Action
           ({actionLabel = Some "top1";},
            [Fire
               ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Absolute;},"$rand*10")),None,
+               Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "$rand*10")),None,
                BulletRef ({bulletRefLabel = "setter";},[]));
             Repeat
-              (Times "45/(2-$rank)",
+              (Times (numExpr "45/(2-$rank)"),
                Action
                  ({actionLabel = None;},
                   [Fire
                      ({fireLabel = None;},
                       Some
-                        (Direction (Some {directionType = DirectionType.Sequence;},"16-$rank*8")),
-                      None,BulletRef ({bulletRefLabel = "setter";},[])); Wait "1"]));
-            Wait "40";
+                        (Direction (Some {directionType = DirectionType.Sequence;},numExpr "16-$rank*8")),
+                      None,BulletRef ({bulletRefLabel = "setter";},[])); Wait (numExpr "1")]));
+            Wait (numExpr "40");
             Repeat
-              (Times "125+$rank*125",
+              (Times (numExpr "125+$rank*125"),
                Action
                  ({actionLabel = None;},
-                  [Wait "1.5-$rank/2+$rand";
+                  [Wait (numExpr "1.5-$rank/2+$rand");
                    Fire
                      ({fireLabel = None;},
-                      Some (Direction (Some {directionType = Aim;},"45-$rand*90")),
-                      Some (Speed (None,"1.2")),
+                      Some (Direction (Some {directionType = Aim;},numExpr "45-$rand*90")),
+                      Some (Speed (None,numExpr "1.2")),
                       Bullet ({bulletLabel = None;},None,None,[]))]))]);
         BulletmlElm.Action
           ({actionLabel = Some "top2";},
-           [Wait "80"; ChangeSpeed (Speed (None,"0.7"),Term "1");
-            ChangeDirection (Direction (Some {directionType = Aim;},"0"),Term "1");
-            Wait "1";
+           [Wait (numExpr "80"); ChangeSpeed (Speed (None,numExpr "0.7"),Term (numExpr "1"));
+            ChangeDirection (Direction (Some {directionType = Aim;},numExpr "0"),Term (numExpr "1"));
+            Wait (numExpr "1");
             ChangeDirection
-              (Direction (Some {directionType = DirectionType.Sequence;},"1.44444"),Term "250");
-            Wait "250"; ChangeSpeed (Speed (None,"0"),Term "1"); Wait "20";
-            ChangeSpeed (Speed (None,"0.7"),Term "1");
+              (Direction (Some {directionType = DirectionType.Sequence;},numExpr "1.44444"),Term (numExpr "250"));
+            Wait (numExpr "250"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "20");
+            ChangeSpeed (Speed (None,numExpr "0.7"),Term (numExpr "1"));
             ChangeDirection
-              (Direction (Some {directionType = DirectionType.Sequence;},"30"),Term "12");
-            Wait "12"; ChangeSpeed (Speed (None,"0"),Term "1"); Wait "200-$rank*60"])])
+              (Direction (Some {directionType = DirectionType.Sequence;},numExpr "30"),Term (numExpr "12"));
+            Wait (numExpr "12"); ChangeSpeed (Speed (None,numExpr "0"),Term (numExpr "1")); Wait (numExpr "200-$rank*60")])])

@@ -11,17 +11,17 @@ module Others =
     Bulletml({ bulletmlXmlns = None; bulletmlType = Some ShootingDirection.BulletVertical; bulletmlName = Some "全方位弾"; bulletmlDescription = None},
         [BulletmlElm.Action ({actionLabel = Some "circle";},
             [Action.Repeat
-                (Times "$1",
+                (Times (numExpr "$1"),
                 Action ({actionLabel = None;},
                     [Fire ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},"360/$1")),
+                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "360/$1")),
                       None,
                       Bullet ({bulletLabel = None;}, None, None,[]))]))]);
           BulletmlElm.Action ({actionLabel = Some "top";},
             [Action.Repeat
-                (Times "30",
+                (Times (numExpr "30"),
                 ActionElm.Action ({actionLabel = None;},
-                    [Action.ActionRef ({actionRefLabel = "circle";}, ["20"]); Wait "20"]))])])
+                    [Action.ActionRef ({actionRefLabel = "circle";}, ["20"]); Wait (numExpr "20")]))])])
 
   /// 前方5way弾
   let b5way = 
@@ -29,14 +29,14 @@ module Others =
     Bulletml ({bulletmlXmlns = None; bulletmlType = Some BulletVertical; bulletmlName = Some "前方5way弾"; bulletmlDescription = None},
         [BulletmlElm.Action ({actionLabel = Some "top";},
             [Fire ({fireLabel = None;},
-                Some (Direction (Some {directionType = DirectionType.Relative;},"-20+180")),
+                Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-20+180")),
                 None,
                 Bullet ({bulletLabel = None;},None,None,[]));
              Repeat
-                (Times "4",
+                (Times (numExpr "4"),
                  Action ({actionLabel = None;},
                     [Fire ({fireLabel = None;},
-                        Some (Direction (Some {directionType = DirectionType.Sequence;},"10")),
+                        Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
                         None,
                         Bullet ({bulletLabel = None;},None,None,[]))]))])])
 

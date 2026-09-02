@@ -104,7 +104,7 @@ module internal ExprCorpus =
     | Threw of string
 
   let current (env: Env) (s: string) =
-    try Value (getValue env s) with e -> Threw (e.GetType().Name)
+    try Value (getValueByXPath env s) with e -> Threw (e.GetType().Name)
 
 
 [<TestFixture>]
@@ -198,7 +198,7 @@ type ExprTests() =
         // 振りは 2 通りでよい（式の種類のほうを増やしたいので）
         for randValue, rank in [ 0.5f, 0.5f; 0.123456f, 0.987654f ] do
           let env = ExprCorpus.envOf randValue rank
-          let expected = getValue env substituted
+          let expected = getValueByXPath env substituted
           let actual = Expr.evalWithValues randValue rank ast
           checkedCount <- checkedCount + 1
           if not (ExprCorpus.same expected actual) then
@@ -243,7 +243,7 @@ type ExprTests() =
     let mutable total = 0
     for s in exprs do
       let ast = Expr.parse s
-      let expected = getValue env s
+      let expected = getValueByXPath env s
       let broken = float32 (leftToRight 0.5 0.5 ast)
       total <- total + 1
       if not (ExprCorpus.same expected broken) then caught <- caught + 1
@@ -361,12 +361,12 @@ type ExprTests() =
     let e = Expr.NumExpr.ofString s
     // 温める
     for _ in 1 .. 200 do
-      getValue env s |> ignore
+      getValueByXPath env s |> ignore
       Expr.NumExpr.evalWithValues 0.5f 0.5f e |> ignore
 
     let n = 2000
     let sw = Diagnostics.Stopwatch.StartNew()
-    for _ in 1 .. n do getValue env s |> ignore
+    for _ in 1 .. n do getValueByXPath env s |> ignore
     sw.Stop()
     let oldNs = sw.Elapsed.TotalMilliseconds * 1e6 / float n
 
