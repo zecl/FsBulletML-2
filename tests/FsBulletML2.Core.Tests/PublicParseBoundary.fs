@@ -6,50 +6,72 @@ open FsBulletML2
 
 /// 公開の読み取り口が「読めなかった」をどう返すか。
 ///
-/// **いまの振る舞いを固定するための門で、これが正しいと言っているわけではない。**
-/// 二重木（公開の Bulletml と Rec*）を畳むときにここは必ず触るので、
-/// 触ったことが分かるように留めてある。
+/// **NotCommand を型から出したときに書き換えた門。**
+/// 以前ここには「読めなかったを NotCommand という値で返す」「try なのに
+/// None ではなく Some NotCommand が返る」と、**穴のほうが**字で書いてあった。
 ///
-/// いまの形（IntermediateParser の但し書きにも書いてある）:
+/// いまの形 —— 1 つ 上の階（readXmlString / readSxmlString / readFsb …）が
+/// もう「read は上げる / tryRead は None」で書かれていたので、それに揃えた:
 ///
-///   convertBulletmlFromXmlNode は「読めなかった」を NotCommand という**値**で返す。
-///   tryBulletmlFromXmlNode は**例外だけ**を option に畳むので、読めなかったときは
-///   None ではなく Some NotCommand が返る ——「成功したが中身が無い」と
-///   見分けが付かない。
+///     convertBulletmlFromXmlNode   読めなければ BulletmlDTDViolationException
+///     tryBulletmlFromXmlNode       読めなければ None
 ///
-/// 畳むときに戻り値を option か Result へ変えるなら、**この門が赤くなるのが
-/// 正しい。** 赤くなったら、変えたことを確かめてから書き換えること
-/// （黙って通らないように、期待値を「NotCommand が返る」と字で書いてある）。
+/// **読めなかったを値で返していたときは、呼び側が受け取ったものを検査しない
+/// かぎり空の弾幕がそのまま走った**（何も撃たない弾として、落ちずに）。
+///
+/// 目盛りを合わせた記録 —— 3 つ の変異を同時に入れて走らせた:
+///
+///     上げる例外を System.Exception に        → 上の 2 本 が赤
+///     try の catch を Some Bulletml.Vanish に  → try の 2 本 が赤
+///
+/// **この 4 本 だけが赤くなり、残り 566 本 は緑のまま**だった。
+/// 型が変わったことではなく、振る舞いを押さえていることの確認。
 [<TestFixture>]
 type PublicParseBoundary() =
 
   [<Test>]
-  member _.``PCData を渡すと NotCommand が返る``() =
-    IntermediateParser.convertBulletmlFromXmlNode (PCData "ただの文字")
-    |> should equal NotCommand
+  member _.``PCData を渡すと上がる``() =
+    Assert.Throws<FsBulletML2.Exception.BulletmlDTDViolationException>(fun () ->
+      IntermediateParser.convertBulletmlFromXmlNode (PCData "ただの文字") |> ignore)
+    |> ignore
 
   [<Test>]
-  member _.``根が bulletml でない要素を渡すと NotCommand が返る``() =
-    IntermediateParser.convertBulletmlFromXmlNode (Element ("foo", [], []))
-    |> should equal NotCommand
+  member _.``根が bulletml でない要素を渡すと上がる``() =
+    Assert.Throws<FsBulletML2.Exception.BulletmlDTDViolationException>(fun () ->
+      IntermediateParser.convertBulletmlFromXmlNode (Element ("foo", [], [])) |> ignore)
+    |> ignore
 
-  /// **ここが穴。** 読めていないのに Some が返る
+  /// **ここが穴だった。** 読めていないのに Some が返っていた
   [<Test>]
-  member _.``tryBulletmlFromXmlNode は、読めなくても None ではなく Some を返す``() =
-    let r = IntermediateParser.tryBulletmlFromXmlNode (PCData "ただの文字")
-    r |> should not' (equal None)
-    r |> should equal (Some NotCommand)
+  member _.``tryBulletmlFromXmlNode は、読めなければ None を返す``() =
+    IntermediateParser.tryBulletmlFromXmlNode (PCData "ただの文字")
+    |> should equal (None: Bulletml option)
+
+  [<Test>]
+  member _.``tryBulletmlFromXmlNode は、根が bulletml でなくても None を返す``() =
+    IntermediateParser.tryBulletmlFromXmlNode (Element ("foo", [], []))
+    |> should equal (None: Bulletml option)
 
   /// 対照 —— 読める入力では中身のある木が返る。
-  /// **これが無いと、上の 3 本 は「常に NotCommand」でも緑になる**
+  /// **これが無いと、上の 4 本 は「常に上がる / 常に None」でも緑になる**
   [<Test>]
-  member _.``読める bulletml では、NotCommand ではない木が返る``() =
+  member _.``読める bulletml では、中身のある木が返る``() =
     let xml =
       """<bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
   <action label="top"><fire><direction>0</direction><bullet/></fire></action>
 </bulletml>"""
-    let parsed = readXmlString xml
-    parsed |> should not' (equal NotCommand)
-    match parsed with
+    match readXmlString xml with
     | Bulletml (_, elms) -> elms |> should not' (be Empty)
+    | other -> Assert.Fail (sprintf "Bulletml でない腕が返った: %A" other)
+
+  /// **空の bulletml は「読めなかった」ではない。**
+  /// xmlToBulletml の「命令が 1 つ も取れなかった」に落ちそうに見えるが、
+  /// bulletml 自身が 1 つ 目 の命令として取れるのでそこには来ない。
+  /// 中身 0 個 の木が返る —— この段では欠落を弾かない、という線引き。
+  [<Test>]
+  member _.``中身が空の bulletml は、上がらずに中身 0 個 の木が返る``() =
+    let xml =
+      """<bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml"></bulletml>"""
+    match readXmlString xml with
+    | Bulletml (_, elms) -> elms |> should be Empty
     | other -> Assert.Fail (sprintf "Bulletml でない腕が返った: %A" other)

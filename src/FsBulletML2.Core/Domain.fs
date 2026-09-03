@@ -72,8 +72,9 @@ module Domain =
     ///
     /// 命令の 10 通りを漏れなく書く。以前は `| _ -> PNoop` で受けていて、
     /// そこに「ActionRef と FireRef」（本当に PNoop でよいもの）と
-    /// 「Bulletml / Bullet / BulletRef / NotCommand」（そもそも命令の位置に
-    /// 来ないもの）が混ざっていた。型が分かれたので、前者だけが残る
+    /// 「Bulletml / Bullet / BulletRef と、当時あった NotCommand」（そもそも
+    /// 命令の位置に来ないもの）が混ざっていた。型が分かれたので、前者だけが残る
+    /// —— NotCommand はその後、公開の Bulletml からも型ごと消えた
     let rec internal initial (script: RecCommand) : Progress =
       match script with
       | RecCommand.Action (_, children) ->

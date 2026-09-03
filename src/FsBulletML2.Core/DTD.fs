@@ -205,6 +205,8 @@ module DTD =
   ///     壊れた木を渡されても気づけない
   ///   - 「BulletML の命令でない節」を表す NotCommand が木の型に居た。
   ///     作るのは XML を読む段だけで、読んだ側はすぐ捨てていた
+  ///     —— **公開の Bulletml（下）からも消した。** 捨てる印は option、
+  ///     読めなかったは例外。IntermediateParser の但し書きに置いてある
   ///
   /// 位置ごとに型を分けると、DTD の内容モデルがそのまま型になり、
   /// フォールバックが書けなくなる（書く必要が無くなる）。
@@ -569,8 +571,7 @@ module DTD =
   | BulletRef of BulletRefAttrs * Params
 /// BulletML DTD
 /// <!ELEMENT repeat (times, (action | actionRef))>
-  | Repeat of Times * ActionElm 
-  | NotCommand
+  | Repeat of Times * ActionElm
     member private t.ToStructuredDisplay = t.ToString()
     override t.ToString () = stringifyFullName t 
     member this.ToNodeString() = 

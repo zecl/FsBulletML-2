@@ -121,7 +121,7 @@ module internal RecOps =
   ///
   /// 以前は 1 本の convert が平らな DU を歩き、最後に `| x -> x` で
   /// 「触らない腕」をまとめて受けていた。その `x` には
-  /// Vanish（触らなくてよい）と Bulletml / NotCommand（そもそも
+  /// Vanish（触らなくてよい）と Bulletml / 当時あった NotCommand（そもそも
   /// ここへ来ない）が混ざっていた
   let rec private substCommand prams (c: RecCommand) : RecCommand =
     match c with

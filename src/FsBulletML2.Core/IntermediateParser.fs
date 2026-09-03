@@ -65,24 +65,25 @@ open FsBulletML2.Processable
 /// **畳んでもこの境界は動かない。** 動かすなら別の話（そちらのほうが
 /// 指紋を動かす）。
 ///
-/// ## NotCommand は公開 API から漏れる
+/// ## 「読めなかった」は値ではなく戻り値の型で言う
 ///
-/// 「BulletML の命令でない節」を表す腕で、Rec* からは消えたが公開の
-/// Bulletml には残っている。作るのは 4 か所、捨てるのは 1 か所 だが、
-/// **捨て切れていない。**
+/// かつて公開の Bulletml には NotCommand という腕があり、**読めなかったを
+/// 値で返していた**。tryBulletmlFromXmlNode は例外だけを option に畳んで
+/// いたので、読めなかったときも None ではなく Some NotCommand が返り、
+/// 「成功したが中身が無い」と見分けが付かなかった。
 ///
-///     convertBulletmlFromXmlNode（公開）が
-///       PCData を渡されたら NotCommand
-///       根が bulletml でなければ NotCommand
-///       中身が空なら NotCommand（xmlToBulletml 経由）
+/// いまはこう:
 ///
-/// つまり**「読めなかった」を値で返している**。しかも
-/// tryBulletmlFromXmlNode は例外だけを option に畳むので、
-/// 読めなかったときは None ではなく **Some NotCommand** が返る
-/// ——「成功したが中身が無い」と見分けが付かない。
+///     (|Command|)                  命令でない節（direction / speed / …）は None
+///                                  —— これは**捨てる印**で、エラーではない
+///     convertBulletmlFromXmlNode   読めなければ BulletmlDTDViolationException
+///     tryBulletmlFromXmlNode       読めなければ None
 ///
-/// 消すなら戻り値の型を変えることになる（option か Result）。
-/// **公開 API の破壊的変更**なので、畳む話と一緒に決めること。
+/// **1 つ 上の階（readXmlString / readSxmlString / readFsb …）が、もう
+/// この形で書かれていた** —— read は失敗で上げ、tryRead は None を返す。
+/// 型が意図を宣言していたので、それに揃えただけ。
+///
+/// 押さえは tests/FsBulletML2.Core.Tests/PublicParseBoundary.fs。
 module IntermediateParser =
   let internal existsAttribute attrs f = attrs |> List.exists (fun (label, v) -> if f label v then true else false)
   let internal tryFindPCData children =  children |> List.tryPick (function | PCData x -> Some x | _ -> None)
@@ -563,22 +564,28 @@ module IntermediateParser =
         Bulletml.Repeat(createTimes children "repeat", actionOrActionRef)
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise
 
-  let internal (|Command|) command xml (getChildren:XmlNode -> XmlNode list -> Bulletml list) : Bulletml =
+  /// 要素の名前から命令を作る。**None は「命令の位置に来ない節」**
+  /// —— direction / speed / term / times / param など、親が自分で読む子。
+  /// 呼び側（xmlToCommandList）はここで落ちたものを捨てる。
+  ///
+  /// **エラーではない。** 名前が命令なのに中身が DTD と違うときは、
+  /// create* の中で BulletmlDTDViolationException が上がる。
+  let internal (|Command|) command xml (getChildren:XmlNode -> XmlNode list -> Bulletml list) : Bulletml option =
     match  (command:string).ToLower() with
-    | "bulletml"        -> createBulletml xml getChildren
-    | "action"          -> createAction (fun x -> Bulletml.Action(x)) xml getChildren
-    | "actionref"       -> createActionRef (fun x -> Bulletml.ActionRef(x)) xml
-    | "fire"            -> createFire xml getChildren
-    | "fireref"         -> createFireRef xml
-    | "changespeed"     -> createChangeSpeed xml
-    | "changedirection" -> createChangeDirection xml 
-    | "accel"           -> createAccel xml
-    | "wait"            -> createWait xml
-    | "vanish"          -> createVanish xml
-    | "bullet"          -> createBullet (Bulletml.Bullet) xml getChildren
-    | "bulletref"       -> createBulletRef (Bulletml.BulletRef) xml
-    | "repeat"          -> createRepeat xml getChildren 
-    | _ -> NotCommand
+    | "bulletml"        -> createBulletml xml getChildren |> Some
+    | "action"          -> createAction (fun x -> Bulletml.Action(x)) xml getChildren |> Some
+    | "actionref"       -> createActionRef (fun x -> Bulletml.ActionRef(x)) xml |> Some
+    | "fire"            -> createFire xml getChildren |> Some
+    | "fireref"         -> createFireRef xml |> Some
+    | "changespeed"     -> createChangeSpeed xml |> Some
+    | "changedirection" -> createChangeDirection xml |> Some
+    | "accel"           -> createAccel xml |> Some
+    | "wait"            -> createWait xml |> Some
+    | "vanish"          -> createVanish xml |> Some
+    | "bullet"          -> createBullet (Bulletml.Bullet) xml getChildren |> Some
+    | "bulletref"       -> createBulletRef (Bulletml.BulletRef) xml |> Some
+    | "repeat"          -> createRepeat xml getChildren |> Some
+    | _ -> None
 
   let rec internal xmlToCommandList topXml xml = 
     let rec xmlToCommandList' topXml xml (list:Bulletml list) = 
@@ -586,46 +593,49 @@ module IntermediateParser =
       match xml with
       | PCData s -> list 
       | Element (name, attrs, children) -> 
-        let command = name |> function Command func -> func xml getChildren 
-        match command  with
-        | Bulletml _  
-        | Bulletml.ActionRef _ 
-        | Bulletml.Repeat _ 
-        | Bulletml.FireRef _ 
-        | Bulletml.ChangeDirection _ 
-        | Bulletml.ChangeSpeed _ 
-        | Bulletml.Accel _ 
-        | Bulletml.Wait _ 
-        | Bulletml.Vanish 
-        | Bulletml.BulletRef _ 
-        | Bulletml.Action _ 
-        | Bulletml.Fire _ 
-        | Bulletml.Bullet _ ->
-          command::list 
-        | NotCommand -> list 
+        // **腕を 13 個 並べて「NotCommand だけ捨てる」と書いていた場所。**
+        // 捨てるものが型から出たので、残りは全部 残す —— 列挙が要らなくなった。
+        match name |> function Command func -> func xml getChildren with
+        | Some command -> command::list
+        | None -> list
     xmlToCommandList' topXml xml []
 
-  let internal xmlToBulletml topXml xml = 
-    xmlToCommandList topXml xml 
+  /// **None は「bulletml の中身が空」**。読めなかったということ。
+  let internal xmlToBulletml topXml xml : Bulletml option =
+    xmlToCommandList topXml xml
     |> function
-    | [] -> NotCommand
-    | lst -> lst |> List.head
+    | [] -> None
+    | lst -> lst |> List.head |> Some
 
+  /// XML の木を BulletML の木にする。**読めなければ上げる。**
+  ///
+  /// 以前は「読めなかった」を NotCommand という値で返していた。
+  /// 値で返すと、呼び側が受け取ったものを検査しないかぎり
+  /// **空の弾幕がそのまま走る**（何も撃たない弾として）。
+  /// 上の階（readXmlString / readSxmlString …）はどれも読めなければ
+  /// 上げる形で書いてあるので、ここもそれに揃えた。
+  /// **読めなかったかを値で受けたいときは tryBulletmlFromXmlNode。**
   [<CompiledName("ConvertBulletmlFromXmlNode")>]
-  let convertBulletmlFromXmlNode xml =
+  let convertBulletmlFromXmlNode xml : Bulletml =
     match xml with
-    | PCData s -> NotCommand 
+    | PCData _ ->
+      new BulletmlDTDViolationException ("root should be a bulletml element, not text.") |> raise
     | Element(name, _, _) ->
       if name.ToLower() = "bulletml" then
-        xmlToBulletml xml xml
+        match xmlToBulletml xml xml with
+        | Some bulletml -> bulletml
+        | None -> new BulletmlDTDViolationException ("bulletml element has no content.") |> raise
       else
-        NotCommand 
+        new BulletmlDTDViolationException (sprintf "root should be a bulletml element, not <%s>." name) |> raise
 
+  /// 読めなければ None。**「読めなかった」と「読めたが中身が無い」を
+  /// 見分けられなかったのはここ** —— 以前は例外だけを畳んでいたので、
+  /// 読めなかったときも Some NotCommand が返っていた。
   [<CompiledName("TryBulletmlFromXmlNode")>]
-  let tryBulletmlFromXmlNode xml = 
+  let tryBulletmlFromXmlNode xml : Bulletml option =
     try
       xml |> convertBulletmlFromXmlNode |> Some
-    with | ex -> None
+    with | _ -> None
 
   let internal convertDirectionOption  = fun prams -> function
     | Some (Direction(attrs,s)) -> Direction(attrs, Param.replaceIn prams s) |> Some
