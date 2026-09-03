@@ -1,5 +1,6 @@
 namespace FsBulletML2.Core.Tests
 
+open System.Collections.Generic
 open System.IO
 open System.Security.Cryptography
 open System.Text
@@ -54,6 +55,29 @@ type BridgeReport =
 [<NonParallelizable>]
 type Equivalence() =
 
+  /// **BulletRunner 経由・定数 $rand の軌跡を 1 回 だけ走らせて使い回す。**
+  ///
+  /// 下の 2 本 の試験（Step.step 直接呼びとの突き合わせ / 公開 API との
+  /// 突き合わせ）が、**同じ設定で同じ関数を走らせていた** ——
+  /// `BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))` のあと
+  /// `Trace.run xml 60`。227 本 ぶんが丸ごと重複していた。
+  ///
+  /// 軌跡は文字列で不変なので、共有しても試験の間で状態は漏れない。
+  /// 例外で落ちる 3 本 はキャッシュに入らず毎回 走るが、3 本 なので放っておく。
+  ///
+  /// **この fixture は NonParallelizable。** 可変の辞書を持てるのはそのため
+  /// （BulletMLManager が static mutable なので、どのみち逐次でしか走らない）。
+  static let viaRunnerCache = Dictionary<string, string>()
+
+  static let viaRunnerCached (path: string) (xml: string) =
+    match viaRunnerCache.TryGetValue path with
+    | true, v -> v
+    | _ ->
+        BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
+        let v = Trace.run xml 60
+        viaRunnerCache.[path] <- v
+        v
+
   /// 走らせ方を 2 つ受け取り、227 本ぜんぶを突き合わせた報告を返す。
   /// どちらも「いまのソースを実際に走らせる」関数であることが前提
   /// （凍結データとの突き合わせには使わない。下の 2 番めの橋を参照）。
@@ -69,6 +93,14 @@ type Equivalence() =
   ///   両方とも違う例外 -> 割れ
   ///   片方だけ例外     -> 割れ（片方が壊れた・片方だけ直った、のどちらもここ）
   static member RunBoth (runA: string -> string) (runB: string -> string) : BridgeReport =
+    Equivalence.RunBothWith (fun _path xml -> runA xml) runB
+
+  /// 基準側（A）に**パスも渡す**形。中身は RunBoth と同じ。
+  ///
+  /// **同じ基準を複数の試験が使うとき、走行を 1 回 で済ませるため。**
+  /// パスをキーにできるので、呼ぶ側が軌跡をキャッシュできる
+  /// （xml の中身をキーにすると 227 本 ぶんの文字列を毎回 ハッシュすることになる）。
+  static member RunBothWith (runA: string -> string -> string) (runB: string -> string) : BridgeReport =
     let samples = CorpusData.uniqueSamples ()
     let mutable ok, ng, skipped = 0, 0, 0
     let diffs = StringBuilder()
@@ -80,7 +112,7 @@ type Equivalence() =
     for path in samples do
       let name = CorpusData.relative path
       let xml = File.ReadAllText path
-      match tryRun runA xml, tryRun runB xml with
+      match tryRun (runA path) xml, tryRun runB xml with
       | Ok a, Ok b ->
           match Divergence.firstDivergence a b with
           | None -> ok <- ok + 1
@@ -173,11 +205,9 @@ type Equivalence() =
     // という薄い橋渡し層が Step.step の直接呼びと食い違っていないかだけで、
     // 新旧エンジンの比較ではない（クラスの docstring 参照）
     let rand, rank, px, py = 0.5f, 0.5f, 30.0f, 100.0f
-    let viaRunner (xml: string) =
-      BulletMLManager.Init(FixedManager(rand, rank, px, py))
-      Trace.run xml 60
+    // 基準側は viaRunnerCached（下の試験と同じ設定なので走行を共有する）
     let direct (xml: string) = TraceNew.run (fun () -> rand) rank px py xml 60
-    let report = Equivalence.RunBoth viaRunner direct
+    let report = Equivalence.RunBothWith viaRunnerCached direct
     TestContext.WriteLine report.Text
     // 部分文字列一致（"割れ 0 " を含み "一致 0 " を含まない）だけだと、220 本が
     // 同じ例外へ吸われて「一致 3 / 割れ 0 / 比べられず 224」になっても
@@ -199,11 +229,9 @@ type Equivalence() =
   [<Test>]
   member _.``227 本を、BulletRunner 経由と公開 API で突き合わせると全部 一致する``() =
     let rand, rank, px, py = 0.5f, 0.5f, 30.0f, 100.0f
-    let viaRunner (xml: string) =
-      BulletMLManager.Init(FixedManager(rand, rank, px, py))
-      Trace.run xml 60
+    // 基準側は viaRunnerCached（上の試験と同じ設定なので走行を共有する）
     let viaApi (xml: string) = TraceApi.run (fun () -> rand) rank px py xml 60
-    let report = Equivalence.RunBoth viaRunner viaApi
+    let report = Equivalence.RunBothWith viaRunnerCached viaApi
     TestContext.WriteLine report.Text
     report.Total |> should equal 227
     report.Ok |> should equal 224
