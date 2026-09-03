@@ -66,9 +66,16 @@ let private counts () =
 /// 口の故障ではなく、校正値がその版のものだという意味。**離れたら BDN で
 /// 測り直してここを更新する** —— 更新しないまま「外れ」を見続けると、
 /// 次に本当に口が壊れたとき区別がつかなくなる。
-let private calibratedAt = "400e425（aim skip をフロントへ戻した版）"
+/// **一度 更新してある。** 400e425（aim skip を戻した版、比は
+/// move -21.6 / 5way +4.3 / 10Way +4.1 / homing -3.2）で目盛りを合わせたあと、
+/// 箱を 4 つ 値型にした手で比が 17 ポイント 動いたので測り直した。
+///
+/// そのとき、この口が予測した確保の減りと BenchmarkDotNet の実測が
+/// **4 本 とも 0.5 ポイント以内**で一致した（-15.5/-29.2/-28.5/-20.2 に対し
+/// -16.0/-29.2/-28.6/-20.2）。口は軸の上に乗っている。
+let private calibratedAt = "d4361e7（ホットパスの箱を 4 つ 値型にした版）"
 
-let private calibration = dict [ "move", -21.6; "5way", 4.3; "10Way", 4.1; "homing", -3.2 ]
+let private calibration = dict [ "move", -25.6; "5way", -13.0; "10Way", -12.4; "homing", -4.9 ]
 
 let private alloc () =
   fixManager ()
