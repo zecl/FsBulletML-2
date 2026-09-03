@@ -1,4 +1,7 @@
-﻿namespace FsBulletML2.TypeProviders
+﻿// 他の 4 本 と同じ扱い。Impl / BulletMLTypeProvider が付けている
+// [<CompilerMessage(... IsHidden = true)>] に触るので出る
+#nowarn "13730"
+namespace FsBulletML2.TypeProviders
 
 open System.IO
 open System.Xml

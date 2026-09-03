@@ -1,4 +1,13 @@
 ﻿namespace FsBulletML2.Benchmarks
+// 旧 API（IBulletmlObject / BulletRunner.run）の Obsolete 警告を、
+// **このファイルだけ**止める。ここは旧経路を「対照」として意図して測る側で、
+// 新旧を同じプロセスに並べるのがこのファイルの仕事だから
+// （bench/FsBulletML2.Benchmarks/README.md の「測るときの約束」）。
+//
+// プロジェクト単位（NoWarn）では止めない。止めると、**新しく書いた測定が
+// うっかり旧 API を使っても警告が出なくなる**。効きがファイル単位であることは
+// 較正済み —— nowarn を置いていないファイルで旧 API に触ると FS0044 が出る。
+#nowarn "44"
 
 open System.Collections.Generic
 open System.IO

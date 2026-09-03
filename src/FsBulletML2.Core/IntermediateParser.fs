@@ -306,7 +306,7 @@ module IntermediateParser =
         commands |> List.filter(function
           | Bulletml.ChangeDirection _ -> true
           | Bulletml.Accel _ -> true
-          | Bulletml.Vanish _ -> true
+          | Bulletml.Vanish -> true
           | Bulletml.ChangeSpeed _ -> true
           | Bulletml.Repeat _ -> true
           | Bulletml.Wait _ -> true
