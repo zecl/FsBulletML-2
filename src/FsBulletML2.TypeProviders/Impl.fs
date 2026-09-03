@@ -20,6 +20,16 @@ open FsBulletML2
 module Impl =
   let asm = Assembly.GetExecutingAssembly()
   let ns = typeof<Style>.Namespace
+
+  /// 生成する型のプロパティの型。**ここで 1 回 だけ解いて配る。**
+  ///
+  /// FsBulletML2.DTD には同名の型とモジュールが居て（DU の Bulletml と、
+  /// readXmlString などを持つ Bulletml モジュール）、書く場所によって
+  /// typeof<Bulletml> がモジュールのほうへ解ける。そうなると生成した型の
+  /// プロパティ型が FsBulletML2.DTD.Bulletml.Bulletml という在りもしない名前で
+  /// 焼かれ、**使う側**が FS1109 で落ちる（型プロバイダ自身のビルドは通るので、
+  /// 門を通すまで気づけない）。
+  let bulletmlType = typeof<Bulletml>
   let createProvidedTypeDefinition ns =
     ProvidedTypeDefinition(asm, ns, "BulletML", Some (typeof<obj>), hideObjectMethods = true, isErased = true)
 

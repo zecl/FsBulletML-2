@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2.TypeProvider
+﻿namespace FsBulletML2.TypeProviders
 
 open System.IO
 open System.Xml
@@ -10,12 +10,12 @@ open FsBulletML2
 
 [<TypeProvider>]
 type BulletmlTypeProvider(config: TypeProviderConfig) as this =
-  inherit TypeProviderForNamespaces()
+  inherit TypeProviderForNamespaces(config, addDefaultProbingLocation = true)
 
   let asm = Assembly.GetExecutingAssembly()
   let ns = "FsBulletML2.TypeProviders"
 
-  let typ = ProvidedTypeDefinition(asm, ns, "XML", Some (typeof<obj>), HideObjectMethods = true)
+  let typ = ProvidedTypeDefinition(asm, ns, "XML", Some (typeof<obj>), hideObjectMethods = true)
   do typ.DefineStaticParameters(
         [ProvidedStaticParameter("source", typeof<string>)],
         fun typeName parameters ->
@@ -31,22 +31,32 @@ type BulletmlTypeProvider(config: TypeProviderConfig) as this =
               | _ -> 
                   failwithf "Error xml path %A" path
 
-          let typ = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, HideObjectMethods = true)
+          let typ = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, hideObjectMethods = true)
           let ctor = ProvidedConstructor(parameters = [ ], 
-                                          InvokeCode= (fun args -> <@@ xml :> obj @@>))
+                                          invokeCode = (fun args -> <@@ xml :> obj @@>))
           typ.AddMember ctor
 
-          let bulletml = (xml, None) |> FsBulletML2.Xml.Bulletml.readXmlString
-          let bulletml2 = Bulletml({ bulletmlXmlns = Some "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml"; bulletmlType = Some ShootingDirection.BulletVertical }, [])
+          // ビルドに入っていなかったあいだに、読む側の API がここだけ古いまま
+          // 残っていた（FsBulletML2.Xml.Bulletml.readXmlString に (xml, None) を
+          // 渡す形）。いまは Bulletml.readXmlString が文字列 1 つ を受ける。
+          // 隣の束縛（Bulletml(...) を組んで捨てるだけの bulletml2）も消した ——
+          // 読まれないので、レコードにフィールドが増えても気づけなかった
+          let bulletml = xml |> Bulletml.readXmlString
           let instanceProp = 
             ProvidedProperty(propertyName = "Value", 
-                             propertyType = typeof<FsBulletML2.DTD.Bulletml>, 
-                             GetterCode= (fun _ -> <@@ bulletml  @@>))
+                             propertyType = Impl.bulletmlType, 
+                             // **値を quotation へ直に埋めない。** Bulletml は
+                             // FsBulletML2.DTD で型とモジュールが同名なので、値を埋めると
+                             // プロパティの型が FsBulletML2.DTD.Bulletml.Bulletml という
+                             // 在りもしない名前で焼かれ、使う側が FS1109 で落ちる
+                             // （型プロバイダ自身のビルドは通るので門を通すまで見えない）。
+                             // Impl.read を呼ぶ形にすると、焼かれるのは呼び出しだけになる。
+                             // 上の bulletml は「設計時に読めるか」を確かめる役目で残す
+                             getterCode = (fun _ -> <@@ Impl.read Style.Xml xml @@>))
           instanceProp.AddXmlDoc(System.String.Format(@"BulletMLを取得します。"))
 
           typ.AddMember(instanceProp)
 
-          typ.HideObjectMethods <- true
           typ
   )
   do 
@@ -64,5 +74,3 @@ type BulletmlTypeProvider(config: TypeProviderConfig) as this =
     | Some a -> a
     | None -> base.ResolveAssembly(args)
   
-[<assembly:TypeProviderAssembly>] 
-do()

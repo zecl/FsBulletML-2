@@ -36,6 +36,11 @@
     <Compile Include="BulletMLFromXmlTypeProvider.fs" />
     <Compile Include="BulletMLFromSxmlTypeProvider.fs" />
     <Compile Include="BulletMLFromFsbTypeProvider.fs" />
+    <!-- These two were on disk but not in this list, so the types they declare
+         (XML<source> / SXML<source>) simply did not exist. Adding them widens the
+         published API surface, so the gate covers them now. -->
+    <Compile Include="XMLTypeProvider.fs" />
+    <Compile Include="FSBTypeProvider.fs" />
     <None Include="Script.fsx" />
     <None Include="app.config" />
   </ItemGroup>

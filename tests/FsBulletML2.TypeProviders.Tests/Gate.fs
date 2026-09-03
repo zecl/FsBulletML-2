@@ -54,7 +54,7 @@ module Docs =
             direction:"0"
             bullet"""
 
-/// **ビルドに入っている型プロバイダは 4 本。** 出す型は 6 通り。
+/// **型プロバイダは 6 本。出す型は 8 通り。全部 ここに載せる。**
 ///
 ///     BulletML<s>              BulletMLTypeProvider          既定は Style.Xml
 ///     BulletML<s, Style.Sxml>  同上
@@ -62,21 +62,24 @@ module Docs =
 ///     Xml.BulletML<s>          BulletMLFromXmlTypeProvider
 ///     Sxml.BulletML<s>         BulletMLFromSxmlTypeProvider
 ///     Fsb.BulletML<s>          BulletMLFromFsbTypeProvider
+///     XML<s>                   XMLTypeProvider.fs            Value を 1 つ 出す
+///     SXML<s>                  FSBTypeProvider.fs            **中身は fsb**
 ///
-/// **XML<s> と SXML<s> はここに無い。**
-/// src/FsBulletML2.TypeProviders に XMLTypeProvider.fs と FSBTypeProvider.fs が
-/// 置いてあり、それぞれ XML / SXML という型を出す形に書かれているが、
-/// **どちらも fsproj の <Compile Include> に入っていない** ——
-/// ディレクトリに .fs が 11 本、fsproj が読むのは 9 本。2 本 が孤児。
-///
-/// 最初この門に XML<Docs.Xml> / SXML<Docs.Fsb> を書いて、
-/// 「型 'XML' が定義されていません」で落ちた。**ディレクトリに在るファイルと
-/// build が読むファイルは別の集合**で、孤児のほうは現行の API と合っているかも
-/// 確かめられていない（コンパイルされないので）。
-///
-/// ついでに、その孤児の FSBTypeProvider.fs が出す型の名前は SXML なのに
+/// 最後の 1 行 は打ち間違いではない。FSBTypeProvider.fs が出す型の名前が SXML で、
 /// 読むのは .fsb（EndsWith ".fsb" / ReadFsbString）。**名前と実装がずれている。**
-/// ビルドに入れるかどうかは配布する API が増える話なので、ここでは触らない。
+/// 直すと使う側が壊れるので、いまは現状のまま門に載せて、ずれを型で固定しておく。
+///
+/// **下の 2 本 は、少し前まで存在しない型だった。** XMLTypeProvider.fs と
+/// FSBTypeProvider.fs はディレクトリに在るのに fsproj の <Compile Include> に
+/// 入っておらず、この門に書いたら「型 'XML' が定義されていません」で落ちた。
+/// ビルドに入れたときに 3 か所 直している ——
+///
+///     読む API が古いまま      FsBulletML2.Xml.Bulletml.readXmlString (xml, None)
+///     読まれない束縛が 1 つ    Bulletml(...) を組んで捨てるだけの bulletml2
+///     HideObjectMethods <-     新 SDK では読み取り専用。引数で渡すほうへ
+///
+/// **コンパイルされないファイルは、周りが動いても古びたまま残る。**
+/// いま門に載っているので、次にずれたらここが赤くなる。
 module Generated =
 
   type ViaStyleXml  = BulletML<Docs.Xml>
@@ -85,6 +88,8 @@ module Generated =
   type ViaXml       = Xml.BulletML<Docs.Xml>
   type ViaSxml      = Sxml.BulletML<Docs.Sxml>
   type ViaFsb       = Fsb.BulletML<Docs.Fsb>
+  type ViaXmlSingle = XML<Docs.Xml>
+  type ViaFsbSingle = SXML<Docs.Fsb>
 
 [<TestFixture>]
 type TypeProviderGate() =
@@ -120,3 +125,16 @@ type TypeProviderGate() =
   member _.``Fsb.BulletML<s>: 別名の型プロバイダからも読める``() =
     let g = Generated.ViaFsb()
     g.Bullet0.Name |> should equal (Some "門の弾")
+
+  /// XML<s> と SXML<s> はプロパティが Value 1 つ だけ（上の 6 通り とは形が違う）
+  [<Test>]
+  member _.``XML<s>: Value から読める``() =
+    let g = Generated.ViaXmlSingle()
+    g.Value.Name |> should equal (Some "門の弾")
+
+  /// **名前は SXML だが、読むのは fsb。** FSBTypeProvider.fs の実装がそうなっている。
+  /// ここに xml を渡すと落ちるのが正しい振る舞い
+  [<Test>]
+  member _.``SXML<s>: 名前に反して fsb を読む``() =
+    let g = Generated.ViaFsbSingle()
+    g.Value.Name |> should equal (Some "門の弾")

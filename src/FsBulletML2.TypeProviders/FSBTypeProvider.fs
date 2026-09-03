@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2.TypeProvider
+﻿namespace FsBulletML2.TypeProviders
 
 open System.IO
 open System.Reflection
@@ -8,12 +8,12 @@ open FsBulletML2
 
 [<TypeProvider>]
 type FSBTypeProvider(config: TypeProviderConfig) as this =
-  inherit TypeProviderForNamespaces()
+  inherit TypeProviderForNamespaces(config, addDefaultProbingLocation = true)
 
   let asm = Assembly.GetExecutingAssembly()
   let ns = "FsBulletML2.TypeProviders"
 
-  let typ = ProvidedTypeDefinition(asm, ns, "SXML", Some (typeof<obj>), HideObjectMethods = true)
+  let typ = ProvidedTypeDefinition(asm, ns, "SXML", Some (typeof<obj>), hideObjectMethods = true)
   do typ.DefineStaticParameters(
         [ProvidedStaticParameter("source", typeof<string>)],
         fun typeName parameters ->
@@ -29,19 +29,19 @@ type FSBTypeProvider(config: TypeProviderConfig) as this =
               | _ -> 
                   failwithf "Error fsb path %A" path
 
-          let typ = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, HideObjectMethods = true)
+          let typ = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, hideObjectMethods = true)
           let ctor = ProvidedConstructor(parameters = [ ], 
-                                          InvokeCode= (fun args -> <@@ source :> obj @@>))
+                                          invokeCode = (fun args -> <@@ source :> obj @@>))
           typ.AddMember ctor
           typ.AddMemberDelayed(fun () -> 
             let instanceProp = 
               ProvidedProperty(propertyName = "Value", 
-                                propertyType = typeof<FsBulletML2.DTD.Bulletml>, 
-                                GetterCode= (fun _ -> <@@ source |> FsBulletML2.DTD.Bulletml.ReadFsbString @@>))
+                                propertyType = Impl.bulletmlType, 
+                                // XMLTypeProvider.fs と同じ理由で Impl.read を通す
+                                getterCode = (fun _ -> <@@ Impl.read Style.Fsb source @@>))
             instanceProp.AddXmlDocDelayed (fun () -> System.String.Format(@"BulletMLを取得します。"))
             instanceProp)
 
-          typ.HideObjectMethods <- true
           typ
   )
   do 
@@ -59,5 +59,3 @@ type FSBTypeProvider(config: TypeProviderConfig) as this =
     | Some a -> a
     | None -> base.ResolveAssembly(args)
   
-[<assembly:TypeProviderAssembly>] 
-do()
