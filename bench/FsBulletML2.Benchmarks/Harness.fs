@@ -312,3 +312,41 @@ module Harness =
       for b in live do step b
 
     liveCalls, deadCalls
+
+  /// 1 走行の確保をその場で出す。**BenchmarkDotNet を通さないので数秒 で終わる。**
+  ///
+  /// 構造を 1 手 変えるたびに 90 分 の走行を回すのは現実的でないので、確保だけを
+  /// 即席で測る口を分けた。確保は決定的（同じコードなら同じ数）なので、
+  /// これで前後の差が読める。時間はこの口では測れない —— あちらは台が動く。
+  ///
+  /// **絶対値は BenchmarkDotNet の Allocated と一致しない。** あちらは
+  /// ウォームアップ後の定常状態を測り、こちらは下ごしらえ（木を組む段）を
+  /// 1 回ぶん 含む。**使うのは差と比だけ。**
+  ///
+  /// 目盛りの合わせ方は --alloc の出力に書いてある。
+  ///
+  /// **「決定的」の範囲に but が付く。** 同じバイナリを 3 回 走らせると
+  /// バイト単位で完全に一致する（実測）。だが**バイナリが変われば、測定区間に
+  /// 関係ない変更でも数 KB 動くことがある** —— Program.fs の表示だけを直した
+  /// 手で、5way と 10Way が揃って 4,120 B 減った（move と homing は不動）。
+  /// 原因は追っていない。**1% 未満の差は読まない**、が実用上の線。
+  /// 今回 struct 化で動いたのは 14〜19% なので、この幅には埋もれない。
+  let private allocOf (run: unit -> int) : int64 =
+    // JIT と静的初期化を測定の外へ出す。外さないと初回だけ数が跳ねる
+    run () |> ignore
+    System.GC.Collect()
+    let before = System.GC.GetAllocatedBytesForCurrentThread()
+    run () |> ignore
+    System.GC.GetAllocatedBytesForCurrentThread() - before
+
+  /// 新経路（出荷する側）の 1 走行の確保
+  let allocApi (doc: Bulletml) (frames: int) : int64 =
+    allocOf (fun () -> runPreparedApi (prepareApi doc) frames)
+
+  /// 旧経路の 1 走行の確保。**対照。**
+  ///
+  /// Core の構造を変えると新旧 両方が動くことがある（Vec2 を struct にした手が
+  /// そうだった）ので、対照が動いたかどうかを毎回 見る。動いていたら、その手は
+  /// 新経路だけの話ではない
+  let allocOld (doc: Bulletml) (frames: int) : int64 =
+    allocOf (fun () -> runPrepared (prepare doc) frames)

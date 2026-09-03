@@ -49,7 +49,16 @@ module Body =
 /// 破壊的変更になる。フロントは受け取って持ち歩き、次のコマでそのまま返す。
 ///
 /// 物理量だけは Body で出し入れできる。
-[<Sealed>]
+///
+/// **[<Struct>] にしてある。** step が毎コマ 1 個、WithBody / restart も
+/// 1 個ずつ作る型で、弾数に比例する。中身は BulletState への参照 1 本 なので
+/// 箱は 8 バイト。struct は暗黙に sealed なので [<Sealed>] は付けない。
+///
+/// **値型なので既定値（state が null）を作れてしまう。** 外からは
+/// コンストラクタが internal なので届かず、Core の中でも既定値は作っていない。
+/// Runner.newRoot / step / restart / WithBody のどれかを通ったものだけが
+/// フロントへ出る。
+[<Struct>]
 type BulletRun internal (state: BulletState) =
 
   member internal _.State = state
@@ -130,6 +139,11 @@ type BulletmlScript internal (resolvers: Step.Resolvers,
   member internal _.RootState = rootState
 
 /// 1 コマの結果。
+///
+/// **[<Struct>] にしてある。** 弾 1 個 × 1 コマ ごとに必ず 1 個 出るので、
+/// 参照型だと弾数に比例してヒープを踏む（Body / Vec2 と同じ理由）。
+/// 中の Run と Spawned は参照なので、この箱自体は小さい。
+[<Struct>]
 type Frame =
   { /// 次のコマへ持ち越す実行状態
     Run : BulletRun

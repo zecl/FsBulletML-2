@@ -827,6 +827,17 @@ module internal Step =
   ///
   /// top* は 1 本ずつ独立に回す。ある top が wait で止まっても、
   /// それはその top の話なので、後ろの top はこのフレームでも回す
+  /// **ここの `effects @ w` / `tops @ [...]` は ResizeArray にしない。**
+  ///
+  /// repeat の側（effectsAcc）は周の数だけ積むので二乗になるが、こちらが
+  /// 回るのは top の本数ぶんだけ。ベンチの 4 本 は**どれも top が 1 本**で、
+  /// そのとき `[] @ w` は w をそのまま返し（コピーなし）、`[] @ [x]` は
+  /// cons 1 個 で済む。ResizeArray に替えると、毎コマ ResizeArray を 2 個
+  /// 作るぶん**確保が増える**。
+  ///
+  /// top を何本も持つ台本でだけ効く形なので、そういう台本を物差しに
+  /// 載せてから直すこと。**当てる先を測らずに「@ だから遅い」で直すと、
+  /// 効かないどころか逆に振れる。**
   let step (rs: Resolvers) (env: Env) (self: BulletState) : StepResult =
     let mutable st = self
     let mutable effects : Effect list = []

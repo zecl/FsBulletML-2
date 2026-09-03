@@ -27,7 +27,18 @@ type SimTests() =
   [<Test>]
   member _.``ask は環境を読む。状態も効果も動かない``() =
     let a, st, w = Sim.run env st0 Sim.ask
-    obj.ReferenceEquals(a, env) |> should equal true
+    // Env が [<Struct>] になったので obj.ReferenceEquals は使えない
+    // （box した時点で別のオブジェクトになる）。値型では「同じオブジェクト」
+    // という問いに意味が無いので、**中の値が全部 素通しか**を見る。
+    //
+    // 構造的等価（a |> should equal env）も使えない。Rand が関数で、
+    // F# の関数は比較できず実行時に落ちる。関数だけ参照で、残りは値で見る。
+    obj.ReferenceEquals(a.Rand, env.Rand) |> should equal true
+    a.Rank |> should equal env.Rank
+    a.AimDir |> should equal env.AimDir
+    a.EnemyAimDir |> should equal env.EnemyAimDir
+    a.SpawnAimDir |> should equal env.SpawnAimDir
+    a.SpawnEnemyAimDir |> should equal env.SpawnEnemyAimDir
     st |> should equal st0
     w |> should be Empty
 

@@ -6,6 +6,17 @@ open FsBulletML2.Domain
 ///
 /// Effects でなく Emit なのは、中身が差分リストだから。bind のたびに
 /// @ で繋ぐと O(n^2) になるので、最後に 1 回だけ空リストに当てて潰す。
+///
+/// **[<Struct>] にしてある。** これは Sim を 1 段 進めるたびに必ず 1 個 出る。
+/// homing laser は 1 走行で bind が 26,999 回 なので、参照型だとその回数だけ
+/// ヒープを踏む。
+///
+/// Env を struct にした手で homing の確保が 4% 増えたのは、ここが参照型の
+/// まま `SimResult<Env>` を作っていて、**中の Env が 8 バイトの参照から
+/// 32 バイトの実体に太った**ため。箱を消せば太りごと消える。
+/// Emit は関数だが、Env の Rand と同じで、関数を持つことと包みが参照型で
+/// あることは別。
+[<Struct>]
 type internal SimResult<'a> =
   { Value : 'a
     State : BulletState
