@@ -652,7 +652,16 @@ module internal Step =
         if stopped then Stopped, PRepeat (num, done0, child), curFc
         elif cont then Continue, PRepeat (num, done0, child), curFc
         else Ended, PRepeat (num, true, child), curFc
-      { Value = value; State = st; Emit = fun rest -> (List.ofSeq effectsAcc) @ rest })
+      // 1 個 も積まなかった周は ValueNone。SimResult.Emit の定義どおり
+      // 「積むものが無い」を型で持つ。確保は --alloc のベンチ 4 本 で
+      // move -1,440 B / homing -25,208 B（5way と 10Way は 0）。
+      // **効きが小さい** —— repeat の周は効果を 1 個 は積むことが多い、
+      // ということ。揃えてある主な理由は性能ではなく、Emit を読む側が
+      // 「空かどうか」を場所ごとに疑わなくて済むようにするため
+      let emit =
+        if effectsAcc.Count = 0 then ValueNone
+        else ValueSome (fun rest -> (List.ofSeq effectsAcc) @ rest)
+      { Value = value; State = st; Emit = emit })
 
   /// fire。現行の fireCommand と createTask の両方を写す。
   ///

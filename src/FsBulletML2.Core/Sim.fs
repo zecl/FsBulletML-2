@@ -20,7 +20,13 @@ open FsBulletML2.Domain
 type internal SimResult<'a> =
   { Value : 'a
     State : BulletState
-    Emit : Effect list -> Effect list }
+    /// 効果を積む関数。**積むものが無いときは ValueNone。**
+    ///
+    /// 以前は id を入れていたが、bind は合成のたびに `r2.Emit >> r1.Emit` で
+    /// 新しい関数を作る。効果を積むのは emit / emitMany だけで、
+    /// ret / ask / get / put は全部 id —— **大半の bind が id >> id という
+    /// 何もしない関数を 1 個 作っていた。** 空を型で持てば、その合成が消える。
+    Emit : (Effect list -> Effect list) voption }
 
 /// 環境を読み、弾の状態を持ち回り、効果を書く。
 /// Reader + State + Writer を 1 本に畳んだもの。
@@ -37,7 +43,7 @@ module Sim =
 
   let inline private unwrap (Sim f) = f
 
-  let internal ret x : Sim<'a> = Sim (fun _ st -> { Value = x; State = st; Emit = id })
+  let internal ret x : Sim<'a> = Sim (fun _ st -> { Value = x; State = st; Emit = ValueNone })
 
   /// Emit は「残りの前に自分を足す」向きの関数なので、m の次に f を書いても
   /// 合成は r2.Emit >> r1.Emit になる（先に評価されるのが右）。これを
@@ -46,25 +52,33 @@ module Sim =
     Sim (fun env st ->
       let r1 = unwrap m env st
       let r2 = unwrap (f r1.Value) env r1.State
-      { r2 with Emit = r2.Emit >> r1.Emit })
+      // 片方が空なら合成しない。**向きは r2.Emit >> r1.Emit のまま**
+      // （後で積んだ効果が先頭に来る向きへ戻さないこと）
+      let emit =
+        match r1.Emit, r2.Emit with
+        | ValueNone, e -> e
+        | e, ValueNone -> e
+        | ValueSome a, ValueSome b -> ValueSome (b >> a)
+      { r2 with Emit = emit })
 
-  let internal ask : Sim<Env> = Sim (fun env st -> { Value = env; State = st; Emit = id })
-  let internal get : Sim<BulletState> = Sim (fun _ st -> { Value = st; State = st; Emit = id })
-  let internal put s : Sim<unit> = Sim (fun _ _ -> { Value = (); State = s; Emit = id })
+  let internal ask : Sim<Env> = Sim (fun env st -> { Value = env; State = st; Emit = ValueNone })
+  let internal get : Sim<BulletState> = Sim (fun _ st -> { Value = st; State = st; Emit = ValueNone })
+  let internal put s : Sim<unit> = Sim (fun _ _ -> { Value = (); State = s; Emit = ValueNone })
 
   let internal emit (e: Effect) : Sim<unit> =
-    Sim (fun _ st -> { Value = (); State = st; Emit = fun rest -> e :: rest })
+    Sim (fun _ st -> { Value = (); State = st; Emit = ValueSome (fun rest -> e :: rest) })
 
   /// emit の複数版。1 個ずつ Sim.bind で繋ぐと、繋ぐ数だけ bind が積み重なる
   /// （repeat の周のように手続き的なループで集めた効果を最後にまとめて
   /// 積みたい場面で、要素数ぶんスタックが伸びるのを避けるため）
   let internal emitMany (es: Effect list) : Sim<unit> =
-    Sim (fun _ st -> { Value = (); State = st; Emit = fun rest -> es @ rest })
+    Sim (fun _ st -> { Value = (); State = st; Emit = ValueSome (fun rest -> es @ rest) })
 
   /// 走らせて、効果を並びに潰す
   let internal run env st (m: Sim<'a>) =
     let r = unwrap m env st
-    r.Value, r.State, r.Emit []
+    let effects = match r.Emit with ValueNone -> [] | ValueSome f -> f []
+    r.Value, r.State, effects
 
 type internal SimBuilder() =
   member _.Return x = Sim.ret x
