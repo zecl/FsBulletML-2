@@ -218,8 +218,8 @@ module Runner =
   let load (rootEnv: Env) (bulletml: Bulletml) : BulletmlScript =
     let rec' = IntermediateParser.convertRecBulletml bulletml
     let resolvers : Step.Resolvers =
-      { Bullet = IntermediateParser.expandBulletRefOnceRec rec'
-        Action = IntermediateParser.expandActionRefOnceRec rec' }
+      { Bullet = RecOps.expandBulletRefOnceRec rec'
+        Action = RecOps.expandActionRefOnceRec rec' }
     // 根は bulletml しかない（RecBulletml の腕が 1 つ）
     let shootingDirection =
       match rec' with
@@ -230,14 +230,14 @@ module Runner =
     // top* の並びは旧の toProcessable と同じ選び方（label が top で始まる action）
     let scripts =
       rec'
-      |> IntermediateParser.getAction
+      |> RecOps.getAction
       |> List.filter (function
         | RecActionElm.Action (attrs, _) ->
             match attrs.actionLabel with
             | Some label -> (ActionLabel.text label).StartsWith "top"
             | None -> false
         | _ -> false)
-      |> List.map (IntermediateParser.convertRefActionElm rec')
+      |> List.map (RecOps.convertRefActionElm rec')
     let rootState =
       { Pos = { X = 0.0f; Y = 0.0f }
         Speed = 0.0f

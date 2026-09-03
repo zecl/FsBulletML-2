@@ -18,6 +18,7 @@
     <Compile Include="Sim.fs" />
     <Compile Include="Processable.fs" />
     <Compile Include="IntermediateParser.fs" />
+    <Compile Include="RecOps.fs" />
     <Compile Include="Step.fs" />
     <Compile Include="Api.fs" />
     <Compile Include="BulletRunner.fs" />

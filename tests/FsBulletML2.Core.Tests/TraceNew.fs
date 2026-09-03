@@ -1,4 +1,4 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open System
 open System.Collections.Generic
@@ -40,19 +40,19 @@ module TraceNew =
     // 旧 API の expand*RefOnce は convertRecBulletmlEx まで進めて
     // ProcessableBulletml を返すので、そのままでは Step.Resolvers の型に合わない
     let resolvers : Step.Resolvers =
-      { Bullet = IntermediateParser.expandBulletRefOnceRec rec'
-        Action = IntermediateParser.expandActionRefOnceRec rec' }
+      { Bullet = RecOps.expandBulletRefOnceRec rec'
+        Action = RecOps.expandActionRefOnceRec rec' }
     // top* の並びは現行の toProcessable と同じ選び方
     let scripts =
       rec'
-      |> IntermediateParser.getAction
+      |> RecOps.getAction
       |> List.filter (function
         | RecActionElm.Action (attrs, _) ->
             match attrs.actionLabel with
             | Some label -> (ActionLabel.text label).StartsWith "top"
             | None -> false
         | _ -> false)
-      |> List.map (IntermediateParser.convertRefActionElm rec')
+      |> List.map (RecOps.convertRefActionElm rec')
 
     // 根の Tops は Progress.initial では組めない。旧の toProcessable は
     // 木を組む段で wait の term だけをその場で引く（IntermediateParser.fs の

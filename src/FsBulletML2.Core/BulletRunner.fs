@@ -96,14 +96,14 @@ module BulletRunner =
     let recBulletml = IntermediateParser.convertRecBulletml bulletml
     let scripts =
       recBulletml
-      |> IntermediateParser.getAction
+      |> RecOps.getAction
       |> List.filter (function
         | RecActionElm.Action (attrs, _) ->
           match attrs.actionLabel with
           | Some label -> (ActionLabel.text label).StartsWith("top")
           | _ -> false
         | RecActionElm.ActionRef _ -> false)
-      |> List.map (IntermediateParser.convertRefActionElm recBulletml)
+      |> List.map (RecOps.convertRefActionElm recBulletml)
     let rootEnv : Env =
       { Rand = BulletMLManager.GetRandom
         Rank = BulletMLManager.GetRank ()
@@ -277,8 +277,8 @@ module BulletRunner =
         Tops = tops |> List.map (fun (s, p) -> s, p, FireContext.zero) }
 
     let bulletmlTask = new BulletmlTask(Step.resetChildActionElm, buildRootTops, scripts, initialState)
-    bulletmlTask.ResolveBulletRef <- IntermediateParser.expandBulletRefOnceRec recBulletml
-    bulletmlTask.ResolveActionRef <- IntermediateParser.expandActionRefOnceRec recBulletml
+    bulletmlTask.ResolveBulletRef <- RecOps.expandBulletRefOnceRec recBulletml
+    bulletmlTask.ResolveActionRef <- RecOps.expandActionRefOnceRec recBulletml
     bulletmlTask.ShootingDirection <- shootingDirection
     bulletmlTask
 
