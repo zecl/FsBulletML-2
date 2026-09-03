@@ -105,32 +105,35 @@ module Bulletml =
     [<CompiledName "TryReadFsb">]
     static member TryReadFsb (fsbFile : string) : Bulletml option = tryReadFsb fsbFile
 
+    // 走らせる木と同じ型になったので、convertRecBulletml が返すのは
+    // **定数を畳んだ Bulletml**。書くのは BulletmlXml（DTD.fs）。
+    // ここを member のままにできないのは、名前が同じで自分を呼ぶため
     member this.ToXmlString() =
-      let recBulletml = this |> IntermediateParser.convertRecBulletml 
-      recBulletml.ToXmlString()
+      this |> IntermediateParser.convertRecBulletml
+           |> BulletmlXml.toXmlString EncodingAndDoctype.Nothing
 
     member this.ToXmlStringForTest() =
-      let recBulletml = this |> IntermediateParser.convertRecBulletmlForTest
-      recBulletml.ToXmlString()
+      this |> IntermediateParser.convertRecBulletmlForTest
+           |> BulletmlXml.toXmlString EncodingAndDoctype.Nothing
 
-    member this.ToXmlString(?encodingAndDoctype) = 
-      let recBulletml = this |> IntermediateParser.convertRecBulletml 
+    member this.ToXmlString(?encodingAndDoctype) =
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
-      recBulletml.ToXmlString(encodingAndDoctype)
+      this |> IntermediateParser.convertRecBulletml
+           |> BulletmlXml.toXmlString encodingAndDoctype
 
-    member this.ToXmlStringForTest(?encodingAndDoctype) = 
-      let recBulletml = this |> IntermediateParser.convertRecBulletmlForTest
+    member this.ToXmlStringForTest(?encodingAndDoctype) =
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
-      recBulletml.ToXmlString(encodingAndDoctype)
+      this |> IntermediateParser.convertRecBulletmlForTest
+           |> BulletmlXml.toXmlString encodingAndDoctype
 
     member this.ToIndentedXmlString([<Optional; DefaultParameterValue(4)>]?indentation : int, ?encodingAndDoctype) =
-      let recBulletml = this |> IntermediateParser.convertRecBulletml 
       let indentation = defaultArg indentation 4
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
-      recBulletml.ToIndentedXmlString(indentation, encodingAndDoctype)
+      this |> IntermediateParser.convertRecBulletml
+           |> BulletmlXml.toIndentedXmlString indentation encodingAndDoctype
 
     member this.ToIndentedXmlStringForTest([<Optional; DefaultParameterValue(4)>]?indentation : int, ?encodingAndDoctype) =
-      let recBulletml = this |> IntermediateParser.convertRecBulletmlForTest
       let indentation = defaultArg indentation 4
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
-      recBulletml.ToIndentedXmlString(indentation, encodingAndDoctype)
+      this |> IntermediateParser.convertRecBulletmlForTest
+           |> BulletmlXml.toIndentedXmlString indentation encodingAndDoctype

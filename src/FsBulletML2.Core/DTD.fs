@@ -193,92 +193,112 @@ module DTD =
   type BulletAttrs = { bulletLabel : BulletLabel option }
   type BulletRefAttrs = { bulletRefLabel : BulletLabel }
 
-  /// エンジンが歩く木。**DTD の内容モデルを型で書いてある。**
+  /// Innternal DSL
   ///
-  /// 以前は 14 の腕を持つ 1 つの平らな DU で、どの子の位置にも何でも
-  /// 入れられた。だから
+  /// **根。腕は bulletml 1 つ だけ。** 子は位置ごとの型（BulletmlElm /
+  /// Action / ActionElm / BulletElm、下）に分かれていて、走らせる木
+  /// （Rec*、上）と同じ形をしている。
   ///
-  ///   - repeat の子に wait を入れる、fire の子に action を入れる、が型を通り、
-  ///     実行時の検査（"repeat element should have Action or ActionRef." など）と
-  ///     Step.fs の `| _ ->` フォールバックで受けるしかなかった。
-  ///     **フォールバックは落ちずに黙って違うことをする**ので、
-  ///     壊れた木を渡されても気づけない
-  ///   - 「BulletML の命令でない節」を表す NotCommand が木の型に居た。
-  ///     作るのは XML を読む段だけで、読んだ側はすぐ捨てていた
-  ///     —— **公開の Bulletml（下）からも消した。** 捨てる印は option、
-  ///     読めなかったは例外。IntermediateParser の但し書きに置いてある
+  /// 以前はここに 13 腕 あった —— action / wait / fire / repeat …と、
+  /// **根になれないものまで根の型に並んでいた。** XML を読む段が、どの位置の
+  /// 子もいったんこの平らな型で返し、親が自分の位置の型へ入れ直していたため。
+  /// 読む段を位置ごとに割ったので、誰も作らなくなった。
   ///
-  /// 位置ごとに型を分けると、DTD の内容モデルがそのまま型になり、
-  /// フォールバックが書けなくなる（書く必要が無くなる）。
+  /// **根が 1 腕 になると、`| _ -> raise` が 2 か所 消える** ——
+  /// Type / Name / Description の `| _ -> None` と、
+  /// convertRecBulletml の「走らせる木の根は bulletml でなければならない」。
+  [<StructuredFormatDisplay("{ToStructuredDisplay}")>]
+  type Bulletml =
+/// BulletML DTD
+/// <!ELEMENT bulletml (bullet | fire | action)*>
+/// <!ATTLIST bulletml xmlns CDATA #IMPLIED>
+/// <!ATTLIST bulletml type (none|vertical|horizontal) "none">
+  | Bulletml of BulletmlAttrs * BulletmlElm list
+    member private t.ToStructuredDisplay = t.ToString()
+    override t.ToString () = stringifyFullName t
+    member this.ToNodeString() =
+      this.ToString().Replace("null","None")
+    member this.Type
+        with get() =
+            match this with
+            | Bulletml (x,_) -> x.bulletmlType
+    member this.Name
+        with get() =
+            match this with
+            | Bulletml (x,_) -> x.bulletmlName
+    /// description は BulletML公式の属性ではない。BulletMLの名前/説明文を格納するための属性として追加した。
+    member this.Description
+        with get() =
+            match this with
+            | Bulletml (x,_) -> x.bulletmlDescription
+
+  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]BulletmlElm =
+  | Bullet of BulletAttrs * Direction option * Speed option * ActionElm list 
+  | Fire of FireAttrs * Direction option * Speed option * BulletElm 
+  | Action of ActionAttrs * Action list 
+    member private t.ToStructuredDisplay = t.ToString()
+    override t.ToString () = stringifyFullName t 
+
+  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]Action = 
+  | ChangeDirection of Direction * Term
+  | Accel of Horizontal option * Vertical option * Term
+  | Vanish 
+  | ChangeSpeed of Speed * Term
+  | Repeat of Times * ActionElm 
+  | Wait of Expr.NumExpr
+  | Fire of FireAttrs * Direction option * Speed option * BulletElm 
+  | FireRef of FireRefAttrs * Params
+  | Action of ActionAttrs * Action list 
+  | ActionRef of ActionRefAttrs * Params
+    member private t.ToStructuredDisplay = t.ToString()
+    override t.ToString () = stringifyFullName t 
+
+  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]BulletElm =
+  | Bullet of BulletAttrs * Direction option * Speed option * ActionElm list 
+  | BulletRef of BulletRefAttrs * Params
+    member private t.ToStructuredDisplay = t.ToString()
+    override t.ToString () = stringifyFullName t 
+
+  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]ActionElm =
+  | Action of ActionAttrs * Action list 
+  | ActionRef of ActionRefAttrs * Params
+    member private t.ToStructuredDisplay = t.ToString()
+    override t.ToString () = stringifyFullName t
+
+  /// 走らせる木の別名。**公開の木と、腕まで同じ型。**
   ///
-  /// 公開の Bulletml ファミリ（下）と同じ形。あちらは「書く木」、
-  /// こちらは「走らせる木」で、convertRecBulletml が定数を畳みながら移す
-
-  /// action の子になれるもの。
-  /// <!ELEMENT action (changeDirection | accel | vanish | changeSpeed | repeat
-  ///                   | wait | (fire | fireRef) | (action | actionRef))*>
-  [<RequireQualifiedAccess>]
-  type internal RecCommand =
-    internal
-  /// <!ELEMENT changeDirection (direction, term)>
-    | ChangeDirection of Direction * Term
-  /// <!ELEMENT changeSpeed (speed, term)>
-    | ChangeSpeed of Speed * Term
-  /// <!ELEMENT accel (horizontal?, vertical?, term)>
-    | Accel of Horizontal option * Vertical option * Term
-  /// <!ELEMENT wait (#PCDATA)>
-    | Wait of Expr.NumExpr
-  /// <!ELEMENT vanish (#PCDATA)>
-    | Vanish
-  /// <!ELEMENT repeat (times, (action | actionRef))>
-    | Repeat of Times * RecActionElm
-  /// <!ELEMENT fire (direction?, speed?, (bullet | bulletRef))>
-  /// <!ATTLIST fire label CDATA #IMPLIED>
-    | Fire of FireAttrs * Direction option * Speed option * RecBulletElm
-  /// <!ELEMENT fireRef (param* )>
-  /// <!ATTLIST fireRef label CDATA #REQUIRED>
-    | FireRef of FireRefAttrs * Params
-  /// <!ATTLIST action label CDATA #IMPLIED>
-    | Action of ActionAttrs * RecCommand list
-  /// <!ELEMENT actionRef (param* )>
-  /// <!ATTLIST actionRef label CDATA #REQUIRED>
-    | ActionRef of ActionRefAttrs * Params
-
-  /// repeat と bullet の子になれるもの
-  and [<RequireQualifiedAccess>] internal RecActionElm =
-    internal
-    | Action of ActionAttrs * RecCommand list
-    | ActionRef of ActionRefAttrs * Params
-
-  /// fire の子になれるもの
-  and [<RequireQualifiedAccess>] internal RecBulletElm =
-    internal
-  /// <!ELEMENT bullet (direction?, speed?, (action | actionRef)* )>
-  /// <!ATTLIST bullet label CDATA #IMPLIED>
-    | Bullet of BulletAttrs * Direction option * Speed option * RecActionElm list
-  /// <!ELEMENT bulletRef (param* )>
-  /// <!ATTLIST bulletRef label CDATA #REQUIRED>
-    | BulletRef of BulletRefAttrs * Params
-
-  /// bulletml の子になれるもの
-  and [<RequireQualifiedAccess>] internal RecTopElm =
-    internal
-    | Bullet of BulletAttrs * Direction option * Speed option * RecActionElm list
-    | Fire of FireAttrs * Direction option * Speed option * RecBulletElm
-    | Action of ActionAttrs * RecCommand list
-
-  //[<DebuggerDisplay("BulletML = { this.ToXmlString() }")>]
-  [<RequireQualifiedAccess>]
-  type internal RecBulletml =
-    internal
-  /// BulletML DTD
-  /// <!ELEMENT bulletml (bullet | fire | action)*>
-  /// <!ATTLIST bulletml xmlns CDATA #IMPLIED>
-  /// <!ATTLIST bulletml type (none|vertical|horizontal) "none">
-    | Bulletml of BulletmlAttrs * RecTopElm list
-
+  /// 以前はここに Rec* 5 つ の定義が並んでいた。公開側（下）と
+  /// 腕の名前も引数の型も一致していて、違うのは並び順と属性だけだった
+  /// —— **同じものを 2 通りの名前で持っていた。**
+  ///
+  ///     RecCommand    = Action       action の子になれる 10 通り
+  ///     RecActionElm  = ActionElm    repeat / bullet の子
+  ///     RecBulletElm  = BulletElm    fire の子
+  ///     RecTopElm     = BulletmlElm  bulletml の子
+  ///     RecBulletml   = Bulletml     根
+  ///
+  /// 名前が残っているのは、呼び側 492 か所 を同じコミットで書き換えないため。
+  /// **型が 1 つ になった時点で、あとの書き換えは名前だけの仕事になる**
+  /// （別名なので、どちらの名前で書いても同じ型に解ける）。
+  ///
+  /// convertRecBulletml は写す仕事を失い、**定数を畳むだけ**になった。
+  type internal RecCommand = Action
+  type internal RecActionElm = ActionElm
+  type internal RecBulletElm = BulletElm
+  type internal RecTopElm = BulletmlElm
+  type internal RecBulletml = Bulletml
+  /// BulletML を XML に書き戻す。
+  ///
+  /// **以前は RecBulletml の member だった。** 公開の Bulletml と同じ型に
+  /// なったので member のままだと、Parser の Bulletml.ToXmlString（定数を
+  /// 畳んでから書く口）と名前がぶつかって自分を呼ぶ。関数に出した。
+  ///
+  /// ToString の override も落とした。**公開の Bulletml.ToString は
+  /// DU の中身を出す**（stringifyFullName）ので、XML を出す override が
+  /// 同じ型に 2 つ 付くことになる。XML が要る側は toXmlString を呼ぶ。
+  module internal BulletmlXml =
     /// BulletML 書き込み
-    member private this.WriteContentTo(writer:XmlWriter) =
+    let writeContentTo (writer: XmlWriter) (this: Bulletml) =
       // 型が位置ごとに分かれたので、走査も位置ごとに分ける。
       // 各腕の中身は分ける前と同じ順で書く（往復の試験が順序まで見ている）。
       //
@@ -492,7 +512,7 @@ module DTD =
         children |> Seq.iter writeTopElm
         writer.WriteEndElement()
 
-    member private this.GetXmlString formatting (encdoc:EncodingAndDoctype) indentation = 
+    let getXmlString formatting (encdoc: EncodingAndDoctype) indentation (this: Bulletml) =
       let output = new StringBuilder()             
       let sw =
         { new StringWriter(output) with
@@ -507,89 +527,11 @@ module DTD =
                  let sysid = "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml/bulletml.dtd"
                  writer.WriteDocType(docType, null, sysid, null)
 
-      this.WriteContentTo(writer)
+      writeContentTo writer this
       output.ToString()
 
-    override this.ToString() =
-      this.GetXmlString Formatting.None EncodingAndDoctype.Nothing 0
+    let toXmlString (encodingAndDoctype: EncodingAndDoctype) (this: Bulletml) =
+      getXmlString Formatting.None encodingAndDoctype 0 this
 
-    member this.ToXmlString(?encodingAndDoctype) = 
-      let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing 
-      this.GetXmlString Formatting.None encodingAndDoctype 0
-
-    member this.ToIndentedXmlString([<Optional; DefaultParameterValue(4)>]?indentation : int, ?encodingAndDoctype) =
-      let indentation = defaultArg indentation 4
-      let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
-      this.GetXmlString Formatting.Indented encodingAndDoctype indentation
-
-  /// Innternal DSL
-  ///
-  /// **根。腕は bulletml 1 つ だけ。** 子は位置ごとの型（BulletmlElm /
-  /// Action / ActionElm / BulletElm、下）に分かれていて、走らせる木
-  /// （Rec*、上）と同じ形をしている。
-  ///
-  /// 以前はここに 13 腕 あった —— action / wait / fire / repeat …と、
-  /// **根になれないものまで根の型に並んでいた。** XML を読む段が、どの位置の
-  /// 子もいったんこの平らな型で返し、親が自分の位置の型へ入れ直していたため。
-  /// 読む段を位置ごとに割ったので、誰も作らなくなった。
-  ///
-  /// **根が 1 腕 になると、`| _ -> raise` が 2 か所 消える** ——
-  /// Type / Name / Description の `| _ -> None` と、
-  /// convertRecBulletml の「走らせる木の根は bulletml でなければならない」。
-  [<StructuredFormatDisplay("{ToStructuredDisplay}")>]
-  type Bulletml =
-/// BulletML DTD
-/// <!ELEMENT bulletml (bullet | fire | action)*>
-/// <!ATTLIST bulletml xmlns CDATA #IMPLIED>
-/// <!ATTLIST bulletml type (none|vertical|horizontal) "none">
-  | Bulletml of BulletmlAttrs * BulletmlElm list
-    member private t.ToStructuredDisplay = t.ToString()
-    override t.ToString () = stringifyFullName t
-    member this.ToNodeString() =
-      this.ToString().Replace("null","None")
-    member this.Type
-        with get() =
-            match this with
-            | Bulletml (x,_) -> x.bulletmlType
-    member this.Name
-        with get() =
-            match this with
-            | Bulletml (x,_) -> x.bulletmlName
-    /// description は BulletML公式の属性ではない。BulletMLの名前/説明文を格納するための属性として追加した。
-    member this.Description
-        with get() =
-            match this with
-            | Bulletml (x,_) -> x.bulletmlDescription
-
-  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]BulletmlElm =
-  | Bullet of BulletAttrs * Direction option * Speed option * ActionElm list 
-  | Fire of FireAttrs * Direction option * Speed option * BulletElm 
-  | Action of ActionAttrs * Action list 
-    member private t.ToStructuredDisplay = t.ToString()
-    override t.ToString () = stringifyFullName t 
-
-  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]Action = 
-  | ChangeDirection of Direction * Term
-  | Accel of Horizontal option * Vertical option * Term
-  | Vanish 
-  | ChangeSpeed of Speed * Term
-  | Repeat of Times * ActionElm 
-  | Wait of Expr.NumExpr
-  | Fire of FireAttrs * Direction option * Speed option * BulletElm 
-  | FireRef of FireRefAttrs * Params
-  | Action of ActionAttrs * Action list 
-  | ActionRef of ActionRefAttrs * Params
-    member private t.ToStructuredDisplay = t.ToString()
-    override t.ToString () = stringifyFullName t 
-
-  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]BulletElm =
-  | Bullet of BulletAttrs * Direction option * Speed option * ActionElm list 
-  | BulletRef of BulletRefAttrs * Params
-    member private t.ToStructuredDisplay = t.ToString()
-    override t.ToString () = stringifyFullName t 
-
-  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]ActionElm =
-  | Action of ActionAttrs * Action list 
-  | ActionRef of ActionRefAttrs * Params
-    member private t.ToStructuredDisplay = t.ToString()
-    override t.ToString () = stringifyFullName t 
+    let toIndentedXmlString (indentation: int) (encodingAndDoctype: EncodingAndDoctype) (this: Bulletml) =
+      getXmlString Formatting.Indented encodingAndDoctype indentation this
