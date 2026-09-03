@@ -523,75 +523,43 @@ module DTD =
       this.GetXmlString Formatting.Indented encodingAndDoctype indentation
 
   /// Innternal DSL
+  ///
+  /// **根。腕は bulletml 1 つ だけ。** 子は位置ごとの型（BulletmlElm /
+  /// Action / ActionElm / BulletElm、下）に分かれていて、走らせる木
+  /// （Rec*、上）と同じ形をしている。
+  ///
+  /// 以前はここに 13 腕 あった —— action / wait / fire / repeat …と、
+  /// **根になれないものまで根の型に並んでいた。** XML を読む段が、どの位置の
+  /// 子もいったんこの平らな型で返し、親が自分の位置の型へ入れ直していたため。
+  /// 読む段を位置ごとに割ったので、誰も作らなくなった。
+  ///
+  /// **根が 1 腕 になると、`| _ -> raise` が 2 か所 消える** ——
+  /// Type / Name / Description の `| _ -> None` と、
+  /// convertRecBulletml の「走らせる木の根は bulletml でなければならない」。
   [<StructuredFormatDisplay("{ToStructuredDisplay}")>]
   type Bulletml =
 /// BulletML DTD
 /// <!ELEMENT bulletml (bullet | fire | action)*>
 /// <!ATTLIST bulletml xmlns CDATA #IMPLIED>
 /// <!ATTLIST bulletml type (none|vertical|horizontal) "none">
-  | Bulletml of BulletmlAttrs * BulletmlElm list 
-/// BulletML DTD
-/// <!ELEMENT action (changeDirection | accel | vanish | changeSpeed | repeat | wait | (fire | fireRef) | (action | actionRef))*>
-/// <!ATTLIST action label CDATA #IMPLIED>
-  | Action of ActionAttrs * Action list 
-/// BulletML DTD
-/// <!ELEMENT actionRef (param* )>
-/// <!ATTLIST actionRef label CDATA #REQUIRED>
-  | ActionRef of ActionRefAttrs * Params
-/// BulletML DTD
-/// <!ELEMENT fire (direction?, speed?, (bullet | bulletRef))>
-/// <!ATTLIST fire label CDATA #IMPLIED>
-  | Fire of FireAttrs * Direction option * Speed option * BulletElm  
-/// BulletML DTD
-/// <!ELEMENT fireRef (param* )>
-/// <!ATTLIST fireRef label CDATA #REQUIRED>
-  | FireRef of FireRefAttrs * Params
-/// BulletML DTD
-/// <!ELEMENT wait (#PCDATA)>
-  | Wait of Expr.NumExpr
-/// BulletML DTD
-/// <!ELEMENT vanish (#PCDATA)>
-  | Vanish 
-/// BulletML DTD
-/// <!ELEMENT changeSpeed (speed, term)>
-  | ChangeSpeed of Speed * Term
-/// BulletML DTD
-/// <!ELEMENT changeDirection (direction, term)>
-  | ChangeDirection of Direction * Term
-/// BulletML DTD
-/// <!ELEMENT accel (horizontal?, vertical?, term)>  
-  | Accel of Horizontal option * Vertical option * Term
-/// BulletML DTD
-/// <!ELEMENT bullet (direction?, speed?, (action | actionRef)* )>
-/// <!ATTLIST bullet label CDATA #IMPLIED>
-  | Bullet of BulletAttrs * Direction option * Speed option * ActionElm list 
-/// BulletML DTD
-/// <!ELEMENT bulletRef (param* )>
-/// <!ATTLIST bulletRef label CDATA #REQUIRED>
-  | BulletRef of BulletRefAttrs * Params
-/// BulletML DTD
-/// <!ELEMENT repeat (times, (action | actionRef))>
-  | Repeat of Times * ActionElm
+  | Bulletml of BulletmlAttrs * BulletmlElm list
     member private t.ToStructuredDisplay = t.ToString()
-    override t.ToString () = stringifyFullName t 
-    member this.ToNodeString() = 
+    override t.ToString () = stringifyFullName t
+    member this.ToNodeString() =
       this.ToString().Replace("null","None")
     member this.Type
-        with get() = 
+        with get() =
             match this with
             | Bulletml (x,_) -> x.bulletmlType
-            | _ -> None
     member this.Name
-        with get() = 
+        with get() =
             match this with
-            | Bulletml (x,_) -> x.bulletmlName   
-            | _ -> None
+            | Bulletml (x,_) -> x.bulletmlName
     /// description は BulletML公式の属性ではない。BulletMLの名前/説明文を格納するための属性として追加した。
     member this.Description
         with get() =
             match this with
             | Bulletml (x,_) -> x.bulletmlDescription
-            | _ -> None
 
   and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]BulletmlElm =
   | Bullet of BulletAttrs * Direction option * Speed option * ActionElm list 

@@ -60,9 +60,9 @@ type PublicParseBoundary() =
       """<bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
   <action label="top"><fire><direction>0</direction><bullet/></fire></action>
 </bulletml>"""
-    match readXmlString xml with
-    | Bulletml (_, elms) -> elms |> should not' (be Empty)
-    | other -> Assert.Fail (sprintf "Bulletml でない腕が返った: %A" other)
+    // 腕は bulletml 1 つ だけなので、ここに | other -> は書けない
+    let (Bulletml (_, elms)) = readXmlString xml
+    elms |> should not' (be Empty)
 
   /// **空の bulletml は「読めなかった」ではない。**
   /// 中身 0 個 の木が返る —— この段では欠落を弾かない、という線引き。
@@ -70,9 +70,8 @@ type PublicParseBoundary() =
   member _.``中身が空の bulletml は、上がらずに中身 0 個 の木が返る``() =
     let xml =
       """<bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml"></bulletml>"""
-    match readXmlString xml with
-    | Bulletml (_, elms) -> elms |> should be Empty
-    | other -> Assert.Fail (sprintf "Bulletml でない腕が返った: %A" other)
+    let (Bulletml (_, elms)) = readXmlString xml
+    elms |> should be Empty
 
   /// bulletml の子になれるのは bullet / fire / action だけ
   /// （`<!ELEMENT bulletml (bullet | fire | action)*>`）。
@@ -106,6 +105,5 @@ type PublicParseBoundary() =
   member _.``bulletml の子に、命令でない節が来ても上がらずに落ちる``(child: string) =
     let xml =
       sprintf """<bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">%s</bulletml>""" child
-    match readXmlString xml with
-    | Bulletml (_, elms) -> elms |> should be Empty
-    | other -> Assert.Fail (sprintf "Bulletml でない腕が返った: %A" other)
+    let (Bulletml (_, elms)) = readXmlString xml
+    elms |> should be Empty

@@ -251,15 +251,6 @@ module IntermediateParser =
       | _ -> new BulletmlDTDViolationException("not support element.") |> raise
     children |> List.tryPick f
 
-  let internal getActions commands = 
-    commands 
-    |> List.map(fun command -> command |> function 
-      | Bulletml.Action (attr, commands) -> ActionElm.Action(attr, commands) |> Some 
-      | Bulletml.ActionRef (attr, commands) -> ActionElm.ActionRef(attr, commands) |> Some 
-      | _ -> None)
-    |> List.filter (fun x -> match x with | Some x -> true | _ -> false )
-    |> List.map (fun x -> match x with | Some x -> x | _ -> new BulletmlDTDViolationException("not support action.") |> raise )
-
   /// XmlNode to Bulletml.Bulletml
   ///
   /// DTD :
@@ -732,14 +723,12 @@ module IntermediateParser =
       | BulletmlElm.Action (attrs, commands) ->
         RecTopElm.Action (attrs, commands |> List.map convertCommand)
 
-    // 走らせる木の根は bulletml だけ。公開の Bulletml は「どの要素でも」
-    // 表せる型なので、ここで根であることを確かめる。DTD の
-    // <!ELEMENT bulletml ...> が根であるという決めが、ここに 1 回だけ出る
+    // 根は bulletml だけ。**公開の Bulletml も腕が 1 つ になったので、
+    // ここで確かめる必要が無くなった** ——「どの要素でも表せる型」だった
+    // 頃は `| _ -> raise` が要った
     match bulletml with
     | Bulletml.Bulletml (attrs, elms) ->
       RecBulletml.Bulletml (attrs, elms |> List.map convertTopElm)
-    | _ ->
-      new BulletmlDTDViolationException("走らせる木の根は bulletml でなければなりません。") |> raise
 
   let internal convertRecBulletml bulletml= 
     convertRecBulletml' bulletml false
