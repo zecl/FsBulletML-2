@@ -15,7 +15,7 @@ open System.Text.RegularExpressions
 [<TypeProvider>]
 [<CompilerMessage("hidden...", 13730, IsError = false, IsHidden = true)>]
 type BulletMLTypeProvider (config: TypeProviderConfig) as this =
-  inherit TypeProviderForNamespaces()
+  inherit TypeProviderForNamespaces(config, addDefaultProbingLocation = true)
   let ctx = new Context(this.Invalidate)
   let typ = createProvidedTypeDefinition ns
 
@@ -39,8 +39,8 @@ type BulletMLTypeProvider (config: TypeProviderConfig) as this =
           let style = parameters.[1] :?> Style
           let watch = parameters.[2] :?> bool
           let bullets = paramSprit bulletmls
-          let typ = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, HideObjectMethods = true, IsErased = true)
-          let ctor = ProvidedConstructor(parameters = [ ], InvokeCode= (fun _ -> <@@ bullets @@>))
+          let typ = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, hideObjectMethods = true, isErased = true)
+          let ctor = ProvidedConstructor(parameters = [ ], invokeCode = (fun _ -> <@@ bullets @@>))
           typ.AddMember ctor
           addProperties typ bullets style config watch ctx
           typ)

@@ -15,7 +15,7 @@ open Impl
 [<TypeProvider>]
 [<CompilerMessage("hidden...", 13730, IsError = false, IsHidden = true)>]
 type BulletMLFromXmlTypeProvider (config: TypeProviderConfig) as this =
-  inherit TypeProviderForNamespaces()
+  inherit TypeProviderForNamespaces(config, addDefaultProbingLocation = true)
   let ctx = new Context(this.Invalidate)
 
   let ns = ns + ".Xml"
@@ -35,8 +35,8 @@ type BulletMLFromXmlTypeProvider (config: TypeProviderConfig) as this =
           let style = Style.Xml 
           let watch = parameters.[1] :?> bool
           let bullets = paramSprit bulletmls
-          let typ = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, HideObjectMethods = true)
-          let ctor = ProvidedConstructor(parameters = [ ], InvokeCode= (fun _ -> <@@ bullets @@>))
+          let typ = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, hideObjectMethods = true)
+          let ctor = ProvidedConstructor(parameters = [ ], invokeCode = (fun _ -> <@@ bullets @@>))
           typ.AddMember ctor
           addProperties typ bullets style config watch ctx
           typ)

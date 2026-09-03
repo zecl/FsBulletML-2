@@ -10,17 +10,26 @@
          to speed up incremental builds) is not usable here - consumers would load stub bodies
          and every provider member throws. -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-    <!-- This project builds clean, but "builds" is the only thing anything checks about it.
-         The one place that consumes the generated types - samples/FsBulletML2.Sample.TypeProviders.Debug -
-         does not build (FS1108) and is not in FsBulletML2.sln, so nothing here is exercised as a
-         type provider. The vendored ProvidedTypes.fs is the .NET Framework-era SDK. See that
-         sample's README.md before changing anything in here. -->
+    <!-- A type provider runs inside the compiler at design time, where its own deps.json is
+         never consulted. Library projects do not copy NuGet assemblies to the output folder by
+         default, so FParsec.dll (pulled in transitively through FsBulletML2.Parser) was simply
+         absent next to FsBulletML2.TypeProviders.dll and every provided type failed with
+         "Could not load file or assembly 'FParsec'". Copying the resolved assemblies puts it
+         there; TypeProviderForNamespaces(addDefaultProbingLocation = true) is what makes the
+         provider look there. Both halves are required - neither works alone. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- ProvidedTypes.fs / .fsi are FSharp.TypeProviders.SDK 8.11.0, taken verbatim from the
+         NuGet package's src/ folder. Do not hand-edit them; re-copy from a newer package instead.
+         The .NET Framework-era copy that used to live here made every provided type fail with
+         FS1108 at the use site.
+
+         tests/FsBulletML2.TypeProviders.Tests is the gate that says these actually work as type
+         providers, rather than merely compiling. Run it before and after touching anything here. -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ProvidedTypes.fsi" />
     <Compile Include="ProvidedTypes.fs" />
-    <Compile Include="DebugProvidedTypes.fs" />
     <Compile Include="Helper.fs" />
     <Compile Include="Impl.fs" />
     <Compile Include="BulletMLTypeProvider.fs" />

@@ -21,7 +21,7 @@ module Impl =
   let asm = Assembly.GetExecutingAssembly()
   let ns = typeof<Style>.Namespace
   let createProvidedTypeDefinition ns =
-    ProvidedTypeDefinition(asm, ns, "BulletML", Some (typeof<obj>), HideObjectMethods = true, IsErased = true)
+    ProvidedTypeDefinition(asm, ns, "BulletML", Some (typeof<obj>), hideObjectMethods = true, isErased = true)
 
   let paramSprit strArg = 
     let separators = [|";";","|]
@@ -65,7 +65,7 @@ module Impl =
           ProvidedProperty(
             propertyName = propName,
             propertyType = typeof<Bulletml>,
-            GetterCode= (fun _ -> <@@ read style bulletml @@>))
+            getterCode = (fun _ -> <@@ read style bulletml @@>))
 
         instanceProp.AddXmlDocDelayed(fun () ->
           let result = read style bulletml
@@ -81,7 +81,19 @@ module Impl =
   // "packages\<id>.<version>\lib\<tf>" layout, keyed off "net40"/"net45" via #if NET40/NET45 (an
   // ifdef that nothing defines any more - a latent, always-broken build target under this
   // project's later configurations). There is no packages.config in this repo; dependencies are
-  // resolved through ProjectReference/PackageReference instead, and the build already copies
-  // FsBulletML2.Core.dll, FsBulletML2.Parser.dll and FParsec.dll next to FsBulletML2.TypeProviders.dll,
-  // which is where ordinary assembly resolution looks first. Registering this assembly's own
-  // directory as a probing folder (as this function's first line did) is therefore also redundant.
+  // resolved through ProjectReference/PackageReference instead.
+  //
+  // What used to follow this paragraph claimed the build "already copies FsBulletML2.Core.dll,
+  // FsBulletML2.Parser.dll and FParsec.dll next to FsBulletML2.TypeProviders.dll", and concluded
+  // that registering a probing folder was redundant. **Both halves were wrong.** A library
+  // project does not copy NuGet assemblies to its output by default, so FParsec.dll was never
+  // there; and a type provider runs inside the compiler at design time, where nothing consults
+  // this assembly's deps.json. Once the SDK swap made provided types resolve at all, every one
+  // of them failed with "Could not load file or assembly 'FParsec'".
+  //
+  // The fix is in two places, and neither half works alone:
+  //   FsBulletML2.TypeProviders.fsproj   CopyLocalLockFileAssemblies puts FParsec.dll there
+  //   TypeProviderForNamespaces(...)     addDefaultProbingLocation makes the provider look there
+  //
+  // The claim was plausible, sat in a comment nothing executes, and stayed wrong until the
+  // surrounding code was made to work well enough to reach it.
