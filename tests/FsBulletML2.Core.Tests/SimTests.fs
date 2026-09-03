@@ -1,4 +1,4 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsUnit
@@ -44,7 +44,7 @@ type SimTests() =
 
   [<Test>]
   member _.``put した状態が、次の get に見える``() =
-    let m = sim {
+    let m = simForTests {
       do! Sim.put { st0 with Speed = 42.0f }
       let! s = Sim.get
       return s.Speed
@@ -56,7 +56,7 @@ type SimTests() =
   [<Test>]
   member _.``emit した効果は、書いた順に並ぶ``() =
     let child n = { st0 with Speed = float32 n }
-    let m = sim {
+    let m = simForTests {
       do! Sim.emit (Spawn (child 1))
       do! Sim.emit Vanished
       do! Sim.emit (Spawn (child 3))
@@ -70,8 +70,8 @@ type SimTests() =
 
   [<Test>]
   member _.``入れ子にしても効果を落とさない``() =
-    let inner = sim { do! Sim.emit Vanished }
-    let m = sim {
+    let inner = simForTests { do! Sim.emit Vanished }
+    let m = simForTests {
       do! Sim.emit (Spawn { st0 with Speed = 1.0f })
       do! inner
       do! Sim.emit (Spawn { st0 with Speed = 3.0f })
@@ -87,7 +87,7 @@ type SimTests() =
   [<Test>]
   member _.``効果を 1000 個 積んでも順序が保たれる``() =
     // 差分リストにしているので、@ で繋いだときの O(n^2) にならないことも兼ねる
-    let m = sim {
+    let m = simForTests {
       for i in 1 .. 1000 do
         do! Sim.emit (Spawn { st0 with Speed = float32 i })
     }
@@ -103,7 +103,7 @@ type SimTests() =
   member _.``状態は前から後ろへ渡る``() =
     // bind が r1.State を f へ渡すこと。位置ではなく名前で受けるので
     // 取り違えが起きない形になっているかを見る
-    let m = sim {
+    let m = simForTests {
       do! Sim.put { st0 with Speed = 2.0f }
       let! s1 = Sim.get
       do! Sim.put { s1 with Speed = s1.Speed * 3.0f }

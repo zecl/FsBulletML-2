@@ -1,4 +1,4 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsUnit
@@ -70,7 +70,7 @@ type StepTop() =
     let r = Step.step noResolvers env st
     r.Retired |> should equal false
 
-  /// Sim.bind は r2.Emit >> r1.Emit で合成する（Sim.fs 参照）ので、複数 top を
+  /// Sim.bindForTests は r2.Emit >> r1.Emit で合成する（Sim.fs 参照）ので、複数 top を
   /// 畳むときも並び順を取り違えやすい。前の top の効果が後ろの top より先に
   /// 出ることを、種類の違う 2 つの効果（Spawn と Vanished）で確かめる。
   /// 同じ効果 2 つ（例えば Vanish を 2 本）では、逆順に足しても結果の並びが
