@@ -65,6 +65,19 @@ type Equivalence() =
   /// 軌跡は文字列で不変なので、共有しても試験の間で状態は漏れない。
   /// 例外で落ちる 3 本 はキャッシュに入らず毎回 走るが、3 本 なので放っておく。
   ///
+  /// **この fixture は NonParallelizable。** 可変の辞書を持てるのはそのため
+  /// （BulletMLManager が static mutable なので、どのみち逐次でしか走らない）。
+  static let viaRunnerCache = Dictionary<string, string>()
+
+  static let viaRunnerCached (path: string) (xml: string) =
+    match viaRunnerCache.TryGetValue path with
+    | true, v -> v
+    | _ ->
+        BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
+        let v = Trace.run xml 60
+        viaRunnerCache.[path] <- v
+        v
+
   /// 走らせ方を 2 つ受け取り、227 本ぜんぶを突き合わせた報告を返す。
   /// どちらも「いまのソースを実際に走らせる」関数であることが前提
   /// （凍結データとの突き合わせには使わない。下の 2 番めの橋を参照）。
@@ -185,34 +198,41 @@ type Equivalence() =
           name, Ok (int cols.[1], int cols.[2], cols.[3]))
     |> Map.ofArray
 
-  /// **公開 API と Step.step 直接呼びが一致する。**
-  ///
-  /// 互換の口を落とす前は、ここに橋が 2 本 あった ——「BulletRunner 経由 対
-  /// Step 直接」と「BulletRunner 経由 対 公開 API」。どちらも基準が
-  /// BulletRunner で、口が 3 つ あるうちの 2 組 を見ていた。**口が 2 つ に
-  /// なったので 1 本 に畳んである**（3 組め にあたる、いま残っているこの組は
-  /// 当時どちらの橋でも直接は見ていなかった。推移で繋がっていただけ）。
-  ///
-  /// ここで見ているのは、公開 API という薄い層（Runner.load / stepWith）が
-  /// Step.step の直接呼びと食い違っていないか。**新旧エンジンの比較では
-  /// ない**（クラスの docstring 参照）。
-  ///
-  /// TraceApi は internal を 1 つも使わない（あちらの docstring 参照）ので、
-  /// これが緑ということは「フロントは Core の内側に触れずに弾幕を走らせられる」
-  /// ということ。
-  ///
-  /// 定数の $rand なので「引く回数・引く順」の割れは見えない。回数の割れは
-  /// 下の橋（凍結した旧エンジンとの突き合わせ）が見る。
   [<Test>]
-  member _.``227 本を、Step.step 直接呼びと公開 API で突き合わせると全部 一致する``() =
+  member _.``227 本を、BulletRunner 経由と Step.step 直接呼びで突き合わせると全部 一致する``() =
+    // 定数の $rand。この形では「引く回数・引く順」の割れは見えない
+    // （下のテストの docstring 参照）。ここで見ているのは BulletRunner
+    // という薄い橋渡し層が Step.step の直接呼びと食い違っていないかだけで、
+    // 新旧エンジンの比較ではない（クラスの docstring 参照）
     let rand, rank, px, py = 0.5f, 0.5f, 30.0f, 100.0f
+    // 基準側は viaRunnerCached（下の試験と同じ設定なので走行を共有する）
     let direct (xml: string) = TraceNew.run (fun () -> rand) rank px py xml 60
-    let viaApi (xml: string) = TraceApi.run (fun () -> rand) rank px py xml 60
-    let report = Equivalence.RunBoth direct viaApi
+    let report = Equivalence.RunBothWith viaRunnerCached direct
     TestContext.WriteLine report.Text
     // 部分文字列一致（"割れ 0 " を含み "一致 0 " を含まない）だけだと、220 本が
     // 同じ例外へ吸われて「一致 3 / 割れ 0 / 比べられず 224」になっても
     // 通ってしまう。実測した数そのものを門にする
+    report.Total |> should equal 227
+    report.Ok |> should equal 224
+    report.Ng |> should equal 0
+    report.Skipped |> should equal 3
+
+  /// 段階 4 の合格条件。**公開 API だけで 227 本 が走り、旧経路と一致する。**
+  ///
+  /// TraceApi は internal を 1 つも使わない（あちらの docstring 参照）ので、
+  /// これが緑ということは「フロントは IBulletmlObject の 19 メンバを
+  /// 実装せずに弾幕を走らせられる」ということ。
+  ///
+  /// 上の「BulletRunner 経由 対 Step.step 直接呼び」と同じく、定数の $rand
+  /// では引く回数の割れは見えない。回数の割れは下の橋（旧エンジンとの
+  /// 突き合わせ）が見る。
+  [<Test>]
+  member _.``227 本を、BulletRunner 経由と公開 API で突き合わせると全部 一致する``() =
+    let rand, rank, px, py = 0.5f, 0.5f, 30.0f, 100.0f
+    // 基準側は viaRunnerCached（上の試験と同じ設定なので走行を共有する）
+    let viaApi (xml: string) = TraceApi.run (fun () -> rand) rank px py xml 60
+    let report = Equivalence.RunBothWith viaRunnerCached viaApi
+    TestContext.WriteLine report.Text
     report.Total |> should equal 227
     report.Ok |> should equal 224
     report.Ng |> should equal 0
