@@ -37,7 +37,11 @@ type internal SimResult<'a> =
 /// BulletState / Effect を内側に持つため internal。両方とも internal
 /// Progress / RecBulletml を辿って internal になっているので、それを
 /// 運ぶ Sim もそこから見えない外へは出さない
-type internal Sim<'a> = Sim of (Env -> BulletState -> SimResult<'a>)
+/// **包みは struct。** Sim は「関数を 1 本 くるんだだけ」の型なのに、
+/// 参照型の DU にすると bind / ret / emit のたびにその包みがヒープへ
+/// 確保される。中身の関数（クロージャ）の確保は消せないが、包みは消せる。
+[<Struct>]
+type internal Sim<'a> = Sim of run: (Env -> BulletState -> SimResult<'a>)
 
 module Sim =
 
