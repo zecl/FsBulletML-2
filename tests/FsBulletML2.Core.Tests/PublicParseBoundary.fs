@@ -65,13 +65,47 @@ type PublicParseBoundary() =
     | other -> Assert.Fail (sprintf "Bulletml でない腕が返った: %A" other)
 
   /// **空の bulletml は「読めなかった」ではない。**
-  /// xmlToBulletml の「命令が 1 つ も取れなかった」に落ちそうに見えるが、
-  /// bulletml 自身が 1 つ 目 の命令として取れるのでそこには来ない。
   /// 中身 0 個 の木が返る —— この段では欠落を弾かない、という線引き。
   [<Test>]
   member _.``中身が空の bulletml は、上がらずに中身 0 個 の木が返る``() =
     let xml =
       """<bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml"></bulletml>"""
+    match readXmlString xml with
+    | Bulletml (_, elms) -> elms |> should be Empty
+    | other -> Assert.Fail (sprintf "Bulletml でない腕が返った: %A" other)
+
+  /// bulletml の子になれるのは bullet / fire / action だけ
+  /// （`<!ELEMENT bulletml (bullet | fire | action)*>`）。
+  ///
+  /// **落とし方が 2 通り あって、それが線引きそのもの。**
+  ///
+  ///     命令だが位置が違う（wait / repeat / actionRef …）  上げる
+  ///     そもそも命令でない（direction / speed …）          黙って落とす
+  ///
+  /// **この 2 本 が無いと、位置の検査は誰にも見られていなかった。**
+  /// 以前は actionRef-label-nothing.xml がここを踏んでいたが、あの門の名前は
+  /// 「label が無い」で、bulletml の直下に actionRef を置いていたせいで
+  /// 名前どおりのことを測っていなかった（兄弟の fireRef / bulletRef は
+  /// action の中に置いてある）。あちらは action の中へ移した。
+  [<TestCase("wait", "<wait>1</wait>")>]
+  [<TestCase("repeat", "<repeat><times>1</times><action><wait>1</wait></action></repeat>")>]
+  [<TestCase("actionRef", """<actionRef label="top"/>""")>]
+  [<TestCase("vanish", "<vanish/>")>]
+  member _.``bulletml の子に、位置の違う命令が来ると上がる``(name: string, child: string) =
+    let xml =
+      sprintf """<bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">%s</bulletml>""" child
+    Assert.Throws<FsBulletML2.Exception.BulletmlDTDViolationException>(fun () ->
+      readXmlString xml |> ignore)
+    |> ignore
+
+  /// 対照 —— 命令ですらない節は上がらずに落ちる。
+  /// **これが無いと、上の 1 本 は「bulletml の子を全部 上げる」でも緑になる**
+  [<TestCase("<direction>0</direction>")>]
+  [<TestCase("<speed>1</speed>")>]
+  [<TestCase("<term>1</term>")>]
+  member _.``bulletml の子に、命令でない節が来ても上がらずに落ちる``(child: string) =
+    let xml =
+      sprintf """<bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">%s</bulletml>""" child
     match readXmlString xml with
     | Bulletml (_, elms) -> elms |> should be Empty
     | other -> Assert.Fail (sprintf "Bulletml でない腕が返った: %A" other)

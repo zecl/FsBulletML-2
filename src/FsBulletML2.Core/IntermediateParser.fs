@@ -266,7 +266,7 @@ module IntermediateParser =
   /// <!ELEMENT bulletml (bullet | fire | action)*>
   /// <!ATTLIST bulletml xmlns CDATA #IMPLIED>
   /// <!ATTLIST bulletml type (none|vertical|horizontal) "none">
-  let internal createBulletml xml getChildren = 
+  let internal createBulletml xml readTopElms =
     match xml with
     | Element(name, attrs, children) ->
       let tryFindBulletmlAttrs = maybe {
@@ -288,19 +288,10 @@ module IntermediateParser =
 
       match tryFindBulletmlAttrs with
       | Some attrs ->
-        let commands : Bulletml list= getChildren xml children
-        let bulletmlElements = 
-          commands |> List.filter(function
-            | Bulletml.Bullet _ -> true
-            | Bulletml.Fire _ -> true
-            | Bulletml.Action _ -> true
-            | command -> new BulletmlDTDViolationException(sprintf "not support child element：[%s]" <| string command) |> raise)
-          |> List.map (function
-            | Bulletml.Bullet (a,b,c,d) -> BulletmlElm.Bullet (a,b,c,d)
-            | Bulletml.Fire (a,b,c,d) -> BulletmlElm.Fire(a,b,c,d)
-            | Bulletml.Action (a,b) -> BulletmlElm.Action(a,b)
-            | _ -> new BulletmlDTDViolationException("convert error") |> raise)
-        Bulletml.Bulletml(attrs, bulletmlElements ) 
+        // 以前はここで、平らな Bulletml で受けた子を filter して BulletmlElm へ
+        // 入れ直していた。入れ直しの `| _ -> raise "convert error"` は
+        // **型が防げるはずの検査**で、読む段が位置の型で返せば要らない
+        Bulletml.Bulletml (attrs, readTopElms children)
       // 条件は type 属性の有無ではなく、attrs レコードそのものが取れなかったとき。
       // 上の maybe には let! が 1 つも無いので必ず return に着き、いまは届かない
       | None -> new BulletmlDTDViolationException("bulletml element attributes could not be read.") |> raise
@@ -311,39 +302,14 @@ module IntermediateParser =
   /// DTD :
   /// <!ELEMENT action (changeDirection | accel | vanish | changeSpeed | repeat | wait | (fire | fireRef) | (action | actionRef))*>
   /// <!ATTLIST action label CDATA #IMPLIED>
-  let internal createAction factory xml getChildren = 
+  let internal createAction factory xml readCommands =
     match xml with
     | Element(name, attrs, children) ->
       let attrs = { actionLabel = tryFindLabelValue attrs |> Option.map ActionLabel }
-      let commands = getChildren xml children
-
-      let actionElements = 
-        commands |> List.filter(function
-          | Bulletml.ChangeDirection _ -> true
-          | Bulletml.Accel _ -> true
-          | Bulletml.Vanish -> true
-          | Bulletml.ChangeSpeed _ -> true
-          | Bulletml.Repeat _ -> true
-          | Bulletml.Wait _ -> true
-          | Bulletml.Fire _ -> true
-          | Bulletml.FireRef _ -> true
-          | Bulletml.Action _ -> true
-          | Bulletml.ActionRef _ -> true
-          | _ -> false)
-        |> List.map (function 
-          | Bulletml.ChangeDirection (a,b) -> Action.ChangeDirection (a,b)
-          | Bulletml.Accel (a,b,c) -> Action.Accel(a,b,c)
-          | Bulletml.Vanish -> Action.Vanish 
-          | Bulletml.ChangeSpeed (a,b) -> Action.ChangeSpeed (a,b)
-          | Bulletml.Repeat (a,b) -> Action.Repeat (a,b)
-          | Bulletml.Wait (a) -> Action.Wait (a)
-          | Bulletml.Fire (a,b,c,d) -> Action.Fire(a,b,c,d)
-          | Bulletml.FireRef (a,b) -> Action.FireRef (a,b)
-          | Bulletml.Action (a,b) -> Action.Action(a,b)
-          | Bulletml.ActionRef (a,b) -> Action.ActionRef (a,b)
-          | _ -> new BulletmlDTDViolationException("convert error") |> raise)
-
-      factory(attrs, actionElements) 
+      // 命令でない子（bullet / bulletRef / direction …）は readCommands が
+      // 黙って落とす。**以前ここに 10 腕 の filter と 10 腕 の map が
+      // 並んでいたぶん。落とし方は変えていない**
+      factory(attrs, readCommands children)
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise
 
   /// XmlNode to Bulletml.ActionRef
@@ -363,12 +329,12 @@ module IntermediateParser =
       | _ -> new BulletmlDTDViolationException("ActionRef element should have label attribute.") |> raise 
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise 
 
-  let internal tryFindActionOrActionRef (children:XmlNode list) getChildren = 
-    let f xml = 
-      match xml with 
-      | Element(name, attrs, children) -> 
+  let internal tryFindActionOrActionRef (children:XmlNode list) readCommands =
+    let f xml =
+      match xml with
+      | Element(name, attrs, children) ->
         match name.ToLower() with
-        | "action" -> createAction (ActionElm.Action) xml getChildren |> Some
+        | "action" -> createAction (ActionElm.Action) xml readCommands |> Some
         | "actionref" -> createActionRef (ActionElm.ActionRef) xml |> Some
         | _ -> None
       | _ -> new BulletmlDTDViolationException("not support element.") |> raise
@@ -391,15 +357,12 @@ module IntermediateParser =
   /// DTD :
   /// <!ELEMENT bullet (direction?, speed?, (action | actionRef)* )>
   /// <!ATTLIST bullet label CDATA #IMPLIED>
-  let internal createBullet factory xml getChildren = 
-    match xml with 
-    | Element(_ , attrs, children) -> 
-      let text = getTextDefault children "0"
+  let internal createBullet factory xml readActionElms =
+    match xml with
+    | Element(_ , attrs, children) ->
       let attr = { bulletLabel = tryFindLabelValue attrs |> Option.map BulletLabel }
-      let commands = getChildren xml children
-
-      let actions = getActions commands
-      factory(attr, tryFindDirection children, tryFindSpeed children, actions)
+      // action / actionRef 以外は readActionElms が黙って落とす（getActions と同じ）
+      factory(attr, tryFindDirection children, tryFindSpeed children, readActionElms children)
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise
 
   /// XmlNode to Bulletml.BulletRef
@@ -421,13 +384,12 @@ module IntermediateParser =
       | None -> new BulletmlDTDViolationException("BulletRef element should have label attribute.") |> raise 
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise
 
-  let internal tryFindBulletOrBulletRef (children:XmlNode list) getChildren = 
-    let f xml = 
-      match xml with 
-      | Element(name, attrs, children) -> 
-        let text = getTextDefault children "0"
+  let internal tryFindBulletOrBulletRef (children:XmlNode list) readActionElms =
+    let f xml =
+      match xml with
+      | Element(name, attrs, children) ->
         match name.ToLower()  with
-        | "bullet"    -> createBullet (BulletElm.Bullet) xml getChildren |> Some
+        | "bullet"    -> createBullet (BulletElm.Bullet) xml readActionElms |> Some
         | "bulletref" -> createBulletRef (BulletElm.BulletRef) xml  |> Some
         | _ -> None
       | _ -> new BulletmlDTDViolationException("not support element.") |> raise
@@ -438,14 +400,16 @@ module IntermediateParser =
   /// DTD :
   /// <!ELEMENT fire (direction?, speed?, (bullet | bulletRef))>
   /// <!ATTLIST fire label CDATA #IMPLIED>
-  let internal createFire xml getChildren = 
+  /// fire は action の子にも bulletml の子にもなれる。**位置が違えば型が違う**
+  /// ので、どちらの腕を作るかは呼び側が factory で渡す
+  let internal createFire factory xml readActionElms =
     match xml with
     | Element(_ , attrs, children) ->
       let fireattrs = { FireAttrs.fireLabel = tryFindLabelValue attrs |> Option.map FireLabel }
-      match tryFindBulletOrBulletRef children getChildren with
+      match tryFindBulletOrBulletRef children readActionElms with
       | Some bullet ->
-        Bulletml.Fire(fireattrs, tryFindDirection children, tryFindSpeed children, bullet )
-      | None -> new BulletmlDTDViolationException("Fire element should have Bullet or BulletRef element.") |> raise 
+        factory(fireattrs, tryFindDirection children, tryFindSpeed children, bullet)
+      | None -> new BulletmlDTDViolationException("Fire element should have Bullet or BulletRef element.") |> raise
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise
 
   /// XmlNode to Bulletml.FireRef
@@ -462,7 +426,7 @@ module IntermediateParser =
       
       match tryFindFireAttrs with
       | Some attrs ->
-        Bulletml.FireRef(attrs, getParam xml)
+        Action.FireRef(attrs, getParam xml)
       | _ -> new BulletmlDTDViolationException("FireRef element should have label attribute.") |> raise 
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise 
 
@@ -478,7 +442,7 @@ module IntermediateParser =
       | false -> 
         let horizontal = tryFindHorizontal children
         let vertical = tryFindVertical children
-        Bulletml.Accel(horizontal, vertical , createTerm children "accel")
+        Action.Accel(horizontal, vertical , createTerm children "accel")
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise
 
   /// XmlNode to ChangeSpeed
@@ -496,7 +460,7 @@ module IntermediateParser =
           | Some speed -> speed
           | None -> new BulletmlDTDViolationException(sprintf "this element should have Speed element.:[%s]" elementName) |> raise
 
-        Bulletml.ChangeSpeed(speed, createTerm children "changeSpeed")
+        Action.ChangeSpeed(speed, createTerm children "changeSpeed")
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise
 
   /// XmlNode to ChangeDirection
@@ -513,7 +477,7 @@ module IntermediateParser =
           match tryFindDirection children with
           | Some direction -> direction
           | None -> new BulletmlDTDViolationException(sprintf "this element should have Direction element.:[%s]" elementName) |> raise
-        Bulletml.ChangeDirection(direction, createTerm children "changeDirection")
+        Action.ChangeDirection(direction, createTerm children "changeDirection")
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise
 
   /// XmlNode to Bulletml.Wait
@@ -527,7 +491,7 @@ module IntermediateParser =
         new BulletmlDTDViolationException (sprintf "this element has no attributes.:[%s]" elementName) |> raise
       | false -> 
         match tryFindPCData children with
-        | Some text -> Bulletml.Wait(numExpr text)
+        | Some text -> Action.Wait(numExpr text)
         | None -> new BulletmlDTDViolationException (sprintf "[%s] element should have #PCDATA." elementName) |> raise
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise 
 
@@ -543,7 +507,7 @@ module IntermediateParser =
       | false -> 
         match tryFindPCData children with
         | Some text -> new BulletmlDTDViolationException (sprintf "this element cannot have #PCDATA.:[%s]" elementName) |> raise
-        | None -> Bulletml.Vanish
+        | None -> Action.Vanish
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise 
 
   /// XmlNode to Bulletml.Repeat
@@ -561,7 +525,7 @@ module IntermediateParser =
           match tryFindActionOrActionRef children getChildren with
           | Some actionOrActionRef -> actionOrActionRef
           | None -> new BulletmlDTDViolationException("repeat element should have Action or ActionRef.") |> raise
-        Bulletml.Repeat(createTimes children "repeat", actionOrActionRef)
+        Action.Repeat(createTimes children "repeat", actionOrActionRef)
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise
 
   /// 要素の名前から命令を作る。**None は「命令の位置に来ない節」**
@@ -570,42 +534,65 @@ module IntermediateParser =
   ///
   /// **エラーではない。** 名前が命令なのに中身が DTD と違うときは、
   /// create* の中で BulletmlDTDViolationException が上がる。
-  let internal (|Command|) command xml (getChildren:XmlNode -> XmlNode list -> Bulletml list) : Bulletml option =
-    match  (command:string).ToLower() with
-    | "bulletml"        -> createBulletml xml getChildren |> Some
-    | "action"          -> createAction (fun x -> Bulletml.Action(x)) xml getChildren |> Some
-    | "actionref"       -> createActionRef (fun x -> Bulletml.ActionRef(x)) xml |> Some
-    | "fire"            -> createFire xml getChildren |> Some
-    | "fireref"         -> createFireRef xml |> Some
-    | "changespeed"     -> createChangeSpeed xml |> Some
-    | "changedirection" -> createChangeDirection xml |> Some
-    | "accel"           -> createAccel xml |> Some
-    | "wait"            -> createWait xml |> Some
-    | "vanish"          -> createVanish xml |> Some
-    | "bullet"          -> createBullet (Bulletml.Bullet) xml getChildren |> Some
-    | "bulletref"       -> createBulletRef (Bulletml.BulletRef) xml |> Some
-    | "repeat"          -> createRepeat xml getChildren |> Some
-    | _ -> None
+  /// 子を、**その位置の型で**読む 3 本。
+  ///
+  /// 以前は 1 本の xmlToCommandList が全位置ぶんを平らな Bulletml（13 腕）で
+  /// 返し、親がそれを filter + map で自分の位置の型へ入れ直していた。
+  /// 入れ直しには `| _ -> raise "convert error"` が付いていた ——
+  /// **型が防げるはずの検査を、実行時に置いていた。**
+  ///
+  /// 落とし方は位置ごとに違う。**ここは変えていない。**
+  ///
+  ///     action の子    命令でないものは黙って落とす（bullet / direction など）
+  ///     bullet の子    action / actionRef 以外は黙って落とす
+  ///     bulletml の子  bullet / fire / action 以外の**命令**は上げる。
+  ///                    命令ですらないもの（direction など）は黙って落とす
+  ///
+  /// **fire だけが 2 つ の位置に来る**ので、どちらの腕を作るかは factory で渡す。
+  let rec internal readCommands (children: XmlNode list) : Action list =
+    children |> List.choose (fun child ->
+      match child with
+      | PCData _ -> None
+      | Element (name, _, _) ->
+        match name.ToLower() with
+        | "changedirection" -> createChangeDirection child |> Some
+        | "changespeed"     -> createChangeSpeed child |> Some
+        | "accel"           -> createAccel child |> Some
+        | "wait"            -> createWait child |> Some
+        | "vanish"          -> createVanish child |> Some
+        | "repeat"          -> createRepeat child readCommands |> Some
+        | "fire"            -> createFire (Action.Fire) child readActionElms |> Some
+        | "fireref"         -> createFireRef child |> Some
+        | "action"          -> createAction (Action.Action) child readCommands |> Some
+        | "actionref"       -> createActionRef (Action.ActionRef) child |> Some
+        | _ -> None)
 
-  let rec internal xmlToCommandList topXml xml = 
-    let rec xmlToCommandList' topXml xml (list:Bulletml list) = 
-      let getChildren topXml children = List.fold (fun tl child -> tl@xmlToCommandList topXml child) [] children 
-      match xml with
-      | PCData s -> list 
-      | Element (name, attrs, children) -> 
-        // **腕を 13 個 並べて「NotCommand だけ捨てる」と書いていた場所。**
-        // 捨てるものが型から出たので、残りは全部 残す —— 列挙が要らなくなった。
-        match name |> function Command func -> func xml getChildren with
-        | Some command -> command::list
-        | None -> list
-    xmlToCommandList' topXml xml []
+  and internal readActionElms (children: XmlNode list) : ActionElm list =
+    children |> List.choose (fun child ->
+      match child with
+      | PCData _ -> None
+      | Element (name, _, _) ->
+        match name.ToLower() with
+        | "action"    -> createAction (ActionElm.Action) child readCommands |> Some
+        | "actionref" -> createActionRef (ActionElm.ActionRef) child |> Some
+        | _ -> None)
 
-  /// **None は「bulletml の中身が空」**。読めなかったということ。
-  let internal xmlToBulletml topXml xml : Bulletml option =
-    xmlToCommandList topXml xml
-    |> function
-    | [] -> None
-    | lst -> lst |> List.head |> Some
+  and internal readTopElms (children: XmlNode list) : BulletmlElm list =
+    children |> List.choose (fun child ->
+      match child with
+      | PCData _ -> None
+      | Element (name, _, _) ->
+        match name.ToLower() with
+        | "bullet" -> createBullet (BulletmlElm.Bullet) child readActionElms |> Some
+        | "fire"   -> createFire (BulletmlElm.Fire) child readActionElms |> Some
+        | "action" -> createAction (BulletmlElm.Action) child readCommands |> Some
+        // 命令ではあるが bulletml の子になれないもの。**以前と同じく上げる**
+        // （以前は平らな DU に一度組んでから filter で弾いていたので、
+        //   例文に組んだ中身が入っていた。いまは要素の名前を出す）
+        | "bulletml" | "actionref" | "fireref" | "changespeed" | "changedirection"
+        | "accel" | "wait" | "vanish" | "bulletref" | "repeat" ->
+          new BulletmlDTDViolationException (sprintf "not support child element：[%s]" name) |> raise
+        | _ -> None)
 
   /// XML の木を BulletML の木にする。**読めなければ上げる。**
   ///
@@ -622,9 +609,7 @@ module IntermediateParser =
       new BulletmlDTDViolationException ("root should be a bulletml element, not text.") |> raise
     | Element(name, _, _) ->
       if name.ToLower() = "bulletml" then
-        match xmlToBulletml xml xml with
-        | Some bulletml -> bulletml
-        | None -> new BulletmlDTDViolationException ("bulletml element has no content.") |> raise
+        createBulletml xml readTopElms
       else
         new BulletmlDTDViolationException (sprintf "root should be a bulletml element, not <%s>." name) |> raise
 
