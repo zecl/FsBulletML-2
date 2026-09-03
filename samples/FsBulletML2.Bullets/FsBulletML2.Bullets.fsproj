@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="BulletDsl.fs" />
     <Compile Include="Bulletsmorph.fs" />
     <Compile Include="ChaosSeed.fs" />
     <Compile Include="Daiouzyou.fs" />
