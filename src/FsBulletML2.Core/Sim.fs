@@ -1,4 +1,4 @@
-namespace FsBulletML2
+﻿namespace FsBulletML2
 
 open FsBulletML2.Domain
 
@@ -108,7 +108,8 @@ module Sim =
 /// **メソッドを inline にしてある。** Sim.bind を inline にしても、CE が
 /// 通るのはこのビルダのメソッドなので、ここが非 inline だとそこで展開が止まる。
 ///
-/// While だけは inline にできない（自分を呼ぶ）。
+/// While だけは inline にできない（自分を呼ぶ。付けると FS3890 ——
+/// F# は再帰的な inline を持たない）。
 type internal SimBuilder() =
   member inline _.Return x = Sim.ret x
   member inline _.ReturnFrom (m: Sim<'a>) = m
