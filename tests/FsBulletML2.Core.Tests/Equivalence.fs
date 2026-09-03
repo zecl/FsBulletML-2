@@ -243,11 +243,17 @@ type Equivalence() =
   /// 何回・どの順で呼ばれても同じ値しか返さないので、引きが 1 つ 足りない・
   /// 多い・入れ替わっているという不具合があっても軌跡の値には出ない。
   ///
-  /// ここは HEAD（Trace.run。BulletRunner 経由の、いま出荷している経路）を
-  /// SharedRandomStream で走らせ、旧エンジン（4077ed6）が同じ乱数列のもとで
-  /// 実際に出した軌跡（凍結データ）と突き合わせる。新エンジン同士の
-  /// 突き合わせではない —— 旧エンジンはもう存在しないので、これが本物の
-  /// 新旧を見る唯一の場所（クラスの docstring 参照）。
+  /// ここは HEAD（TraceApi.run。**公開 API の経路**）を SharedRandomStream で
+  /// 走らせ、旧エンジン（4077ed6）が同じ乱数列のもとで実際に出した軌跡
+  /// （凍結データ）と突き合わせる。新エンジン同士の突き合わせではない
+  /// —— 旧エンジンはもう存在しないので、これが本物の新旧を見る唯一の場所
+  /// （クラスの docstring 参照）。
+  ///
+  /// **基準側を Trace.run（BulletRunner 経由の旧い口）から付け替えてある。**
+  /// 互換の口を落とすと Trace.run が消えるので、その前にこの門を旧い口から
+  /// 切り離した。付け替えても軌跡が変わらないことは、上の橋
+  /// （Trace.run と TraceApi.run が 227 本 で一致する）が生きているうちに
+  /// 実測で確かめてある。
   ///
   /// 較正: rootProgress の Wait の腕を外す（木を組む段の wait の引きを
   /// 丸ごと消し、Progress.initial に落とす）と、このテストは
@@ -274,9 +280,9 @@ type Equivalence() =
       let name = CorpusData.relative path
       let xml = File.ReadAllText path
       stream.Reset()
-      BulletMLManager.Init(StreamManager(stream, rank, px, py))
       let newResult =
-        try Ok (Trace.run xml 60) with e -> Error (Equivalence.RenderException e)
+        try Ok (TraceApi.run (fun () -> stream.Next()) rank px py xml 60)
+        with e -> Error (Equivalence.RenderException e)
       match Map.tryFind name frozen, newResult with
       | None, _ ->
           ng <- ng + 1
