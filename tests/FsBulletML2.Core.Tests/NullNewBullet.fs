@@ -16,10 +16,21 @@ open FsBulletML2.Processable
 
 /// final review 7: GetNewBullet() が null を返す弾。
 ///
-/// FsBulletML2.Unity2D/DefaultBullet.fs の GetBulletPrefubInstance は、
-/// オーバーライドしなければ既定で null を返す（サンプルの未実装）。
 /// FakeBullet.GetNewBullet() は常に非 null を返すので、Trace / Equivalence の
-/// 橋はこの経路を一度も踏まない。ここでは経路そのものを直接 組み立てて見る
+/// 橋はこの経路を一度も踏まない。ここでは経路そのものを直接 組み立てて見る。
+///
+/// **これは旧 API だけの振る舞いで、新 API へは持っていかないと決めた。**
+/// 参照実装を 2 本 当たったところ、どちらにも無かった ——
+/// libbulletml は断る口そのものが無く（createBullet は戻り値なし）、
+/// BulletMLLib は断れる（CreateBullet() が null）が、向きと速さは手前の
+/// SetupTask で計算済みで断ったかと無関係。根拠と決定は
+/// src/FsBulletML2.Core/Api.fs の Frame.Spawned の但し書き。
+///
+/// 旧 API の中でも非対称で、**SrcDir は進むのに SrcSpeed だけ止まる**
+/// （下の試験がそこを見ている）。参照実装のどちらもそうなっていない。
+///
+/// つまりこの門は**旧 API を消すときに一緒に消える**。新 API に対応する門は
+/// 無く、**無いことが正しい。**
 type private NullSpawnBullet() =
   let mutable ax = 0.0f
   let mutable ay = 0.0f

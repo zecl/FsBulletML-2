@@ -151,6 +151,25 @@ type Frame =
     Delta : Vec2
     /// このコマで撃たれた弾。**このコマでは回さない**（旧の決めと同じで、
     /// 産まれた弾は次のコマから回る）
+    ///
+    /// **フロントが「撃つのを断る」口は無い。** 弾プールが尽きても、エンジンは
+    /// 撃った弾を値で返しきる。捨てるかどうかはフロントの仕事。
+    ///
+    /// 旧 API（IBulletmlObject.GetNewBullet）は null を返せて、そのとき fire の
+    /// sequence の累積（FireContext.SrcSpeed）を進めなかった。**その意味論は
+    /// ここへ持ってこないと決めた。** 参照実装を 2 本 当たった結果:
+    ///
+    ///   libbulletml (C++)   createBullet / createSimpleBullet は戻り値なし。
+    ///                       **断る口がそもそも無い。** runFire は setSpeed /
+    ///                       setDirection を無条件に先に呼ぶ
+    ///   BulletMLLib (C#)    CreateBullet() は null を返せて、null なら
+    ///                       TaskFinished <- true; End（旧 API と同じ形）。
+    ///                       だが向きと速さは手前の SetupTask で計算済みで、
+    ///                       **断ったかどうかと無関係**
+    ///
+    /// **どちらも「断ると累積が止まる」ようにはなっていない。** 旧 API のあれは
+    /// 移植のときに入った独自の振る舞いで、しかも SrcDir は進んで SrcSpeed だけ
+    /// 止まる非対称だった（tests/.../NullNewBullet.fs の但し書き）。
     Spawned : BulletRun list
     /// vanish された。フロントはこの弾を消す
     Vanished : bool

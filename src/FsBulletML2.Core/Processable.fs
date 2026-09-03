@@ -72,11 +72,30 @@ module Processable =
   /// （Runner.step / BulletRun / Frame）は値の受け渡しだけで呼び返しが無い。
   /// 同梱フロント 2 つ は移してある。
   ///
-  /// **消していないのは、旧にしかない意味論が 1 つ あるため。**
-  /// GetNewBullet が null を返したとき（弾プールが尽きた等）に fire の累積
-  /// （SrcSpeed / SpeedInit）を巻き戻す振る舞いは、新 API に無い
-  /// —— あちらは撃つ弾を値で返しきるので、断る口が無い。
-  /// NullNewBullet の門がこの経路を見続ける。
+  /// **残していた理由は無くなった。**
+  ///
+  /// 消せなかったのは、GetNewBullet が null を返したとき（弾プールが尽きた等）に
+  /// fire の累積（SrcSpeed / SpeedInit）を巻き戻す振る舞いが旧にしか無かったため。
+  /// 参照実装を 2 本 当たったところ、**その意味論はどちらにも無かった**
+  /// （libbulletml は断る口そのものが無く、BulletMLLib は断れるが向きと速さは
+  /// 手前で計算済み）。移植のときに入った独自の振る舞いで、しかも SrcDir は
+  /// 進んで SrcSpeed だけ止まる非対称だった。**新 API へは持っていかない**と
+  /// 決めた —— 根拠は Api.fs の Frame.Spawned の但し書き。
+  ///
+  /// **消すと何が失われるか**（消す前にここを読むこと）:
+  ///
+  ///   橋 227 本        Trace.fs（旧）と TraceApi.fs（新）を Equivalence.fs が
+  ///                   突き合わせている。旧を消すと**比べる相手が消える**
+  ///   ベンチの新旧比較  Harness.fs の runPrepared / allocOld。同じプロセスで
+  ///                   新旧を並べる物差しが対照を失う（--alloc の目盛りも）
+  ///   Fake.fs         FakeBullet は IBulletmlObject の実装で、橋の材料
+  ///
+  /// **消すと得られるもの**: Core テストの NonParallelizable 24 fixture。
+  /// あれは旧 API がグローバル（BulletMLManager）から読む形だから要るもので、
+  /// 新 API は Env を引数で受けるので要らなくなる。
+  ///
+  /// 橋とベンチの対照を何に置き換えるかを決めてから消すこと。
+  /// **「消せる」と「いま消す」は別。**
   [<System.Obsolete("新 API（Runner.step / BulletRun / Frame）へ移してください。移し方は Api.fs の Runner の但し書き。")>]
   type IBulletmlObject =
     abstract AccelerationX : float32 with get, set

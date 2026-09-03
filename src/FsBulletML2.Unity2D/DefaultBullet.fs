@@ -129,6 +129,15 @@ type DefaultBullet (transform:Transform) as this =
       SpawnEnemyAimDir = enemyAim }
 
   /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ
+  ///
+  /// **実体が作れなければ、ここで捨てる。エンジンには何も返さない。**
+  /// エンジンの側では撃った扱いのままで、fire の sequence の累積も進んでいる
+  /// （Frame.Spawned に入った時点で確定している）。
+  ///
+  /// 旧 API はここで累積を巻き戻していたが、**参照実装 2 本 のどちらにも無い
+  /// 振る舞い**だったので新 API へは持ってきていない
+  /// （根拠は Core の Api.fs、Frame.Spawned の但し書き）。
+  /// 弾プールの尽きは、こちら側の都合として こちら側で終わらせる。
   member private this.Spawn (child: BulletRun) =
     let newBullet = this.GetBulletPrefubInstance ()
     if newBullet :> obj <> null then
