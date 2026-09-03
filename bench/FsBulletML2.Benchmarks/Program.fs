@@ -105,7 +105,18 @@ let private alloc () =
   printfn "Program.fs の calibration と calibratedAt を更新する。"
   printfn ""
   printfn "**この口が見ているのは新旧の比だけで、絶対値の正しさは見ていない。**"
-  printfn "新旧が同じだけ増えると比は動かない。前の走行の絶対値と並べて読むこと。"
+  printfn "前の走行の絶対値と並べて読むこと。"
+  printfn ""
+  printfn "**「旧 API」の列は対照ではない。** 呼んでいる BulletRunner は旧実装ではなく、"
+  printfn "旧い口を新経路の上に載せたシムで、中では Step.step を通る。**Sim / Step /"
+  printfn "Domain を触れば、この列も同じだけ動く。**"
+  printfn ""
+  printfn "  両方 動く   → Sim / Step / Domain を触った。比が動くのは口の故障ではない"
+  printfn "  新だけ動く → 新 API の口（Runner.load / stepWith / Env の組み方）だけの手"
+  printfn "  旧だけ動く → BulletRunner の側だけの手。新 API には効いていない"
+  printfn ""
+  printfn "2 列 が同じ**量**だけ減ると比は動く（分母が違うため）。止まるのは同じ**割合**で"
+  printfn "動いたときだけ。**比が動いたことを、効きの有無や口の故障の判定に使わないこと。**"
 
 [<EntryPoint>]
 let main argv =

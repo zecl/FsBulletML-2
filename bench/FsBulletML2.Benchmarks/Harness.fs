@@ -352,10 +352,20 @@ module Harness =
   let allocApi (doc: Bulletml) (frames: int) : int64 =
     allocOf (fun () -> runPreparedApi (prepareApi doc) frames)
 
-  /// 旧経路の 1 走行の確保。**対照。**
+  /// 旧 API の口で 1 走行したときの確保。
   ///
-  /// Core の構造を変えると新旧 両方が動くことがある（Vec2 を struct にした手が
-  /// そうだった）ので、対照が動いたかどうかを毎回 見る。動いていたら、その手は
-  /// 新経路だけの話ではない
+  /// **対照ではない。** 呼んでいる BulletRunner は旧実装ではなく、
+  /// **旧い口を新経路の上に載せたシム**で、中では Step.step を通る
+  /// （BulletRunner.fs の envOfGlobal の但し書きと、Step.step を呼ぶ行）。
+  /// **Sim / Step / Domain を触れば、この列も新 API 側と同じだけ動く。**
+  /// Emit を voption にした手では、新旧の減りがバイト単位まで一致した。
+  ///
+  /// 読み方:
+  ///   両方 動く   → Sim / Step / Domain を触った。比が動くのは口の故障ではない
+  ///   新だけ動く → 新 API の口（Runner.load / stepWith / Env の組み方）だけの手
+  ///   旧だけ動く → BulletRunner の側だけの手。新 API には効いていない
+  ///
+  /// **一致を「共通ドリフト＝効いていない」と読み違えたことがある。** この 2 列 は
+  /// 独立した実装ではなく、大部分が同じコードなので、一致が既定の姿
   let allocOld (doc: Bulletml) (frames: int) : int64 =
     allocOf (fun () -> runPrepared (prepare doc) frames)
