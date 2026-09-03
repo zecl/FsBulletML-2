@@ -438,6 +438,23 @@ module internal Step =
     | RecActionElm.Action (attrs, children) -> action rs attrs children p fc
     | RecActionElm.ActionRef _ -> action rs { actionLabel = None } [] p fc
 
+  /// **ps / running を配列にして idx で触る形は、試して戻した。**
+  ///
+  /// 形の上では二乗になっている —— `List.item idx` が O(idx)、書き戻しの
+  /// `List.mapi` が毎回 全体を作り直すので、子が n 個 の action は走査で
+  /// O(n^2) のセルを作る。
+  ///
+  /// だが実物の action は子が数個 しかない。`BREAKDOWN.md` の
+  /// 「List.mapi 作ったセル」は homing で 9,168、`action` 訪問が 3,233 で、
+  /// **平均 2.8 個**。配列にすると `List.toArray` を 2 本 と `List.ofArray` を
+  /// 1 本、action を訪れるたびに作るので、そちらのほうが高くつく。
+  ///
+  /// 実測（`--alloc`）で確保が 4 本 とも増えた ——
+  /// move +0.9% / 5way +0.3% / 10Way +0.3% / homing +1.1%。
+  ///
+  /// **形が O(n^2) であることと、その台本でそこが効くことは別。**
+  /// `COUNTS.md` が同じことを木の歩きについて言っている。子を何十個 も持つ
+  /// action を物差しに載せてから、また考えること。
   and action (rs: Resolvers) (_attrs: ActionAttrs) (children: RecCommand list)
              (p: Progress) (fc: FireContext)
       : Sim<RunState * Progress * FireContext> =
