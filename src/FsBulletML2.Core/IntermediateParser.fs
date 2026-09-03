@@ -25,12 +25,16 @@ open FsBulletML2.Processable
 ///     4. Rec* の上の操作             collect 〜 expandActionRefOnceRec
 ///        ├ 集める / 探す             collect / getAction / tryFind* 残る
 ///        ├ param を差し込む          substCommand / refAction 系    残る
-///        ├ Rec* → 公開へ戻す         commandToPublic /              **消える**
-///        │                          convertBulletml                （約 52 行）
 ///        └ 輪を 1 段 解く            resolveActionRef / expand* 系  残る
 ///
-/// **畳んで消えるのは 2 と 3 と 4 の戻し ＝ 約 240 行。** 残りの 750 行 は
-/// 木が 1 つ になっても要る。**「995 行 が消える」ではない。**
+/// **畳んで消えるのは 2 と 3 ＝ 約 190 行。** 残りは木が 1 つ になっても要る。
+///
+/// **4 の「Rec* → 公開へ戻す」は先に落とした**（commandToPublic /
+/// actionElmToPublic / bulletElmToPublic / topElmToPublic / convertBulletml
+/// の 5 本、45 行）。**どれも定義以外に呼び出しが無く、internal なので
+/// 外からも呼べなかった。** 二重木を畳む前に、戻す向きだけが先に死んでいた
+/// —— XML を書く経路は公開 → Rec（役目 3）のほうを通っていて、
+/// 戻す向きは使われていない。
 ///
 /// ## ロード時と実行時の境界
 ///
@@ -968,51 +972,6 @@ module IntermediateParser =
     | RecBulletElm.Bullet (attrs, _, _, _) when attrs.bulletLabel = Some label ->
       substBulletElm prams target
     | _ -> target
-
-  /// 走らせる木を、公開の木へ戻す。位置ごとに 1 対 1 で並ぶ。
-  ///
-  /// 以前は平らな DU 同士だったので、いったん Bulletml へ潰してから
-  /// bulletmlToAction / bulletmlToActionElm / bulletmlToBulletElm で
-  /// 位置へ入れ直していた。その潰しと入れ直しが要らなくなる
-  let rec internal commandToPublic (c: RecCommand) : Action =
-    match c with
-    | RecCommand.ChangeDirection (direction, term) -> Action.ChangeDirection (direction, term)
-    | RecCommand.ChangeSpeed (speed, term) -> Action.ChangeSpeed (speed, term)
-    | RecCommand.Accel (horizontal, vertical, term) -> Action.Accel (horizontal, vertical, term)
-    | RecCommand.Wait s -> Action.Wait s
-    | RecCommand.Vanish -> Action.Vanish
-    | RecCommand.Repeat (times, child) -> Action.Repeat (times, actionElmToPublic child)
-    | RecCommand.Fire (attrs, d, s, child) -> Action.Fire (attrs, d, s, bulletElmToPublic child)
-    | RecCommand.FireRef (attrs, prams) -> Action.FireRef (attrs, prams)
-    | RecCommand.Action (attrs, children) ->
-      Action.Action (attrs, children |> List.map commandToPublic)
-    | RecCommand.ActionRef (attrs, prams) -> Action.ActionRef (attrs, prams)
-
-  and internal actionElmToPublic (a: RecActionElm) : ActionElm =
-    match a with
-    | RecActionElm.Action (attrs, children) ->
-      ActionElm.Action (attrs, children |> List.map commandToPublic)
-    | RecActionElm.ActionRef (attrs, prams) -> ActionElm.ActionRef (attrs, prams)
-
-  and internal bulletElmToPublic (b: RecBulletElm) : BulletElm =
-    match b with
-    | RecBulletElm.Bullet (attrs, d, s, children) ->
-      BulletElm.Bullet (attrs, d, s, children |> List.map actionElmToPublic)
-    | RecBulletElm.BulletRef (attrs, prams) -> BulletElm.BulletRef (attrs, prams)
-
-  let internal topElmToPublic (t: RecTopElm) : BulletmlElm =
-    match t with
-    | RecTopElm.Bullet (attrs, d, s, children) ->
-      BulletmlElm.Bullet (attrs, d, s, children |> List.map actionElmToPublic)
-    | RecTopElm.Fire (attrs, d, s, child) ->
-      BulletmlElm.Fire (attrs, d, s, bulletElmToPublic child)
-    | RecTopElm.Action (attrs, children) ->
-      BulletmlElm.Action (attrs, children |> List.map commandToPublic)
-
-  let internal convertBulletml (recBulletml: RecBulletml) : Bulletml =
-    match recBulletml with
-    | RecBulletml.Bulletml (attrs, elms) ->
-      Bulletml.Bulletml (attrs, elms |> List.map topElmToPublic)
 
   /// 展開中の参照は DTD.RefKey が表す（action:foo と bullet:foo は別物）。
   /// 以前はここに refKey kind label = kind + ":" + label があり、種別を
