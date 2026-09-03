@@ -18,23 +18,28 @@ open FsBulletML2.Processable
 ///     ---------------------------- ------------------------------ ----------
 ///     1. XML を読んで公開の木にする  existsAttribute 〜             残る
 ///                                   tryBulletmlFromXmlNode         （読み取り本体）
-///     2. 平らな Bulletml と位置ごと  bulletElmToBulletml 〜         **消える**
-///        の型を行き来する糊          bulletmlToBulletmlElm          （約 60 行）
-///     3. 公開 → Rec*（定数を畳む）   convertDirectionOption 〜      **消える**
-///                                   convertRecBulletmlForTest      （約 130 行）
-///     4. Rec* の上の操作             collect 〜 expandActionRefOnceRec
+///     2. 公開 → Rec*（定数を畳む）   convertDirectionOption 〜      **消える**
+///                                   convertRecBulletmlForTest      （約 125 行）
+///     3. Rec* の上の操作             collect 〜 expandActionRefOnceRec
 ///        ├ 集める / 探す             collect / getAction / tryFind* 残る
 ///        ├ param を差し込む          substCommand / refAction 系    残る
 ///        └ 輪を 1 段 解く            resolveActionRef / expand* 系  残る
 ///
-/// **畳んで消えるのは 2 と 3 ＝ 約 190 行。** 残りは木が 1 つ になっても要る。
+/// **畳んで消えるのは 2 ＝ 約 125 行だけ。** 残りは木が 1 つ になっても要る。
 ///
-/// **4 の「Rec* → 公開へ戻す」は先に落とした**（commandToPublic /
-/// actionElmToPublic / bulletElmToPublic / topElmToPublic / convertBulletml
-/// の 5 本、45 行）。**どれも定義以外に呼び出しが無く、internal なので
-/// 外からも呼べなかった。** 二重木を畳む前に、戻す向きだけが先に死んでいた
-/// —— XML を書く経路は公開 → Rec（役目 3）のほうを通っていて、
-/// 戻す向きは使われていない。
+/// **かつて「畳むと消える」に数えていた 2 つ は、畳むより先に死んでいた。**
+/// どちらも定義以外に呼び出しが無く、internal なので外からも呼べなかった。
+///
+///     Rec* → 公開へ戻す   commandToPublic / actionElmToPublic /
+///                        bulletElmToPublic / topElmToPublic /
+///                        convertBulletml                        45 行
+///     平ら ⇔ 位置の糊     bulletElmToBulletml 〜
+///                        bulletmlToBulletmlElm                   62 行
+///
+/// 戻す向きが死んでいたのは、XML を書く経路が公開 → Rec のほうを通っていた
+/// から。糊のほうは、公開の木を位置ごとの型へ入れ直す必要が無くなった時点で
+/// 使われなくなっていた。**「畳めば消える」と書いてあるものが、実は
+/// もう誰にも呼ばれていないことがある。** 畳む前に呼び出しを数えること。
 ///
 /// ## ロード時と実行時の境界
 ///
@@ -616,68 +621,6 @@ module IntermediateParser =
     try
       xml |> convertBulletmlFromXmlNode |> Some
     with | ex -> None
-
-  /// BulletElm DU to Bulletml DU
-  let internal bulletElmToBulletml = function
-    | BulletmlElm.Action(a,b) -> Bulletml.Action(a,b)
-    | BulletmlElm.Bullet(a,b,c,d) -> Bulletml.Bullet(a,b,c,d)
-    | BulletmlElm.Fire(a,b,c,d) -> Bulletml.Fire(a,b,c,d)
-
-  /// Action DU to Bulletml DU
-  let internal actionToBulletml = function
-    | Action.ChangeDirection (a,b) -> Bulletml.ChangeDirection (a,b)
-    | Action.Accel (a,b,c) -> Bulletml.Accel(a,b,c)
-    | Action.Vanish -> Bulletml.Vanish 
-    | Action.ChangeSpeed (a,b) -> Bulletml.ChangeSpeed (a,b)
-    | Action.Repeat (a,b) -> Bulletml.Repeat (a,b)
-    | Action.Wait (a) -> Bulletml.Wait (a)
-    | Action.Fire (a,b,c,d) -> Bulletml.Fire(a,b,c,d)
-    | Action.FireRef (a,b) -> Bulletml.FireRef (a,b)
-    | Action.Action (a,b) -> Bulletml.Action(a,b)
-    | Action.ActionRef (a,b) -> Bulletml.ActionRef (a,b)
-
-  /// Bulletml DU to Action DU
-  let internal bulletmlToAction = function
-    | Bulletml.ChangeDirection (a,b) -> Action.ChangeDirection (a,b)
-    | Bulletml.Accel (a,b,c) -> Action.Accel(a,b,c)
-    | Bulletml.Vanish -> Action.Vanish 
-    | Bulletml.ChangeSpeed (a,b) -> Action.ChangeSpeed (a,b)
-    | Bulletml.Repeat (a,b) -> Action.Repeat (a,b)
-    | Bulletml.Wait (a) -> Action.Wait (a)
-    | Bulletml.Fire (a,b,c,d) -> Action.Fire(a,b,c,d)
-    | Bulletml.FireRef (a,b) -> Action.FireRef (a,b)
-    | Bulletml.Action (a,b) -> Action.Action(a,b)
-    | Bulletml.ActionRef (a,b) -> Action.ActionRef (a,b)
-    | _ -> new BulletmlDTDViolationException("convert error.") |> raise
-
-  /// ActionElm DU to Bulletml DU
-  let internal actionElmToBulletml = function
-    | ActionElm.Action (a,b) -> Bulletml.Action (a,b) 
-    | ActionElm.ActionRef (a,b) -> Bulletml.ActionRef (a,b)
-
-  /// Bulletml to ActionElm DU
-  let internal bulletmlToActionElm = function
-    | Bulletml.Action (a,b) -> ActionElm.Action (a,b) 
-    | Bulletml.ActionRef (a,b) -> ActionElm.ActionRef (a,b)
-    | _ -> new BulletmlDTDViolationException("convert error.") |> raise
-
-  /// BulletElm DU to Bullet DU
-  let internal bulletElmToBullet = function
-    | BulletElm.Bullet (a,b,c,d) -> Bulletml.Bullet (a,b,c,d)
-    | BulletElm.BulletRef (a,b) -> Bulletml.BulletRef (a,b)
-
-  /// Bulletml DU to BulletElm DU
-  let internal bulletmlToBulletElm = function
-    | Bulletml.Bullet (a,b,c,d) -> BulletElm.Bullet (a,b,c,d)
-    | Bulletml.BulletRef (a,b) -> BulletElm.BulletRef (a,b)
-    | _ -> new BulletmlDTDViolationException("convert error.") |> raise
-
-  /// Bulletml to BulletmlElm DU
-  let internal bulletmlToBulletmlElm = function
-    | Bulletml.Action (a,b) -> BulletmlElm.Action (a,b)
-    | Bulletml.Bullet (a,b,c,d) -> BulletmlElm.Bullet (a,b,c,d)
-    | Bulletml.Fire (a,b,c,d) -> BulletmlElm.Fire (a,b,c,d)
-    | _ -> new BulletmlDTDViolationException("convert error.") |> raise
 
   let internal convertDirectionOption  = fun prams -> function
     | Some (Direction(attrs,s)) -> Direction(attrs, Param.replaceIn prams s) |> Some
