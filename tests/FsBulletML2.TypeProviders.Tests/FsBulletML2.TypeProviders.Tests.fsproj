@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- **このプロジェクトは、いまビルドできない。** 同梱の ProvidedTypes.fs が
+       .NET Framework 時代の SDK で、生成した型を使う側が FS1108 で落ちる。
+       それが分かったうえで置いてある——SDK を差し替えるとき、前後で比べる
+       相手が要るため。経緯と直す順番は
+       samples/FsBulletML2.Sample.TypeProviders.Debug/README.md。
+
+       **FsBulletML2.sln には入れていない。** 入れると dotnet test が
+       ソリューションごと落ちて、他の 554 本 が走らなくなる。門が緑になったら
+       入れる（そのときサンプルも一緒に）。それまではここを名指しで叩く:
+
+         dotnet build tests/FsBulletML2.TypeProviders.Tests -c Release
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>FsBulletML2.TypeProviders.Tests</RootNamespace>
+    <AssemblyName>FsBulletML2.TypeProviders.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Gate.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="FsUnit" Version="5.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.TypeProviders\FsBulletML2.TypeProviders.fsproj" />
+  </ItemGroup>
+</Project>
