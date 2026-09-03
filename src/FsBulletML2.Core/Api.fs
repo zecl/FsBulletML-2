@@ -186,14 +186,25 @@ type Frame =
 /// 知らないと書けなかった。ここはフロントが値を渡して値を受け取るだけで、
 /// 呼び返しが無い。
 ///
-///   let script = Runner.load (readXmlString xml)
+///   // 読む段（弾幕 1 本 につき 1 回）。この段では aim は読まれない
+///   let loadEnv =
+///     { Rand = rand; Rank = rank
+///       AimDir = 0.0f; EnemyAimDir = 0.0f
+///       SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
+///   let script = Runner.load loadEnv (readXmlString xml)
 ///   let mutable run = Runner.newRoot script
+///
 ///   // 毎コマ
-///   let env = { Rand = ...; Rank = ...; AimDir = ...; ... }
-///   let f = Runner.step script env (run.WithBody { run.Body with Pos = myPos })
+///   let env = { loadEnv with AimDir = ...; EnemyAimDir = ... }
+///   let f = Runner.stepWith script env run { run.Body with Pos = myPos }
 ///   myPos <- myPos + f.Delta
 ///   run <- f.Run
 ///   for child in f.Spawned do ...
+///
+/// **この例は tests/FsBulletML2.Core.Tests/ApiUsageExample.fs で実際に動かして
+/// ある。** ここはコメントなのでコンパイルされず、段階 4 で load に rootEnv が
+/// 増えたときも古い形（引数 1 つ）のまま残っていた。**例を直したらあちらも、
+/// あちらが赤くなったらここも。**
 module Runner =
 
   /// 弾幕を読む。1 本 につき 1 回。

@@ -41,6 +41,7 @@
     <Compile Include="StepWithEquiv.fs" />
     <Compile Include="Equivalence.fs" />
     <Compile Include="SelfReference.fs" />
+    <Compile Include="ApiUsageExample.fs" />
     <Compile Include="PublicParseBoundary.fs" />
     <Compile Include="CallingConvention.fs" />
     <Compile Include="ProgressTests.fs" />
