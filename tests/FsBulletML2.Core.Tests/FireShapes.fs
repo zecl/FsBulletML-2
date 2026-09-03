@@ -7,7 +7,6 @@ open FsBulletML2.Processable
 /// DTD は <!ELEMENT fire (direction?, speed?, (bullet | bulletRef))> なので
 /// direction も speed も省ける。省いたときに何を引き継ぐかが要点。
 [<TestFixture>]
-[<NonParallelizable>]
 type FireShapes() =
 
   let bml body =
@@ -17,7 +16,7 @@ type FireShapes() =
 """ + body + "\n</bulletml>"
 
   let runOr frames xml =
-    try Trace.run xml frames
+    try TraceRun.std xml frames
     with e ->
       let rec inner (x: exn) = if isNull x.InnerException then x else inner x.InnerException
       let i = inner e
@@ -39,11 +38,6 @@ type FireShapes() =
         [ "/bin/"; "/obj/"; "/Library/"; "/Temp/" ] |> List.forall (s.Contains >> not))
     |> Seq.sort
     |> Seq.tryHead
-
-  [<SetUp>]
-  member _.SetUp() =
-    // 自機は (30,100)。aim = atan2(30,-100) = 2.850
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
 
   /// direction も speed も省いた fire。何が既定になるか。
   [<Test>]

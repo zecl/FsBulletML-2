@@ -1,4 +1,4 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsBulletML2.Processable
@@ -6,7 +6,6 @@ open FsBulletML2.Processable
 /// bulletRef / actionRef / fireRef と、そこへ渡すパラメータ（$1 $2 …）の展開。
 /// IntermediateParser がいちばん大きく、参照の解決はそこに居る。
 [<TestFixture>]
-[<NonParallelizable>]
 type Refs() =
 
   let bml body =
@@ -14,10 +13,6 @@ type Refs() =
 <!DOCTYPE bulletml SYSTEM "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml/bulletml.dtd">
 <bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
 """ + body + "\n</bulletml>"
-
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
 
   [<Test>]
   member _.``bulletRef にパラメータを渡すと、弾の速さと向きに入る``() =
@@ -36,7 +31,7 @@ type Refs() =
   <direction type="absolute">$1</direction>
   <speed>$2</speed>
 </bullet>"""
-    |> fun x -> Trace.run x 8 |> Golden.check "bullet-ref-params"
+    |> fun x -> TraceRun.std x 8 |> Golden.check "bullet-ref-params"
 
   [<Test>]
   member _.``actionRef のパラメータが、入れ子の中まで届く``() =
@@ -57,7 +52,7 @@ type Refs() =
     </action>
   </repeat>
 </action>"""
-    |> fun x -> Trace.run x 10 |> Golden.check "action-ref-params"
+    |> fun x -> TraceRun.std x 10 |> Golden.check "action-ref-params"
 
   [<Test>]
   member _.``fireRef のパラメータが、fire の中の向きに入る``() =
@@ -73,7 +68,7 @@ type Refs() =
   <speed>2</speed>
   <bullet/>
 </fire>"""
-    |> fun x -> Trace.run x 8 |> Golden.check "fire-ref-params"
+    |> fun x -> TraceRun.std x 8 |> Golden.check "fire-ref-params"
 
   [<Test>]
   member _.``入れ子の repeat が、内側と外側の回数の積になる``() =
@@ -95,7 +90,7 @@ type Refs() =
   </repeat>
   <wait>30</wait>
 </action>"""
-    |> fun x -> Trace.run x 16 |> Golden.check "nested-repeat"
+    |> fun x -> TraceRun.std x 16 |> Golden.check "nested-repeat"
 
   [<Test>]
   member _.``弾の中の action から、さらに撃つ``() =
@@ -117,7 +112,7 @@ type Refs() =
   </fire>
   <wait>60</wait>
 </action>"""
-    |> fun x -> Trace.run x 8 |> Golden.check "bullet-fires-bullet"
+    |> fun x -> TraceRun.std x 8 |> Golden.check "bullet-fires-bullet"
 
   /// 同じ label が 2 つあるとどちらが走るか。これは「いまはこうなる」の控えで、
   /// 「こうあるべき」ではない。DTD は label の一意性を要求していない。
@@ -145,7 +140,7 @@ type Refs() =
   <fire><direction type="absolute">90</direction><speed>9</speed><bullet/></fire>
 </action>"""
     |> fun x ->
-      Trace.run x 6
+      TraceRun.std x 6
       + "\n前の dup なら d=0.000 s=1.000、後ろの dup なら d=1.571 s=9.000"
     |> Golden.check "now-duplicate-label-first-wins"
 
@@ -177,6 +172,6 @@ type Refs() =
   </action>
 </action>"""
     |> fun x ->
-      Trace.run x 6
+      TraceRun.std x 6
       + "\n外側が勝つなら s=1.000 と s=9.000 の両方、内側だけなら s=9.000 のみ"
     |> Golden.check "now-duplicate-label-nested"

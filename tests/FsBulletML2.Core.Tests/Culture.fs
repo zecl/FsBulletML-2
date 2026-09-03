@@ -1,4 +1,4 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open System
 open System.Globalization
@@ -17,7 +17,6 @@ open FsBulletML2.Processable
 ///
 /// ここで実際に走らせて確かめる。
 [<TestFixture>]
-[<NonParallelizable>]
 type Culture() =
 
   let bml speed =
@@ -36,7 +35,7 @@ type Culture() =
 
   let speedOf (expr: string) =
     try
-      let t = Trace.run (bml expr) 3
+      let t = TraceRun.std (bml expr) 3
       let m = Regex.Match(t, @"\+b1 d=[-\d.]+ s=([-\d.]+)")
       if m.Success then m.Groups.[1].Value else "撃っていない"
     with e -> sprintf "%s" (e.GetType().Name)
@@ -44,7 +43,7 @@ type Culture() =
   /// 型名だけだと理由が分からないので、メッセージまで取る版
   let speedOfVerbose (expr: string) =
     try
-      let t = Trace.run (bml expr) 3
+      let t = TraceRun.std (bml expr) 3
       let m = Regex.Match(t, @"\+b1 d=[-\d.]+ s=([-\d.]+)")
       if m.Success then m.Groups.[1].Value else "撃っていない"
     with e ->
@@ -60,10 +59,6 @@ type Culture() =
       f ()
     finally
       Thread.CurrentThread.CurrentCulture <- before
-
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
 
   [<Test>]
   member _.``小数の出る式を、小数点がカンマのカルチャで評価する``() =
@@ -128,7 +123,7 @@ type Culture() =
 </bulletml>""" w
     let probe w =
       try
-        Trace.run (bmlWait w) 3 |> ignore
+        TraceRun.std (bmlWait w) 3 |> ignore
         "落ちない"
       with e ->
         let rec inner (x: exn) = if isNull x.InnerException then x else inner x.InnerException
@@ -149,7 +144,7 @@ type Culture() =
   member _.``rand と rank の置換はカルチャ依存か``() =
     let probe expr =
       try
-        let t = Trace.run (bml expr) 3
+        let t = TraceRun.std (bml expr) 3
         let m = Regex.Match(t, @"\+b1 d=[-\d.]+ s=([-\d.]+)")
         if m.Success then m.Groups.[1].Value else "撃っていない"
       with e ->
@@ -181,7 +176,7 @@ type Culture() =
 </bulletml>""" expr
     let probe expr =
       try
-        let t = Trace.run (noWait expr) 2
+        let t = TraceRun.std (noWait expr) 2
         let m = Regex.Match(t, @"\+b1 d=[-\d.]+ s=([-\d.]+)")
         if m.Success then m.Groups.[1].Value else "撃っていない"
       with e ->

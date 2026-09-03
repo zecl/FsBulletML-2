@@ -31,7 +31,7 @@ module Expressions =
   let fullParams = refBody "<param>2</param><param>5</param>"
 
   let firstBullet (xml: string) =
-    let t = Trace.run xml 3
+    let t = TraceRun.withRandRank 0.5f 0.25f xml 3
     let m = Regex.Match(t, @"\+b1 d=([-\d.]+) s=([-\d.]+)")
     if m.Success then sprintf "d=%s s=%s" m.Groups.[1].Value m.Groups.[2].Value
     else "撃っていない"
@@ -40,7 +40,6 @@ module Expressions =
 /// getValue 経由で <speed> に式を書けば届く。
 /// 本体に InternalsVisibleTo を足さずに測るため、この形にしてある。
 [<TestFixture>]
-[<NonParallelizable>]
 type Expressions() =
 
   let bml speed =
@@ -59,13 +58,9 @@ type Expressions() =
 
   /// 撃った 1 発めの速さだけ取り出す
   let speedOf (expr: string) =
-    let t = Trace.run (bml expr) 3
+    let t = TraceRun.withRandRank 0.5f 0.25f (bml expr) 3
     let m = Regex.Match(t, @"\+b1 d=[-\d.]+ s=([-\d.]+)")
     if m.Success then m.Groups.[1].Value else "撃っていない"
-
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.25f, 30.0f, 100.0f))
 
   [<Test>]
   member _.``四則と優先順位``() =
@@ -139,7 +134,7 @@ type Expressions() =
           | None -> sprintf "%-42s ★samples に無い" n
           | Some p ->
             let trace =
-              try Trace.run (System.IO.File.ReadAllText p) 200
+              try TraceRun.withRandRank 0.5f 0.25f (System.IO.File.ReadAllText p) 200
               with e ->
                 let rec inner (x: exn) = if isNull x.InnerException then x else inner x.InnerException
                 sprintf "%s" ((inner e).GetType().Name)

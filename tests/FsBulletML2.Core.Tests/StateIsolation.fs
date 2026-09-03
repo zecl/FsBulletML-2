@@ -1,4 +1,4 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsBulletML2.Processable
@@ -14,7 +14,6 @@ open FsBulletML2.Processable
 /// リファクタリングで clone を外したり浅くしたりすると静かに壊れる場所なので、
 /// 振る舞いの側から固めておく。
 [<TestFixture>]
-[<NonParallelizable>]
 type StateIsolation() =
 
   let bml body =
@@ -22,10 +21,6 @@ type StateIsolation() =
 <!DOCTYPE bulletml SYSTEM "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml/bulletml.dtd">
 <bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
 """ + body + "\n</bulletml>"
-
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
 
   /// 同じ bulletRef から 3 発を別々のフレームで撃つ。
   /// 弾の中の action は changeSpeed（term 3）を持つので、term が共有されていれば
@@ -48,7 +43,7 @@ type StateIsolation() =
     <wait>30</wait>
   </action>
 </bullet>"""
-    |> fun x -> Trace.run x 10 |> Golden.check "isolation-term"
+    |> fun x -> TraceRun.std x 10 |> Golden.check "isolation-term"
 
   /// 同じ action を repeat で何度も通す。repeat の中の changeDirection が
   /// 毎回 最初から始まるか、前の回の続きになるかを見る。
@@ -71,7 +66,7 @@ type StateIsolation() =
   </fire>
   <wait>30</wait>
 </action>"""
-    |> fun x -> Trace.run x 14 |> Golden.check "isolation-repeat-term"
+    |> fun x -> TraceRun.std x 14 |> Golden.check "isolation-repeat-term"
 
   /// 弾が 2 発同時に飛んでいて、片方だけ vanish する。
   /// finish が共有されていれば、もう片方も消えるはず。
@@ -92,7 +87,7 @@ type StateIsolation() =
   </fire>
   <wait>30</wait>
 </action>"""
-    |> fun x -> Trace.run x 8 |> Golden.check "isolation-vanish"
+    |> fun x -> TraceRun.std x 8 |> Golden.check "isolation-vanish"
 
   /// top の action がひと回りして task.Init() で作り直されるとき、
   /// sequence の累積が持ち越されるか、最初に戻るか。
@@ -108,7 +103,7 @@ type StateIsolation() =
   <wait>2</wait>
 </action>"""
     |> fun x ->
-      let t = Trace.run x 20
+      let t = TraceRun.std x 20
       t.Split('\n')
       |> Array.filter (fun l -> l.Contains "  +b")
       |> Array.map (fun l -> l.Trim())

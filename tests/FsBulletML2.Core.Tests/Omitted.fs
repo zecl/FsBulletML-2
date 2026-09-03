@@ -1,4 +1,4 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsBulletML2.Processable
@@ -6,7 +6,6 @@ open FsBulletML2.Processable
 /// 省略できるはずの要素を省いたとき、式を書いたとき、深く入れ子にしたとき。
 /// どれも DTD が許している形で、リファクタリングで境界が動きやすい。
 [<TestFixture>]
-[<NonParallelizable>]
 type Omitted() =
 
   let bml body =
@@ -17,15 +16,11 @@ type Omitted() =
 
   /// 落ちた場合もその場で控えに残す。落ちるなら落ちるで、それが「いまの姿」。
   let runOr frames xml =
-    try Trace.run xml frames
+    try TraceRun.std xml frames
     with e ->
       let rec inner (x: exn) = if isNull x.InnerException then x else inner x.InnerException
       let i = inner e
       sprintf "%s: %s" (i.GetType().Name) (i.Message.Replace("\r", "").Replace("\n", " "))
-
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
 
   /// DTD: <!ELEMENT changeDirection (direction, term)> なので term は必須。
   /// 省いたときに何が起きるかを固める。

@@ -1,17 +1,12 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsBulletML2.Processable
 
 /// 骨が通るかを見る 1 本。
-/// BulletMLManager が static mutable なので、この fixture は並列にしない。
+/// 公開 API で走らせるのでグローバル可変に触らない。並列に走る。
 [<TestFixture>]
-[<NonParallelizable>]
 type Smoke() =
-
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 0.0f, 100.0f))
 
   [<Test>]
   member _.``fire と wait だけの top action が、控えどおりの軌跡になる``() =
@@ -27,4 +22,4 @@ type Smoke() =
   <wait>3</wait>
 </action>
 </bulletml>"""
-    Trace.run xml 6 |> Golden.check "smoke-fire-wait"
+    TraceRun.atOrigin xml 6 |> Golden.check "smoke-fire-wait"

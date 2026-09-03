@@ -1,13 +1,15 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsBulletML2.Processable
 
 /// 走らせる側の振る舞いを軌跡で固める。
-/// BulletMLManager が static mutable なので並列にしない。
+///
+/// **公開 API で走らせる。** グローバル可変（BulletMLManager）に触らないので
+/// 並列にできる。乱数・rank・自機の位置は run に畳んである
 [<TestFixture>]
-[<NonParallelizable>]
 type Behavior() =
+
 
   let head = """<?xml version="1.0" ?>
 <!DOCTYPE bulletml SYSTEM "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml/bulletml.dtd">
@@ -15,10 +17,6 @@ type Behavior() =
 """
 
   let bml body = head + body + "\n</bulletml>"
-
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 0.0f, 100.0f))
 
   /// changeSpeed / changeDirection は term フレームかけて補間する。
   /// 「何フレーム目にどこまで来ているか」が全部で、境界を 1 つずらすと静かに壊れる。
@@ -44,7 +42,7 @@ type Behavior() =
   </fire>
   <wait>20</wait>
 </action>"""
-    |> fun x -> Trace.run x 10 |> Golden.check "change-dir-speed-term"
+    |> fun x -> TraceRun.atOrigin x 10 |> Golden.check "change-dir-speed-term"
 
   /// repeat の中で direction type="sequence" を使うと、撃つたびに前の向きへ足し込む。
   /// 「何発めがどの向きか」は累積なので、1 発ぶんずれると全部ずれる。
@@ -63,7 +61,7 @@ type Behavior() =
   </repeat>
   <wait>10</wait>
 </action>"""
-    |> fun x -> Trace.run x 10 |> Golden.check "repeat-sequence-fire"
+    |> fun x -> TraceRun.atOrigin x 10 |> Golden.check "repeat-sequence-fire"
 
   /// accel は horizontal / vertical を term フレームかけて積む。
   /// 速さや向きと違って弾の加速度に入るので、位置の出方が別経路になる。
@@ -86,4 +84,4 @@ type Behavior() =
   </fire>
   <wait>20</wait>
 </action>"""
-    |> fun x -> Trace.run x 9 |> Golden.check "accel-term"
+    |> fun x -> TraceRun.atOrigin x 9 |> Golden.check "accel-term"

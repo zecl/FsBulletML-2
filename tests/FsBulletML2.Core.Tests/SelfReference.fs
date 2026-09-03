@@ -1,4 +1,4 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open System.Threading
 open NUnit.Framework
@@ -10,7 +10,6 @@ open FsBulletML2.Processable
 /// withTimeout と 1MB スタックは、打ち止めに漏れがあったときと、
 /// 解いた段を積んでしまったときの保険。戻ってこなければ控えに出る。
 [<TestFixture>]
-[<NonParallelizable>]
 type SelfReference() =
 
   let bml body =
@@ -33,14 +32,10 @@ type SelfReference() =
     t.Join(seconds * 1000) |> ignore
     result
 
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
-
   [<Test>]
   member _.``action が自分を actionRef する``() =
     withTimeout 5 (fun () ->
-      Trace.run (bml """<action label="top">
+      TraceRun.std (bml """<action label="top">
   <actionRef label="top"/>
 </action>""") 2)
     |> Golden.check "cycle-action-self"
@@ -51,7 +46,7 @@ type SelfReference() =
   [<Test>]
   member _.``action が wait を挟んで自分を actionRef する``() =
     withTimeout 5 (fun () ->
-      Trace.run (bml """<action label="top">
+      TraceRun.std (bml """<action label="top">
   <actionRef label="fan"/>
 </action>
 <action label="fan">
@@ -70,7 +65,7 @@ type SelfReference() =
   [<Test>]
   member _.``2 つの action が互いを参照する``() =
     withTimeout 5 (fun () ->
-      Trace.run (bml """<action label="top">
+      TraceRun.std (bml """<action label="top">
   <actionRef label="b"/>
 </action>
 <action label="b">
@@ -85,7 +80,7 @@ type SelfReference() =
   [<Test>]
   member _.``輪の action を 1000 フレーム回しても落ちない``() =
     withTimeout 30 (fun () ->
-      Trace.run (bml """<action label="top">
+      TraceRun.std (bml """<action label="top">
   <actionRef label="top"/>
 </action>""") 1000 |> ignore
       "1000 フレーム走って落ちなかった")
@@ -98,7 +93,7 @@ type SelfReference() =
   member _.``実物の fan と同じ骨格を 1000 フレーム回しても落ちない``() =
     withTimeout 30 (fun () ->
       let trace =
-        Trace.run (bml """<action label="top">
+        TraceRun.std (bml """<action label="top">
   <actionRef label="fan"/>
 </action>
 <action label="fan">
@@ -121,7 +116,7 @@ type SelfReference() =
   [<Test>]
   member _.``bullet が自分を bulletRef する``() =
     withTimeout 5 (fun () ->
-      Trace.run (bml """<action label="top">
+      TraceRun.std (bml """<action label="top">
   <fire><bulletRef label="b"/></fire>
   <wait>10</wait>
 </action>
@@ -134,7 +129,7 @@ type SelfReference() =
   [<Test>]
   member _.``2 つの bullet が互いを参照する（実物にある形）``() =
     withTimeout 5 (fun () ->
-      Trace.run (bml """<action label="top">
+      TraceRun.std (bml """<action label="top">
   <fire><bulletRef label="longbit"/></fire>
   <wait>10</wait>
 </action>
@@ -150,7 +145,7 @@ type SelfReference() =
   [<Test>]
   member _.``fire が自分を fireRef する``() =
     withTimeout 5 (fun () ->
-      Trace.run (bml """<action label="top">
+      TraceRun.std (bml """<action label="top">
   <fireRef label="f"/>
   <wait>10</wait>
 </action>
@@ -166,7 +161,7 @@ type SelfReference() =
   [<Test>]
   member _.``action から bullet を経由して同じ action へ戻る``() =
     withTimeout 5 (fun () ->
-      Trace.run (bml """<action label="top">
+      TraceRun.std (bml """<action label="top">
   <actionRef label="a"/>
 </action>
 <action label="a">
@@ -190,7 +185,7 @@ type SelfReference() =
 <action label="a">
   <fire><direction type="absolute">0</direction><speed>1</speed><bullet/></fire>
 </action>"""
-    |> fun x -> Trace.run x 4
+    |> fun x -> TraceRun.std x 4
     |> fun s -> s + "\n2 発とも撃てていれば、打ち止めは兄弟を巻き込んでいない"
     |> Golden.check "cycle-siblings-not-a-cycle"
 
@@ -208,6 +203,6 @@ type SelfReference() =
 <action label="d">
   <fire><direction type="absolute">0</direction><speed>2</speed><bullet/></fire>
 </action>"""
-    |> fun x -> Trace.run x 4
+    |> fun x -> TraceRun.std x 4
     |> fun s -> s + "\n鎖の深さは 4。深さで打ち止めていたら、ここが先に落ちる"
     |> Golden.check "cycle-deep-chain-ok"

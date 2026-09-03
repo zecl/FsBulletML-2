@@ -1,4 +1,4 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open System
 open System.IO
@@ -111,7 +111,7 @@ module internal CorpusData =
             // 処理する前に書く。StackOverflow で死んでも最後の行が犯人を指す
             File.AppendAllText(progressPath, name + "\n")
             try
-              let t = Trace.run (File.ReadAllText f) 60
+              let t = TraceRun.std (File.ReadAllText f) 60
               let lines = t.Split('\n')
               { Name = name
                 Fired = lines |> Array.filter (fun l -> l.Contains "  +b") |> Array.length

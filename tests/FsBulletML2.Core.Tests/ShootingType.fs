@@ -50,7 +50,6 @@ open FsBulletML2.Processable
 ///       そのときは「変わらない」を固めている控え（shooting-type-no-effect）を
 ///       捨てて、type ごとに違う軌跡を固める控えに置き換えること。
 [<TestFixture>]
-[<NonParallelizable>]
 type ShootingType() =
 
   let bmlOfType t =
@@ -81,15 +80,11 @@ type ShootingType() =
 </action>
 </bulletml>"""
 
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
-
   [<Test>]
   member _.``type を none vertical horizontal に振っても軌跡が変わらない``() =
-    let none = Trace.run (bmlOfType "none") 6
-    let vert = Trace.run (bmlOfType "vertical") 6
-    let horz = Trace.run (bmlOfType "horizontal") 6
+    let none = TraceRun.std (bmlOfType "none") 6
+    let vert = TraceRun.std (bmlOfType "vertical") 6
+    let horz = TraceRun.std (bmlOfType "horizontal") 6
     Assert.Multiple(fun () ->
       Assert.That(vert, Is.EqualTo none, "none と vertical で軌跡が違う")
       Assert.That(horz, Is.EqualTo none, "none と horizontal で軌跡が違う"))
@@ -131,7 +126,7 @@ type ShootingType() =
 </bulletml>"""
     let result =
       try
-        let t = Trace.run noType 4
+        let t = TraceRun.std noType 4
         sprintf "落ちない。軌跡が出た（先頭 2 行）\n%s" (t.Split('\n') |> Array.truncate 2 |> String.concat "\n")
       with e ->
         let rec inner (x: exn) = if isNull x.InnerException then x else inner x.InnerException
@@ -156,7 +151,7 @@ type ShootingType() =
 </bulletml>"""
     let result =
       try
-        let t = Trace.run noAttrs 4
+        let t = TraceRun.std noAttrs 4
         // 「落ちない」だけだと、黙って 1 つも走らなかった場合と見分けがつかない
         let fired = t.Split('\n') |> Array.filter (fun l -> l.Contains "  +b") |> Array.length
         sprintf "落ちない。撃った弾 %d 発" fired
@@ -172,7 +167,7 @@ type ShootingType() =
   member _.``type に知らない値を書くと DTD 違反で落ちる``() =
     let ex =
       Assert.Throws<FsBulletML2.Exception.BulletmlDTDViolationException>(fun () ->
-        Trace.run (bmlOfType "diagonal") 2 |> ignore)
+        TraceRun.std (bmlOfType "diagonal") 2 |> ignore)
     sprintf "例外: %s\nメッセージ: %s" (ex.GetType().Name) ex.Message
     |> Golden.check "shooting-type-unknown"
 

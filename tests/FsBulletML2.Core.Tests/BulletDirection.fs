@@ -1,4 +1,4 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open System.Text.RegularExpressions
 open NUnit.Framework
@@ -29,7 +29,6 @@ open FsBulletML2.Processable
 /// **不具合の可能性が高いが、ここでは直していない。** リファクタリングでこの控えが
 /// 動いたら、直したのかどうかを人が決めること。
 [<TestFixture>]
-[<NonParallelizable>]
 type BulletDirection() =
 
   let bml body =
@@ -64,17 +63,13 @@ type BulletDirection() =
   <wait>10</wait>
 </action>"""
 
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
-
   [<Test>]
   member _.``direction をどこに書いたかで、弾の向きがどうなるか``() =
     // 30 度 = 0.524。自機 (30,100) を狙う aim = 2.850
-    [ sprintf "inline literal (bullet 内)  %s" (Trace.run inlineLiteral 4 |> firstBullet)
-      sprintf "ref literal    (bullet 内)  %s" (Trace.run refLiteral 4 |> firstBullet)
-      sprintf "ref param      (bullet 内)  %s" (Trace.run refParam 4 |> firstBullet)
-      sprintf "fire 側        (fire 内)    %s" (Trace.run fireDir 4 |> firstBullet)
+    [ sprintf "inline literal (bullet 内)  %s" (TraceRun.std inlineLiteral 4 |> firstBullet)
+      sprintf "ref literal    (bullet 内)  %s" (TraceRun.std refLiteral 4 |> firstBullet)
+      sprintf "ref param      (bullet 内)  %s" (TraceRun.std refParam 4 |> firstBullet)
+      sprintf "fire 側        (fire 内)    %s" (TraceRun.std fireDir 4 |> firstBullet)
       "30 度 = 0.524 / aim = 2.850" ]
     |> String.concat "\n"
     |> Golden.check "bullet-direction-where"

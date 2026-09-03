@@ -1,4 +1,4 @@
-namespace FsBulletML2.Core.Tests
+﻿namespace FsBulletML2.Core.Tests
 
 open System.Text.RegularExpressions
 open NUnit.Framework
@@ -20,7 +20,6 @@ open FsBulletML2.Processable
 /// リファクタリングでこの控えが動いたら、それは直ったのかもしれないし
 /// 別の壊れ方かもしれない。差分を見て人が決めること。
 [<TestFixture>]
-[<NonParallelizable>]
 type Timing() =
 
   let bml body =
@@ -54,17 +53,13 @@ type Timing() =
   <wait>%d</wait>
 </action>""" wait)
 
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 0.0f, 100.0f))
-
   [<Test>]
   member _.``wait を 1..4 で振った発射フレームと間隔``() =
     let gaps (xs: int list) = xs |> List.pairwise |> List.map (fun (p, q) -> q - p)
     let lines =
       [ for w in 1 .. 4 do
-          let a = Trace.run (inRepeat w) 24 |> fireFrames
-          let b = Trace.run (noRepeat w) 24 |> fireFrames
+          let a = TraceRun.atOrigin (inRepeat w) 24 |> fireFrames
+          let b = TraceRun.atOrigin (noRepeat w) 24 |> fireFrames
           yield sprintf "wait=%d repeat=on  fires=%A gaps=%A" w a (gaps a)
           yield sprintf "wait=%d repeat=off fires=%A gaps=%A" w b (gaps b) ]
     String.concat "\n" lines |> Golden.check "wait-intervals"

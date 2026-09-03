@@ -37,12 +37,12 @@ type Degenerate() =
   <fire><direction type="absolute">0</direction><speed>2</speed><bullet/></fire>
   <wait>5</wait>
 </action>"""
-    |> fun x -> Trace.run x 4 |> Golden.check "no-top-action"
+    |> fun x -> TraceRun.std x 4 |> Golden.check "no-top-action"
 
   [<Test>]
   member _.``action が 1 つも無い BulletML``() =
     bml """<bullet label="b"><speed>2</speed></bullet>"""
-    |> fun x -> Trace.run x 4 |> Golden.check "no-action-at-all"
+    |> fun x -> TraceRun.std x 4 |> Golden.check "no-action-at-all"
 
   /// run が絶対値を返す枝に入れるかを直接見る。
   /// 入れるなら呼ぶ側の足し算と噛み合わず、座標が膨らむ。
