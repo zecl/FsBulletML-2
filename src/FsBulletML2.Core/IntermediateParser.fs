@@ -6,6 +6,69 @@ open System.Globalization
 open FsBulletML2.DTD
 open FsBulletML2.Processable
 
+/// **995 行 ある。中身は 4 つ の役目で、境界はここに書いてある。**
+///
+/// 二重木（公開の Bulletml と、エンジンが歩く Rec*）を畳むときは、
+/// この地図を先に読むこと ——「畳む」が何を消して何を残すのかが、
+/// 役目ごとに違う。
+///
+/// 区切りは関数名で書いてある。**行番号を書くとこのコメント自身でずれる。**
+///
+///     役目                          先頭 〜 末尾の関数              畳むと
+///     ---------------------------- ------------------------------ ----------
+///     1. XML を読んで公開の木にする  existsAttribute 〜             残る
+///                                   tryBulletmlFromXmlNode         （読み取り本体）
+///     2. 平らな Bulletml と位置ごと  bulletElmToBulletml 〜         **消える**
+///        の型を行き来する糊          bulletmlToBulletmlElm          （約 60 行）
+///     3. 公開 → Rec*（定数を畳む）   convertDirectionOption 〜      **消える**
+///                                   convertRecBulletmlForTest      （約 130 行）
+///     4. Rec* の上の操作             collect 〜 expandActionRefOnceRec
+///        ├ 集める / 探す             collect / getAction / tryFind* 残る
+///        ├ param を差し込む          substCommand / refAction 系    残る
+///        ├ Rec* → 公開へ戻す         commandToPublic /              **消える**
+///        │                          convertBulletml                （約 52 行）
+///        └ 輪を 1 段 解く            resolveActionRef / expand* 系  残る
+///
+/// **畳んで消えるのは 2 と 3 と 4 の戻し ＝ 約 240 行。** 残りの 750 行 は
+/// 木が 1 つ になっても要る。**「995 行 が消える」ではない。**
+///
+/// ## ロード時と実行時の境界
+///
+/// ここが計画書の言う「先に固定する」もの。**いまは既に分かれている。**
+///
+///     ロード時（Runner.load で 1 回）
+///       XML → 公開の木 → Rec*（定数を畳む）
+///       Resolvers を組む（expandBulletRefOnceRec / expandActionRefOnceRec を
+///       部分適用しただけの、まだ何も解いていない関数 2 本）
+///
+///     実行時（Step.action / Step.fire が踏むたび）
+///       Resolvers を呼んで**輪を 1 段 だけ**解く
+///
+/// **1 段 なのは輪があるから。** 自己参照する actionRef は解いた先にまた
+/// 同じ actionRef が現れるので、ロード時に解き切ろうとすると止まらない。
+/// Step.action の走査がそこで Stop する形と対になっている。
+///
+/// **畳んでもこの境界は動かない。** 動かすなら別の話（そちらのほうが
+/// 指紋を動かす）。
+///
+/// ## NotCommand は公開 API から漏れる
+///
+/// 「BulletML の命令でない節」を表す腕で、Rec* からは消えたが公開の
+/// Bulletml には残っている。作るのは 4 か所、捨てるのは 1 か所 だが、
+/// **捨て切れていない。**
+///
+///     convertBulletmlFromXmlNode（公開）が
+///       PCData を渡されたら NotCommand
+///       根が bulletml でなければ NotCommand
+///       中身が空なら NotCommand（xmlToBulletml 経由）
+///
+/// つまり**「読めなかった」を値で返している**。しかも
+/// tryBulletmlFromXmlNode は例外だけを option に畳むので、
+/// 読めなかったときは None ではなく **Some NotCommand** が返る
+/// ——「成功したが中身が無い」と見分けが付かない。
+///
+/// 消すなら戻り値の型を変えることになる（option か Result）。
+/// **公開 API の破壊的変更**なので、畳む話と一緒に決めること。
 module IntermediateParser =
   let internal existsAttribute attrs f = attrs |> List.exists (fun (label, v) -> if f label v then true else false)
   let internal tryFindPCData children =  children |> List.tryPick (function | PCData x -> Some x | _ -> None)
