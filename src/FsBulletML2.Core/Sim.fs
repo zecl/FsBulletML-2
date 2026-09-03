@@ -37,17 +37,36 @@ type internal SimResult<'a> =
 /// BulletState / Effect を内側に持つため internal。両方とも internal
 /// Progress / RecBulletml を辿って internal になっているので、それを
 /// 運ぶ Sim もそこから見えない外へは出さない
-/// **包みは struct。** Sim は「関数を 1 本 くるんだだけ」の型なのに、
-/// 参照型の DU にすると bind / ret / emit のたびにその包みがヒープへ
-/// 確保される。中身の関数（クロージャ）の確保は消せないが、包みは消せる。
-[<Struct>]
-type internal Sim<'a> = Sim of run: (Env -> BulletState -> SimResult<'a>)
+/// **包みを持たない。型の別名そのもの。**
+///
+/// Sim は「関数を 1 本 くるんだだけ」の型。単一ケースの DU にすると
+/// `Sim (fun env st -> ...)` の中のラムダが独立したクロージャになり、
+/// **bind の InlineIfLambda がそこまで届かない。**
+///
+/// **包み自体は確保を生んでいなかった。展開を止めていた。**
+/// homing の 1 走行（確保、バイト）で測った 2 x 2:
+///
+///                      ビルダ非 inline    ビルダ inline
+///     struct の DU        6,200,672        5,552,696
+///     型の別名            6,199,088        4,372,632
+///
+/// inline を外すと 2 つ の形はほぼ同じ（差 1,584 B）。inline を入れると
+/// 差が 1,180,064 B に開く。**「struct にした時点で包みはヒープを踏まない
+/// のだから、別名にしても効かない」と読んでいちど 見送った。** 見ていたのは
+/// 包みの確保だけで、包みが展開を妨げることを見ていなかった。
+///
+/// 中身の関数（クロージャ）の確保は、この手でも消えない。
+///
+/// **失うもの: 型としての区別。** 別名なので、`Env -> BulletState ->
+/// SimResult<'a>` の形をした関数は何でも Sim として通る。単一ケースの DU が
+/// 与えていた「別の関数を間違って渡せない」という守りは無くなる。
+/// **Sim は internal で、Core の外へは出ない**（BulletState / Effect を
+/// 内側に持つため）ので、その範囲で引き合いに見合うと判断した。
+type internal Sim<'a> = Env -> BulletState -> SimResult<'a>
 
 module Sim =
 
-  let inline private unwrap (Sim f) = f
-
-  let internal ret x : Sim<'a> = Sim (fun _ st -> { Value = x; State = st; Emit = ValueNone })
+  let internal ret x : Sim<'a> = fun _ st -> { Value = x; State = st; Emit = ValueNone }
 
   /// Emit は「残りの前に自分を足す」向きの関数なので、m の次に f を書いても
   /// 合成は r2.Emit >> r1.Emit になる（先に評価されるのが右）。これを
@@ -57,14 +76,10 @@ module Sim =
   /// その本体が外側の `fun env st -> ...` の中に埋まるので、**bind 1 回 につき
   /// 出ていたクロージャが 2 個 から 1 個 になる。**
   ///
-  /// unwrap を使わずパターンで開いているのは、unwrap が private だから
-  /// （private は inline の展開先から見えず FS1113 になる）。
   let inline internal bind ([<InlineIfLambda>] f: 'a -> Sim<'b>) (m: Sim<'a>) : Sim<'b> =
-    Sim (fun env st ->
-      let (Sim g) = m
-      let r1 = g env st
-      let (Sim h) = f r1.Value
-      let r2 = h env r1.State
+    fun env st ->
+      let r1 = m env st
+      let r2 = (f r1.Value) env r1.State
       // 片方が空なら合成しない。**向きは r2.Emit >> r1.Emit のまま**
       // （後で積んだ効果が先頭に来る向きへ戻さないこと）
       let emit =
@@ -72,20 +87,20 @@ module Sim =
         | ValueNone, e -> e
         | e, ValueNone -> e
         | ValueSome a, ValueSome b -> ValueSome (b >> a)
-      { r2 with Emit = emit })
+      { r2 with Emit = emit }
 
-  let internal ask : Sim<Env> = Sim (fun env st -> { Value = env; State = st; Emit = ValueNone })
-  let internal get : Sim<BulletState> = Sim (fun _ st -> { Value = st; State = st; Emit = ValueNone })
-  let internal put s : Sim<unit> = Sim (fun _ _ -> { Value = (); State = s; Emit = ValueNone })
+  let internal ask : Sim<Env> = fun env st -> { Value = env; State = st; Emit = ValueNone }
+  let internal get : Sim<BulletState> = fun _ st -> { Value = st; State = st; Emit = ValueNone }
+  let internal put s : Sim<unit> = fun _ _ -> { Value = (); State = s; Emit = ValueNone }
 
   let internal emit (e: Effect) : Sim<unit> =
-    Sim (fun _ st -> { Value = (); State = st; Emit = ValueSome (fun rest -> e :: rest) })
+    fun _ st -> { Value = (); State = st; Emit = ValueSome (fun rest -> e :: rest) }
 
   /// emit の複数版。1 個ずつ Sim.bind で繋ぐと、繋ぐ数だけ bind が積み重なる
   /// （repeat の周のように手続き的なループで集めた効果を最後にまとめて
   /// 積みたい場面で、要素数ぶんスタックが伸びるのを避けるため）
   let internal emitMany (es: Effect list) : Sim<unit> =
-    Sim (fun _ st -> { Value = (); State = st; Emit = ValueSome (fun rest -> es @ rest) })
+    fun _ st -> { Value = (); State = st; Emit = ValueSome (fun rest -> es @ rest) }
 
   /// **テストから bind を呼ぶための入口。中身は bind そのもの。**
   ///
@@ -101,7 +116,7 @@ module Sim =
 
   /// 走らせて、効果を並びに潰す
   let internal run env st (m: Sim<'a>) =
-    let r = unwrap m env st
+    let r = m env st
     let effects = match r.Emit with ValueNone -> [] | ValueSome f -> f []
     r.Value, r.State, effects
 

@@ -573,7 +573,7 @@ module internal Step =
     // 避けるため、この関数は sim { } を使わず Sim を直接組み立てる。
     // 中身は素の F# 関数本体になるので、while は CE を経由しない
     // 本物の手続きループとしてコンパイルされる
-    Sim (fun env self0 ->
+    fun env self0 ->
       // times と body をほどいて受けるので、以前ここに在った
       // 「repeat 以外が来たら NotCommand」という届かない腕が要らない
       let times = getValue env timesStr |> int
@@ -661,7 +661,7 @@ module internal Step =
       let emit =
         if effectsAcc.Count = 0 then ValueNone
         else ValueSome (fun rest -> (List.ofSeq effectsAcc) @ rest)
-      { Value = value; State = st; Emit = emit })
+      { Value = value; State = st; Emit = emit }
 
   /// fire。現行の fireCommand と createTask の両方を写す。
   ///
