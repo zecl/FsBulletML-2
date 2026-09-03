@@ -82,19 +82,29 @@ module Processable =
   /// 進んで SrcSpeed だけ止まる非対称だった。**新 API へは持っていかない**と
   /// 決めた —— 根拠は Api.fs の Frame.Spawned の但し書き。
   ///
+  /// **廃止すると決めた。ただし いったん保留。** 下ごしらえは 2 つ 入っている。
+  ///
   /// **消すと何が失われるか**（消す前にここを読むこと）:
   ///
-  ///   橋 227 本        Trace.fs（旧）と TraceApi.fs（新）を Equivalence.fs が
-  ///                   突き合わせている。旧を消すと**比べる相手が消える**
-  ///   ベンチの新旧比較  Harness.fs の runPrepared / allocOld。同じプロセスで
-  ///                   新旧を並べる物差しが対照を失う（--alloc の目盛りも）
+  ///   橋 227 本        **もう失われない。** 本物の新旧を見る唯一の門
+  ///                   （凍結した旧エンジン 4077ed6 の軌跡との突き合わせ）は
+  ///                   公開 API へ付け替え済み。Trace.fs は BulletRunner 層が
+  ///                   Step.step と食い違わないかを見る側に残っている
+  ///   ベンチの新旧比較  Harness.fs の runPrepared / allocOld。**この列は
+  ///                   対照ではない**（BulletRunner は旧い口を新経路の上に
+  ///                   載せたシムで、中で Step.step を通る）。それでも
+  ///                   「走行間の台のドリフトを見る」役目は残っているので、
+  ///                   代わりを決めてから消すこと
   ///   Fake.fs         FakeBullet は IBulletmlObject の実装で、橋の材料
   ///
-  /// **消すと得られるもの**: Core テストの NonParallelizable 24 fixture。
+  /// **消すと得られるもの**: Core テストの NonParallelizable。
   /// あれは旧 API がグローバル（BulletMLManager）から読む形だから要るもので、
-  /// 新 API は Env を引数で受けるので要らなくなる。
+  /// 新 API は Env を引数で受けるので要らなくなる。**軌跡テスト 13 本 を
+  /// 公開 API へ移した時点で 23 → 10 fixture まで減っている**（この但し書きは
+  /// 24 と書いていたが、実際に属性が付いていたのは 23 だった —— 24 本め は
+  /// CallingConvention.fs のコメントを grep が拾っていた）。
   ///
-  /// 橋とベンチの対照を何に置き換えるかを決めてから消すこと。
+  /// ベンチの対照を何に置き換えるかを決めてから消すこと。
   /// **「消せる」と「いま消す」は別。**
   [<System.Obsolete("新 API（Runner.step / BulletRun / Frame）へ移してください。移し方は Api.fs の Runner の但し書き。")>]
   type IBulletmlObject =
