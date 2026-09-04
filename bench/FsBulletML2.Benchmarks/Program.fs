@@ -50,16 +50,16 @@ let private onBdn = 4
 
 /// その台本が、その変更を見られるのかを出す。**数を比べる前にここを見る。**
 ///
-/// 「死」は BulletRunner.run に入ったが、生きている top が 1 本 も無かった
-/// 呼び出し。死んだコマにしか効かない変更（たとえば
-/// BulletRunner.envWithoutAim）は、死が 0 の台本では原理的に効かない。
+/// 「死」は step に入ったが、生きている top が 1 本 も無かった呼び出し。
+/// 死んだコマにしか効かない変更（たとえば aim を組まずに 0 で済ませる
+/// 早道。`BulletRun.HasNoScript` の枝）は、死が 0 の台本では原理的に効かない。
 /// そこで数が動いていたら、それは効きではなく走行間の台の動き。
 ///
 /// 効きの出どころが分かっていない変更では、逆に「死が 0 の台本」を対照として
 /// 使える。対照が同じだけ動いていたら、対象の動きも台のもの。
 let private counts () =
   fixManager ()
-  printfn "台本ごとの run 呼び出し。60 コマ。"
+  printfn "台本ごとの step 呼び出し。60 コマ。"
   printfn "%-8s %10s %10s %10s %10s   %s" "台本" "生" "死" "死の割合" "Env 構築" "この台本が使えるもの"
   for name, suffix in scenarios do
     match Corpus.findBySuffix suffix with
@@ -84,23 +84,12 @@ let private counts () =
 /// 構造を 1 手 変えるたびに 90 分 の走行を回せないので、確保だけを即席で測る。
 /// 確保は決定的なので、これで前後の差が読める。**時間はここでは測れない。**
 ///
-/// 目盛りは新旧の比で合わせた。下の `calibratedAt` の版を BenchmarkDotNet が
-/// 同じプロセスで測った比が `calibration` で、口を作った時点で 4 本 とも
-/// 1 ポイント以内 に入った。符号が違うものが 2 本 あるので「たまたま近い」では揃わない。
+/// **旧 API の列（と、その比で合わせていた校正値）は落とした。**
+/// 校正の土台にしていた `calibration` は**新旧の比**だったが、その 2 列 は
+/// 独立した実装ではなく大部分が同じコードを通っていた。いまの物差しは
+/// 下の `baseline`（新 API の絶対値を控えたもの）からの差。
 ///
-/// **以降 Core を変えれば、新旧の比そのものが動く。** 離れていくのは
-/// 口の故障ではなく、校正値がその版のものだという意味。**離れたら BDN で
-/// 測り直してここを更新する** —— 更新しないまま「外れ」を見続けると、
-/// 次に本当に口が壊れたとき区別がつかなくなる。
-/// **三度 更新してある。** 400e425（aim skip を戻した版、比は
-/// move -21.6 / 5way +4.3 / 10Way +4.1 / homing -3.2）で目盛りを合わせ、
-/// 箱を 4 つ 値型にした手で比が 17 ポイント 動いたので d4361e7
-/// （-25.6 / -13.0 / -12.4 / -4.9）で測り直し、Sim の 3 手（Emit を
-/// voption / 包みを struct / bind と CE を inline）で動いたので bd40cd7
-/// （-30.4 / -14.0 / -13.4 / -7.1）、Sim を型の別名にした手でまた動いたので
-/// いまの値へ測り直した。
-///
-/// **口が軸の上に乗っていることは 3 回 確かめている。** どれも、この口が
+/// **口が軸の上に乗っていることは 3 回 確かめてある。** どれも、この口が
 /// 予測した確保の減りと BenchmarkDotNet の実測を突き合わせた。
 ///   1 回め  -15.5/-29.2/-28.5/-20.2 に対し -16.0/-29.2/-28.6/-20.2
 ///   2 回め  -23.3/ -7.7/ -8.4/-32.9 に対し -23.3/ -7.8/ -8.5/-32.9
@@ -108,14 +97,14 @@ let private counts () =
 /// （3 回め は起点 c268f3c からの通し。ずれの 0.3〜0.4 ポイント は、
 /// 2 つ の口が測る区間が違う分——BDN は定常状態、--alloc は下ごしらえを
 /// 1 回ぶん 含む——と、バイナリが変わると動く 4,120 B の分）
-let private calibratedAt = "1967613（Sim を型の別名にした版）"
-
-let private calibration = dict [ "move", -33.4; "5way", -14.7; "10Way", -14.2; "homing", -8.9 ]
-
-/// **記録した確保。旧 API の列が消えても残る側の物差し。**
 ///
-/// 上の calibration は**新旧の比**なので、旧の列を落とすと土台ごと無くなる。
-/// こちらは新 API の絶対値そのものを控えておいて、走行のたびに
+/// **この 3 回 はどれも旧の列に依らない**（口の差 vs BDN の Allocated の差）。
+/// だから旧を落としても軸の確認は生きている。**次に BDN で測れる大きさの
+/// 手を打ったとき、4 回目 をやること。**
+
+/// **記録した確保。旧 API の列が消えたあとの物差し。**
+///
+/// 新 API の絶対値そのものを控えておいて、走行のたびに
 /// 「記録からどう動いたか」を出す。
 ///
 /// **正しさの門ではない。** Core を触れば動くのが正しく、動いたときに
@@ -124,8 +113,8 @@ let private calibration = dict [ "move", -33.4; "5way", -14.7; "10Way", -14.2; "
 ///
 /// **軸の確認はこれではできない。** 軸は「この口が出した差」と
 /// 「BDN が出した Allocated の差」を突き合わせて確かめるもので、
-/// それは 3 回 やって README に記録がある。**次に BDN で測れる大きさの手を
-/// 打ったとき、4 回目 をやってここを更新する。**
+/// それは 3 回 やって README に記録がある（上の但し書き）。**次に BDN で
+/// 測れる大きさの手を打ったとき、4 回目 をやってここを更新する。**
 let private baselineAt = "e831bd9（走査の書き戻しを List.updateAt にした版）"
 
 let private baseline =
@@ -139,19 +128,27 @@ let private alloc () =
   fixManager ()
   printfn "1 走行（60 コマ）の確保。BenchmarkDotNet を通さない即席の物差し。"
   printfn ""
-  // 1 度 だけ測って、2 つ の表に使い回す。allocApi / allocOld はどちらも
-  // 中で 1 回 空回ししてから測るので、ここで 2 度 呼ぶと倍の時間がかかる
-  let rows =
+  // **1 巡 空けてから測る。** allocOf は呼びごとに 1 回 空回ししているが、
+  // それだけでは足りない —— 1 巡目 は move が +6,192 B（2.0%）動いたことが
+  // ある。1 巡 空けると 0.1% 未満まで下がる（0 にはならない。原因は
+  // 段階的 JIT。Harness.allocOf の但し書き）。
+  // **捨てないと、いちばん軽い move（313 KB）では 2% の嘘になる。**
+  let measure () =
     [ for name, suffix in scenarios do
         match Corpus.findBySuffix suffix with
-        | None ->
-          printfn "%-8s %s が見つかりません" name suffix
+        | None -> ()
         | Some path ->
           let doc = parseXml (System.IO.File.ReadAllText path)
-          yield name, allocApi doc 60, allocOld doc 60 ]
+          yield name, allocApi doc 60 ]
+
+  measure () |> ignore
+  let rows = measure ()
+  for name, suffix in scenarios do
+    if (Corpus.findBySuffix suffix).IsNone then
+      printfn "%-8s %s が見つかりません" name suffix
 
   printfn "%-8s %14s %14s %10s %9s" "台本" "新 API" "記録" "差" "差(%)"
-  for name, a, _ in rows do
+  for name, a in rows do
     match baseline.TryGetValue name with
     | true, b ->
       printfn "%-8s %12d B %12d B %+9d B %+8.2f%%"
@@ -161,50 +158,27 @@ let private alloc () =
       // 控えていない列を控えたものと読む
       printfn "%-8s %12d B %14s %10s %9s" name a "—" "—" "—"
   printfn ""
+  // 0 件 を緑にしない。台本が 1 本 も見つからなければ表は空のまま通る
+  printfn "測った台本 %d 本（%d 本 中）。0 なら測れていない。" (List.length rows) (List.length scenarios)
+  printfn "**1 巡 空けて 2 巡目 を出している。** それでも再現性は 0 にならない ——"
+  printfn "段階的 JIT の段が走行ごとに変わりうるため（実測: 1 巡だと move が 2.0%%、"
+  printfn "2 巡だと 0.1%% 未満）。**0.1%% 程度の差は雑音。1%% 未満は読まないこと。**"
+  printfn "うち %d 本 は BDN の物差しにも載っている（%d 本 目 以降は確保だけ）。" onBdn (onBdn + 1)
+  printfn ""
   printfn "記録は %s で、この口自身が出した値。" baselineAt
   printfn "**正しさの門ではない。** Core を触れば動くのが正しく、動いたときに"
   printfn "それが手の効きなのか、無関係な変更に伴うドリフト（既知の幅 4,120 B）"
   printfn "なのかを読むための目印。**手を打ったら Program.fs の baseline と"
   printfn "baselineAt を更新する。**"
   printfn ""
-  printfn "--- ここから下は旧 API の列。**廃止と一緒に消える** ---"
-  printfn ""
-  printfn "%-8s %14s %9s %9s %8s" "台本" "旧 API" "比" "校正値" "差"
-  for name, a, o in rows do
-    let ratio = (float a / float o - 1.0) * 100.0
-    // 校正値は BDN の物差しに載っている台本にしかない。**無いものを
-    // 0 や「一致」で埋めない** —— 埋めると、校正していない列を
-    // 校正済みと読んでしまう
-    match calibration.TryGetValue name with
-    | true, bdn -> printfn "%-8s %12d B %+8.1f%% %+8.1f%% %+7.1f" name o ratio bdn (ratio - bdn)
-    | _ ->         printfn "%-8s %12d B %+8.1f%% %9s %8s" name o ratio "—" "—"
-  printfn ""
-  printfn "校正値が「—」の台本は BDN の物差しに載っていない（%d 本 目 以降）。" (onBdn + 1)
-  printfn "**絶対値の前後比較には使えるが、比の妥当性は誰も見ていない。**"
-  printfn ""
   printfn "**絶対値は BenchmarkDotNet の Allocated と一致しない。** あちらは"
   printfn "ウォームアップ後の定常状態を測り、こちらは下ごしらえ（木を組む段）を"
-  printfn "1 回ぶん 含む。使うのは差と比だけ。"
+  printfn "1 回ぶん 含む。使うのは差だけ。"
   printfn ""
-  printfn "校正値は %s を BenchmarkDotNet で測ったもの。" calibratedAt
-  printfn "口を作った時点で 4 本 とも 1 ポイント以内 に入った（符号が違うものが"
-  printfn "2 本 あるので、たまたまでは揃わない）。**Core を変えれば比そのものが"
-  printfn "動くので、「差」が開くのは口の故障ではない。** 開いたら BDN で測り直して"
-  printfn "Program.fs の calibration と calibratedAt を更新する。"
-  printfn ""
-  printfn "**この口が見ているのは新旧の比だけで、絶対値の正しさは見ていない。**"
-  printfn "前の走行の絶対値と並べて読むこと。"
-  printfn ""
-  printfn "**「旧 API」の列は対照ではない。** 呼んでいる BulletRunner は旧実装ではなく、"
-  printfn "旧い口を新経路の上に載せたシムで、中では Step.step を通る。**Sim / Step /"
-  printfn "Domain を触れば、この列も同じだけ動く。**"
-  printfn ""
-  printfn "  両方 動く   → Sim / Step / Domain を触った。比が動くのは口の故障ではない"
-  printfn "  新だけ動く → 新 API の口（Runner.load / stepWith / Env の組み方）だけの手"
-  printfn "  旧だけ動く → BulletRunner の側だけの手。新 API には効いていない"
-  printfn ""
-  printfn "2 列 が同じ**量**だけ減ると比は動く（分母が違うため）。止まるのは同じ**割合**で"
-  printfn "動いたときだけ。**比が動いたことを、効きの有無や口の故障の判定に使わないこと。**"
+  printfn "**旧 API の列は落とした。** 対照に見えて対照ではなかった —— 旧い口を"
+  printfn "新経路の上に載せたシムで、中では同じ Step.step を通っていた。"
+  printfn "軸（この口の差 vs BDN の Allocated の差）は 3 回 確かめてあり、"
+  printfn "どれも旧の列に依っていない。README の「測るときの約束」を見ること。"
 
 [<EntryPoint>]
 let main argv =

@@ -67,64 +67,19 @@ module Harness =
   /// 読み直した木との弾数の一致で確かめている。
   let parseXml (xml: string) : Bulletml = readXmlString xml
 
-  /// 1 回 の走行ぶんの下ごしらえ。task は状態を持つので走行ごとに組み直しが要る。
-  ///
-  /// **この費用は測定区間に残っている。** 外そうとして IterationSetup を
-  /// 試したが、BenchmarkDotNet が InvocationCount=1 / UnrollFactor=1 へ落ちて
-  /// 走行そのものが 1.4〜2.7 倍 重くなった（StepBenchmarks の但し書き）ので、
-  /// 外さずに大きさを測って書いておくほうを採った。大きさは SetupBenchmarks が
-  /// 走行と同じ物差しで出す。
-  type Prepared =
-    { Root : FakeBullet
-      Born : List<FakeBullet> }
-
-  let prepare (doc: Bulletml) : Prepared =
-    let born = List<FakeBullet>()
-    let root = FakeBullet(0, born)
-    let o = root :> IBulletmlObject
-    o.Init()
-    o.Task <- BulletRunner.convertBulletmlTaskOption doc
-    { Root = root; Born = born }
-
-  /// 下ごしらえ済みのものを frames フレーム 回す。返すのは「産まれた弾の数」だけ。
-  ///
-  /// 数を返すのは、最適化で走行ごと消されないようにするため。
-  /// BenchmarkDotNet は返り値を消費するので、これで走行が残る。
-  let runPrepared (p: Prepared) (frames: int) : int =
-    let step (b: FakeBullet) =
-      let bo = b :> IBulletmlObject
-      if bo.Used then
-        match bo.Task with
-        | None -> ()
-        | Some task ->
-          let result = BulletRunner.run bo
-          bo.X <- bo.X + result.X
-          bo.Y <- bo.Y + result.Y
-          if result.Processed then task.Init(BulletRunner.envOfGlobal bo)
-
-    for _ in 0 .. frames - 1 do
-      // このコマで回す顔ぶれを先に固める。途中で産まれた弾は次のコマから。
-      // テストの Trace と同じ決め。ここを変えると測る対象が別物になる
-      let live = Array.append [| p.Root |] (p.Born.ToArray())
-      for b in live do step b
-
-    p.Born.Count
-
-  /// 読んだ木から、下ごしらえも走行もまとめて 1 回。StepBenchmarks はこれ。
-  let runFramesOf (doc: Bulletml) (frames: int) : int =
-    runPrepared (prepare doc) frames
-
   // ---------------------------------------------------------------------
-  // 新 API（Runner.load / step / restart）で同じ走行を回す。
+  // 新 API（Runner.load / step / restart）で走らせる。**ここが唯一の経路。**
   //
-  // **出荷する経路はこちら。** 上の prepare / runPrepared は旧 API
-  // （[<Obsolete>] を付けた BulletRunner.run）を測っている。旧を残すのは、
-  // 消すと「段階 4 で遅くなったか」を同じプロセスで比べられなくなるため
-  // —— 別プロセスの引き算は効きにならない（README の「測るときの約束」）。
+  // **旧 API（BulletRunner.run）の列は落とした。** 残していたのは
+  // 「段階 4 で遅くなったか」を同じプロセスで比べるためだったが、あれは
+  // 対照ではなかった —— 旧い口を新経路の上に載せたシムで、中では同じ
+  // Step.step を通る。Sim / Step / Domain を触れば 2 列 とも同じだけ動く。
+  // 校正の土台（新旧の比）は先に「新 API の絶対値と記録からの差」へ
+  // 置き換えてある（Program.fs の baseline / baselineAt）。
   //
-  // 弾の実体は同じ FakeBullet を借りる。新経路が使うのは位置と物理量だけ。
+  // 弾の実体は tests の FakeBullet を借りる。新経路が使うのは位置と物理量だけ。
   // aim は FakeBullet.GetAimDir と**同じ式**をここで組む —— 片方だけ直すと、
-  // 旧と新で違うものを測ることになる。
+  // ベンチとテストが違うものを走らせることになる。
   //
   // 並びは ResizeArray で持ち、その場で書き換える。**リストを毎回 組み直すと
   // 1 コマ O(n²) になり、600 発 の台本では測定器のほうが対象より重くなる**
@@ -224,6 +179,16 @@ module Harness =
             p.Live.Add { Bullet = cb; Run = child }
     p.Born.Count
 
+  /// 読んだ木から、下ごしらえも走行もまとめて 1 回。
+  ///
+  /// **下ごしらえ（Runner.load）の費用は測定区間に残っている。** 外そうとして
+  /// IterationSetup を試したが、BenchmarkDotNet が InvocationCount=1 /
+  /// UnrollFactor=1 へ落ちて走行そのものが 1.4〜2.7 倍 重くなった
+  /// （StepBenchmarks の但し書き）ので、外さずに大きさを測って書いておく
+  /// ほうを採った。大きさは SetupBenchmarks が走行と同じ物差しで出す
+  let runFramesOf (doc: Bulletml) (frames: int) : int =
+    runPreparedApi (prepareApi doc) frames
+
   /// XML から直に回す。読む段まで入るので、走行だけを測りたい側では使わない。
   /// CorpusBenchmarks（227 本 を 1 周）はこちらを使う —— あちらは 1 本ずつの
   /// 前後比較ではなく「選んだ 4 本 の外で起きた変化」を見る広い網で、
@@ -289,37 +254,53 @@ module Harness =
   /// **数を比べる前にここを見て、その台本が対照なのか対象なのかを決める。**
   ///
   /// 「生きている top が 1 本 も無いコマ」は外から直には見えない
-  /// （BulletmlTask.State は internal）ので、前のコマの result.Processed
-  /// （その弾の top が全部 終わった）で代用する。前のコマで終わっていれば
-  /// 次のコマは必ず死んだコマなので、死の数は下から数えていることになる。
+  /// （BulletState.Tops は internal）ので、いちど でも Frame.Finished が
+  /// 立った弾はその後 死んだコマとして数える、で代用する。
+  /// **下から数えている**（走らせ直しで生き返るコマも死に入るため、
+  /// 実際の死より多く出ることはあっても、少なく出ることはない）。
+  ///
+  /// **旧 API（result.Processed）から Frame.Finished へ付け替えた。**
+  /// どちらも「その弾の top が全部 終わった」で、旧の run はその値を
+  /// RunResult.Processed に詰めていただけなので、数は動かない
   let countLiveDead (doc: Bulletml) (frames: int) : int * int =
     let mutable liveCalls = 0
     let mutable deadCalls = 0
     let finished = HashSet<FakeBullet>(HashIdentity.Reference)
-    let born = List<FakeBullet>()
-    let root = FakeBullet(0, born)
-    let o = root :> IBulletmlObject
-    o.Init()
-    o.Task <- BulletRunner.convertBulletmlTaskOption doc
-
-    let step (b: FakeBullet) =
-      let bo = b :> IBulletmlObject
-      if bo.Used then
-        match bo.Task with
-        | None -> ()
-        | Some task ->
-          if finished.Contains b then deadCalls <- deadCalls + 1
-          else liveCalls <- liveCalls + 1
-          let result = BulletRunner.run bo
-          if result.Processed then finished.Add b |> ignore
-          bo.X <- bo.X + result.X
-          bo.Y <- bo.Y + result.Y
-          if result.Processed then task.Init(BulletRunner.envOfGlobal bo)
-
+    let p = prepareApi doc
     for _ in 0 .. frames - 1 do
-      let live = Array.append [| root |] (born.ToArray())
-      for b in live do step b
-
+      let count = p.Live.Count
+      for i in 0 .. count - 1 do
+        let it = p.Live.[i]
+        let bo = it.Bullet :> IBulletmlObject
+        if bo.Used then
+          if finished.Contains it.Bullet then deadCalls <- deadCalls + 1
+          else liveCalls <- liveCalls + 1
+          let body = { it.Run.Body with Pos = { X = bo.X; Y = bo.Y } }
+          let env = if it.Run.HasNoScript then loadEnv () else envAt bo.X bo.Y
+          let f = Runner.stepWith p.Script env it.Run body
+          if f.Finished then finished.Add it.Bullet |> ignore
+          bo.X <- bo.X + f.Delta.X
+          bo.Y <- bo.Y + f.Delta.Y
+          let after = f.Run.Body
+          bo.Speed <- after.Speed
+          bo.Dir <- after.Dir
+          if f.Vanished || f.Retired then bo.Used <- false
+          it.Run <-
+            if f.Finished then
+              let renv = if f.Run.HasNoScript then loadEnv () else envAt bo.X bo.Y
+              Runner.restart renv f.Run
+            else f.Run
+          for child in f.Spawned do
+            let cb = FakeBullet(p.Born.Count + 1, p.Born)
+            let cbo = cb :> IBulletmlObject
+            cbo.Init()
+            cbo.IsBullet <- true
+            cbo.X <- child.Body.Pos.X
+            cbo.Y <- child.Body.Pos.Y
+            cbo.Dir <- child.Body.Dir
+            cbo.Speed <- child.Body.Speed
+            p.Born.Add cb
+            p.Live.Add { Bullet = cb; Run = child }
     liveCalls, deadCalls
 
   /// 1 走行の確保をその場で出す。**BenchmarkDotNet を通さないので数秒 で終わる。**
@@ -334,12 +315,32 @@ module Harness =
   ///
   /// 目盛りの合わせ方は --alloc の出力に書いてある。
   ///
-  /// **「決定的」の範囲に but が付く。** 同じバイナリを 3 回 走らせると
-  /// バイト単位で完全に一致する（実測）。だが**バイナリが変われば、測定区間に
-  /// 関係ない変更でも数 KB 動くことがある** —— Program.fs の表示だけを直した
-  /// 手で、5way と 10Way が揃って 4,120 B 減った（move と homing は不動）。
-  /// 原因は追っていない。**1% 未満の差は読まない**、が実用上の線。
-  /// 今回 struct 化で動いたのは 14〜19% なので、この幅には埋もれない。
+  /// **「確保は決定的」は、JIT の段が同じときにだけ成り立つ。**
+  ///
+  /// 以前ここには「同じバイナリを 3 回 走らせるとバイト単位で完全に一致する
+  /// （実測）」と書いてあった。**その 3 回 では実際に一致した。だが一致は
+  /// この口の性質ではない。** 走行ごとに変わりうるものが下に 1 つ ある。
+  ///
+  /// **段階的 JIT（tiered compilation）。** 同じメソッドでも tier-0 と tier-1
+  /// で確保が違う。どちらで測るかは呼んだ回数と背景スレッドの時計で決まるので、
+  /// **走行のたびに変わりうる。** 切り分けは 1 手 で付いた ——
+  /// `DOTNET_TieredCompilation=0` にすると wide が -82,432 B（-2.6%）動く。
+  /// 段が確保に効くこと自体は、これで確かめた。
+  ///
+  /// 実測した幅:
+  ///
+  ///   空回し 1 巡     いちばん軽い move（313 KB）で +6,192 B = **2.0%**
+  ///   空回し 2 巡     おおむね 0.1% 未満。走行間で move が 288 B 動いた
+  ///   段を切る        別の測定条件。上のどちらとも並べられない
+  ///
+  /// **Program.fs の --alloc は 1 巡 空けてから測る**（それでも 0 にはならない）。
+  /// **1% 未満の差は読まない**、が実用上の線で、いまはその線に根拠がある。
+  /// struct 化で動いたのは 14〜19% なので、この幅には埋もれない。
+  ///
+  /// もう 1 つ、これとは別の but:
+  /// **バイナリが変われば、測定区間に関係ない変更でも数 KB 動くことがある**
+  /// —— Program.fs の表示だけを直した手で、5way と 10Way が揃って
+  /// 4,120 B 減った（move と homing は不動）。原因は追っていない。
   let private allocOf (run: unit -> int) : int64 =
     // JIT と静的初期化を測定の外へ出す。外さないと初回だけ数が跳ねる
     run () |> ignore
@@ -348,24 +349,11 @@ module Harness =
     run () |> ignore
     System.GC.GetAllocatedBytesForCurrentThread() - before
 
-  /// 新経路（出荷する側）の 1 走行の確保
+  /// 1 走行の確保。
+  ///
+  /// **旧 API の列（allocOld）は落とした。** 並べていた 2 列 は独立した実装
+  /// ではなく、大部分が同じコードを通っていた —— 一致が既定の姿で、
+  /// いちど それを「共通ドリフト＝効いていない」と読み違えている。
+  /// 比較の相手は Program.fs の `baseline`（記録した絶対値）に移してある
   let allocApi (doc: Bulletml) (frames: int) : int64 =
     allocOf (fun () -> runPreparedApi (prepareApi doc) frames)
-
-  /// 旧 API の口で 1 走行したときの確保。
-  ///
-  /// **対照ではない。** 呼んでいる BulletRunner は旧実装ではなく、
-  /// **旧い口を新経路の上に載せたシム**で、中では Step.step を通る
-  /// （BulletRunner.fs の envOfGlobal の但し書きと、Step.step を呼ぶ行）。
-  /// **Sim / Step / Domain を触れば、この列も新 API 側と同じだけ動く。**
-  /// Emit を voption にした手では、新旧の減りがバイト単位まで一致した。
-  ///
-  /// 読み方:
-  ///   両方 動く   → Sim / Step / Domain を触った。比が動くのは口の故障ではない
-  ///   新だけ動く → 新 API の口（Runner.load / stepWith / Env の組み方）だけの手
-  ///   旧だけ動く → BulletRunner の側だけの手。新 API には効いていない
-  ///
-  /// **一致を「共通ドリフト＝効いていない」と読み違えたことがある。** この 2 列 は
-  /// 独立した実装ではなく、大部分が同じコードなので、一致が既定の姿
-  let allocOld (doc: Bulletml) (frames: int) : int64 =
-    allocOf (fun () -> runPrepared (prepare doc) frames)

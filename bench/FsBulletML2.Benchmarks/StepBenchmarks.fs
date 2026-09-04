@@ -18,7 +18,7 @@ open FsBulletML2.Benchmarks.Harness
 /// 60 フレームは控えと同じ長さ。ここを変えると控えと突き合わせられなくなる。
 ///
 /// XML を読む段は GlobalSetup で測定区間の外へ出してある（move で 8.0 us）。
-/// **task を組む段は中に残っている。**
+/// **下ごしらえ（Runner.load）の段は中に残っている。**
 ///
 /// 外した分と、残っている分（SetupBenchmarks が走行と同じ物差しで直に測る）:
 ///
@@ -27,6 +27,12 @@ open FsBulletML2.Benchmarks.Harness
 ///   task を組む             31.9 us       16.8 us   残っている
 ///   走行こみの通し         150.1 us     1,526 us
 ///   残っている分の割合       21.3%          1.1%
+///
+/// **この表の「task を組む」は旧 API の `prepare` を測った数。**
+/// 旧の列を落としたので、いまここが測っているのは `prepareApi`
+/// （`Runner.load`）で、**別の関数**。まだ測り直していないので、
+/// 上の 31.9 us / 16.8 us と割合の 3 行 は、次に BDN を回すまで古い。
+/// **測り直したらこの但し書きごと差し替えること。**
 ///
 /// 同じ「1 回 の下ごしらえ」が台本の重さで 21.3% にも 1.1% にもなるので、
 /// 走行に効く変更は move では薄まって見える。**move で読める効きは、
@@ -50,14 +56,14 @@ type StepBenchmarks() =
     | Some p -> System.IO.File.ReadAllText p
     | None -> failwithf "台本が見つかりません: %s（samples の下を探した: %s）" suffix Corpus.samplesDir
 
-  /// 読んだ木を走行のあいだ使い回す。**2 つ を Setup で確かめてから返す。**
+  /// 読んだ木を走行のあいだ使い回す。**使い回して答えが変わらないことを
+  /// Setup で確かめてから返す**（読み直した木との弾数の一致）。
+  /// 黙って通ると、2 回目 以降だけ違うものを測っていても誰も気づかない。
   ///
-  /// 1. 使い回して答えが変わらないこと（読み直した木との弾数の一致）。
-  ///    黙って通ると、2 回目 以降だけ違うものを測っていても誰も気づかない
-  /// 2. **新 API と旧 API が同じものを走らせていること**（弾数の一致）。
-  ///    ここが割れたまま並べると、速い遅いではなく別の走行を比べることになる。
-  ///    値そのものの一致は tests の TraceApi が 227 本 で見ているので、
-  ///    ここは「ベンチの 2 本 の回し方がずれていないか」を見る
+  /// **「新 API と旧 API で弾数が一致する」の照合は落とした。** 旧の列を
+  /// 消したので相手が居ない。値そのものの一致は tests の橋 227 本 が
+  /// 見ている（あちらは凍結した旧エンジンの軌跡との突き合わせで、
+  /// ここに在ったシム同士の照合より強い網）
   let loadDoc suffix =
     let xml = load suffix
     let doc = parseXml xml
@@ -67,10 +73,10 @@ type StepBenchmarks() =
     if reused1 <> fresh || reused2 <> fresh then
       failwithf "木を使い回すと弾数が変わる: %s（読み直し %d、使い回し 1 回目 %d、2 回目 %d）"
                 suffix fresh reused1 reused2
-    let viaApi = runPreparedApi (prepareApi doc) 60
-    if viaApi <> fresh then
-      failwithf "新 API と旧 API で弾数が違う: %s（旧 %d、新 %d）。別の走行を比べている"
-                suffix fresh viaApi
+    // 0 発 を緑にしない。台本を取り違えて空の木を測っていても、上の 3 つは
+    // 揃って 0 になるので通ってしまう
+    if fresh = 0 && suffix.Contains "Enemy/move.xml" |> not then
+      failwithf "1 発 も撃っていない: %s。台本か走らせ方が壊れている" suffix
     doc
 
   [<GlobalSetup>]
@@ -81,7 +87,11 @@ type StepBenchmarks() =
     way10 <- loadDoc "Content/xml/EnemyBullet/10Way.xml"
     homing <- loadDoc "Content/xml/EnemyBullet/[G_DARIUS]_homing_laser.xml"
 
-  // 新 API（Runner.step）。**出荷する経路。**
+  // 新 API（Runner.step）。**出荷する経路で、いまはこれだけ。**
+  //
+  // 旧 API（BulletRunner.run）の 4 本 は落とした。同じプロセスで並べる
+  // ためだけに残していたが、**対照ではなかった** —— 旧い口を新経路の上に
+  // 載せたシムで、中では同じ Step.step を通っていた。
   [<Benchmark(Description = "move（撃たない）")>]
   member _.Move() = runPreparedApi (prepareApi move) 60
 
@@ -94,28 +104,13 @@ type StepBenchmarks() =
   [<Benchmark(Description = "homing laser（毎コマ 引き直す）")>]
   member _.Homing() = runPreparedApi (prepareApi homing) 60
 
-  // 旧 API（BulletRunner.run）。**同じプロセスで並べるために残す。**
-  // 消すと「段階 4 で遅くなったか」を別プロセスの引き算でしか見られなくなり、
-  // それは効きにならない（README の「測るときの約束」）
-  [<Benchmark(Description = "move（旧 API）")>]
-  member _.MoveOld() = runFramesOf move 60
-
-  [<Benchmark(Description = "5way（旧 API）")>]
-  member _.Way5Old() = runFramesOf way5 60
-
-  [<Benchmark(Description = "10Way（旧 API）")>]
-  member _.Way10Old() = runFramesOf way10 60
-
-  [<Benchmark(Description = "homing laser（旧 API）")>]
-  member _.HomingOld() = runFramesOf homing 60
-
 
 /// 下ごしらえが、いくら掛かるのか。
 ///
 /// StepBenchmarks と同じ物差しで測るためにここに置く。**大きさを知らないまま
 /// 外すと、次に誰かが「入れても大差ない」と戻してしまう。** 走行と並べて読む。
 ///
-/// 外した分（XML を読む）と残っている分（task を組む）を**それぞれ直に**測る。
+/// 外した分（XML を読む）と残っている分（Runner.load）を**それぞれ直に**測る。
 /// 引き算で出さない —— 2 つ の数の差はどちらの誤差も乗るうえ、引く相手を
 /// 間違えてももっともらしい数になる。実際、引き算では move 34.2 us と出たが、
 /// 直に測ると 31.9 us だった。
@@ -143,14 +138,14 @@ type SetupBenchmarks() =
   [<Benchmark(Description = "move: XML を読んで木にする（測定区間の外）")>]
   member _.MoveParse() = parseXml moveXml
 
-  [<Benchmark(Description = "move: task を組む（測定区間の中）")>]
-  member _.MovePrepare() = prepare moveDoc
+  [<Benchmark(Description = "move: 下ごしらえ Runner.load（測定区間の中）")>]
+  member _.MovePrepare() = prepareApi moveDoc
 
   [<Benchmark(Description = "5way: XML を読んで木にする（測定区間の外）")>]
   member _.Way5Parse() = parseXml way5Xml
 
-  [<Benchmark(Description = "5way: task を組む（測定区間の中）")>]
-  member _.Way5Prepare() = prepare way5Doc
+  [<Benchmark(Description = "5way: 下ごしらえ Runner.load（測定区間の中）")>]
+  member _.Way5Prepare() = prepareApi way5Doc
 
   /// Env を 1 回 組む費用。aim 4 本 の atan2 がここ。
   ///
