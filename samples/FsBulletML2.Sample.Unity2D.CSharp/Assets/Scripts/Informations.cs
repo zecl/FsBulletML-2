@@ -12,19 +12,20 @@ public class Informations : MonoBehaviour
     /// <summary>
     /// フレームレートの上限。<b>-1 で無制限。</b>
     ///
-    /// <b>以前は 40 に固定していた。</b> 意図した設計ではなく、
-    /// 「40 fps しか出ない」と読める状態がそのまま残っていただけだった。
-    /// 外したので、いま出ている数はそのまま実力。
+    /// <b>以前は 40 だった。</b> 意図した設計ではなく、そのまま残っていた
+    /// だけだった。いちど 外して実力を見たら 60 では収まらない量が出たので、
+    /// <b>60 で頭を押さえる</b>ことにした（弾幕の見た目を一定にするため）。
     ///
     /// 表示には上限も並べてある —— 数だけだと「これしか出ない」と
     /// 「上限に張り付いている」を見分けられない（実際に読み違えた）。
+    /// <b>重さを見たいときは画面のボタンで外すこと。</b>
     ///
     /// 参考: エンジン（Runner.StepWith）が 1 コマ に使うのは弾 121 本 で
     /// 0.12 ms、ホーミング 25 本 で 0.43 ms。<b>60 fps の予算 16.7 ms に対して
     /// 3% 未満</b>なので、fps が落ちるならエンジンの外を疑うこと
     /// （実測は Assets/Editor/BulletSmokeCheck.cs で出せる）。
     /// </summary>
-    public int targetFps = -1;
+    public int targetFps = 60;
 
     private Enemy enemy;
     private Player player;
@@ -47,6 +48,11 @@ public class Informations : MonoBehaviour
 
     void Awake()
     {
+        // **vSync を先に切る。** vSyncCount が 1 以上 だと Unity は
+        // targetFrameRate を無視して画面のリフレッシュレートに従う。
+        // 品質設定（Good）では 1 になっていて、そのままだと 60 に押さえられない
+        // ——「上限 60 のはずなのに出すぎる」はここ。
+        QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = targetFps;
         enemy = FindAnyObjectByType<Enemy>();
         player = FindAnyObjectByType<Player>();
@@ -118,14 +124,14 @@ public class Informations : MonoBehaviour
             this.show = !this.show;
         }
 
-        // 上限を掛け直せるボタン。**既定は無制限。**
-        // 掛けたときと外したときで数が変わるかを、その場で見比べるため
+        // 上限を外せるボタン。**既定は 60 で掛かっている。**
+        // 60 に張り付いているのか届いていないのかは、外してみないと割れない
         if (Application.isPlaying)
         {
             var capped = Application.targetFrameRate > 0;
-            if (GUI.Button(new Rect(360, 5, 80, 22), capped ? "上限を外す" : "上限 60"))
+            if (GUI.Button(new Rect(360, 5, 80, 22), capped ? "上限を外す" : "上限 " + targetFps))
             {
-                Application.targetFrameRate = capped ? -1 : 60;
+                Application.targetFrameRate = capped ? -1 : targetFps;
             }
         }
 
