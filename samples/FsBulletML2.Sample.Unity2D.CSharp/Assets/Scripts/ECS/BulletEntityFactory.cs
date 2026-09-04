@@ -5,7 +5,6 @@ using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.Rendering;
 using FsBulletML2;
-using Microsoft.FSharp.Core;
 using BulletType = FsBulletML2.DTD.BulletType;
 
 public static class BulletEntityFactory
@@ -60,29 +59,56 @@ public static class BulletEntityFactory
         _ready = true;
     }
 
-    public static BulletSim SpawnEnemy(Vector3 position, FSharpOption<Processable.BulletmlTask> task, bool root)
+    public static BulletSim SpawnEnemy(Vector3 position, BulletmlScript script, bool root)
     {
         var sim = Spawn(BulletKind.Enemy, position.x, position.y, root);
-        sim.SetTask(task);
+        sim.SetScript(script, null);
         return sim;
     }
 
-    public static BulletSim SpawnPlayer(Vector3 position, FSharpOption<Processable.BulletmlTask> task)
+    public static BulletSim SpawnPlayer(Vector3 position, BulletmlScript script)
     {
         var sim = Spawn(BulletKind.Player, position.x, position.y, root: false);
-        sim.SetTask(task);
+        sim.SetScript(script, null);
         return sim;
     }
 
-    public static BulletSim SpawnChild(BulletSim parent)
+    /// <summary>
+    /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ。
+    ///
+    /// <b>弾幕は親と同じものを引き継ぐ。</b> 引き継がないと、弾の中に残った
+    /// bulletRef / actionRef を誰も解けない。実行位置はエンジンが
+    /// <c>Frame.Spawned</c> で渡してきたものをそのまま使う。
+    ///
+    /// <b>産まれる位置は撃った側と同じ。</b> FrontEnv が SpawnAimDir に
+    /// AimDir と同じ値を入れているのはこのため。<b>片方だけ直すと軌跡が割れる。</b>
+    /// </summary>
+    public static BulletSim SpawnChild(BulletSim parent, BulletRun child)
     {
-        return Spawn(parent.Kind, parent.X, parent.Y, root: false);
+        var sim = Spawn(parent.Kind, parent.X, parent.Y, root: false);
+        sim.SetScript(parent.Script, child);
+        var body = child.Body;
+        sim.X = body.Pos.X;
+        sim.Y = body.Pos.Y;
+        sim.Dir = body.Dir;
+        sim.Speed = body.Speed;
+        return sim;
     }
 
-    public static BulletSim SpawnFromEmitter(Processable.IBulletmlObject emitter)
+    /// <summary>
+    /// GameObject 側の弾（BaseBullet）から撃つ。ECS の弾として実体にする。
+    /// </summary>
+    public static BulletSim SpawnFromEmitter(BaseBullet emitter, BulletRun child)
     {
         var kind = object.Equals(emitter.BulletType, BulletType.Player) ? BulletKind.Player : BulletKind.Enemy;
-        return Spawn(kind, emitter.X, emitter.Y, root: false);
+        var sim = Spawn(kind, emitter.X, emitter.Y, root: false);
+        sim.SetScript(emitter.Script, child);
+        var body = child.Body;
+        sim.X = body.Pos.X;
+        sim.Y = body.Pos.Y;
+        sim.Dir = body.Dir;
+        sim.Speed = body.Speed;
+        return sim;
     }
 
     public static BulletSim Spawn(BulletKind kind, float x, float y, bool root)

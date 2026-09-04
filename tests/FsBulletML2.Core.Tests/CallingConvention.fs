@@ -84,10 +84,11 @@ type CallingConvention() =
   /// 当てる先が 0 になった。**4 回目 は「消えた呼び出し」のほうだった** ——
   /// 控えから `src/FsBulletML2.Core/BulletRunner.fs` の 1 行 が落ちるのが正しい。
   ///
-  /// なお `samples/.../Unity2D.CSharp` の 4 行 は控えに残っているが、
-  /// あれは `usesResult`（`result.X`）で当たっているだけで、そのサンプルは
-  /// **もう Core に対してコンパイルできない**（`BulletRunner.Run` を呼んでいる。
-  /// sln に入っていないのでビルドは割れない）。移すか消すかは未決。
+  /// **`samples/.../Unity2D.CSharp` も新 API へ移した。** あそこは
+  /// `FsBulletML2.sln` に入っていないので**この門でしか見えない** ——
+  /// 実際、旧 API を落とすより前から壊れていた（`BulletMLManager` を
+  /// namespace 直下へ出したとき、`.cs` は直したのに同梱 dll を焼き直して
+  /// いなかった）。**sln の外は、控えの行が消えたときにしか気づけない。**
   let callsRun = Regex(@"Runner\.[Ss]tep")
   let usesResult = Regex(@"result\.[XY]\b|\.Delta\.[XY]\b")
   /// `self.X <- self.X + ...` / `self.X = self.X + ...` の形（足しているか代入か）

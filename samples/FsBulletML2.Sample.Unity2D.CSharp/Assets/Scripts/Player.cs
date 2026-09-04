@@ -15,9 +15,13 @@ public class Player : MonoBehaviour
     public readonly ReactiveProperty<Vector2> PositionRp = new(Vector2.zero);
     public int Damage => DamageRp.Value;
 
-    private static Microsoft.FSharp.Core.FSharpOption<Processable.BulletmlTask> b2wayLeftBulletTask;
-    private static Microsoft.FSharp.Core.FSharpOption<Processable.BulletmlTask> b2wayRightBulletTask;
-    private static Microsoft.FSharp.Core.FSharpOption<Processable.BulletmlTask> hommingTask;
+    // 旧は BulletmlTask（弾幕と実行状態が 1 つ の型）を 3 本 持ち回っていた。
+    // 新 API では読み込んだ弾幕（BulletmlScript）だけを持ち、実行位置は
+    // 撃つたびに Runner.newRoot で作る —— **1 本 の弾幕から何発でも撃てる。**
+    // 旧は同じ task を撃つ弾ぜんぶで共有していて、状態が混ざる形だった
+    private static BulletmlScript b2wayLeftBulletScript;
+    private static BulletmlScript b2wayRightBulletScript;
+    private static BulletmlScript homingScript;
 
     public float X
     {
@@ -43,10 +47,15 @@ public class Player : MonoBehaviour
 
     void Awake()
     {
+        // **Init が先。** 読む段の Env（FrontEnv.Load）は BulletMLManager から
+        // rand と rank を引くので、口を差し込む前に読むと NullReference になる
         FsBulletML2.BulletMLManager.Init(new BulletFunctions());
-        b2wayLeftBulletTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet);
-        b2wayRightBulletTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet);
-        hommingTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing);
+        // Bullets の PlayerBullet は Bulletml（DTD の木）を直に持っている。
+        // Enemy 側は BulletmlInfo（名前つき）なので .Script(env) を呼ぶが、
+        // **どちらも Runner.Load を通る**（BulletmlInfo.Script はその包み）
+        b2wayLeftBulletScript = Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet);
+        b2wayRightBulletScript = Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet);
+        homingScript = Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing);
     }
 
     void Start()
@@ -110,18 +119,18 @@ public class Player : MonoBehaviour
     private void Shoot2WayLeftBullet()
     {
         var position = this.transform.position + new Vector3(-0.1f, 0.1f, 0);
-        BulletEntityFactory.SpawnPlayer(position, Player.b2wayLeftBulletTask);
+        BulletEntityFactory.SpawnPlayer(position, Player.b2wayLeftBulletScript);
     }
 
     private void Shoot2WayRightBullet()
     {
         var position = this.transform.position + new Vector3(0.1f, 0.1f, 0);
-        BulletEntityFactory.SpawnPlayer(position, Player.b2wayRightBulletTask);
+        BulletEntityFactory.SpawnPlayer(position, Player.b2wayRightBulletScript);
     }
 
     private void ShootHomingBullet()
     {
-        BulletEntityFactory.SpawnPlayer(this.transform.position, Player.hommingTask);
+        BulletEntityFactory.SpawnPlayer(this.transform.position, Player.homingScript);
     }
 
     public void HitByEnemyBullet()

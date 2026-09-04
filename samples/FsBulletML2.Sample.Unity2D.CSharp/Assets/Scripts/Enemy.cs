@@ -32,10 +32,9 @@ public class Enemy : BaseBullet
     public Enemy()
         : base()
     {
-        var self = this as FsBulletML2.Processable.IBulletmlObject;
-        self.BulletType = BulletType.Enemy;
-        self.IsBullet = false;
-        self.Used = true;
+        this.BulletType = BulletType.Enemy;
+        this.IsBullet = false;
+        this.Used = true;
     }
 
     void Start()
@@ -98,14 +97,19 @@ public class Enemy : BaseBullet
 
     public void Shoot()
     {
-        var self = this as FsBulletML2.Processable.IBulletmlObject;
-        if (self.Used)
+        if (this.Used)
         {
-            var task = FsBulletML2.BulletRunner.ConvertBulletmlTaskOption(this.BulletmlInfo.Bulletml);
-            this.RootSim = BulletEntityFactory.SpawnEnemy(this.transform.position, task, root: true);
+            // 弾幕は撃つたびに読み直す。読む段の Env は aim を読まない
+            // （撃つ弾ごとの位置がまだ無い）ので FrontEnv.Load を渡す
+            var script = this.BulletmlInfo.Script(FrontEnv.Load());
+            this.RootSim = BulletEntityFactory.SpawnEnemy(this.transform.position, script, root: true);
         }
     }
 
+    /// <summary>
+    /// 撃った弾幕がひと回りしたか。旧は BulletmlTask.Finish を見ていた。
+    /// 新 API では Frame.Finished を弾が控えている（BulletSim.Finished）。
+    /// </summary>
     private bool IsFinish()
     {
         if (this.RootSim == null)
@@ -113,17 +117,19 @@ public class Enemy : BaseBullet
             return false;
         }
 
-        var task = this.RootSim.Task;
-        if (Microsoft.FSharp.Core.OptionModule.IsNone(task))
+        if (this.RootSim.Script == null)
         {
             return false;
         }
-        if (task.Value.Finish)
+
+        if (this.RootSim.Finished)
         {
             BulletEntityFactory.Destroy(this.RootSim);
             this.RootSim = null;
+            return true;
         }
-        return task.Value.Finish;
+
+        return false;
     }
 
     public void Next()

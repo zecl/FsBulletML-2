@@ -1,7 +1,6 @@
 // Leftover GameObject bullet. Spawned shots are ECS entities (BulletSim).
 // Kept so the prefab still compiles if opened; nothing instantiates this at runtime.
 using UnityEngine;
-using Microsoft.FSharp.Core;
 using FsBulletML2;
 using R3;
 using R3.Triggers;
@@ -11,24 +10,16 @@ public class PlayerBullet : BaseBullet
 {
     public PlayerBullet() : base()
     {
-        var self = this as FsBulletML2.Processable.IBulletmlObject;
-        self.IsBullet = true;
-        self.BulletType = BulletType.Player;
-    }
-
-    public void SetTask(FSharpOption<Processable.BulletmlTask> bulletmlTask)
-    {
-        var self = this as FsBulletML2.Processable.IBulletmlObject;
-        self.Task = bulletmlTask;
+        this.IsBullet = true;
+        this.BulletType = BulletType.Player;
     }
 
     void Start()
     {
-        var self = this as FsBulletML2.Processable.IBulletmlObject;
         Observable.EveryUpdate(destroyCancellationToken)
             .Subscribe(_ =>
             {
-                if (!this.Root && self.BulletRoot && !self.Used)
+                if (!this.Root && this.BulletRoot && !this.Used)
                 {
                     InstanceManager.Destroy(gameObject);
                     return;
@@ -37,7 +28,7 @@ public class PlayerBullet : BaseBullet
                 var p = this.transform.position;
                 if (p.x < 0 || p.x > 4.8 || p.y < -6.4 || p.y > 0)
                 {
-                    self.Used = false;
+                    this.Used = false;
                     InstanceManager.Destroy(gameObject);
                 }
             });

@@ -120,25 +120,22 @@ public partial class BulletSimulationSystem : SystemBase
         }
     }
 
+    /// <summary>
+    /// 1 コマ進める。撃たれた弾は <see cref="BulletEntityFactory.SpawnChild"/> で
+    /// 実体にする。
+    ///
+    /// <b>旧 API は「撃つのを断る」口を持っていた</b>（GetNewBullet が null を
+    /// 返すと fire の累積を巻き戻す）。新 API はエンジンが撃った弾を値で返しきる
+    /// ので、捨てるかどうかはこちらの都合で決める（Frame.Spawned の但し書き）。
+    /// </summary>
     static void RunSim(BulletSim sim)
     {
-        var self = (Processable.IBulletmlObject)sim;
-        Monad.OptionExtentions.Action<Processable.BulletmlTask>(self.Task,
-            x =>
-            {
-                var result = BulletRunner.Run(sim);
-                self.X = self.X + (result.X / 100);
-                self.Y = self.Y - (result.Y / 100);
-                if (result.Processed)
-                {
-                    x.Init(BulletRunner.envOfGlobal(self));
-                }
-                return;
-            },
-            _ =>
-            {
-                return;
-            });
+        sim.Step(SpawnChild);
+    }
+
+    static void SpawnChild(BulletSim parent, BulletRun child)
+    {
+        BulletEntityFactory.SpawnChild(parent, child);
     }
 
     static bool Overlaps(float x, float y, float radius, Vector3 target, float targetRadius)
