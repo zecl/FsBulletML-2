@@ -53,9 +53,9 @@ public class Player : MonoBehaviour
         // Bullets の PlayerBullet は Bulletml（DTD の木）を直に持っている。
         // Enemy 側は BulletmlInfo（名前つき）なので .Script(env) を呼ぶが、
         // **どちらも Runner.Load を通る**（BulletmlInfo.Script はその包み）
-        b2wayLeftBulletScript = Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet);
-        b2wayRightBulletScript = Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet);
-        homingScript = Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing);
+        b2wayLeftBulletScript = Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.b2wayLeftBullet);
+        b2wayRightBulletScript = Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.b2wayRightBullet);
+        homingScript = Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.homing);
     }
 
     void Start()

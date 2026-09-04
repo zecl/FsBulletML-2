@@ -160,15 +160,15 @@ public class Enemy : BaseBullet
 
     public static IEnumerable<FsBulletML2.BulletmlInfo> GetBulletml()
     {
-        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA;
-        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.Strikers1999.hanabi;
-        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.DragonBlaze.nebyurosu_2;
-        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.GWange._roll_gara;
-        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.Original.knight_2;
-        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.GWange.round_trip_bit;
-        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.b88way;
-        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.bit;
-        yield return FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.rollbar;
+        yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA;
+        yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Strikers1999.hanabi;
+        yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.DragonBlaze.nebyurosu_2;
+        yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.GWange._roll_gara;
+        yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.knight_2;
+        yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.GWange.round_trip_bit;
+        yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.b88way;
+        yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.bit;
+        yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.rollbar;
     }
 
     void OnDestroy()

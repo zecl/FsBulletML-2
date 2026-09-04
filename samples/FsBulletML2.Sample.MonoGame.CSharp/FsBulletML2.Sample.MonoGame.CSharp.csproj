@@ -34,7 +34,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.MonoGame\FsBulletML2.MonoGame.fsproj" />
-    <ProjectReference Include="..\FsBulletML2.Bullets\FsBulletML2.Bullets.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Bullets.Dsl\FsBulletML2.Bullets.Dsl.fsproj" />
     <ProjectReference Include="..\FsBulletML2.Sample.MonoGame.Font\FsBulletML2.Sample.MonoGame.Font.csproj" />
   </ItemGroup>
 </Project>

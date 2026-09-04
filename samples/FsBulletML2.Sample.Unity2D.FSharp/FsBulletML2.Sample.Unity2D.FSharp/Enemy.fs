@@ -7,7 +7,6 @@ open R3
 open FSharp.Control.R3
 open UnityEngine
 open FsBulletML2
-open FsBulletML2.Bullets
 open FsBulletML2.Unity2D
 
 type Enemy () =
@@ -184,15 +183,15 @@ type Enemy () =
 
   member this.GetBulletml() : seq<BulletmlInfo> =
     seq {
-        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
-        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.Strikers1999.hanabi
-        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.DragonBlaze.nebyurosu_2
-        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.GWange._roll_gara
-        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.Original.knight_2
-        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.GWange.round_trip_bit
-        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.b88way
-        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.bit
-        yield FsBulletML2.Bullets.EnemyBullet.Sdmkun.Noiz2sa.rollbar
+        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
+        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Strikers1999.hanabi
+        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.DragonBlaze.nebyurosu_2
+        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.GWange._roll_gara
+        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.knight_2
+        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.GWange.round_trip_bit
+        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.b88way
+        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.bit
+        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.rollbar
     }
 
   member this.OnDestroy () =

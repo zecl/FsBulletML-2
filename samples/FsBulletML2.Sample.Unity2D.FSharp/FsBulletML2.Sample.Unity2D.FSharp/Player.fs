@@ -36,9 +36,9 @@ type Player () =
     // **Init が先。** 読む段の Env は BulletMLManager から rand と rank を
     // 引くので、口を差し込む前に読むと NullReference になる
     BulletMLManager.Init(new BulletFunctions(this))
-    this.b2wayLeftBulletTask <- Runner.load (FrontEnv.Load()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet |> Some
-    this.b2wayRightBulletTask <- Runner.load (FrontEnv.Load()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet |> Some
-    this.hommingTask <- Runner.load (FrontEnv.Load()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing |> Some
+    this.b2wayLeftBulletTask <- Runner.load (FrontEnv.Load()) FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.b2wayLeftBullet |> Some
+    this.b2wayRightBulletTask <- Runner.load (FrontEnv.Load()) FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.b2wayRightBullet |> Some
+    this.hommingTask <- Runner.load (FrontEnv.Load()) FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.homing |> Some
 
   member this.X with get () = this.transform.position.x
                  and set (v) = this.transform.position <- Vector3(v, this.transform.position.y, this.transform.position.z)
