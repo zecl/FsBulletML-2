@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2.Core.Tests
+namespace FsBulletML2.Core.Tests
 // 旧 API（IBulletmlObject）の Obsolete 警告を、**このファイルだけ**止める。
 // ここは旧経路を意図して走らせる側だから（新旧を突き合わせる橋の材料）。
 //
@@ -85,46 +85,57 @@ type RefParamFreeze() =
   <wait>1</wait>
 </action>"""
 
-  /// フレーム 4 で値を切り替える。前後で 2 発ずつ撃つ長さにしてある
-  let runSwitching (xml: string) (switch: MutableManager -> unit) =
-    let m = MutableManager(0.2f, 0.2f, 30.0f, 100.0f)
-    BulletMLManager.Init(m)
-    let hook i = if i = 4 then switch m
-    Trace.runWith hook xml 9 |> firedSpeeds
+  /// フレーム 4 で値を切り替える。前後で 2 発ずつ撃つ長さにしてある。
+  ///
+  /// 旧は MutableManager（グローバル）を走行の途中で差し替えていた。
+  /// **新 API はフロントが毎コマ Env を渡すので、ふつうの mutable でよい**
+  /// —— 差し替えるグローバルが要らない。移植が正しいことは、
+  /// 下の Golden が 1 バイト も動かないことで押さえている。
+  let runSwitching (xml: string) (rand: unit -> float32) (rank: unit -> float32)
+                   (switch: unit -> unit) =
+    TraceApi.runWithParams (fun i -> if i = 4 then switch ())
+      rand rank (fun () -> 30.0f) (fun () -> 100.0f) xml 9
+    |> firedSpeeds
 
   [<Test>]
   member _.``対照 1: param を通さない $rank は、走行中に変えると追随する``() =
-    runSwitching (bml (bare "1+$rank*10")) (fun m -> m.Rank <- 0.7f)
+    let mutable rank = 0.2f
+    runSwitching (bml (bare "1+$rank*10")) (fun () -> 0.2f) (fun () -> rank) (fun () -> rank <- 0.7f)
     |> fun s -> s + "\n\n0.2 のとき 3.0、0.7 のとき 8.0。切り替えはフレーム 4"
     |> Golden.check "freeze-direct-rank"
 
   [<Test>]
   member _.``対照 2: param を通さない $rand も追随する``() =
-    runSwitching (bml (bare "1+$rand*10")) (fun m -> m.Rand <- 0.7f)
+    let mutable rand = 0.2f
+    runSwitching (bml (bare "1+$rand*10")) (fun () -> rand) (fun () -> 0.2f) (fun () -> rand <- 0.7f)
     |> fun s -> s + "\n\n0.2 のとき 3.0、0.7 のとき 8.0。切り替えはフレーム 4"
     |> Golden.check "freeze-direct-rand"
 
   [<Test>]
   member _.``param に置いた $rank は追随するか``() =
-    runSwitching (bml (viaParam "$rank")) (fun m -> m.Rank <- 0.7f)
+    let mutable rank = 0.2f
+    runSwitching (bml (viaParam "$rank")) (fun () -> 0.2f) (fun () -> rank) (fun () -> rank <- 0.7f)
     |> fun s -> s + "\n\n速さ = $1 = $rank。0.2 から 0.7 に変わるなら追随、0.2 のままなら焼き付け"
     |> Golden.check "freeze-param-rank"
 
   [<Test>]
   member _.``param に置いた $rand は追随するか``() =
-    runSwitching (bml (viaParam "$rand")) (fun m -> m.Rand <- 0.7f)
+    let mutable rand = 0.2f
+    runSwitching (bml (viaParam "$rand")) (fun () -> rand) (fun () -> 0.2f) (fun () -> rand <- 0.7f)
     |> fun s -> s + "\n\n速さ = $1 = $rand。existRandomParam が守っているのはこちらだけ"
     |> Golden.check "freeze-param-rand"
 
   [<Test>]
   member _.``actionRef の先に直接書いた $rank は追随するか``() =
-    runSwitching (bml (refNoParam "1+$rank*10")) (fun m -> m.Rank <- 0.7f)
+    let mutable rank = 0.2f
+    runSwitching (bml (refNoParam "1+$rank*10")) (fun () -> 0.2f) (fun () -> rank) (fun () -> rank <- 0.7f)
     |> fun s -> s + "\n\nparam を通さず参照だけ挟んだ形。追随するなら、凍らせているのは param の置き換え"
     |> Golden.check "freeze-ref-noparam-rank"
 
   [<Test>]
   member _.``param に式ごと入れた $rank は追随するか``() =
-    runSwitching (bml (viaParam "1+$rank*10")) (fun m -> m.Rank <- 0.7f)
+    let mutable rank = 0.2f
+    runSwitching (bml (viaParam "1+$rank*10")) (fun () -> 0.2f) (fun () -> rank) (fun () -> rank <- 0.7f)
     |> fun s -> s + "\n\n$rank 単体ではなく式ごと param に入れた形。3.0 のままなら焼き付け"
     |> Golden.check "freeze-param-rank-expr"
 
@@ -132,12 +143,12 @@ type RefParamFreeze() =
   /// ひと回りの中では展開は 1 回なので、$rand は 1 回しか転がらないはず
   [<Test>]
   member _.``ひと回りの中で 3 発撃つと、param の $rand は何回転がるか``() =
-    let m = MutableManager(0.2f, 0.2f, 30.0f, 100.0f)
-    BulletMLManager.Init(m)
+    let mutable rand = 0.2f
     let hook i =
-      if i = 1 then m.Rand <- 0.5f
-      elif i = 2 then m.Rand <- 0.9f
-    Trace.runWith hook (bml repeatViaParam) 8
+      if i = 1 then rand <- 0.5f
+      elif i = 2 then rand <- 0.9f
+    TraceApi.runWithParams hook (fun () -> rand) (fun () -> 0.2f)
+      (fun () -> 30.0f) (fun () -> 100.0f) (bml repeatViaParam) 8
     |> firedSpeeds
     |> fun s -> s + "\n\n毎フレーム rand を動かしている（f1 で 0.5、f2 で 0.9）。\n3 発とも同じなら、ひと回りの中では 1 回しか転がっていない"
     |> Golden.check "freeze-rand-within-loop"
@@ -203,7 +214,6 @@ type RefParamFreeze() =
   /// ここは 1 つの action の中で同じ $1 を 3 回 使い、3 発の向きが揃うかを見る
   [<Test>]
   member _.``同じ param を 1 つの action で何度も使う``() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
     let xml =
       bml """<action label="top">
   <actionRef label="fan"><param>$rand*100</param></actionRef>
@@ -215,12 +225,16 @@ type RefParamFreeze() =
   <fire><direction type="absolute">$1</direction><speed>3</speed><bullet/></fire>
 </action>"""
     // 毎フレーム rand を動かす。param が数へ潰されていれば 3 発とも同じ向き、
-    // 文字のまま渡っていれば 3 発ともばらける
+    // 文字のまま渡っていれば 3 発ともばらける。
+    // **木を組む段は 0.5**（旧はループの前に FixedManager(0.5f, ...) が
+    // 入っていた）。hook はコマの頭で呼ばれるので、f0 からは 0.1 x n
     let mutable n = 0
+    let mutable rand = 0.5f
     let hook _ =
       n <- n + 1
-      BulletMLManager.Init(FixedManager(0.1f * float32 n, 0.5f, 30.0f, 100.0f))
-    Trace.runWith hook xml 4
+      rand <- 0.1f * float32 n
+    TraceApi.runWithParams hook (fun () -> rand) (fun () -> 0.5f)
+      (fun () -> 30.0f) (fun () -> 100.0f) xml 4
     |> fun t ->
         t.Split('\n')
         |> Array.filter (fun l -> l.Contains "  +b")
