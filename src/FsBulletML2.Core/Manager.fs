@@ -9,8 +9,8 @@ namespace FsBulletML2
 /// Core からグローバルを引く経路は無い。
 ///
 /// **以前は `Processable` モジュールの中に居た。** あそこは旧 API
-/// （`IBulletmlObject` / `BulletmlTask`）のシムで、廃止すると消える場所。
-/// この 2 つ は廃止後も残るので、外へ出して namespace 直下に置いた
+/// （`IBulletmlObject` / `BulletmlTask`）のシムで、**その 2 つ は落とした。**
+/// こちらは廃止後も残るものなので、先に外へ出して namespace 直下に置いてある
 /// —— C# から見える名前も `FsBulletML2.Processable.BulletMLManager` から
 /// `FsBulletML2.BulletMLManager` になり、入れ子が 1 段 減る。
 type IBulletMLManager =

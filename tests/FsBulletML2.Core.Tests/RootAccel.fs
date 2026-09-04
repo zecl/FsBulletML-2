@@ -76,7 +76,7 @@ type RootAccel() =
     // ここが 0 のままでは済まない
     draws |> should equal 0
 
-  /// Step.step（BulletRunner.run が実際に呼ぶのと同じ入口）を通して、
+  /// Step.step（公開 API の `Runner.step` が実際に呼ぶのと同じ入口）を通して、
   /// 根の top* の中に直接書いた accel が、3 コマとも軌跡へ何も足さないことを見る
   [<Test>]
   member _.``top 直下の accel は、3 コマ動いても軌跡を動かさない``() =

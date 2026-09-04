@@ -4,9 +4,9 @@ open FsBulletML2.DTD
 open FsBulletML2.Domain
 open FsBulletML2.Processable
 
-/// 命令を 1 つずつ進める。現行の BulletRunner.runCommand を写したもの。
+/// 命令を 1 つずつ進める。**落とした `BulletRunner.runCommand` を写したもの。**
 ///
-/// 走査を止めるかどうかの 3 値は現行と同じ意味。
+/// 走査を止めるかどうかの 3 値も、あちらと同じ意味。
 ///   Stopped   走査を止める。次のフレームも同じところから
 ///   Continue  走査は止めない。ただし終わりにもしないので、次のフレームでも走る
 ///   Ended     終わり。走査の側が finish を立てる
@@ -17,11 +17,10 @@ module internal Step =
     | Ended
     | Stopped
 
-  /// 角度を 0 〜 2π に丸める。現行の BulletRunner.calcDir と同じ式。
+  /// 角度を 0 〜 2π に丸める。落とした `BulletRunner.calcDir` と同じ式。
   ///
-  /// BulletRunner.fs はこのファイルより後に compile されるので、
-  /// BulletRunner.calcDir はここを指すだけの別名にしてある。
-  /// 式そのものはここが唯一の置き場所
+  /// **いまはここが唯一の置き場所。** あちらが在ったころは、compile 順の都合で
+  /// ここを指すだけの別名を向こうに置いていた
   let internal calcDir (dir: float32) =
     if (float dir > 2. * System.Math.PI) then dir - float32 (2. * System.Math.PI)
     elif (float dir < 0.) then dir + float32 (2. * System.Math.PI)
@@ -845,7 +844,7 @@ module internal Step =
               | _ ->
                   // 撃たれた弾の実体はこの時点では無いが、その弾がどこに出るかは
                   // フロントエンドが知っているので env.SpawnAimDir で受け取っている
-                  // （BulletRunner.envOfGlobal が GetSpawnAimDir を読む）。
+                  // （旧の BulletRunner.envOfGlobal が GetSpawnAimDir を読んでいた）。
                   // これで Spawn は値として完結し、実体を見て仕上げる必要が無い。
                   // Player / Enemy の振り分けは撃った側の種別で行う——撃たれた弾の
                   // 種別は例外なく撃った側からその場で複写されるので同じになる
@@ -922,11 +921,11 @@ module internal Step =
       return Ended, PFire true, fc
     }
 
-  /// 1 コマ進める。現行の BulletRunner.runWithEnv を写す。
+  /// 1 コマ進める。落とした `BulletRunner.runWithEnv` を写したもの。
   ///
   /// runWithEnv であって run ではない。run は envOfGlobal でグローバルから
   /// Env を組んでから runWithEnv を呼ぶだけの 1 行の橋渡しで、ここが写して
-  /// いる中身（top* の走査・endCount・差分の組み立て）は runWithEnv 側にある。
+  /// いる中身（top* の走査・endCount・差分の組み立て）は runWithEnv 側にあった。
   /// step は Env を引数で受け取るので、その橋渡しの分は要らない
   ///
   /// top* は 1 本ずつ独立に回す。ある top が wait で止まっても、
@@ -947,10 +946,10 @@ module internal Step =
     let mutable effects : Effect list = []
     let mutable tops = []
     let mutable endCount = 0
-    // FireContext は現行では弾 1 つにつき 1 個しかない
+    // FireContext は旧でも弾 1 つにつき 1 個しかなかった
     // （BulletmlTask.FireData.[ActiveTaskIndex]。ActiveTaskIndex は生成時の
-    // 0 から一度も変わらない —— BulletRunner.fs の convertBulletmlTask /
-    // createTask を見ても ActiveTaskIndex への代入は 0 しかない）。
+    // 0 から一度も変わらない —— 落とした BulletRunner.fs の convertBulletmlTask /
+    // createTask を見ても ActiveTaskIndex への代入は 0 しかなかった）。
     // top* が複数あっても fireCommand は常に同じ FireData.[0] を読み書きする
     // ので、sequence の積み上がりは top をまたいで続く。Tops の組が
     // fc を 1 つずつ持つ形は「添字の対応を構造で保証する」ためのものだが、

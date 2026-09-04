@@ -93,8 +93,9 @@ type StepFire() =
   /// この時点（stepFire の中）では解決できない。旧 createTask は
   /// GetNewBullet() が返す、まだ位置を持たない新しい弾オブジェクトの
   /// GetAimDir() を読んでいたが、stepFire の時点では撃たれた弾の
-  /// 実オブジェクトがまだ存在しない（Spawn は値で、実体は
-  /// BulletRunner.applySpawn が newBullet として後で作る）。
+  /// 実オブジェクトがまだ存在しない（Spawn は値で、実体は旧なら
+  /// `BulletRunner.applySpawn` が newBullet として後で作っていた。
+  /// いまはフロントが `Frame.Spawned` を受け取って自分で作る）。
   /// ここでは env.SpawnAimDir（産まれる弾の位置から見た向き）が使われ、
   /// 撃った側の env.AimDir は使われないことを見る。
   /// 実際に走らせたときの最終値は BulletAim.fs が Trace 経由で確かめる

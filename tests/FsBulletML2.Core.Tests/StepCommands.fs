@@ -6,7 +6,7 @@ open FsBulletML2
 open FsBulletML2.DTD
 open FsBulletML2.Domain
 
-/// 命令を 1 つずつ、現行の BulletRunner と同じ形で動くかを見る。
+/// 命令を 1 つずつ、落とした `BulletRunner` と同じ形で動くかを見る。
 ///
 /// 走らせるのに弾も木も要らない。Env はレコード 1 行、状態はレコード 1 個で足りる。
 [<TestFixture>]

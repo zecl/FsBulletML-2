@@ -299,7 +299,8 @@ module internal BulletmlOps =
     | Bulletml.Bulletml (attrs, elms) ->
       Bulletml.Bulletml (attrs, elms |> List.map (expandTopElm Set.empty None top))
 
-  /// top* の台本 1 本 を展開する。BulletRunner.buildRootTops が使う
+  /// top* の台本 1 本 を展開する。`Runner.load` が使う
+  /// （旧は落とした `BulletRunner.buildRootTops` の側から呼ばれていた）
   let internal convertRefActionElm (top: Bulletml) (a: ActionElm) : ActionElm =
     expandActionElm Set.empty None top a
 

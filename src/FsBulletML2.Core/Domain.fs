@@ -39,7 +39,8 @@ module Domain =
       /// <bullet><direction type="aim"> は撃たれた弾を基準にするので、
       /// 撃つ側の AimDir では答えが違う。産まれる弾がどこに出るかは
       /// フロントエンドが決めていて（MonoGame は原点、Unity2D は撃った側）
-      /// Core からは分からないので、IBulletmlObject.GetSpawnAimDir に訊く。
+      /// Core からは分からないので、**フロントがこの欄に入れて渡す**
+      /// （旧はエンジンが `IBulletmlObject.GetSpawnAimDir` を呼び返していた）。
       SpawnAimDir : float32
       SpawnEnemyAimDir : float32 }
 

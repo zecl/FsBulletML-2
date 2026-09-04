@@ -135,7 +135,8 @@ type StepTop() =
     | other -> Assert.Fail (sprintf "2 発めの Spawn のはずが %A" other)
 
   /// final review 1: 実物で踏んだ形（top* から辿れる repeat の times=9999）を
-  /// Step.step 経由（BulletRunner.run が実際に呼ぶのと同じ関数）で 1 コマ回す。
+  /// Step.step 経由（公開 API の `Runner.step` が実際に呼ぶのと同じ関数）で
+  /// 1 コマ回す。
   /// StepCommands.fs の門は stepRepeat を直接見ているが、ここは top* の
   /// 走査（action → command → repeat）を経由しても壊れないことを確かめる
   [<Test>]
@@ -152,8 +153,9 @@ type StepTop() =
     r.Effects |> List.length |> should equal 9999
     r.Finished |> should equal true
 
-  /// BulletRunner.run は「生きている top が 1 本 も無いコマ」で aim 4 本 を
-  /// 組まずに 0 で済ませる（BulletRunner.envWithoutAim）。その前提 ——
+  /// 落とした `BulletRunner.run` は「生きている top が 1 本 も無いコマ」で
+  /// aim 4 本 を組まずに 0 で済ませていた（`BulletRunner.envWithoutAim`）。
+  /// いまは同じ役を `BulletRun.HasNoScript` が担う。その前提 ——
   /// Step.step が env を触るのは top を回すループの中だけで、ループの外
   /// （差分の計算・FireContext の積み直し・Finished の判定）は env を
   /// 見ない —— をここで門にする。
