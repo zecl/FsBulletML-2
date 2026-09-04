@@ -40,6 +40,7 @@ public static class SampleChecks
         var failures = 0;
 
         failures += CheckScene();
+        failures += CheckAssemblies();
 
         BulletSmokeCheck.SuppressExit = true;
         BulletSmokeCheck.Run();
@@ -66,6 +67,82 @@ public static class SampleChecks
         if (Application.isBatchMode)
         {
             EditorApplication.Exit(failures == 0 ? 0 : 1);
+        }
+    }
+
+    /// <summary>
+    /// <b>Assets に置いた dll が、参照している相手を全部 見つけられるか。</b>
+    ///
+    /// このサンプルは F# を Unity の外でビルドして dll を Assets へ手で置く。
+    /// <b>参照が増えたことは、置き忘れても何も言ってくれない</b> ——
+    /// CLR は型を実際に使うまでアセンブリを読まないので、
+    /// <b>使い始めた行が走った瞬間に FileNotFoundException</b> になる。
+    /// 弾幕の途中で落ちるので、原因が読みにくい。
+    ///
+    /// 実際にこれが起きうる形がある。弾幕を書く CE（FsBulletML2.Dsl）を
+    /// 別アセンブリに分けたので、<b>FsBulletML2.Bullets がそれを使い始めると
+    /// 参照が 1 つ 増える</b>。分けた時点では 1 つ も使っていないため、
+    /// Bullets.dll のマニフェストにその名前はまだ入っていない。
+    ///
+    /// <b>門そのものの目盛りも毎回 合わせる。</b> 在るはずのない名前を 1 つ
+    /// 混ぜて、それが「解決できない」と出ることを確かめる ——
+    /// 出なければ、この検査は何も見ていないことになる。
+    /// </summary>
+    static int CheckAssemblies()
+    {
+        var failures = 0;
+
+        // 目盛り合わせ。**これが先**（当てにならない道具で測っても意味がない）
+        if (Resolves("FsBulletML2.ThisMustNotExist"))
+        {
+            Debug.LogError("[SampleChecks] 在るはずのない名前が解決できてしまった。この検査は当てにならない");
+            return failures + 1;
+        }
+
+        var loaded = System.AppDomain.CurrentDomain.GetAssemblies();
+        var checkedRefs = 0;
+        foreach (var asm in loaded)
+        {
+            var name = asm.GetName().Name;
+            if (!name.StartsWith("FsBulletML2"))
+            {
+                continue;
+            }
+
+            foreach (var reference in asm.GetReferencedAssemblies())
+            {
+                checkedRefs++;
+                if (!Resolves(reference.FullName))
+                {
+                    Debug.LogError("[SampleChecks] " + name + " が参照する "
+                        + reference.Name + " を読めない。Assets に置き忘れている疑い");
+                    failures++;
+                }
+            }
+        }
+
+        Debug.Log("[SampleChecks] アセンブリ参照: " + checkedRefs + " 本 を辿って読めた");
+
+        // **0 件 を緑にしない。** dll が 1 つ も読み込まれていなければ
+        // 「全部 読めた」と同じ見た目になる
+        if (checkedRefs <= 0)
+        {
+            Debug.LogError("[SampleChecks] FsBulletML2 のアセンブリが 1 つ も見つからない");
+            failures++;
+        }
+
+        return failures;
+    }
+
+    static bool Resolves(string name)
+    {
+        try
+        {
+            return System.Reflection.Assembly.Load(name) != null;
+        }
+        catch (System.Exception)
+        {
+            return false;
         }
     }
 

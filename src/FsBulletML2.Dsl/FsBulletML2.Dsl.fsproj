@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML2.Dsl</RootNamespace>
+    <AssemblyName>FsBulletML2.Dsl</AssemblyName>
+    <Version>0.1.1</Version>
+    <Product>FsBulletML2.Dsl</Product>
+    <Description>Computation-expression DSL for writing BulletML.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BulletDsl.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+  </ItemGroup>
+</Project>

@@ -1,6 +1,4 @@
-namespace FsBulletML2.Bullets
-
-open FsBulletML2
+namespace FsBulletML2
 
 /// BulletML 0.21 の書く側を、コンピュテーション式にしたもの。
 /// 出る値は公開 DU（`Bulletml` / `Action` / `BulletElm`）で、エンジンは触らない。
@@ -8,6 +6,12 @@ open FsBulletML2
 /// ビルダは DTD の内容モデルで分かれている。
 /// action は命令の列、fire / accel は袋、bullet は袋に action を足す。
 /// 1 個の CE にすると fire の中に wait が書けて、DTD より緩くなる。
+///
+/// **`namespace FsBulletML2` に置いてある。** 元は `FsBulletML2.Bullets`
+/// （書かれた弾幕と同じアセンブリ）に居たが、**書く道具と、書かれたもの**は
+/// 別なので分けた。この namespace を選んだのは呼び方を変えないため ——
+/// 弾幕の各ファイルはどれも `open FsBulletML2` しているので、
+/// `Dsl.fire` の書き味が分ける前と同じになる。
 module Dsl =
 
   let private expr s = numExpr s
