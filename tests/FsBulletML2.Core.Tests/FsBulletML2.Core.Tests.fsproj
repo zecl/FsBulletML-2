@@ -28,7 +28,6 @@
     <Compile Include="RefParamFreeze.fs" />
     <Compile Include="BulletDirection.fs" />
     <Compile Include="BulletAim.fs" />
-    <Compile Include="NullNewBullet.fs" />
     <Compile Include="Degenerate.fs" />
     <Compile Include="Expressions.fs" />
     <Compile Include="ShootingType.fs" />

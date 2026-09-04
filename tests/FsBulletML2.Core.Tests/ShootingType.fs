@@ -1,17 +1,8 @@
 ﻿namespace FsBulletML2.Core.Tests
-// 旧 API（IBulletmlObject）の Obsolete 警告を、**このファイルだけ**止める。
-// ここは旧経路を意図して走らせる側だから（新旧を突き合わせる橋の材料）。
-//
-// プロジェクト単位（NoWarn）で止めない。止めると、**新しく書いた試験が
-// うっかり旧 API を使っても警告が出なくなる**。
-// 効きがファイル単位であることは較正済み —— nowarn を置いていない
-// ファイルで旧 API に触ると FS0044 が出る。
-#nowarn "44"
-
+// **nowarn "44" は外した。** このファイルはもう旧 API を通らない。
+// 外しておくと、うっかり旧経路へ戻したときに FS0044 が出る（門になる）。
 
 open NUnit.Framework
-open FsBulletML2.DTD
-open FsBulletML2.Processable
 
 /// `<bulletml type="none|vertical|horizontal">` が走らせる側に効くか。
 ///
@@ -49,6 +40,14 @@ open FsBulletML2.Processable
 /// TODO: 縦横で何を変えるかは未決定。決めて分岐を足すと、上のテストが赤くなる。
 ///       そのときは「変わらない」を固めている控え（shooting-type-no-effect）を
 ///       捨てて、type ごとに違う軌跡を固める控えに置き換えること。
+///
+/// **「type が根の弾と撃たれた子の弾の両方へ届く」1 本 は消した。**
+/// 見ていたのは `IBulletmlObject.ShootingDirection`（弾ごとのプロパティ）で、
+/// **新 API の Core に弾ごとの ShootingDirection は無い**。
+/// 台本に 1 つ あるだけで、要るフロントが自分で写す。
+/// 「2 ホップ目（親 task -> 撃たれた弾の task）を忘れると子だけ未設定になる」
+/// という不具合の形が、届け先が 1 つ しか無い新 API では作れない。
+/// 控えも一緒に落とした（`shooting-type-delivered`）。
 [<TestFixture>]
 type ShootingType() =
 
@@ -65,20 +64,6 @@ type ShootingType() =
   <wait>3</wait>
 </action>
 </bulletml>""" t
-
-  /// type だけ省いたもの。上の bmlOfType と中身を揃えてある（type の有無だけが違う）
-  let noTypeBml = """<?xml version="1.0" ?>
-<!DOCTYPE bulletml SYSTEM "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml/bulletml.dtd">
-<bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
-<action label="top">
-  <fire>
-    <direction type="absolute">30</direction>
-    <speed>2</speed>
-    <bullet/>
-  </fire>
-  <wait>3</wait>
-</action>
-</bulletml>"""
 
   [<Test>]
   member _.``type を none vertical horizontal に振っても軌跡が変わらない``() =
@@ -170,45 +155,3 @@ type ShootingType() =
         TraceRun.std (bmlOfType "diagonal") 2 |> ignore)
     sprintf "例外: %s\nメッセージ: %s" (ex.GetType().Name) ex.Message
     |> Golden.check "shooting-type-unknown"
-
-  /// `<bulletml type>` が弾まで届くか。**根の弾と、撃たれた子の弾の両方**を見る。
-  ///
-  /// 子まで見ないと片手落ちになる。届けるのは 2 ホップあって、
-  ///
-  ///   1  bulletmlTask -> 弾               （run）
-  ///   2  親の task -> 撃たれた弾の task    （createTask）
-  ///
-  /// 2 を入れずに 1 だけ入れた実装でも、**根の弾だけを見る門なら全部 緑になる**。
-  /// 撃たれた弾の task は convertBulletmlTask を通らないので、
-  /// 引き継がないと ShootingDirection が未設定のまま残る。
-  /// これは DU なので、未設定は 0 ではなく null。
-  ///
-  /// type を省いたときは Core の既定（BulletVertical）が出る。
-  /// DTD の既定は "none" だがそちらは採っていない。「縦でも横でもない」は
-  /// 受け取った側が書けることが無いので、意味を持つ 2 つのどちらかに寄せた。
-  [<Test>]
-  member _.``type が根の弾と撃たれた子の弾の両方へ届く``() =
-    let probe (label: string) (xml: string) =
-      // 4 フレームあれば fire が 1 回 走って子が 1 つ産まれ、次のフレームで子も回る
-      let _, bullets = Trace.runWithBullets ignore xml 4
-      let seen =
-        bullets
-        |> List.map (fun b ->
-            let o = b :> IBulletmlObject
-            let v = if isNull (box o.ShootingDirection) then "★null" else string o.ShootingDirection
-            sprintf "b%d=%s" b.Id v)
-      // 0 件を緑にしないための締め。子が産まれていなければ 1 本しか出ない
-      sprintf "%-22s 弾 %d 本  %s" label (List.length bullets) (String.concat " " seen)
-
-    let lines =
-      [ probe "type=vertical"   (bmlOfType "vertical")
-        probe "type=horizontal" (bmlOfType "horizontal")
-        probe "type 省略"        noTypeBml ]
-
-    // 締めの 1 行に「見た弾の数」を出す。0 や 1 なら走査か網が壊れている
-    let total =
-      [ bmlOfType "vertical"; bmlOfType "horizontal"; noTypeBml ]
-      |> List.sumBy (fun x -> Trace.runWithBullets ignore x 4 |> snd |> List.length)
-
-    (String.concat "\n" lines) + sprintf "\n\n見た弾 ぜんぶで %d 本（3 条件 × 根と子）" total
-    |> Golden.check "shooting-type-delivered"

@@ -1,17 +1,19 @@
 namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML2
-open FsBulletML2.Processable
 
-/// $rand と $rank。値そのものは IBulletMLManager から来るので、
+/// $rand と $rank。値そのものは走らせる側が `Env` に載せて渡すので、
 /// ここで見るのは「その値が式のどこに、どう入るか」。
 ///
-/// $rand を含む BulletML は convertBulletmlTask で Original を持たされ、
-/// task.Init() のたびに作り直される（IntermediateParser.existRandomParam）。
-/// **毎周ちがう値になる経路がここにある**ので、固定値でも通り道は測れる。
+/// **NonParallelizable は外した。** 旧は `BulletMLManager`（static mutable）を
+/// SetUp で差し替えていたので逐次でしか走らせられなかったが、いまは
+/// `TraceRun.withRandRank` が引数で受け取る。触るグローバルが 1 つ も無い。
+///
+/// 旧は $rand を含む BulletML だけ `convertBulletmlTask` が `Original` を
+/// 持たせ、`Init()` のたびに作り直していた（`existRandomParam`）。
+/// その迂回路は消えていて、いまは `getValue` が読む位置まで文字のまま届く。
+/// 経路が変わっても控えが 1 バイト も動かないことが、ここの見どころ。
 [<TestFixture>]
-[<NonParallelizable>]
 type RandRank() =
 
   let bml body =
@@ -31,17 +33,14 @@ type RandRank() =
 
   [<Test>]
   member _.``rand が 0 のとき``() =
-    BulletMLManager.Init(FixedManager(0.0f, 0.5f, 30.0f, 100.0f))
-    Trace.run (bml randXml) 6 |> Golden.check "rand-0"
+    TraceRun.withRandRank 0.0f 0.5f (bml randXml) 6 |> Golden.check "rand-0"
 
   [<Test>]
   member _.``rand が 1 のとき``() =
-    BulletMLManager.Init(FixedManager(1.0f, 0.5f, 30.0f, 100.0f))
-    Trace.run (bml randXml) 6 |> Golden.check "rand-1"
+    TraceRun.withRandRank 1.0f 0.5f (bml randXml) 6 |> Golden.check "rand-1"
 
   [<Test>]
   member _.``rank が式に入る``() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.8f, 30.0f, 100.0f))
     bml """<action label="top">
   <fire>
     <direction type="absolute">0</direction>
@@ -50,4 +49,4 @@ type RandRank() =
   </fire>
   <wait>2</wait>
 </action>"""
-    |> fun x -> Trace.run x 6 |> Golden.check "rank-in-expr"
+    |> fun x -> TraceRun.withRandRank 0.5f 0.8f x 6 |> Golden.check "rank-in-expr"

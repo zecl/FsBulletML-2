@@ -1,17 +1,8 @@
 namespace FsBulletML2.Core.Tests
-// 旧 API（IBulletmlObject）の Obsolete 警告を、**このファイルだけ**止める。
-// ここは旧経路を意図して走らせる側だから（新旧を突き合わせる橋の材料）。
-//
-// プロジェクト単位（NoWarn）で止めない。止めると、**新しく書いた試験が
-// うっかり旧 API を使っても警告が出なくなる**。
-// 効きがファイル単位であることは較正済み —— nowarn を置いていない
-// ファイルで旧 API に触ると FS0044 が出る。
-#nowarn "44"
-
+// **nowarn "44" は外した。** このファイルはもう旧 API を通らない。
+// 外しておくと、うっかり旧経路へ戻したときに FS0044 が出る（門になる）。
 
 open NUnit.Framework
-open FsBulletML2
-open FsBulletML2.Processable
 
 /// ref の param に入れた $rand / $rank が、走るたびに読み直されるか。
 ///
@@ -22,10 +13,19 @@ open FsBulletML2.Processable
 ///
 /// そのあと 11 で直した。param を文字のまま子へ渡すようにしたので、
 /// $rand を助けるためのこの迂回路は要らなくなり、`existRandomParam` は消してある。
-/// `Original` は常に None で、`Init()` は既にある木の可変フラグを戻すだけ。
 /// この doc は「何が在ってどう壊れていたか」の記録。控えは直したあとの姿。
+///
+/// **旧 API だけの 2 本 は消した。** どちらも `BulletmlTask.Original` を
+/// 毎周 作り直していた不具合の見張りで、**新 API に Original が無いので
+/// その不具合の形が作れない**（param は文字のまま子へ渡り、`getValue` が
+/// 読む位置まで生き残る）。
+///
+///     param の中身と Original の関係
+///     Original を書き換えて Init すると、次に走るのは書き換えた方
+///
+/// 控えも一緒に落とした（`freeze-original-flag`）。
+/// 「param が凍らない」ことそのものは、残した 8 本 が軌跡で見ている。
 [<TestFixture>]
-[<NonParallelizable>]
 type RefParamFreeze() =
 
   let bml body =
@@ -152,58 +152,6 @@ type RefParamFreeze() =
     |> firedSpeeds
     |> fun s -> s + "\n\n毎フレーム rand を動かしている（f1 で 0.5、f2 で 0.9）。\n3 発とも同じなら、ひと回りの中では 1 回しか転がっていない"
     |> Golden.check "freeze-rand-within-loop"
-
-  /// 挙動の手前で、機構そのものを直に測る。
-  ///
-  /// 11 を直す前は、$rand を含む ref があると convertBulletmlTask が Original に
-  /// 生の XML を持たせ、Init() が毎周 作り直していた（param が展開のとき数へ
-  /// 潰されるので、$rand だけを助けるための仕組み）。
-  /// param を文字のまま渡すようにしたので、この仕組みは要らなくなった。
-  /// existRandomParam は消してあり、Original は常に None になる
-  [<Test>]
-  member _.``param の中身と Original の関係``() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
-    let probe (name: string) (expr: string) =
-      let task = BulletRunner.convertBulletmlTask (readXmlString (bml (viaParam expr)))
-      sprintf "  %-24s Original = %s" name (if task.Original.IsSome then "Some（作り直す）" else "None（持ち回る）")
-    [ "param の中身と、その BulletML が Original を持たされるか"
-      ""
-      probe "<param>3</param>" "3"
-      probe "<param>$rand</param>" "$rand"
-      probe "<param>$rank</param>" "$rank"
-      probe "<param>1+$rand*2</param>" "1+$rand*2"
-      probe "<param>1+$rank*2</param>" "1+$rank*2"
-      ""
-      "11 を直したので、どの param でも Original は None。"
-      "param は文字のまま子へ渡り、getValue が読む位置まで生き残る" ]
-    |> String.concat "\n"
-    |> Golden.check "freeze-original-flag"
-
-  /// Original / Init は public であり（すぐ上の ResolveBulletRef 等が
-  /// internal なのとは違う）、`t.Original <- Some xml2; t.Init(env)` は
-  /// 公開面だけで組める。エンジン自身の経路（createTask / convertBulletmlTask）
-  /// が Original を Some にしないことは、外から Some を書けないことを
-  /// 意味しない。旧の Init の Some 腕（`this.Tasks <- toProcessable x`）が
-  /// 実際に効くかを、ここで直に確かめる
-  [<Test>]
-  member _.``Original を書き換えて Init すると、次に走るのは書き換えた方``() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
-    let xml1 = bml """<action label="top"><fire><direction type="absolute">0</direction><speed>1</speed><bullet/></fire></action>"""
-    let xml2 = bml """<action label="top"><fire><direction type="absolute">90</direction><speed>9</speed><bullet/></fire></action>"""
-    let born = System.Collections.Generic.List<FakeBullet>()
-    let b = FakeBullet(0, born)
-    let o = b :> IBulletmlObject
-    o.Init()
-    let task = BulletRunner.convertBulletmlTask (readXmlString xml1)
-    o.Task <- Some task
-    task.Original <- Some (readXmlString xml2)
-    task.Init(BulletRunner.envOfGlobal o)
-    BulletRunner.run o |> ignore
-    Assert.That(born.Count, Is.EqualTo 1, "1 発 撃っているはず")
-    let fired = born.[0] :> IBulletmlObject
-    // xml1 のままなら d=0 s=1、xml2 に切り替わっていれば d=pi/2 s=9
-    Assert.That(float fired.Speed, Is.EqualTo(9.0).Within(0.001), "xml1 のまま走っている（Original の書き換えが効いていない）")
-    Assert.That(float fired.Dir, Is.EqualTo(System.Math.PI / 2.0).Within(0.001), "xml1 のまま走っている（Original の書き換えが効いていない）")
 
   /// 11 を直す代償を測る。
   ///
