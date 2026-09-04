@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML2.Bullets.Dsl</RootNamespace>
+    <AssemblyName>FsBulletML2.Bullets.Dsl</AssemblyName>
+    <Version>0.1.1</Version>
+    <Product>FsBulletML2.Bullets.Dsl</Product>
+    <Description>The bundled BulletML patterns, written with the FsBulletML2.Dsl computation expressions.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Bulletsmorph.fs" />
+    <Compile Include="ChaosSeed.fs" />
+    <Compile Include="Daiouzyou.fs" />
+    <Compile Include="Dodonpachi.fs" />
+    <Compile Include="DragonBlaze.fs" />
+    <Compile Include="EspRade.fs" />
+    <Compile Include="Garegga.fs" />
+    <Compile Include="GDarius.fs" />
+    <Compile Include="GigaWing2.fs" />
+    <Compile Include="Guwange.fs" />
+    <Compile Include="GWange.fs" />
+    <Compile Include="KetuiLt.fs" />
+    <Compile Include="MDA.fs" />
+    <Compile Include="Noiz2sa.fs" />
+    <Compile Include="Original.fs" />
+    <Compile Include="OtakuTwo.fs" />
+    <Compile Include="Progear.fs" />
+    <Compile Include="Psyvariar.fs" />
+    <Compile Include="SilverGun.fs" />
+    <Compile Include="StormCalibar.fs" />
+    <Compile Include="Strikers1999.fs" />
+    <Compile Include="Tenmado.fs" />
+    <Compile Include="Xevious.fs" />
+    <Compile Include="XiiStag.fs" />
+    <Compile Include="Xsoldier.fs" />
+    <Compile Include="Others.fs" />
+    <Compile Include="Player.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
+  </ItemGroup>
+</Project>

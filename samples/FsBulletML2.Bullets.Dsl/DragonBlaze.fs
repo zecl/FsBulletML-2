@@ -1,0 +1,61 @@
+// **このファイルは生成物。手で直すと次の焼き直しで消える。**
+//
+// samples/FsBulletML2.Bullets の同名ファイルから、焼いたアセンブリの値を
+// 読んで CE の構文へ写している。元の .fs から拾うのは namespace / module /
+// 値の名前 / doc コメントだけ。
+//
+// 焼き直し:
+//     dotnet build samples/FsBulletML2.Bullets -c Release
+//     dotnet fsi samples/FsBulletML2.Bullets.Dsl/gen.fsx
+//
+// **焼き直したら必ず tests/FsBulletML2.Dsl.Tests を回すこと。**
+// 元と同じ木になることは、あそこが 179 個 を 1 個 ずつ突き合わせて言う。
+
+namespace FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun
+open FsBulletML2
+open FsBulletML2.Dsl
+
+/// 白い弾幕くんより
+/// DragonBlaze
+[<RequireQualifiedAccess>]
+module DragonBlaze =
+
+  /// ドラゴンブレイズのネビュロス第二形態かも。by 白い弾幕くん
+  /// [DragonBlaze]_nebyurosu_2.xml
+  let nebyurosu_2 =
+    createBulletmlInfo <|
+    verticalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "ドラゴンブレイズのネビュロス第二形態かも。by 白い弾幕くん" {
+        defAction "add3" {
+            repeat "3" {
+                fire {
+                    sequence "90"
+                    speedSeq "0"
+                    plain
+                }
+            }
+        }
+        defAction "top1" {
+            repeat "150" {
+                fire {
+                    sequence "4"
+                    speed "1+$rank"
+                    plain
+                }
+                actionRef "add3" []
+                wait "2"
+            }
+            wait "60-$rank*30"
+        }
+        defAction "top2" {
+            repeat "150" {
+                fire {
+                    sequence "-5"
+                    speed "1+$rank"
+                    plain
+                }
+                actionRef "add3" []
+                wait "2"
+            }
+            wait "60-$rank*30"
+        }
+    }

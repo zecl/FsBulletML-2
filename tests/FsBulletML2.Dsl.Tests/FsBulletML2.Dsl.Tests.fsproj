@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>FsBulletML2.Dsl.Tests</RootNamespace>
+    <AssemblyName>FsBulletML2.Dsl.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BulletsEquivalence.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="FsUnit" Version="5.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
+    <ProjectReference Include="..\..\samples\FsBulletML2.Bullets\FsBulletML2.Bullets.fsproj" />
+    <ProjectReference Include="..\..\samples\FsBulletML2.Bullets.Dsl\FsBulletML2.Bullets.Dsl.fsproj" />
+  </ItemGroup>
+</Project>
