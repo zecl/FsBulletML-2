@@ -114,9 +114,31 @@ public static class BulletSmokeCheck
             }
         }
 
+        // **エンジンが 1 コマ に何 ms 使うか。** 描画も ECS も通さない値なので、
+        // 「FPS が出ない」の出どころがエンジンかどうかを割るのに使う。
+        // 60 FPS の予算は 16.7 ms、40 FPS なら 25 ms
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var laps = 0;
+        for (int frame = 0; frame < 60; frame++)
+        {
+            var count = live.Count;
+            for (int i = 0; i < count; i++)
+            {
+                if (live[i].Used)
+                {
+                    // 産まれた弾は数えるだけにする。ここで増やすと 2 倍 に膨らむ
+                    live[i].Step((p, c) => { });
+                    laps++;
+                }
+            }
+        }
+        sw.Stop();
+        var msPerFrame = sw.Elapsed.TotalMilliseconds / 60.0;
+
         Debug.Log(string.Format(
-            "[BulletSmokeCheck] {0}: 60 コマ で 撃った {1} 発 / 場に {2} 本 / 動いた {3} 本",
-            label, born, live.Count, moved));
+            "[BulletSmokeCheck] {0}: 60 コマ で 撃った {1} 発 / 場に {2} 本 / 動いた {3} 本"
+            + " / エンジンだけで 1 コマ {4:F3} ms（弾 {5} 本 を回した。60 FPS の予算 16.7 ms）",
+            label, born, live.Count, moved, msPerFrame, live.Count));
 
         // **0 件 を緑にしない。** 撃たない・動かないなら、受け渡しのどこかが
         // 切れている（コンパイルは通るので、ここでしか出ない）
