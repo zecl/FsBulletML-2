@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2.Unity2D
+namespace FsBulletML2.Unity2D
 open System
 open System.Linq 
 open System.Collections.Generic
@@ -10,7 +10,27 @@ type ObjectData () =
   [<DefaultValue>]val mutable public cacheSize : int
   [<DefaultValue>]val mutable private objects : GameObject[]
 
-  member this.Initialize () = 
+  /// この prefab が弾（または爆風）か。**弾を ECS へ移したので、
+  /// ここに挙げた tag のものは先に作らない。**
+  ///
+  /// シーンには弾のプールが 3,000 個 単位 で設定されたまま残っていて、
+  /// そのままだと `g_bullet_s0` から数千 個 の GameObject が起動時にできる
+  /// —— **1 つ も使われない**（弾は Entity になった）。
+  /// 同梱の C# サンプルも同じ判定を持っている。
+  member this.IsBulletPrefab () =
+    if isNull (box this.prefab) then true
+    else
+      let tag = this.prefab.tag
+      tag = "EnemyBullet" || tag = "PlayerBullet" || tag = "Bomb"
+
+  member this.Initialize () =
+    if this.IsBulletPrefab () then
+      // **数を 0 にしておく。** 残すと GetNextObjectInCache が空の配列を
+      // 探して落ちる
+      this.objects <- Array.empty
+      this.cacheSize <- 0
+    else
+
     this.objects <- Array.zeroCreate this.cacheSize
 
     for i in 0..this.cacheSize-1 do

@@ -137,6 +137,10 @@ type BulletEcsBootstrap () =
       let go = new GameObject("BulletEcsBootstrap")
       UnityEngine.Object.DontDestroyOnLoad go
       go.AddComponent<BulletEcsBootstrap>() |> ignore
+      // **ここが出ないなら、この属性が Unity に拾われていない。**
+      // F# の static member に付けた属性が効いているかを、
+      // 画面ではなくログで確かめられるようにする
+      Debug.Log "BulletEcsBootstrap: AutoCreate で作った"
 
   member this.Awake () = this.Configure ()
 
@@ -181,3 +185,12 @@ type BulletEcsBootstrap () =
       else existing
     driver.player <- player
     driver.enemy <- enemy
+
+    // **どこで切れているかを 1 行 で読めるようにする。**
+    // 弾が出ないとき、原因は「World が無い」「Configure が届いていない」
+    // 「自機か敵が見つからない」のどれか。画面からは区別がつかない
+    let world = World.DefaultGameObjectInjectionWorld
+    Debug.Log(
+      sprintf "BulletEcsBootstrap: world=%s ready=%b player=%b enemy=%b"
+        (if isNull (box world) then "無し" else world.Name)
+        BulletEntityFactory.IsReady hasPlayer hasEnemy)

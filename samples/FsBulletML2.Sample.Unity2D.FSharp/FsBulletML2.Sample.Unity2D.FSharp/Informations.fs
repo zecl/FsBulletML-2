@@ -60,6 +60,13 @@ type Informations () =
     // ここは inspector で変えた値を反映するための上書き
     let fps = if this.targetFps > 0 then this.targetFps else Informations.DefaultTargetFps
     Informations.ApplyCap fps
+
+    // **ECS の下ごしらえを、シーンに確実に居るここからも起こす。**
+    // BulletEcsBootstrap は [<RuntimeInitializeOnLoadMethod>] で自分を作るが、
+    // **F# の static member に付けた属性を Unity が拾うかは自明でない。**
+    // 拾われていれば AutoCreate は 2 度目 を弾くので、二重には作られない。
+    // これが無いと、弾が「作られるが描かれず動かない」状態になる
+    BulletEcsBootstrap.AutoCreate ()
     this.enemy <- UnityEngine.Object.FindAnyObjectByType<Enemy>()
     this.player <- UnityEngine.Object.FindAnyObjectByType<Player>()
     this.useGUILayout <- false
