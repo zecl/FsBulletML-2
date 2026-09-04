@@ -1,6 +1,5 @@
 ﻿namespace FsBulletML2.Core.Tests
 
-open System
 open System.Globalization
 open System.Text.RegularExpressions
 open System.Threading

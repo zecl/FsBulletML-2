@@ -1,12 +1,7 @@
 ﻿namespace FsBulletML2
 
-open System
 open System.IO 
 open System.Text 
-open System.Text.RegularExpressions
-open FParsec
-open FParsec.Internals
-open FParsec.Error
 open FParsec.Primitives
 open FParsec.CharParsers
 

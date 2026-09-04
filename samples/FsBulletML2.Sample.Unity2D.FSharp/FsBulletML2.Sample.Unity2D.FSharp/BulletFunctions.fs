@@ -1,9 +1,6 @@
 ﻿namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
-open System.Collections.Generic
-open System.Diagnostics
-open UnityEngine
 open FsBulletML2
 
 /// BulletFunctions が要るのは Player という型そのものではなく、

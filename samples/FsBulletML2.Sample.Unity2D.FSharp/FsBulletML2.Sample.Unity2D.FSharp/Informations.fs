@@ -6,7 +6,6 @@ open R3
 // **R3 のあとに開くこと**（`Observable` が両方にある。FrameTicker の但し書き）
 open FSharp.Control.R3
 open UnityEngine
-open FsBulletML2
 
 /// 窓 1 つ ぶんの測り。**毎コマ ではなく、窓が閉じたときだけ作る。**
 ///

@@ -1,5 +1,4 @@
 ﻿namespace FsBulletML2
-open FsBulletML2.DTD
 // 定数を畳む段の小さい関数を、param の差し込みでも使う。
 // module をまたぐので開いておく
 open FsBulletML2.IntermediateParser

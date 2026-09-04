@@ -1,6 +1,5 @@
 namespace FsBulletML2.Core.Tests
 
-open System.Collections.Generic
 open FsBulletML2
 
 /// $rand / $rank / 自機位置を固定する。BulletMLManager は static mutable なので

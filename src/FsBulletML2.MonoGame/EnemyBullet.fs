@@ -1,9 +1,5 @@
 ﻿namespace FsBulletML2.MonoGame
 
-open System
-open System.Collections.Generic
-open System.Runtime.Serialization
-open Microsoft.Xna.Framework
 open FsBulletML2
  
 type EnemyBullet () as this =

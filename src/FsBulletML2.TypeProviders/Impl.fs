@@ -7,11 +7,7 @@ type Style =
 
 open System
 open System.IO
-open System.Xml
-open System.Xml.Resolvers
-open System.Xml.Linq
 open System.Reflection
-open System.ComponentModel
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes
 open FsBulletML2

@@ -1,7 +1,6 @@
 ﻿module AssemblyInfo
 open System.Resources
 open System.Reflection
-open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open Microsoft.FSharp.Core.CompilerServices
 

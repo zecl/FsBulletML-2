@@ -3,7 +3,6 @@ namespace FsBulletML2.Core.Tests
 open NUnit.Framework
 open FsUnit
 open FsBulletML2
-open FsBulletML2.DTD
 open FsBulletML2.Domain
 
 /// fire は撃つ側の状態と撃たれた弾の両方を決める。

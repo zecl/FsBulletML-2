@@ -3,7 +3,6 @@
 open NUnit.Framework
 open FsUnit
 open FsBulletML2
-open FsBulletML2.DTD
 open FsBulletML2.Domain
 
 /// 命令を 1 つずつ、落とした `BulletRunner` と同じ形で動くかを見る。

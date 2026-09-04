@@ -1,6 +1,5 @@
 namespace FsBulletML2.Sample.Unity2D.FSharp
 
-open System
 open R3
 // **R3 のあとに開くこと**（`Observable` が両方にある。FrameTicker の但し書き）
 open FSharp.Control.R3

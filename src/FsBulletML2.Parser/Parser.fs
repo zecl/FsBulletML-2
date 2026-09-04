@@ -1,14 +1,8 @@
 ﻿namespace FsBulletML2
 
-open System
-open System.IO 
-open System.Text 
 open System.Xml
-open System.Text.RegularExpressions
-open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open FParsec
-open FsBulletML2
 
 [<AutoOpen>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

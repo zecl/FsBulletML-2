@@ -1,6 +1,5 @@
 ﻿namespace FsBulletML2
 
-open FsBulletML2.DTD
 open FsBulletML2.Domain
 
 /// 弾の物理量。フロントが持ち、毎コマ渡して毎コマ受け取る。

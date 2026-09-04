@@ -1,5 +1,4 @@
 namespace FsBulletML2.Bullets.Dsl.PlayerBullet
-open FsBulletML2
 open FsBulletML2.Dsl
 
 /// その他

@@ -1,6 +1,5 @@
 namespace FsBulletML2
 
-open FsBulletML2.DTD
 open FsBulletML2.Domain
 open FsBulletML2.Processable
 

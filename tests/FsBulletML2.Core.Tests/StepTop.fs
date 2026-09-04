@@ -3,7 +3,6 @@
 open NUnit.Framework
 open FsUnit
 open FsBulletML2
-open FsBulletML2.DTD
 open FsBulletML2.Domain
 
 /// top* の走査と、1 コマの結果の組み立て。

@@ -2,7 +2,6 @@
 
 open UnityEngine
 open System
-open System.Collections.Generic
 open Microsoft.FSharp.Core.Operators.Unchecked
 open FsBulletML2
 open FsBulletML2.Domain

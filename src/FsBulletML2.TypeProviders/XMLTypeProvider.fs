@@ -4,8 +4,6 @@
 namespace FsBulletML2.TypeProviders
 
 open System.IO
-open System.Xml
-open System.Xml.Resolvers
 open System.Reflection
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes

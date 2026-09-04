@@ -2,7 +2,6 @@ namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 open FsUnit
-open FsBulletML2
 open FsBulletML2.DTD
 open FsBulletML2.Domain
 

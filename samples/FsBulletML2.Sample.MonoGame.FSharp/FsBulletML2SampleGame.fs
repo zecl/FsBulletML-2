@@ -2,7 +2,6 @@
 
 open System
 open System.Collections.Generic
-open System.Runtime.Serialization
 open Microsoft.FSharp.Core.Operators.Unchecked 
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Input

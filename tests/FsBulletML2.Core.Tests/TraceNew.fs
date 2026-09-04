@@ -5,7 +5,6 @@ open System.Collections.Generic
 open System.Globalization
 open System.Text
 open FsBulletML2
-open FsBulletML2.DTD
 open FsBulletML2.Domain
 
 /// 新経路で、Trace と同じ書式の軌跡を作る。

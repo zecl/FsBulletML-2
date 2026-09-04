@@ -1,9 +1,6 @@
 ﻿namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open UnityEngine
-open System
-open System.Collections.Generic 
-open FsBulletML2
 open FsBulletML2.Unity2D 
 
 [<AbstractClass>]

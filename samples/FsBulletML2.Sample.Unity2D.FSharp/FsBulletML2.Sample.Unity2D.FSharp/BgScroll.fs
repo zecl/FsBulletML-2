@@ -1,7 +1,5 @@
 namespace FsBulletML2.Sample.Unity2D.FSharp
 
-open System
-open R3
 open UnityEngine
 
 type BgScroll () =

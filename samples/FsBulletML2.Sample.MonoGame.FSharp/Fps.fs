@@ -1,8 +1,5 @@
 ﻿namespace FsBulletML2.Sample.MonoGame.FSharp
 
-open System
-open Microsoft.Xna.Framework
-open Microsoft.Xna.Framework.Graphics
 
 type Fps () as this =
   [<DefaultValue>]val mutable value : float32

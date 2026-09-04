@@ -1,5 +1,4 @@
 ﻿namespace FsBulletML2
-open System
 
 [<AutoOpen>]
 module AST = 

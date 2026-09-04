@@ -1,7 +1,6 @@
 namespace FsBulletML2.Core.Tests
 
 open FsBulletML2
-open FsBulletML2.DTD
 open FsBulletML2.Domain
 
 /// 命令 1 つを、台本まるごとの形で走らせるための試験用の入口。

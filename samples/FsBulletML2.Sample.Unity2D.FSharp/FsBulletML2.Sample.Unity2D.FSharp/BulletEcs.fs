@@ -1,14 +1,8 @@
 namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
-open System.Collections.Generic
-open Unity.Collections
 open Unity.Entities
-open Unity.Mathematics
-open Unity.Rendering
-open Unity.Transforms
 open UnityEngine
-open UnityEngine.Rendering
 open FsBulletML2
 open FsBulletML2.Domain
 // Settings.Display.PixcelsToUnits（座標の係数）はこちら

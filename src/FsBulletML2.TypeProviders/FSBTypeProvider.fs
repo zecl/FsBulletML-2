@@ -7,7 +7,6 @@ open System.IO
 open System.Reflection
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes
-open FsBulletML2
 
 [<TypeProvider>]
 type FSBTypeProvider(config: TypeProviderConfig) as this =

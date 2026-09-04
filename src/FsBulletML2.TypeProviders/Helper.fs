@@ -1,9 +1,6 @@
 ﻿namespace FsBulletML2.TypeProviders
 open System
 open System.IO
-open System.Runtime.CompilerServices
-open ProviderImplementation.ProvidedTypes
-open System.ComponentModel
 
 [<CompilerMessage("hidden...", 13730, IsError = false, IsHidden = true)>]
 type Context (onChanged : unit -> unit) = 

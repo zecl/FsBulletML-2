@@ -2,9 +2,7 @@
 
 open System
 open System.Collections.Generic
-open System.Runtime.Serialization
 open UnityEngine
-open FsBulletML2
 
 module Manager =
 

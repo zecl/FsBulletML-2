@@ -2,7 +2,6 @@
 
 open System
 open System.Collections.Generic 
-open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Graphics
 
 type ParticleEmitter () as this =

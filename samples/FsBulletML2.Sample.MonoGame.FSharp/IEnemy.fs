@@ -1,5 +1,4 @@
 ﻿namespace FsBulletML2.Sample.MonoGame.FSharp
-open FsBulletML2
 open FsBulletML2.MonoGame
 
 type IEnemy =

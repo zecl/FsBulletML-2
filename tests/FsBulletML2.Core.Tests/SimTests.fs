@@ -3,7 +3,6 @@
 open NUnit.Framework
 open FsUnit
 open FsBulletML2
-open FsBulletML2.DTD
 open FsBulletML2.Domain
 
 /// Sim は Reader + State + Writer を 1 本に畳んだもの。

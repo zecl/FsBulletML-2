@@ -1,13 +1,10 @@
 namespace FsBulletML2.Core.Tests
 
-open System.Collections.Generic
 open System.IO
 open System.Security.Cryptography
 open System.Text
 open NUnit.Framework
 open FsUnit
-open FsBulletML2
-open FsBulletML2.Processable
 
 /// 227 本の実物を突き合わせる橋。突き合わせる相手は 2 種類あり、
 /// 意味がまったく違う。

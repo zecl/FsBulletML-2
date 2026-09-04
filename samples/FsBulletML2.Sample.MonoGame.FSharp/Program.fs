@@ -1,6 +1,5 @@
 ﻿namespace FsBulletML2.Sample.MonoGame.FSharp
 
-open Microsoft.Xna.Framework
 open FsBulletML2
 
 module Program =

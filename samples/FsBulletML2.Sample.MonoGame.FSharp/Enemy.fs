@@ -1,8 +1,6 @@
 ﻿namespace FsBulletML2.Sample.MonoGame.FSharp
 
-open System
 open System.Collections.Generic
-open System.Runtime.Serialization
 open Microsoft.Xna.Framework
 open FsBulletML2
 open FsBulletML2.MonoGame

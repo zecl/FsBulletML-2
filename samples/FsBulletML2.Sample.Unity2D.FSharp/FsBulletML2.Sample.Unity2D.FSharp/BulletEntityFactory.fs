@@ -1,6 +1,5 @@
 namespace FsBulletML2.Sample.Unity2D.FSharp
 
-open System
 open Unity.Collections
 open Unity.Entities
 open Unity.Mathematics
