@@ -143,6 +143,8 @@ namespace UnityEngine
     public static class Time
     {
         public static float deltaTime => 0f;
+        /// <summary>Time.timeScale の影響を受けない実時間。fps を数えるのに使う</summary>
+        public static float unscaledDeltaTime => 0f;
         public static float realtimeSinceStartup => 0f;
     }
 
@@ -150,6 +152,31 @@ namespace UnityEngine
     {
         public static int targetFrameRate { get; set; }
         public static bool isPlaying => false;
+    }
+
+    /// <summary>
+    /// fps の上限を掛けるとき、targetFrameRate より<b>先に</b>切る必要がある
+    /// —— vSyncCount が 1 以上 だと Unity は targetFrameRate を無視する。
+    /// </summary>
+    public static class QualitySettings
+    {
+        public static int vSyncCount { get; set; }
+    }
+
+    public enum RuntimeInitializeLoadType
+    {
+        AfterSceneLoad = 0,
+        BeforeSceneLoad = 1,
+        AfterAssembliesLoaded = 2,
+        BeforeSplashScreen = 3,
+        SubsystemRegistration = 4,
+    }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class RuntimeInitializeOnLoadMethodAttribute : Attribute
+    {
+        public RuntimeInitializeOnLoadMethodAttribute() {}
+        public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType loadType) {}
     }
 
     public static class Input

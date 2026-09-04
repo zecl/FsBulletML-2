@@ -28,6 +28,12 @@
     <ProjectReference Include="..\..\..\src\UnityEngine.Stub\UnityEngine.Stub.csproj" Condition="'$(UseRealUnity)' != 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseRealUnity)' == 'true'">
+    <!-- RuntimeInitializeOnLoadMethod が PreserveAttribute を要求する。
+         属性そのものは CoreModule に在るが、その基底がこちらに居る -->
+    <Reference Include="Unity.Scripting">
+      <HintPath>$(UnityManaged)\Unity.Scripting.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.MathematicsModule">
       <HintPath>$(UnityManaged)\UnityEngine.MathematicsModule.dll</HintPath>
       <Private>false</Private>
