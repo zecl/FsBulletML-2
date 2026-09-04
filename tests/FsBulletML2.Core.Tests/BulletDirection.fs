@@ -2,7 +2,6 @@
 
 open System.Text.RegularExpressions
 open NUnit.Framework
-open FsBulletML2.Processable
 
 /// bullet 要素の中に書いた direction が、弾の向きに入るか。
 ///

@@ -5,7 +5,6 @@ open System.Globalization
 open System.Text.RegularExpressions
 open System.Threading
 open NUnit.Framework
-open FsBulletML2.Processable
 
 /// 式の評価がカルチャに影響されるか。
 ///

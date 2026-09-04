@@ -1,7 +1,6 @@
 ﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML2.Processable
 
 /// 骨が通るかを見る 1 本。
 /// 公開 API で走らせるのでグローバル可変に触らない。並列に走る。

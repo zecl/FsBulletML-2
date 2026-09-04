@@ -4,7 +4,6 @@ open System.Globalization
 // DTD は AutoOpen だが、open System が先に来るので Action が System.Action に
 // 取られる。DU のほうを指すよう明示で開き直す
 open FsBulletML2.DTD
-open FsBulletML2.Processable
 
 /// **XML を読んで木にし、定数を畳むところまで。**
 /// 木の上の操作は BulletmlOps.fs へ切り出した。

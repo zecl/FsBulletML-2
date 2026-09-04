@@ -9,7 +9,6 @@ open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open FParsec
 open FsBulletML2
-open FsBulletML2.Processable 
 
 [<AutoOpen>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

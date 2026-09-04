@@ -1,7 +1,6 @@
 ﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML2.Processable
 
 /// 走らせる側の振る舞いを軌跡で固める。
 ///

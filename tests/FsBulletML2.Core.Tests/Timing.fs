@@ -2,7 +2,6 @@
 
 open System.Text.RegularExpressions
 open NUnit.Framework
-open FsBulletML2.Processable
 
 /// wait が何フレーム効くかを、発射の間隔として固める。
 ///

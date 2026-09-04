@@ -1,7 +1,6 @@
 ﻿namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
-open FsBulletML2.Processable
 
 /// bulletRef / actionRef / fireRef と、そこへ渡すパラメータ（$1 $2 …）の展開。
 /// IntermediateParser がいちばん大きく、参照の解決はそこに居る。
