@@ -57,10 +57,10 @@ module TraceApi =
   /// `FakeBullet.GetSpawnAimDir` は呼ばれるたびに自機の位置を読むので、
   /// 走行前に 1 回 計算して使い回すと、自機が動く走行で値が割れる。
   /// `run` が使い回せていたのは px / py が固定だったから。
-  let runWithParams (onFrame: int -> unit)
-                    (rand: unit -> float32) (rank: unit -> float32)
-                    (px: unit -> float32) (py: unit -> float32)
-                    (xml: string) (frames: int) : string =
+  let runDetailed (rootKind: BulletType) (onFrame: int -> unit)
+                  (rand: unit -> float32) (rank: unit -> float32)
+                  (px: unit -> float32) (py: unit -> float32)
+                  (xml: string) (frames: int) : string * Body list =
     // 産まれた弾がどこに出るかは、対になる FakeBullet.GetNewBullet が決める。
     // あちらは位置を入れずに作るので原点。同じ式に原点を入れた値を載せる
     let spawnAim () = aimDir (px ()) (py ()) 0.0f 0.0f
@@ -87,6 +87,9 @@ module TraceApi =
 
     let all = List<Live>()
     all.Add { Run = Runner.newRoot script; X = 0.0f; Y = 0.0f; Alive = true; Id = 0 }
+    // 産まれた弾の Body を産まれた順に控える。軌跡の文字列には出ない面
+    // （BulletType など）を見る試験のため
+    let spawnedBodies = List<Body>()
     let sb = StringBuilder()
     let mutable seen = 1
 
@@ -98,7 +101,11 @@ module TraceApi =
         let b = all.[j]
         if b.Alive then
           // 物理量はフロントが持っている。毎コマ入れ直す（旧の stateOfBullet）
-          let body = { b.Run.Body with Pos = { X = b.X; Y = b.Y } }
+          // 根の種別だけ差し替える。撃たれた弾は Core が親から継ぐので触らない
+          // （旧は o.BulletType <- Player を 1 回 置いて、run が毎コマ 読んでいた）
+          let body =
+            if b.Id = 0 then { b.Run.Body with Pos = { X = b.X; Y = b.Y }; Kind = rootKind }
+            else { b.Run.Body with Pos = { X = b.X; Y = b.Y } }
           // **同梱フロントと同じ skip をここでも通す。** 通さないと、この橋は
           // 本番と違う経路を見ることになり、skip の条件が間違っていても
           // 227 本 が緑のまま通ってしまう（BulletRun.HasNoScript の但し書き）
@@ -121,6 +128,7 @@ module TraceApi =
           if f.Vanished then sb.Append(" vanish") |> ignore
           sb.AppendLine() |> ignore
           for child in f.Spawned do
+            spawnedBodies.Add child.Body
             all.Add { Run = child
                       X = child.Body.Pos.X
                       Y = child.Body.Pos.Y
@@ -131,9 +139,34 @@ module TraceApi =
         sb.AppendLine(sprintf "  +b%d d=%s s=%s" b.Id (fmt b.Run.Body.Dir) (fmt b.Run.Body.Speed)) |> ignore
         seen <- seen + 1
 
-    sb.ToString().Replace("\r\n", "\n")
+    sb.ToString().Replace("\r\n", "\n"), List.ofSeq spawnedBodies
 
-  /// 値を動かさない走行。runWithParams の薄い包み。
+  /// 根は敵。軌跡だけ要るとき
+  let runWithParams (onFrame: int -> unit)
+                    (rand: unit -> float32) (rank: unit -> float32)
+                    (px: unit -> float32) (py: unit -> float32)
+                    (xml: string) (frames: int) : string =
+    runDetailed BulletType.Enemy onFrame rand rank px py xml frames |> fst
+
+  /// 根の種別を変えて回し、**産まれた弾だけ**を産まれた順に出す。
+  ///
+  /// 標準の軌跡には種別の列が無いので別口にしてある。`run` は根を敵で
+  /// 組む（`Api.load` の `RootState` が `BulletType.Enemy` 固定）ので、
+  /// Player を見る試験はここを通る。
+  ///
+  /// 書式は旧の `PlayerAndTops.runAsPlayer` をそのまま写す。違うと控えが
+  /// 全行 動いて、移植が正しいかを読めなくなる
+  let runSpawnedAs (kind: BulletType) (rand: unit -> float32) (rank: float32)
+                   (px: float32) (py: float32) (xml: string) (frames: int) : string =
+    let _, bodies =
+      runDetailed kind ignore rand (fun () -> rank) (fun () -> px) (fun () -> py) xml frames
+    bodies
+    |> List.mapi (fun i (b: Body) ->
+        sprintf "+b%d d=%s s=%s type=%A" (i + 1) (fmt b.Dir) (fmt b.Speed) b.Kind)
+    |> String.concat "\n"
+    |> fun s -> if s = "" then s else s + "\n"
+
+  /// 値を動かさない走行。runDetailed の薄い包み。
   ///
   /// **橋 227 本 と Golden の大半がここを通る。** 包みにしたあとも
   /// 出力が 1 バイト も動かないことは、それらが緑であることで押さえている

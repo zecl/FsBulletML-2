@@ -1,18 +1,9 @@
-﻿namespace FsBulletML2.Core.Tests
-// 旧 API（IBulletmlObject）の Obsolete 警告を、**このファイルだけ**止める。
-// ここは旧経路を意図して走らせる側だから（新旧を突き合わせる橋の材料）。
-//
-// プロジェクト単位（NoWarn）で止めない。止めると、**新しく書いた試験が
-// うっかり旧 API を使っても警告が出なくなる**。
-// 効きがファイル単位であることは較正済み —— nowarn を置いていない
-// ファイルで旧 API に触ると FS0044 が出る。
-#nowarn "44"
+namespace FsBulletML2.Core.Tests
+// **nowarn "44" は外した。** このファイルはもう旧 API を通らない。
+// 外しておくと、うっかり旧経路へ戻したときに FS0044 が出る（門になる）。
 
-
-open System.Collections.Generic
 open NUnit.Framework
 open FsBulletML2
-open FsBulletML2.Processable
 
 /// ここまでの控えが 1 度も通っていなかった 2 つ。
 ///
@@ -21,8 +12,9 @@ open FsBulletML2.Processable
 ///
 ///   label が "top" で始まる action が複数あるとき（convertBulletmlTask の taskActions）
 ///     StartsWith("top") で拾うので top / top1 / top2 が全部 task になる
+// NonParallelizable は外した。**global（BulletMLManager）を触らなくなった**
+// ので、逐次でなければならない理由が無い
 [<TestFixture>]
-[<NonParallelizable>]
 type PlayerAndTops() =
 
   let bml body =
@@ -32,7 +24,7 @@ type PlayerAndTops() =
 """ + body + "\n</bulletml>"
 
   let runOr frames xml =
-    try Trace.run xml frames
+    try TraceRun.std xml frames
     with e ->
       let rec inner (x: exn) = if isNull x.InnerException then x else inner x.InnerException
       let i = inner e
@@ -44,40 +36,15 @@ type PlayerAndTops() =
     |> Array.map (fun l -> l.Trim())
     |> String.concat "\n"
 
-  /// 根の弾を Player にして回す。Trace.run は Enemy 固定なのでここだけ自前で組む。
+  /// 根の弾を Player にして回す。**Trace.run / TraceApi.run は根を敵で組む**
+  /// （Api.load の RootState が BulletType.Enemy 固定）ので、ここだけ別口。
+  ///
+  /// 旧は IBulletmlObject を自前で組んでゲームループを回していた。
+  /// 新 API では根の Body の Kind を差し替えるだけで足りる
+  /// —— 撃たれた弾の種別は Core が親から継ぐ。
+  /// 自機 (30,100)。敵は FakeEnemy が (-40,-60) に置いている
   let runAsPlayer (xml: string) (frames: int) =
-    let born = List<FakeBullet>()
-    let root = FakeBullet(0, born)
-    let o = root :> IBulletmlObject
-    o.Init()
-    o.BulletType <- BulletType.Player
-    o.Task <- BulletRunner.convertBulletmlTaskOption (readXmlString xml)
-    let acc = System.Text.StringBuilder()
-    let mutable seen = 0
-    for _ in 1 .. frames do
-      let live = Array.append [| root |] (born.ToArray())
-      for b in live do
-        let bo = b :> IBulletmlObject
-        if bo.Used then
-          match bo.Task with
-          | None -> ()
-          | Some task ->
-            let r = BulletRunner.run bo
-            bo.X <- bo.X + r.X
-            bo.Y <- bo.Y + r.Y
-            // envOfGlobal は public。組み直さずここを通す（位置更新のあとの bo から組む）
-            if r.Processed then task.Init(BulletRunner.envOfGlobal bo)
-      while seen < born.Count do
-        let b = born.[seen]
-        let bo = b :> IBulletmlObject
-        acc.AppendLine(sprintf "+b%d d=%.3f s=%.3f type=%A" b.Id bo.Dir bo.Speed bo.BulletType) |> ignore
-        seen <- seen + 1
-    acc.ToString().Replace("\r\n", "\n")
-
-  [<SetUp>]
-  member _.SetUp() =
-    // 自機 (30,100)。敵は FakeEnemy が (-40,-60) に置いている
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
+    TraceApi.runSpawnedAs BulletType.Player (fun () -> 0.5f) 0.5f 30.0f 100.0f xml frames
 
   /// direction を省くと aim になる。Player なら「敵を狙う」、Enemy なら「自機を狙う」。
   /// fireCommand の aim の枝（Player なら GetEnemyAimDir）がここで初めて通る。
@@ -87,7 +54,7 @@ type PlayerAndTops() =
   <fire><bullet/></fire>
   <wait>10</wait>
 </action>"""
-    let asEnemy = Trace.run x 3 |> firedBullets
+    let asEnemy = TraceRun.std x 3 |> firedBullets
     let asPlayer = runAsPlayer x 3
     sprintf "Enemy として撃つ:\n%s\n\nPlayer として撃つ:\n%s\n\n\
              自機 (30,100) を狙う aim = 2.850 / 敵 (-40,-60) を狙う aim = atan2(-40,60) = -0.588 -> calcDir が 2pi 足して 5.695"
