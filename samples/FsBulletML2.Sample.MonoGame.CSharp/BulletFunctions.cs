@@ -7,7 +7,7 @@ using FsBulletML2;
 
 namespace FsBulletML2.Sample.MonoGame.CSharp
 {
-    class BulletFunctions : FsBulletML2.Processable.IBulletMLManager 
+    class BulletFunctions : FsBulletML2.IBulletMLManager 
     {
         private static Random rand = new Random();
         public BulletFunctions () { }

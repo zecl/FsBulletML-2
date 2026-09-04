@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using FsBulletML2;
 
-public class BulletFunctions : FsBulletML2.Processable.IBulletMLManager
+public class BulletFunctions : FsBulletML2.IBulletMLManager
 {
     private static Player player;
 

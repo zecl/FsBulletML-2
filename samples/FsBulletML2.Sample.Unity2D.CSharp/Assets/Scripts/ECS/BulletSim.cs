@@ -58,8 +58,8 @@ public class BulletSim : IComponentData, Processable.IBulletmlObject
     public float GetAimDir()
     {
         return Mathf.Atan2(
-            Processable.BulletMLManager.GetPlayerPosX() - X,
-            Processable.BulletMLManager.GetPlayerPosY() - Y);
+            FsBulletML2.BulletMLManager.GetPlayerPosX() - X,
+            FsBulletML2.BulletMLManager.GetPlayerPosY() - Y);
     }
 
     // 産まれる弾の位置から見た向き。GetNewBullet は

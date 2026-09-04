@@ -111,7 +111,7 @@ public abstract class BaseBullet : MonoBehaviour, FsBulletML2.Processable.IBulle
 
     public float GetAimDir()
     {
-        return Mathf.Atan2((Processable.BulletMLManager.GetPlayerPosX() - this.X), (Processable.BulletMLManager.GetPlayerPosY() - this.Y));
+        return Mathf.Atan2((FsBulletML2.BulletMLManager.GetPlayerPosX() - this.X), (FsBulletML2.BulletMLManager.GetPlayerPosY() - this.Y));
     }
 
     // 産まれる弾の位置から見た向き。GetNewBullet は

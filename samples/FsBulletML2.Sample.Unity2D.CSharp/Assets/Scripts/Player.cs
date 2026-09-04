@@ -43,7 +43,7 @@ public class Player : MonoBehaviour
 
     void Awake()
     {
-        Processable.BulletMLManager.Init(new BulletFunctions());
+        FsBulletML2.BulletMLManager.Init(new BulletFunctions());
         b2wayLeftBulletTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet);
         b2wayRightBulletTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet);
         hommingTask = BulletRunner.ConvertBulletmlTaskOption(FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing);

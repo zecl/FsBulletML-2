@@ -4,6 +4,7 @@ open System
 open System.Text.RegularExpressions
 open NUnit.Framework
 open FsUnit
+open FsBulletML2
 open FsBulletML2.Processable
 
 /// final review 3: <bullet><direction type="aim"> は、撃った側ではなく

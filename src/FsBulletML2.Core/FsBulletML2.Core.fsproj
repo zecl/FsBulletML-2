@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Exception.fs" />
+    <Compile Include="Manager.fs" />
     <Compile Include="AST.fs" />
     <Compile Include="Util.fs" />
     <Compile Include="Expr.fs" />

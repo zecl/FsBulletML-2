@@ -10,7 +10,7 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
         [STAThread]
         static void Main()
         {
-            FsBulletML2.Processable.BulletMLManager.Init(new BulletFunctions());
+            FsBulletML2.BulletMLManager.Init(new BulletFunctions());
             using (var game = new FsBulletML2SampleGame())
                 game.Run();
         }

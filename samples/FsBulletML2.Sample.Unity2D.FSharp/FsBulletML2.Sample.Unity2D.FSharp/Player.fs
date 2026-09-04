@@ -25,7 +25,7 @@ type Player () =
     member this.PlayerPosY () = this.transform.position.y
 
   member this.Awake () =
-    Processable.BulletMLManager.Init(new BulletFunctions(this))
+    BulletMLManager.Init(new BulletFunctions(this))
     this.b2wayLeftBulletTask <- Runner.load (loadEnv ()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet |> Some
     this.b2wayRightBulletTask <- Runner.load (loadEnv ()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet |> Some
     this.hommingTask <- Runner.load (loadEnv ()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing |> Some

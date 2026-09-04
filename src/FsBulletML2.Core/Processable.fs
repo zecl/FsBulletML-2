@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2
+namespace FsBulletML2
 // 旧 API（IBulletmlObject）の Obsolete 警告を、**このファイルだけ**止める。
 // ここは旧 API のシムそのもので、旧の型に触るのが仕事だから。
 //
@@ -22,20 +22,6 @@ module Processable =
 
   open Microsoft.FSharp.Core.Operators.Unchecked
 
-  type IBulletMLManager =
-    abstract GetRandom : unit -> float32
-    abstract GetRank : unit -> float32
-    abstract GetPlayerPosX : unit -> float32
-    abstract GetPlayerPosY : unit -> float32
-
-  type BulletMLManager ()=
-    static let mutable ib : IBulletMLManager = defaultof<IBulletMLManager>
-    static member Init(ib1:IBulletMLManager) =
-      ib <- ib1
-    static member GetRandom() =  ib.GetRandom()
-    static member GetRank() = ib.GetRank()
-    static member GetPlayerPosX() = ib.GetPlayerPosX()
-    static member GetPlayerPosY() = ib.GetPlayerPosY()
 
   /// 式の値。走行中はここを通る。
   ///
