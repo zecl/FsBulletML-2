@@ -35,11 +35,37 @@ module Dsl =
   let wait s = Action.Wait (expr s)
   let vanish = Action.Vanish
 
-  let changeDirection typ s term =
+  // changeDirection / changeSpeed の中の direction / speed も、
+  // fire の `dir` / `speed` と同じ規則にする ——
+  // **type を書かないのが短い名前**で、型ごとに接尾辞。
+  //
+  // **DTD の既定（direction は aim、speed は absolute）とは別物。**
+  // 属性を書かないことを attrs = None で持つので、`changeSpeed "0" "1"` と
+  // `changeSpeedAbs "0" "1"` は違う値になる —— XML へ書き戻したときに
+  // type 属性が出るかどうかが変わる。
+
+  /// type を書かない changeDirection
+  let changeDirection s term =
+    Action.ChangeDirection (Direction (None, expr s), Term (expr term))
+
+  let private changeDirOf typ s term =
     Action.ChangeDirection (Direction (Some { directionType = typ }, expr s), Term (expr term))
 
-  let changeSpeed typ s term =
+  let changeDirectionAim s term = changeDirOf DirectionType.Aim s term
+  let changeDirectionAbs s term = changeDirOf DirectionType.Absolute s term
+  let changeDirectionRel s term = changeDirOf DirectionType.Relative s term
+  let changeDirectionSeq s term = changeDirOf DirectionType.Sequence s term
+
+  /// type を書かない changeSpeed
+  let changeSpeed s term =
+    Action.ChangeSpeed (Speed (None, expr s), Term (expr term))
+
+  let private changeSpdOf typ s term =
     Action.ChangeSpeed (Speed (Some { speedType = typ }, expr s), Term (expr term))
+
+  let changeSpeedAbs s term = changeSpdOf SpeedType.Absolute s term
+  let changeSpeedRel s term = changeSpdOf SpeedType.Relative s term
+  let changeSpeedSeq s term = changeSpdOf SpeedType.Sequence s term
 
   let fireRef label (ps: string list) =
     Action.FireRef ({ fireRefLabel = FireLabel label }, ps)
@@ -54,6 +80,9 @@ module Dsl =
 
   type ActionBuilder<'T>(finish: Action list -> 'T) =
     member _.Yield(x: Action) : Action list = [x]
+    /// 中身が空の action。**DTD の action は `(...)*` で 0 個 も許す。**
+    /// `action { () }` と書く（F# は完全に空の CE を書けない）
+    member _.Yield(_: unit) : Action list = []
     member _.YieldFrom(xs: Action list) = xs
     member _.Zero() : Action list = []
     member _.Combine(a: Action list, b: Action list) = a @ b
@@ -68,9 +97,20 @@ module Dsl =
   let nestAs name =
     ActionBuilder (fun xs -> Action.Action ({ actionLabel = Some (ActionLabel name) }, xs))
 
+  // DTD の repeat は `(times, (action | actionRef))`。子は 3 通り 書ける ——
+  // label の無い action、label のある action、actionRef。
+
   /// `repeat "4" { wait "1"; fire { plain } }`
   let repeat times =
     ActionBuilder (fun xs -> Action.Repeat (Times (expr times), wrapAction None xs))
+
+  /// 子の action に label を付ける形
+  let repeatAs times name =
+    ActionBuilder (fun xs -> Action.Repeat (Times (expr times), wrapAction (Some name) xs))
+
+  /// 子が actionRef の形。**CE ではなく関数**（中に積むものが無い）
+  let repeatRef times label (ps: string list) =
+    Action.Repeat (Times (expr times), ActionElm.ActionRef ({ actionRefLabel = ActionLabel label }, ps))
 
   /// 根の `<action label="top">`
   let top =
@@ -78,6 +118,11 @@ module Dsl =
 
   let defAction name =
     ActionBuilder (fun xs -> BulletmlElm.Action ({ actionLabel = Some (ActionLabel name) }, xs))
+
+  /// 根の action に label を書かない形。**DTD では label は #IMPLIED**
+  /// （エンジンからは名前で引けなくなるので、実際に使うことは少ない）
+  let defActionAnon =
+    ActionBuilder (fun xs -> BulletmlElm.Action ({ actionLabel = None }, xs))
 
   /// bullet の子（action | actionRef）
   let body = ActionBuilder (fun xs -> wrapAction None xs)
@@ -160,12 +205,33 @@ module Dsl =
     member _.Run(s: AccelSpec) =
       Action.Accel (s.H, s.V, Term (expr term))
 
+    // horizontal / vertical も type 省略が短い名前（fire の speed と同じ規則）
+
     [<CustomOperation("horizontal")>]
-    member _.Horizontal(s: AccelSpec, typ, e) =
-      { s with H = Some (Horizontal (Some { horizontalType = typ }, expr e)) }
+    member _.Horizontal(s: AccelSpec, e) =
+      { s with H = Some (Horizontal (None, expr e)) }
+    [<CustomOperation("horizontalAbs")>]
+    member _.HorizontalAbs(s: AccelSpec, e) =
+      { s with H = Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, expr e)) }
+    [<CustomOperation("horizontalRel")>]
+    member _.HorizontalRel(s: AccelSpec, e) =
+      { s with H = Some (Horizontal (Some { horizontalType = HorizontalType.Relative }, expr e)) }
+    [<CustomOperation("horizontalSeq")>]
+    member _.HorizontalSeq(s: AccelSpec, e) =
+      { s with H = Some (Horizontal (Some { horizontalType = HorizontalType.Sequence }, expr e)) }
+
     [<CustomOperation("vertical")>]
-    member _.Vertical(s: AccelSpec, typ, e) =
-      { s with V = Some (Vertical (Some { verticalType = typ }, expr e)) }
+    member _.Vertical(s: AccelSpec, e) =
+      { s with V = Some (Vertical (None, expr e)) }
+    [<CustomOperation("verticalAbs")>]
+    member _.VerticalAbs(s: AccelSpec, e) =
+      { s with V = Some (Vertical (Some { verticalType = VerticalType.Absolute }, expr e)) }
+    [<CustomOperation("verticalRel")>]
+    member _.VerticalRel(s: AccelSpec, e) =
+      { s with V = Some (Vertical (Some { verticalType = VerticalType.Relative }, expr e)) }
+    [<CustomOperation("verticalSeq")>]
+    member _.VerticalSeq(s: AccelSpec, e) =
+      { s with V = Some (Vertical (Some { verticalType = VerticalType.Sequence }, expr e)) }
 
   let accel term = AccelBuilder term
 
@@ -201,8 +267,10 @@ module Dsl =
     member _.Relative(s: BulletSpec, e) = { s with Dir = dir DirectionType.Relative e }
     [<CustomOperation("sequence")>]
     member _.Sequence(s: BulletSpec, e) = { s with Dir = dir DirectionType.Sequence e }
+    /// type 省略。**fire の `dir` と同じ**（型を書くなら aim / absolute /
+    /// relative / sequence を使う）
     [<CustomOperation("dir")>]
-    member _.Dir(s: BulletSpec, typ, e) = { s with Dir = dir typ e }
+    member _.Dir(s: BulletSpec, e) = { s with Dir = Some (Direction (None, expr e)) }
 
     [<CustomOperation("speed")>]
     member _.Speed(s: BulletSpec, e) = { s with Speed = spdDefault e }
@@ -235,6 +303,9 @@ module Dsl =
 
   type BulletmlBuilder(typ: ShootingDirection option, name: string option, xmlns: string option, desc: string option) =
     member _.Yield(e: BulletmlElm) : BulletmlElm list = [e]
+    /// 中身が空の bulletml。**DTD の bulletml は `(bullet|fire|action)*` で
+    /// 0 個 も許す。** `vertical "x" { () }` と書く
+    member _.Yield(_: unit) : BulletmlElm list = []
     member _.YieldFrom(xs: BulletmlElm list) = xs
     member _.Zero() : BulletmlElm list = []
     member _.Combine(a, b) = a @ b
@@ -247,12 +318,32 @@ module Dsl =
           bulletmlDescription = desc },
         elms)
 
+  /// 属性を直に渡す一般形。**短い入口で足りない組み合わせはこれで書く。**
+  ///
+  /// DTD の bulletml は xmlns も type も #IMPLIED で、name はこのエンジンが
+  /// 足した属性（description も）。どれも省けるので組み合わせは 4 x 2 x 2 x 2。
+  /// **全部 に名前は付けない** —— よく使う形だけ下に短い入口を置いて、
+  /// 残りはここを通す。
+  let bulletmlOf typ name xmlns desc = BulletmlBuilder(typ, name, xmlns, desc)
+
   let vertical name = BulletmlBuilder(Some ShootingDirection.BulletVertical, Some name, None, None)
   let horizontal name = BulletmlBuilder(Some ShootingDirection.BulletHorizontal, Some name, None, None)
   let none name = BulletmlBuilder(Some ShootingDirection.BulletNone, Some name, None, None)
 
+  /// type 属性を書かない bulletml。**DTD の既定は none だが、値としては別物**
+  /// （書かないことを None で持つので、往復で type 属性が出なくなる）
+  let untyped name = BulletmlBuilder(None, Some name, None, None)
+
   let verticalXmlns xmlns name =
     BulletmlBuilder(Some ShootingDirection.BulletVertical, Some name, Some xmlns, None)
+
+  let horizontalXmlns xmlns name =
+    BulletmlBuilder(Some ShootingDirection.BulletHorizontal, Some name, Some xmlns, None)
+
+  let noneXmlns xmlns name =
+    BulletmlBuilder(Some ShootingDirection.BulletNone, Some name, Some xmlns, None)
+
+  let untypedXmlns xmlns name = BulletmlBuilder(None, Some name, Some xmlns, None)
 
   /// ビルダが DTD の書く側を全部受けられることの見本。走らせる門ではない。
   module Examples =
@@ -280,13 +371,13 @@ module Dsl =
           defBullet "hmgLsr" {
               speed "2"
               doActs (body {
-                  changeSpeed SpeedType.Absolute "0.3" "40"
+                  changeSpeedAbs "0.3" "40"
                   wait "100"
-                  changeSpeed SpeedType.Absolute "5" "90"
+                  changeSpeedAbs "5" "90"
               })
               doActs (body {
                   repeat "9999" {
-                      changeDirection DirectionType.Aim "0" "40-$rank*20"
+                      changeDirectionAim "0" "40-$rank*20"
                       wait "5"
                   }
               })
@@ -308,11 +399,11 @@ module Dsl =
                   fire { sequence "10"; plain }
                   wait "2"
               }
-              changeDirection DirectionType.Aim "0" "20-$rank*10"
-              changeSpeed SpeedType.Absolute "0.3" "40"
+              changeDirectionAim "0" "20-$rank*10"
+              changeSpeedAbs "0.3" "40"
               accel "30" {
-                  horizontal HorizontalType.Relative "1"
-                  vertical VerticalType.Sequence "0"
+                  horizontalRel "1"
+                  verticalSeq "0"
               }
               nest { wait "1" }
               actionRef "top" []
@@ -320,7 +411,7 @@ module Dsl =
           }
           topFire { absolute "0"; speed "1"; ofBullet (bullet "plain" { speed "1" }) }
           defBullet "bit" {
-              dir DirectionType.Absolute "90"
+              absolute "90"
               speed "0.9"
               doActs (body {
                   wait "$1"
@@ -328,4 +419,143 @@ module Dsl =
               })
               refActs "top" ["40"]
           }
+      }
+
+    /// **type 属性を書かない側**の見本。`fullSyntax` が書いていない腕を通す。
+    ///
+    /// DTD では direction / speed / horizontal / vertical のどれも type を
+    /// 省ける。省いた形は既定値（direction は aim、speed 系は absolute）と
+    /// **同じ意味だが別の値** —— 書き戻したときに type 属性が出ない。
+    let omittedTypes =
+      untyped "type を書かない形" {
+          defActionAnon {
+              changeDirection "0" "10"
+              changeSpeed "1" "10"
+              accel "30" {
+                  horizontal "1"
+                  vertical "0"
+              }
+              fire { dir "0"; speed "1"; plain }
+              repeatAs "3" "namedBody" {
+                  wait "1"
+              }
+              repeatRef "2" "top" ["$1"]
+          }
+          defBulletAnon {
+              dir "90"
+              speed "1"
+              refActs "top" []
+          }
+      }
+
+    /// 属性の組み合わせ側。**短い入口で足りないものは一般形で書く。**
+    let attributeShapes =
+      [ untypedXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "type なし + xmlns" {
+            top { vanish }
+        }
+        horizontalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "horizontal + xmlns" {
+            top { vanish }
+        }
+        noneXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "none + xmlns" {
+            top { vanish }
+        }
+        // name を書かない形と description を入れる形は、短い入口を置いていない
+        bulletmlOf (Some ShootingDirection.BulletVertical) None None None {
+            top { vanish }
+        }
+        bulletmlOf None (Some "説明つき") None (Some "description は BulletML 公式の属性ではない") {
+            top { vanish }
+        } ]
+
+    /// direction / speed / horizontal / vertical の **型を全通り**書く見本。
+    ///
+    /// DTD ではこの 4 つ がどれも type を省ける。省いた形は既定値
+    /// （direction は aim、他は absolute）と同じ意味だが **別の値** ——
+    /// 書き戻したときに type 属性が出ない。だから省略も 1 通り として数える。
+    ///
+    ///   direction   省略 / aim / absolute / relative / sequence   5 通り
+    ///   speed       省略 / absolute / relative / sequence         4 通り
+    ///   horizontal  省略 / absolute / relative / sequence         4 通り
+    ///   vertical    省略 / absolute / relative / sequence         4 通り
+    let allTypeVariants =
+      vertical "型の全通り" {
+          top {
+              fire { dir "0"; plain }
+              fire { aim "0"; plain }
+              fire { absolute "0"; plain }
+              fire { relative "0"; plain }
+              fire { sequence "0"; plain }
+
+              fire { speed "1"; plain }
+              fire { speedAbs "1"; plain }
+              fire { speedRel "1"; plain }
+              fire { speedSeq "1"; plain }
+
+              changeDirection "0" "1"
+              changeDirectionAim "0" "1"
+              changeDirectionAbs "0" "1"
+              changeDirectionRel "0" "1"
+              changeDirectionSeq "0" "1"
+
+              changeSpeed "1" "1"
+              changeSpeedAbs "1" "1"
+              changeSpeedRel "1" "1"
+              changeSpeedSeq "1" "1"
+
+              accel "1" { horizontal "1" }
+              accel "1" { horizontalAbs "1" }
+              accel "1" { horizontalRel "1" }
+              accel "1" { horizontalSeq "1" }
+
+              accel "1" { vertical "1" }
+              accel "1" { verticalAbs "1" }
+              accel "1" { verticalRel "1" }
+              accel "1" { verticalSeq "1" }
+
+              // 参照を作る関数（custom operation ではないほう）
+              fire { ofBullet (bulletRef "b" ["1"]) }
+          }
+          defBullet "b" {
+              doActs (bodyRef "top" [])
+          }
+      }
+
+    /// 中身が空の形。**DTD はどれも 0 個 を許す** ——
+    /// bulletml の `(bullet|fire|action)*`、action の `(...)*`、
+    /// bullet の `(action|actionRef)*`、accel の `horizontal? vertical?`。
+    ///
+    /// **F# は完全に空の CE を書けない**ので `{ () }` と置く。
+    /// 実用の弾幕には出ないが、DTD が許す以上 CE でも書けなければならない。
+    let emptyShapes =
+      [ vertical "中身が空" { () }
+        vertical "空の action" {
+            top { () }
+        }
+        vertical "空の bullet と accel" {
+            top {
+                // 中身の無い bullet（fire の子）
+                fire { ofBullet (bullet "からっぽ" { () }) }
+                // horizontal も vertical も無い accel（term だけ）
+                accel "30" { () }
+                // direction も speed も bullet も書かない fire
+                // （DTD は bulletElm 必須なので、空の <bullet/> が入る）
+                fire { () }
+            }
+        } ]
+
+    /// fire の子と bullet の中身。**`fullSyntax` が通っていない腕**を埋める
+    let bulletShapes =
+      vertical "bullet の形" {
+          top {
+              // 中身のある無名 bullet
+              fire { ofBullet (bulletAnon { speed "1"; refActs "top" [] }) }
+              // 名前つき fire と、名前つきの入れ子 action
+              fireAs "named" { plain }
+              nestAs "namedNest" { wait "1" }
+          }
+          // 名前つきの action を bullet の子に置く
+          defBullet "labelled" {
+              doActs (bodyAs "inner" { wait "1" })
+          }
+          topFireAs "topNamed" { plain }
       }
