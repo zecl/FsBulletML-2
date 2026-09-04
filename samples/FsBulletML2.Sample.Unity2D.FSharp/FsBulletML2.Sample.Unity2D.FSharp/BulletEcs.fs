@@ -110,6 +110,22 @@ type FrontEnv private () =
 /// **managed component（class）。** 中に `BulletmlScript`（参照型）を持つので
 /// struct にはできない。Burst もジョブ化も効かないが、C# サンプルも同じ形で、
 /// 実測では ECS 側の費用は 1 コマ の 9% ほど（残りは描画）。
+///
+/// **`Sealed` にしてある。** ただし、それでも TypeManager は
+/// 「polymorphic non-sealed class の参照は辿れない」と警告を出す ——
+/// **中に入れ子で持つ F# の型が non-sealed だから。**
+/// `BulletRun option` も `BulletType` も `ShootingDirection` も判別共用体で、
+/// F# はそれを「基底クラス＋サブクラス」に落とす。**構造的に封じられない。**
+///
+/// **実害は無い**（このサンプルでは）。警告が言っているのは
+/// 「中の Entity / Blob / UnityEngine.Object 参照を remap できない」で、
+/// remap が要るのは `EntityManager.Instantiate` と SubScene の
+/// シリアライズのとき。**どちらもしていない** —— 弾は毎回
+/// `CreateEntity` で作り、シーンには保存しない。
+///
+/// 数は出る（1 走行 で 129 件 を数えた。型の入れ子を再帰で辿るたびに 1 件）。
+/// Unity の Console は同じ行を畳むので、Collapse を入れておくとよい。
+[<Sealed>]
 type BulletSim () =
   member val Entity = Entity.Null with get, set
   member val Kind = BulletKind.Enemy with get, set

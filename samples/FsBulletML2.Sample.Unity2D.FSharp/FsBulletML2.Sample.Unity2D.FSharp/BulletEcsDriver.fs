@@ -39,6 +39,9 @@ type BulletEcsDriver () =
 
   [<DefaultValue>]val mutable private query : EntityQuery
   [<DefaultValue>]val mutable private hasQuery : bool
+  /// 初回の 1 コマ だけログを出すための印。
+  /// **毎コマ 出すと弾の数だけ行が流れて Console が使えなくなる**
+  [<DefaultValue>]val mutable private logged : bool
   /// ダメージの通知先。**Bootstrap が入れる。**
   /// BulletEcsRuntime は Transform しか持たない（型の輪を避けるため）ので、
   /// 型を知っているこちらで持つ
@@ -74,6 +77,19 @@ type BulletEcsDriver () =
 
     doomed.Clear()
     let entities = this.query.ToEntityArray(Allocator.Temp)
+
+    // **初回だけ、回っていることと画面の範囲を出す。**
+    // 「弾が変な位置に残る」を追うとき、Driver が回っていないのか
+    // 消す範囲がずれているのかを、画面からは区別できない
+    if not this.logged then
+      this.logged <- true
+      Debug.Log(
+        sprintf "BulletEcsDriver: 回り始めた。弾 %d 個。消す範囲 x=%f..%f y=%f..%f。自機=%b 敵=%b"
+          entities.Length
+          BulletEntityFactory.ScreenMinX BulletEntityFactory.ScreenMaxX
+          BulletEntityFactory.ScreenMinY BulletEntityFactory.ScreenMaxY
+          hasPlayer hasEnemy)
+
     try
       for i in 0 .. entities.Length - 1 do
         let entity = entities.[i]
@@ -85,10 +101,28 @@ type BulletEcsDriver () =
           if sim.Used then sim.Step spawn
 
           // 描画へ位置を渡す。**向きは -Dir**（エンジンの角度は時計回り）
+          let pos = float3(sim.X, sim.Y, 0.0f)
+          let rot = quaternion.AxisAngle(float3(0.0f, 0.0f, 1.0f), -sim.Dir)
           let mutable tr = em.GetComponentData<LocalTransform> entity
-          tr.Position <- float3(sim.X, sim.Y, 0.0f)
-          tr.Rotation <- quaternion.AxisAngle(float3(0.0f, 0.0f, 1.0f), -sim.Dir)
+          tr.Position <- pos
+          tr.Rotation <- rot
           em.SetComponentData(entity, tr)
+
+          // **LocalToWorld も自分で書く。**
+          //
+          // Entities Graphics が見るのは LocalTransform ではなく LocalToWorld で、
+          // その変換は TransformSystemGroup（ECS の System）がやる。
+          // **ここは MonoBehaviour の Update なので、その System との前後が
+          // 保証されない** —— LocalTransform だけ更新すると、描画が前のコマの
+          // 位置に残る（「弾の軌跡が変な位置に残る」はこれ）。
+          //
+          // C# サンプルは [UpdateBefore(typeof(TransformSystemGroup))] を付けた
+          // System なので順序が取れている。**F# は System を書けない**ので、
+          // 変換のほうを自分で済ませて System を待たない。
+          if em.HasComponent<LocalToWorld> entity then
+            let mutable ltw = LocalToWorld()
+            ltw.Value <- float4x4.TRS(pos, rot, float3(1.0f, 1.0f, 1.0f))
+            em.SetComponentData(entity, ltw)
 
           let dead = not sim.Used || BulletEntityFactory.IsOffScreen sim.X sim.Y
           if dead then
@@ -132,20 +166,49 @@ type BulletEcsBootstrap () =
 
   [<RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)>]
   static member AutoCreate () =
-    let found = UnityEngine.Object.FindAnyObjectByType<BulletEcsBootstrap>()
-    if isNull (box found) then
-      let go = new GameObject("BulletEcsBootstrap")
-      UnityEngine.Object.DontDestroyOnLoad go
-      go.AddComponent<BulletEcsBootstrap>() |> ignore
-      // **ここが出ないなら、この属性が Unity に拾われていない。**
-      // F# の static member に付けた属性が効いているかを、
-      // 画面ではなくログで確かめられるようにする
-      Debug.Log "BulletEcsBootstrap: AutoCreate で作った"
+    // **Play 中でなければ何もしない。**
+    //
+    // ここは Informations.Awake からも呼ばれるが、あちらは
+    // [<ExecuteInEditMode()>] なので **Play していない Editor でも走る**。
+    // そこで DontDestroyOnLoad を呼ぶと InvalidOperationException になり、
+    // **呼んだ側（Informations.Awake）の残りが実行されない** ——
+    // enemy / player が null のままになり、OnGUI が落ちて HUD が消える。
+    // 実際にそれで「UI が表示されない」を出した。
+    if Application.isPlaying then
+      let found = UnityEngine.Object.FindAnyObjectByType<BulletEcsBootstrap>()
+      if isNull (box found) then
+        let go = new GameObject("BulletEcsBootstrap")
+        UnityEngine.Object.DontDestroyOnLoad go
+        go.AddComponent<BulletEcsBootstrap>() |> ignore
+        // **ここが出ないなら、この属性が Unity に拾われていない。**
+        // F# の static member に付けた属性が効いているかを、
+        // 画面ではなくログで確かめられるようにする
+        Debug.Log "BulletEcsBootstrap: AutoCreate で作った"
 
   member this.Awake () = this.Configure ()
 
+  /// **component の型が TypeManager に登録されている前提で動く。**
+  ///
+  /// Entities は普通、ILPostProcessor（Unity.Entities.CodeGen）が各アセンブリに
+  /// `Unity.Entities.CodeGeneratedRegistry.AssemblyTypeRegistry` を埋め込み、
+  /// TypeManager がそれを集めて回る。**その加工は Unity がコンパイルした
+  /// アセンブリにしか掛からない。** このサンプルは F# を外でビルドして dll を
+  /// Assets へ置くので掛からず、こう落ちた ——
+  ///
+  ///     ArgumentException: Unknown Type: ...BulletSim
+  ///
+  /// **例外文は `TypeManager.GetOrCreateTypeIndex` を案内するが、6.5.0 には
+  /// 存在しない**（メッセージだけが古い）。手で足す口は無い。
+  ///
+  /// 代わりに `DISABLE_TYPEMANAGER_ILPP`（Scripting Define Symbols）を
+  /// 定義してある。TypeManager がリフレクション走査へ切り替わり、
+  /// **Unity.Entities を参照している dll なら拾われる。**
+  /// 効いているかは `Assets/Editor/EcsEntityCheck.cs` が見る。
+  ///
+  /// **C# サンプルには要らない設定。** あちらは Assets の .cs なので
+  /// Unity がコンパイルし、加工が掛かる。**同じ ECS でも、dll で配ると違う。**
   member this.Configure () =
-    // **これが先。** シーンは Built-in の前提のままなので、URP で描ける形に
+    // シーンは Built-in の前提のままなので、URP で描ける形に
     // 直さないと自機も敵も背景も出ない（実際に真っ暗になった）
     UrpPlayModeCompat.Apply ()
 

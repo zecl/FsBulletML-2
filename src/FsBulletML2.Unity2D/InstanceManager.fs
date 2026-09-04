@@ -10,18 +10,23 @@ type ObjectData () =
   [<DefaultValue>]val mutable public cacheSize : int
   [<DefaultValue>]val mutable private objects : GameObject[]
 
-  /// この prefab が弾（または爆風）か。**弾を ECS へ移したので、
-  /// ここに挙げた tag のものは先に作らない。**
+  /// この prefab が弾か。**弾を ECS へ移したので、先に作らない。**
   ///
   /// シーンには弾のプールが 3,000 個 単位 で設定されたまま残っていて、
   /// そのままだと `g_bullet_s0` から数千 個 の GameObject が起動時にできる
   /// —— **1 つ も使われない**（弾は Entity になった）。
-  /// 同梱の C# サンプルも同じ判定を持っている。
+  ///
+  /// **爆風（Bomb）は入れない。** あれはまだ GameObject のままで、
+  /// `Bomb.GenerateBomb` がプールから取る。いちど 入れてしまい、
+  /// 敵に弾が当たった瞬間に落ちた（プールが空で `Array.find` が失敗）。
+  /// 同梱の C# サンプルは Bomb も除いているが、あちらは `Bomb` 自体を
+  /// ParticleSystem 1 個 の `Emit` に書き換えてプールを使っていない。
+  /// **判定だけ写すと、対になる書き換えが抜ける。**
   member this.IsBulletPrefab () =
     if isNull (box this.prefab) then true
     else
       let tag = this.prefab.tag
-      tag = "EnemyBullet" || tag = "PlayerBullet" || tag = "Bomb"
+      tag = "EnemyBullet" || tag = "PlayerBullet"
 
   member this.Initialize () =
     if this.IsBulletPrefab () then
@@ -39,10 +44,14 @@ type ObjectData () =
       this.objects.[i].SetActive(false)
       this.objects.[i].name <- this.objects.[i].name.Replace("(Clone)", "") + i.ToString()
 
-  member this.GetNextObjectInCache () =
-    if this.cacheSize <= 0 then
-      Debug.LogError("the size of cache is required one or more.")
-    this.objects |> Array.find  (fun x -> x.activeSelf |> not)
+  /// 空いているものを 1 つ 返す。**無ければ None。**
+  ///
+  /// 元は `Array.find` で、**空きが無いと KeyNotFoundException で落ちていた**
+  /// （プールを 0 にしたとき、敵に弾が当たった瞬間に踏んだ）。
+  /// 使い切ったときも同じ形で落ちるので、**呼ぶ側が選べるように option で返す**。
+  member this.TryGetNextObjectInCache () =
+    if this.cacheSize <= 0 then None
+    else this.objects |> Array.tryFind (fun x -> x.activeSelf |> not)
 
 type InstanceManager () =
   inherit MonoBehaviour () 
@@ -61,16 +70,21 @@ type InstanceManager () =
 
   static member InstantiatePrefab(prefab:GameObject, position:Vector3, rotation:Quaternion) =
     let cache = InstanceManager.self.caches |> Seq.tryFind (fun x -> x.prefab.tag = prefab.tag)
+    // プールが無いときも、**空きが無いときも**、その場で作る。
+    // 落ちるより作るほうがまし —— 使い切ったのは呼ぶ側の都合で、
+    // ここで例外にしても誰も回復できない
+    let fresh () = UnityEngine.Object.Instantiate<GameObject>(prefab, position, rotation)
     match cache with
-    | None ->
-      UnityEngine.Object.Instantiate<GameObject>(prefab, position, rotation)
+    | None -> fresh ()
     | Some cache ->
-      let obj = cache.GetNextObjectInCache()
-      obj.transform.position <- position
-      obj.transform.rotation <- rotation
-      obj.SetActive(true)
-      InstanceManager.self.activeCachedObjects.[obj.name] <- true
-      obj
+      match cache.TryGetNextObjectInCache() with
+      | None -> fresh ()
+      | Some obj ->
+        obj.transform.position <- position
+        obj.transform.rotation <- rotation
+        obj.SetActive(true)
+        InstanceManager.self.activeCachedObjects.[obj.name] <- true
+        obj
     
   static member Destroy(objectToDestroy:GameObject) = 
     if (InstanceManager.self.activeCachedObjects.ContainsKey(objectToDestroy.name)) then

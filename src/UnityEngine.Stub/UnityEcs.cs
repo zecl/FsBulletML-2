@@ -27,6 +27,12 @@ namespace Unity.Mathematics
         public static quaternion identity => new quaternion();
         public static quaternion AxisAngle(float3 axis, float angle) => identity;
     }
+
+    public struct float4x4
+    {
+        public static float4x4 identity => new float4x4();
+        public static float4x4 TRS(float3 translation, quaternion rotation, float3 scale) => identity;
+    }
 }
 
 namespace Unity.Collections
@@ -93,6 +99,16 @@ namespace Unity.Entities
         public EntityQuery CreateEntityQuery(params Type[] componentTypes) => new EntityQuery();
     }
 
+    /// <summary>
+    /// component の型を覚えているところ。**dll で配ると自動登録が掛からない**ので、
+    /// サンプルは実行時に GetOrCreateTypeIndex で足す。
+    /// </summary>
+    public static class TypeManager
+    {
+        public static void Initialize() { }
+        public static int GetOrCreateTypeIndex(Type type) => 0;
+    }
+
     public class World : IDisposable
     {
         public World(string name) { Name = name; }
@@ -115,6 +131,16 @@ namespace Unity.Transforms
             Unity.Mathematics.quaternion rotation,
             float scale)
             => new LocalTransform { Position = position, Rotation = rotation, Scale = scale };
+    }
+
+    /// <summary>
+    /// <b>Entities Graphics が実際に見る行列。</b>
+    /// 本物は <see cref="LocalTransform"/> から TransformSystemGroup が作るが、
+    /// このサンプルは System を持てないので自分で書く（BulletEcsDriver）。
+    /// </summary>
+    public struct LocalToWorld : Unity.Entities.IComponentData
+    {
+        public Unity.Mathematics.float4x4 Value;
     }
 }
 
