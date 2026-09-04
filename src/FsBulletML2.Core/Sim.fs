@@ -35,7 +35,7 @@ type internal SimResult<'a> =
 /// 状態を取り違えないため。位置ではなく名前で受ける
 ///
 /// BulletState / Effect を内側に持つため internal。両方とも internal
-/// Progress / RecBulletml を辿って internal になっているので、それを
+/// Progress / Bulletml を辿って internal になっているので、それを
 /// 運ぶ Sim もそこから見えない外へは出さない
 /// **包みを持たない。型の別名そのもの。**
 ///

@@ -30,12 +30,12 @@ type StepFire() =
       Action = fun _ _ -> None }
 
   let bullet d s =
-    RecBulletElm.Bullet ({ bulletLabel = None }, d, s, [])
+    BulletElm.Bullet ({ bulletLabel = None }, d, s, [])
 
   [<Test>]
   member _.``fire は、撃たれた弾を 1 つ出す``() =
     let script =
-      RecCommand.Fire ({ fireLabel = None },
+      Action.Fire ({ fireLabel = None },
                         Some (Direction (Some { directionType = DirectionType.Absolute }, numExpr "0")),
                         Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "2")),
                         bullet None None)
@@ -52,14 +52,14 @@ type StepFire() =
   [<Test>]
   member _.``撃った側は HasFired が立つ``() =
     let script =
-      RecCommand.Fire ({ fireLabel = None }, None, None, bullet None None)
+      Action.Fire ({ fireLabel = None }, None, None, bullet None None)
     let (_, _, _), st, _ = Sim.run env state (stepFire noResolvers script (PFire false) FireContext.zero)
     st.HasFired |> should equal true
 
   [<Test>]
   member _.``bullet の中の speed が fire 側より勝つ``() =
     let script =
-      RecCommand.Fire ({ fireLabel = None },
+      Action.Fire ({ fireLabel = None },
                         None,
                         Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "2")),
                         bullet None (Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "9"))))
@@ -71,7 +71,7 @@ type StepFire() =
   [<Test>]
   member _.``bullet の中の direction が fire 側より勝つ``() =
     let script =
-      RecCommand.Fire ({ fireLabel = None },
+      Action.Fire ({ fireLabel = None },
                         Some (Direction (Some { directionType = DirectionType.Absolute }, numExpr "0")),
                         None,
                         bullet (Some (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"))) None)
@@ -82,7 +82,7 @@ type StepFire() =
 
   [<Test>]
   member _.``direction を省くと aim になる``() =
-    let script = RecCommand.Fire ({ fireLabel = None }, None, None, bullet None None)
+    let script = Action.Fire ({ fireLabel = None }, None, None, bullet None None)
     let _, _, w = Sim.run env state (stepFire noResolvers script (PFire false) FireContext.zero)
     match w with
     | [ Spawn b ] -> b.Dir |> should (equalWithin 0.0001) env.AimDir
@@ -101,7 +101,7 @@ type StepFire() =
   [<Test>]
   member _.``bullet 側の aim は、産まれる弾の位置から見た向きで解決する``() =
     let script =
-      RecCommand.Fire ({ fireLabel = None }, None, None,
+      Action.Fire ({ fireLabel = None }, None, None,
                         bullet (Some (Direction (Some { directionType = DirectionType.Aim }, numExpr "30"))) None)
     let _, _, w = Sim.run env state (stepFire noResolvers script (PFire false) FireContext.zero)
     match w with
@@ -116,7 +116,7 @@ type StepFire() =
   /// bullet 側と基準が違うことを、値が違うことで示す
   [<Test>]
   member _.``fire 側の aim は、撃った側の位置から見た向きで解決する``() =
-    let script = RecCommand.Fire ({ fireLabel = None }, None, None, bullet None None)
+    let script = Action.Fire ({ fireLabel = None }, None, None, bullet None None)
     let _, _, w = Sim.run env state (stepFire noResolvers script (PFire false) FireContext.zero)
     match w with
     | [ Spawn b ] ->
@@ -129,7 +129,7 @@ type StepFire() =
   [<Test>]
   member _.``sequence は、直前の fire の値に積む``() =
     let script =
-      RecCommand.Fire ({ fireLabel = None },
+      Action.Fire ({ fireLabel = None },
                         Some (Direction (Some { directionType = DirectionType.Sequence }, numExpr "10")),
                         None,
                         bullet None None)
@@ -145,8 +145,8 @@ type StepFire() =
       { Bullet = (fun label _ -> if label = BulletLabel "b1" then Some target else None)
         Action = fun _ _ -> None }
     let script =
-      RecCommand.Fire ({ fireLabel = None }, None, None,
-                        RecBulletElm.BulletRef ({ bulletRefLabel = BulletLabel "b1" }, []))
+      Action.Fire ({ fireLabel = None }, None, None,
+                        BulletElm.BulletRef ({ bulletRefLabel = BulletLabel "b1" }, []))
     let _, _, w = Sim.run env state (stepFire resolvers script (PFire false) FireContext.zero)
     match w with
     | [ Spawn b ] -> b.Speed |> should (equalWithin 0.0001) 7.0f
@@ -163,14 +163,14 @@ type StepFire() =
   [<Test>]
   member _.``bulletRef を解いた瞬間にも、bullet 本体の中の wait を先に引く（resetChild と合わせて 2 回）``() =
     let target =
-      RecBulletElm.Bullet ({ bulletLabel = None }, None, None,
-                          [ RecActionElm.Action ({ actionLabel = None }, [ RecCommand.Wait (numExpr "5") ]) ])
+      BulletElm.Bullet ({ bulletLabel = None }, None, None,
+                          [ ActionElm.Action ({ actionLabel = None }, [ Action.Wait (numExpr "5") ]) ])
     let resolvers : Step.Resolvers =
       { Bullet = (fun label _ -> if label = BulletLabel "b1" then Some target else None)
         Action = fun _ _ -> None }
     let script =
-      RecCommand.Fire ({ fireLabel = None }, None, None,
-                        RecBulletElm.BulletRef ({ bulletRefLabel = BulletLabel "b1" }, []))
+      Action.Fire ({ fireLabel = None }, None, None,
+                        BulletElm.BulletRef ({ bulletRefLabel = BulletLabel "b1" }, []))
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let _, _, w = Sim.run counting state (stepFire resolvers script (PFire false) FireContext.zero)
@@ -191,7 +191,7 @@ type StepFire() =
     // 逆の枝（Player 側）もここで踏む。踏まないと AimDir と EnemyAimDir を
     // 取り違えても気づけない
     let playerState = { state with Kind = BulletType.Player }
-    let script = RecCommand.Fire ({ fireLabel = None }, None, None, bullet None None)
+    let script = Action.Fire ({ fireLabel = None }, None, None, bullet None None)
     let _, _, w = Sim.run env playerState (stepFire noResolvers script (PFire false) FireContext.zero)
     match w with
     | [ Spawn b ] -> b.Dir |> should (equalWithin 0.0001) env.EnemyAimDir
@@ -213,12 +213,12 @@ type StepFire() =
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let bulletBody =
-      RecBulletElm.Bullet ({ bulletLabel = None }, None, None,
-                          [ RecActionElm.Action ({ actionLabel = None },
-                              [ RecCommand.Wait (numExpr "3")
-                                RecCommand.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "2"))
-                                RecCommand.ChangeSpeed (Speed (Some { speedType = SpeedType.Absolute }, numExpr "5"), Term (numExpr "4")) ]) ])
-    let script = RecCommand.Fire ({ fireLabel = None }, None, None, bulletBody)
+      BulletElm.Bullet ({ bulletLabel = None }, None, None,
+                          [ ActionElm.Action ({ actionLabel = None },
+                              [ Action.Wait (numExpr "3")
+                                Action.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "2"))
+                                Action.ChangeSpeed (Speed (Some { speedType = SpeedType.Absolute }, numExpr "5"), Term (numExpr "4")) ]) ])
+    let script = Action.Fire ({ fireLabel = None }, None, None, bulletBody)
     Sim.run counting state (stepFire noResolvers script (PFire false) FireContext.zero) |> ignore
     draws |> should equal 3
 
@@ -233,7 +233,7 @@ type StepFire() =
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let script =
-      RecCommand.Fire ({ fireLabel = None }, None, None,
+      Action.Fire ({ fireLabel = None }, None, None,
                         bullet None (Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "9"))))
     Sim.run counting state (stepFire noResolvers script (PFire false) FireContext.zero) |> ignore
     draws |> should equal 2
@@ -255,7 +255,7 @@ type StepFire() =
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let script1 =
-      RecCommand.Fire ({ fireLabel = None },
+      Action.Fire ({ fireLabel = None },
                         None,
                         Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "2")),
                         bullet None (Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "5"))))
@@ -270,7 +270,7 @@ type StepFire() =
     draws |> should equal 2
 
     let script2 =
-      RecCommand.Fire ({ fireLabel = None },
+      Action.Fire ({ fireLabel = None },
                         None,
                         Some (Speed (Some { speedType = SpeedType.Sequence }, numExpr "0")),
                         bullet None None)
@@ -292,7 +292,7 @@ type StepFire() =
     // しまう写し間違いだと、ここで SrcSpeed が 20 になり、しかも fire 側の
     // "3" の getValue が呼ばれず draws が 1 つ少なくなる
     let script3 =
-      RecCommand.Fire ({ fireLabel = None },
+      Action.Fire ({ fireLabel = None },
                         None,
                         Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "3")),
                         bullet None (Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "20"))))

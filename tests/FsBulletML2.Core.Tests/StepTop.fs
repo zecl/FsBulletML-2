@@ -26,12 +26,12 @@ type StepTop() =
       Tops = tops }
 
   let top children =
-    let s = RecActionElm.Action ({ actionLabel = Some (ActionLabel "top") }, children)
+    let s = ActionElm.Action ({ actionLabel = Some (ActionLabel "top") }, children)
     s, Progress.initialActionElm s, FireContext.zero
 
   [<Test>]
   member _.``差分は、加速度と 速さ かける 向き の和``() =
-    let t = top [ RecCommand.Wait (numExpr "10") ]
+    let t = top [ Action.Wait (numExpr "10") ]
     let r = Step.step noResolvers env (stateWith [ t ])
     // dir = 0 なので sin 0 = 0、-cos 0 = -1。速さ 2 なので (0, -2)。加速度 (1, 0) を足す
     r.Delta.X |> should (equalWithin 0.0001) 1.0f
@@ -39,33 +39,33 @@ type StepTop() =
 
   [<Test>]
   member _.``ある top が止まっても、後ろの top は同じフレームで回る``() =
-    let t1 = top [ RecCommand.Wait (numExpr "10") ]
-    let t2 = top [ RecCommand.Vanish ]
+    let t1 = top [ Action.Wait (numExpr "10") ]
+    let t2 = top [ Action.Vanish ]
     let r = Step.step noResolvers env (stateWith [ t1; t2 ])
     r.Effects |> should equal [ Vanished ]
 
   [<Test>]
   member _.``全部の top が終わったら Finished``() =
-    let t = top [ RecCommand.Vanish ]
+    let t = top [ Action.Vanish ]
     let r = Step.step noResolvers env (stateWith [ t ])
     r.Finished |> should equal true
 
   [<Test>]
   member _.``止まっている top があるうちは Finished ではない``() =
-    let t = top [ RecCommand.Wait (numExpr "10") ]
+    let t = top [ Action.Wait (numExpr "10") ]
     let r = Step.step noResolvers env (stateWith [ t ])
     r.Finished |> should equal false
 
   [<Test>]
   member _.``撃たれた弾で自分も撃っていれば、終わったときに回収される``() =
-    let t = top [ RecCommand.Vanish ]
+    let t = top [ Action.Vanish ]
     let st = { stateWith [ t ] with IsBullet = true; HasFired = true }
     let r = Step.step noResolvers env st
     r.Retired |> should equal true
 
   [<Test>]
   member _.``根の弾は、終わっても回収されない``() =
-    let t = top [ RecCommand.Vanish ]
+    let t = top [ Action.Vanish ]
     let st = { stateWith [ t ] with IsBullet = false; HasFired = true }
     let r = Step.step noResolvers env st
     r.Retired |> should equal false
@@ -77,9 +77,9 @@ type StepTop() =
   /// 偶然一致してしまい、この門は働かない
   [<Test>]
   member _.``複数 top の効果は、top の並び順のまま出る``() =
-    let bullet = RecBulletElm.Bullet ({ bulletLabel = None }, None, None, [])
-    let fireTop = top [ RecCommand.Fire ({ fireLabel = None }, None, None, bullet) ]
-    let vanishTop = top [ RecCommand.Vanish ]
+    let bullet = BulletElm.Bullet ({ bulletLabel = None }, None, None, [])
+    let fireTop = top [ Action.Fire ({ fireLabel = None }, None, None, bullet) ]
+    let vanishTop = top [ Action.Vanish ]
     let r = Step.step noResolvers env (stateWith [ fireTop; vanishTop ])
     match r.Effects with
     | [ Spawn _; Vanished ] -> ()
@@ -96,7 +96,7 @@ type StepTop() =
   /// 振り出しに戻り、いつまでも Ended にならない
   [<Test>]
   member _.``Progress は次のコマへ持ち越される: wait は 2 コマ目で終わる``() =
-    let t = top [ RecCommand.Wait (numExpr "1") ]
+    let t = top [ Action.Wait (numExpr "1") ]
     let r1 = Step.step noResolvers env (stateWith [ t ])
     r1.Finished |> should equal false
     let r2 = Step.step noResolvers env r1.State
@@ -115,16 +115,16 @@ type StepTop() =
   /// どちらか片方でも欠けると 8 にはならない
   [<Test>]
   member _.``FireContext は次のコマへ持ち越される: 2 発めの sequence は 1 発めの速さに積む``() =
-    let bullet d s = RecBulletElm.Bullet ({ bulletLabel = None }, d, s, [])
+    let bullet d s = BulletElm.Bullet ({ bulletLabel = None }, d, s, [])
     let fire1 =
-      RecCommand.Fire ({ fireLabel = None }, None,
+      Action.Fire ({ fireLabel = None }, None,
                         None,
                         bullet None (Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "5"))))
     let fire2 =
-      RecCommand.Fire ({ fireLabel = None }, None,
+      Action.Fire ({ fireLabel = None }, None,
                         Some (Speed (Some { speedType = SpeedType.Sequence }, numExpr "3")),
                         bullet None None)
-    let t = top [ fire1; RecCommand.Wait (numExpr "1"); fire2 ]
+    let t = top [ fire1; Action.Wait (numExpr "1"); fire2 ]
     let r1 = Step.step noResolvers env (stateWith [ t ])
     match r1.Effects with
     | [ Spawn b1 ] -> b1.Speed |> should (equalWithin 0.0001) 5.0f
@@ -140,14 +140,14 @@ type StepTop() =
   /// 走査（action → command → repeat）を経由しても壊れないことを確かめる
   [<Test>]
   member _.``top 直下の repeat 9999 も、1 コマで走り切って StackOverflow しない``() =
-    let bullet = RecBulletElm.Bullet ({ bulletLabel = None }, None, None, [])
+    let bullet = BulletElm.Bullet ({ bulletLabel = None }, None, None, [])
     let fire =
-      RecCommand.Fire ({ fireLabel = None },
+      Action.Fire ({ fireLabel = None },
                         Some (Direction (Some { directionType = DirectionType.Absolute }, numExpr "0")),
                         Some (Speed (Some { speedType = SpeedType.Absolute }, numExpr "1")),
                         bullet)
-    let body = RecActionElm.Action ({ actionLabel = None }, [ fire ])
-    let t = top [ RecCommand.Repeat (Times (numExpr "9999"), body) ]
+    let body = ActionElm.Action ({ actionLabel = None }, [ fire ])
+    let t = top [ Action.Repeat (Times (numExpr "9999"), body) ]
     let r = Step.step noResolvers env (stateWith [ t ])
     r.Effects |> List.length |> should equal 9999
     r.Finished |> should equal true
@@ -174,7 +174,7 @@ type StepTop() =
           SpawnAimDir = 3.0f
           SpawnEnemyAimDir = -0.75f }
     // vanish は 1 コマで終わる。2 コマめが「生きている top が無い」コマ
-    let t = top [ RecCommand.Vanish ]
+    let t = top [ Action.Vanish ]
     let first = Step.step noResolvers env (stateWith [ t ])
     first.Finished |> should equal true
     // 前提そのもの: この状態では List.exists (not << isDone) が false

@@ -156,9 +156,9 @@ module Processable =
   /// 埋まっていたが、それらは実行位置の木（Domain.Progress、State の中）へ
   /// 移った。ここに残るのはその木そのものを差し替える口だけ
   and [<System.Obsolete("弾幕は BulletmlScript、実行状態は BulletRun に割れました。Api.fs の Runner を見てください。")>]
-      BulletmlTask internal (resetTop: Domain.Env -> RecActionElm -> Domain.Progress,
-                              rebuildRoot: Bulletml -> (RecActionElm * Domain.Progress) list,
-                              scripts: RecActionElm list,
+      BulletmlTask internal (resetTop: Domain.Env -> ActionElm -> Domain.Progress,
+                              rebuildRoot: Bulletml -> (ActionElm * Domain.Progress) list,
+                              scripts: ActionElm list,
                               initialState: Domain.BulletState) =
     let state = ref initialState
     let finish = ref false
@@ -166,10 +166,10 @@ module Processable =
     let original : Bulletml option ref = ref None
     /// 輪のために展開を止めた bulletRef を、走らせる側から 1 段だけ解く入口。
     /// label と param を渡すと、その bullet を 1 段展開したものが返る
-    let resolveBulletRef : (BulletLabel -> string list -> RecBulletElm option) ref = ref (defaultof<_>)
+    let resolveBulletRef : (BulletLabel -> string list -> BulletElm option) ref = ref (defaultof<_>)
     /// 輪のために展開を止めた actionRef を、走らせる側から 1 段だけ解く入口。
     /// label と param を渡すと、その action を 1 段展開したものが返る
-    let resolveActionRef : (ActionLabel -> string list -> RecActionElm option) ref = ref (defaultof<_>)
+    let resolveActionRef : (ActionLabel -> string list -> ActionElm option) ref = ref (defaultof<_>)
 
     member internal _.ResolveBulletRef with get () = resolveBulletRef.Value
                                         and set (v) = resolveBulletRef.Value <- v
@@ -218,7 +218,7 @@ module Processable =
     ///         changeDirection / changeSpeed は引かない（rootProgress、
     ///         設計文書 5.6）。旧の Some 腕も Init の env 引数を使わず
     ///         グローバルを直に読んでいた（IntermediateParser.fs の
-    ///         RecBulletml.Wait の腕）ので、rebuildRoot も env を受けない
+    ///         wait の腕）ので、rebuildRoot も env を受けない
     ///
     /// fire の累積（旧の bulletmlTask.FireData、いまは Tops の各 FireContext）は
     /// 旧はどちらの腕でも触っていない（Tasks を差し替えるだけで、別配列の

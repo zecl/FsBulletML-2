@@ -35,28 +35,28 @@ module TraceNew =
   let run (rand: unit -> float32) (rank: float32) (px: float32) (py: float32)
           (xml: string) (frames: int) : string =
     let bulletml = readXmlString xml
-    let rec' = IntermediateParser.convertRecBulletml bulletml
-    // 新経路の Resolvers は RecBulletml を返す側（*RecBulletml.expand*RefOnceRec）を使う。
+    let rec' = IntermediateParser.foldConstants bulletml
+    // 新経路の Resolvers は Bulletml を返す側（*Bulletml.expand*RefOnceRec）を使う。
     // 旧 API の expand*RefOnce は convertRecBulletmlEx まで進めて
     // ProcessableBulletml を返すので、そのままでは Step.Resolvers の型に合わない
     let resolvers : Step.Resolvers =
-      { Bullet = RecOps.expandBulletRefOnceRec rec'
-        Action = RecOps.expandActionRefOnceRec rec' }
+      { Bullet = BulletmlOps.expandBulletRefOnceRec rec'
+        Action = BulletmlOps.expandActionRefOnceRec rec' }
     // top* の並びは現行の toProcessable と同じ選び方
     let scripts =
       rec'
-      |> RecOps.getAction
+      |> BulletmlOps.getAction
       |> List.filter (function
-        | RecActionElm.Action (attrs, _) ->
+        | ActionElm.Action (attrs, _) ->
             match attrs.actionLabel with
             | Some label -> (ActionLabel.text label).StartsWith "top"
             | None -> false
         | _ -> false)
-      |> List.map (RecOps.convertRefActionElm rec')
+      |> List.map (BulletmlOps.convertRefActionElm rec')
 
     // 根の Tops は Progress.initial では組めない。旧の toProcessable は
     // 木を組む段で wait の term だけをその場で引く（IntermediateParser.fs の
-    // RecCommand.Wait の腕、convertRecBulletmlEx から）。この段の Env は
+    // Action.Wait の腕、convertRecBulletmlEx から）。この段の Env は
     // 撃つ弾ごとの位置がまだ無いので AimDir / EnemyAimDir を 0 に固定し、
     // Rand / Rank はグローバルと同じ値を渡す（設計文書 5.6）。
     // accel / changeDirection / changeSpeed はこの段では引かないので、

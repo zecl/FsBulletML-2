@@ -76,7 +76,7 @@ module internal Step =
   ///
   /// 省略された軸は convertRecBulletmlEx が { Absolute, "0" } で埋めるので、
   /// 木を組む段では常に値を持つ。ここで None を処理するのは、
-  /// RecBulletml.Accel が option を持つため。その場合も現行と同じく
+  /// Action.Accel が option を持つため。その場合も現行と同じく
   /// "0" として扱い、catch-all の計算をする：
   /// 現状維持ではなく、既存の加速度を term フレームかけて 0 へ寄せる。
   /// getValue を通すこと自体にも意味がある（式の中身に関わらず乱数を進める）
@@ -239,39 +239,39 @@ module internal Step =
   /// task.Init(envOfGlobal o)。Original が None の task の Init は
   /// この歩き方と同じ。Domain 5.6 参照）。木を組む段の wait だけの
   /// 引きは別の歩き方が要るので rootProgress に分けてある
-  let rec internal resetChild (env: Env) (script: RecCommand) : Progress =
+  let rec internal resetChild (env: Env) (script: Action) : Progress =
     match script with
-    | RecCommand.Wait s -> PWait (true, getValue env s)
-    | RecCommand.ChangeDirection (_, Term t) ->
+    | Action.Wait s -> PWait (true, getValue env s)
+    | Action.ChangeDirection (_, Term t) ->
         getValue env t |> ignore
         PChangeDir (false, false, 0.0f, 0.0f)
-    | RecCommand.ChangeSpeed (_, Term t) ->
+    | Action.ChangeSpeed (_, Term t) ->
         getValue env t |> ignore
         PChangeSpeed (false, false, 0.0f, 0.0f)
-    | RecCommand.Action (_, children) ->
+    | Action.Action (_, children) ->
         PAction (false, None, children |> List.map (resetChild env))
-    | RecCommand.Repeat (_, body) ->
+    | Action.Repeat (_, body) ->
         PRepeat (0, false, resetChildActionElm env body)
-    | RecCommand.Fire (_, _, _, RecBulletElm.Bullet (_, _, _, actions)) ->
+    | Action.Fire (_, _, _, BulletElm.Bullet (_, _, _, actions)) ->
         actions |> List.iter (resetChildActionElm env >> ignore)
         PFire false
     // 以前は `| other -> Progress.initial other` だった。その other には
     // 「引かないでよい命令」と「そもそも命令の位置に来ない要素」が
     // 混ざっていた。型が分かれたので前者だけが残る
-    | RecCommand.Fire (_, _, _, RecBulletElm.BulletRef _) -> PFire false
-    | RecCommand.Accel _ | RecCommand.Vanish
-    | RecCommand.FireRef _ | RecCommand.ActionRef _ -> Progress.initial script
+    | Action.Fire (_, _, _, BulletElm.BulletRef _) -> PFire false
+    | Action.Accel _ | Action.Vanish
+    | Action.FireRef _ | Action.ActionRef _ -> Progress.initial script
 
   /// repeat / bullet の子（action か actionRef）ぶん
-  and internal resetChildActionElm (env: Env) (a: RecActionElm) : Progress =
+  and internal resetChildActionElm (env: Env) (a: ActionElm) : Progress =
     match a with
-    | RecActionElm.Action (_, children) ->
+    | ActionElm.Action (_, children) ->
         PAction (false, None, children |> List.map (resetChild env))
-    | RecActionElm.ActionRef _ -> PNoop
+    | ActionElm.ActionRef _ -> PNoop
 
   /// 木を組む段（現行の convertRecBulletmlEx）の wait だけの引き直し。
   ///
-  /// IntermediateParser.fs の RecBulletml.Wait の腕は、撃つ弾ごとの Env が
+  /// IntermediateParser.fs の wait の腕は、撃つ弾ごとの Env が
   /// まだ無い木構築の段で、AimDir / EnemyAimDir を 0 に固定した Env で
   /// getValue を呼ぶ。兄弟の changeDirection / changeSpeed は placeholder
   /// （term = 1.f、first = true）を置くだけで、この段では getValue を
@@ -293,27 +293,27 @@ module internal Step =
   /// resetChild（現行の Init の写し）とは別の歩き方が要る理由は Domain 5.6。
   /// 撃たれた弾は Step.fire が resetChild（createTask の Init(env) の写し）を
   /// 通すのでここを通らない。根の BulletState を組むときにだけ使う
-  let rec internal rootProgress (env: Env) (script: RecCommand) : Progress =
+  let rec internal rootProgress (env: Env) (script: Action) : Progress =
     match script with
-    | RecCommand.Wait s -> PWait (true, getValue env s)
-    | RecCommand.Accel _ -> PAccel (true, 1.0f, 0.0f, 0.0f)
-    | RecCommand.Action (_, children) ->
+    | Action.Wait s -> PWait (true, getValue env s)
+    | Action.Accel _ -> PAccel (true, 1.0f, 0.0f, 0.0f)
+    | Action.Action (_, children) ->
         PAction (false, None, children |> List.map (rootProgress env))
-    | RecCommand.Repeat (_, body) ->
+    | Action.Repeat (_, body) ->
         PRepeat (0, false, rootProgressActionElm env body)
-    | RecCommand.Fire (_, _, _, RecBulletElm.Bullet (_, _, _, actions)) ->
+    | Action.Fire (_, _, _, BulletElm.Bullet (_, _, _, actions)) ->
         actions |> List.iter (rootProgressActionElm env >> ignore)
         PFire false
-    | RecCommand.Fire (_, _, _, RecBulletElm.BulletRef _) -> PFire false
-    | RecCommand.ChangeDirection _ | RecCommand.ChangeSpeed _ | RecCommand.Vanish
-    | RecCommand.FireRef _ | RecCommand.ActionRef _ -> Progress.initial script
+    | Action.Fire (_, _, _, BulletElm.BulletRef _) -> PFire false
+    | Action.ChangeDirection _ | Action.ChangeSpeed _ | Action.Vanish
+    | Action.FireRef _ | Action.ActionRef _ -> Progress.initial script
 
   /// repeat / bullet の子ぶん
-  and internal rootProgressActionElm (env: Env) (a: RecActionElm) : Progress =
+  and internal rootProgressActionElm (env: Env) (a: ActionElm) : Progress =
     match a with
-    | RecActionElm.Action (_, children) ->
+    | ActionElm.Action (_, children) ->
         PAction (false, None, children |> List.map (rootProgress env))
-    | RecActionElm.ActionRef _ -> PNoop
+    | ActionElm.ActionRef _ -> PNoop
 
   /// repeat 直下の body（現行の actionElm）だけの特別扱い。
   ///
@@ -323,9 +323,9 @@ module internal Step =
   /// 要素ごとに Init を呼ぶだけで、actionElm 自身の Init は呼ばない
   /// ので pa.loop は変わらない）。actionRef の輪が一度解ければ、
   /// その周から先はもう解き直さない
-  let private resetBody (env: Env) (body: RecActionElm) (finished: Progress) : Progress =
+  let private resetBody (env: Env) (body: ActionElm) (finished: Progress) : Progress =
     match body, finished with
-    | RecActionElm.Action (_, staticChildren), PAction (_, loop, _) ->
+    | ActionElm.Action (_, staticChildren), PAction (_, loop, _) ->
         let running = match loop with Some l -> l | None -> staticChildren
         PAction (false, loop, running |> List.map (resetChild env))
     | _ -> resetChildActionElm env body
@@ -337,8 +337,8 @@ module internal Step =
   /// Action の解決子へ渡す形が組めない。以前はどちらも string を受けていて、
   /// 取り違えても型が通っていた
   type Resolvers =
-    { Bullet : BulletLabel -> string list -> RecBulletElm option
-      Action : ActionLabel -> string list -> RecActionElm option }
+    { Bullet : BulletLabel -> string list -> BulletElm option
+      Action : ActionLabel -> string list -> ActionElm option }
 
   /// Progress が「終わった」を持っているか。現行の getFinish。
   ///
@@ -379,39 +379,39 @@ module internal Step =
   /// 以前は台本まるごとを渡していたので、受け取る側それぞれが
   /// 「自分の腕でなければ既定値」という届かない match を持っていた。
   /// ほどいて渡すと、その match が要らなくなる
-  let rec command (rs: Resolvers) (script: RecCommand) (p: Progress) (fc: FireContext)
+  let rec command (rs: Resolvers) (script: Action) (p: Progress) (fc: FireContext)
       : Sim<RunState * Progress * FireContext> =
     match script with
-    | RecCommand.Wait s ->
+    | Action.Wait s ->
         sim {
           let! r, p' = wait s p
           return r, p', fc
         }
-    | RecCommand.Vanish ->
+    | Action.Vanish ->
         sim {
           let! r, p' = vanish p
           return r, p', fc
         }
-    | RecCommand.Accel (h, v, term) ->
+    | Action.Accel (h, v, term) ->
         sim {
           let! r, p' = accel h v term p
           return r, p', fc
         }
-    | RecCommand.ChangeDirection (dir, term) ->
+    | Action.ChangeDirection (dir, term) ->
         sim {
           let! r, p' = changeDirection dir term p
           return r, p', fc
         }
-    | RecCommand.ChangeSpeed (spd, term) ->
+    | Action.ChangeSpeed (spd, term) ->
         sim {
           let! r, p' = changeSpeed spd term p
           return r, p', fc
         }
-    | RecCommand.Action (attrs, children) -> action rs attrs children p fc
-    | RecCommand.Repeat (times, body) -> repeat rs times body p fc
-    | RecCommand.Fire (attrs, dirOpt, spdOpt, bulletSrc) -> fire rs attrs dirOpt spdOpt bulletSrc p fc
+    | Action.Action (attrs, children) -> action rs attrs children p fc
+    | Action.Repeat (times, body) -> repeat rs times body p fc
+    | Action.Fire (attrs, dirOpt, spdOpt, bulletSrc) -> fire rs attrs dirOpt spdOpt bulletSrc p fc
     // 展開していない参照。走査は止めず、終わりにする（以前の `| _ ->` と同じ）
-    | RecCommand.ActionRef _ | RecCommand.FireRef _ -> sim { return Ended, p, fc }
+    | Action.ActionRef _ | Action.FireRef _ -> sim { return Ended, p, fc }
 
   /// action。現行の actionCommand を写す。
   ///
@@ -432,11 +432,11 @@ module internal Step =
   /// actionRef のときは「子が空の action」として通す。以前は台本まるごとを
   /// action へ渡していて、Action でなければ children が [] になっていた。
   /// その振る舞いをそのまま写す（repeat の子に actionRef を書く弾幕がある）
-  and actionElm (rs: Resolvers) (script: RecActionElm) (p: Progress) (fc: FireContext)
+  and actionElm (rs: Resolvers) (script: ActionElm) (p: Progress) (fc: FireContext)
       : Sim<RunState * Progress * FireContext> =
     match script with
-    | RecActionElm.Action (attrs, children) -> action rs attrs children p fc
-    | RecActionElm.ActionRef _ -> action rs { actionLabel = None } [] p fc
+    | ActionElm.Action (attrs, children) -> action rs attrs children p fc
+    | ActionElm.ActionRef _ -> action rs { actionLabel = None } [] p fc
 
   /// **ps / running を配列にして idx で触る形は、試して戻した。**
   ///
@@ -455,7 +455,7 @@ module internal Step =
   /// **形が O(n^2) であることと、その台本でそこが効くことは別。**
   /// `COUNTS.md` が同じことを木の歩きについて言っている。子を何十個 も持つ
   /// action を物差しに載せてから、また考えること。
-  and action (rs: Resolvers) (_attrs: ActionAttrs) (children: RecCommand list)
+  and action (rs: Resolvers) (_attrs: ActionAttrs) (children: Action list)
              (p: Progress) (fc: FireContext)
       : Sim<RunState * Progress * FireContext> =
     sim {
@@ -474,7 +474,7 @@ module internal Step =
         // 走査 1 マスぶんの処理。stopped または loopHit が立った後の呼び出しは
         // 何もしない（while が stop で抜けるのを、fold の中の早期リターンで書いた形）
         let step
-            (accSim: Sim<Progress list * bool * bool * FireContext * (RecCommand list * Progress list) option>)
+            (accSim: Sim<Progress list * bool * bool * FireContext * (Action list * Progress list) option>)
             (idx: int) =
           sim {
             let! (ps, stopped, cont, curFc, loopHit) = accSim
@@ -486,9 +486,9 @@ module internal Step =
                 return ps, stopped, cont, curFc, loopHit
               else
                 match List.item idx running with
-                | RecCommand.ActionRef (attrs, prams) ->
+                | Action.ActionRef (attrs, prams) ->
                     match rs.Action attrs.actionRefLabel prams with
-                    | Some (RecActionElm.Action (_, expanded)) ->
+                    | Some (ActionElm.Action (_, expanded)) ->
                         let newRunning = expanded @ (running |> List.skip (idx + 1))
                         // 旧 expandActionRefOnce（= expandActionRefOnceRec を
                         // convertRecBulletmlEx へ通したもの）は、輪を 1 段
@@ -552,7 +552,7 @@ module internal Step =
   ///
   /// times = 0 は while に 1 度も入らず、そのまま自分に finish を立てて
   /// 終わる。現行の癖をそのまま写した
-  and repeat (rs: Resolvers) (Times timesStr) (body: RecActionElm) (p: Progress) (fc: FireContext)
+  and repeat (rs: Resolvers) (Times timesStr) (body: ActionElm) (p: Progress) (fc: FireContext)
       : Sim<RunState * Progress * FireContext> =
     // 周を手続き的なループで回す。以前は [1..cycles] |> List.fold で
     // Sim.bind を cycles 回 積んでいたが、Sim.bind / Sim.run は
@@ -603,7 +603,7 @@ module internal Step =
       // 誤診断される）
       if cycles > 0 then
         match body with
-        | RecActionElm.Action _ -> ()
+        | ActionElm.Action _ -> ()
         | _ -> failwith "repeatCommand: repeat の子が action ではない"
       let mutable num = num0
       let mutable child = child0
@@ -679,7 +679,7 @@ module internal Step =
   /// Progress.initial に戻すと、その分の乱数消費が丸ごと消えて弾が
   /// 撃たれた瞬間から乱数列がずれる
   and fire (rs: Resolvers) (_attrs: FireAttrs) (dirOpt: Direction option) (spdOpt: Speed option)
-           (bulletSrc: RecBulletElm) (p: Progress) (fc: FireContext)
+           (bulletSrc: BulletElm) (p: Progress) (fc: FireContext)
       : Sim<RunState * Progress * FireContext> =
     sim {
       let! env = Sim.ask
@@ -687,9 +687,9 @@ module internal Step =
       // bulletRef は 1 段だけ解く。fire のたびに新しい弾ができるので 1 段で足りる
       let bulletElm =
         match bulletSrc with
-        | RecBulletElm.BulletRef (attrs, prams) ->
+        | BulletElm.BulletRef (attrs, prams) ->
             match rs.Bullet attrs.bulletRefLabel prams with
-            | Some (RecBulletElm.Bullet (_, _, _, actions) as x) ->
+            | Some (BulletElm.Bullet (_, _, _, actions) as x) ->
                 // 旧 expandBulletRefOnce（= expandBulletRefOnceRec を
                 // convertRecBulletmlEx へ通したもの）は、解決した瞬間に
                 // bullet 本体の中の wait をまとめて引いていた（設計文書 5.3
@@ -708,7 +708,7 @@ module internal Step =
             | Some x -> x
             // ここへは実際には来ない。ラベルが存在しない bulletRef は
             // convertRefBulletmlIn（IntermediateParser.fs）が構文解析の時点で
-            // BulletmlDTDViolationException を投げて弾く。ここまで RecBulletml.BulletRef
+            // BulletmlDTDViolationException を投げて弾く。ここまで BulletElm.BulletRef
             // のまま残るのは輪（自己参照）だけで、輪は tryFindBullet が一度
             // Some を返した相手同士でしか作られない。rs.Bullet（= 同じ document・
             // 同じラベルで tryFindBullet をもう一度呼ぶだけの expandBulletRefOnce）が
@@ -735,7 +735,7 @@ module internal Step =
       // bullet の中の direction / speed
       let bDir, bSpd, bActions =
         match bulletElm with
-        | RecBulletElm.Bullet (_, d, s, acts) -> d, s, acts
+        | BulletElm.Bullet (_, d, s, acts) -> d, s, acts
         | _ -> None, None, []
       // 撃たれた弾を組む。現行の createTask に当たる
       let mutable child =

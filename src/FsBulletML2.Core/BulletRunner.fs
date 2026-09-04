@@ -67,7 +67,7 @@ module BulletRunner =
   let internal calcDir : float32 -> float32 = Step.calcDir
 
   /// 新経路の Resolvers を組む。BulletmlTask が持ち回る ResolveBulletRef /
-  /// ResolveActionRef（RecBulletml を返す関数）をそのまま Step.Resolvers の
+  /// ResolveActionRef（BulletElm / ActionElm を返す関数）をそのまま Step.Resolvers の
   /// 形に包むだけ。Step.Resolvers は Processable.fs より後で compile される
   /// ため、この変換は BulletmlTask 側には置けない
   let internal resolversOf (task: BulletmlTask) : Step.Resolvers =
@@ -89,21 +89,21 @@ module BulletRunner =
   ///                        関数として注入して呼んでもらう
   ///
   /// 旧の toProcessable 同様、Init(env) の env 引数は使わない。木を組む段の
-  /// Env はグローバルを直に読む（IntermediateParser.fs の RecBulletml.Wait の
+  /// Env はグローバルを直に読む（IntermediateParser.fs の wait の
   /// 腕がそうだったのと同じ理由。撃つ弾ごとの位置がまだ無いので AimDir /
   /// EnemyAimDir は 0 に固定する）
-  let private buildRootTops (bulletml: Bulletml) : (RecActionElm * Progress) list =
-    let recBulletml = IntermediateParser.convertRecBulletml bulletml
+  let private buildRootTops (bulletml: Bulletml) : (ActionElm * Progress) list =
+    let bulletml = IntermediateParser.foldConstants bulletml
     let scripts =
-      recBulletml
-      |> RecOps.getAction
+      bulletml
+      |> BulletmlOps.getAction
       |> List.filter (function
-        | RecActionElm.Action (attrs, _) ->
+        | ActionElm.Action (attrs, _) ->
           match attrs.actionLabel with
           | Some label -> (ActionLabel.text label).StartsWith("top")
           | _ -> false
-        | RecActionElm.ActionRef _ -> false)
-      |> List.map (RecOps.convertRefActionElm recBulletml)
+        | ActionElm.ActionRef _ -> false)
+      |> List.map (BulletmlOps.convertRefActionElm bulletml)
     let rootEnv : Env =
       { Rand = BulletMLManager.GetRandom
         Rank = BulletMLManager.GetRank ()
@@ -253,13 +253,13 @@ module BulletRunner =
           Tops = [] }
       BulletmlTask(Step.resetChildActionElm, buildRootTops, [], emptyState)
     else
-    let recBulletml = IntermediateParser.convertRecBulletml bulletml
+    let bulletml = IntermediateParser.foldConstants bulletml
 
-    // 根は bulletml しかない（RecBulletml の腕が 1 つ）。
+    // 根は bulletml しかない（Bulletml の腕が 1 つ）。
     // 以前はここに `| _ -> failwith "根が bulletml ではない"` があった
     let shootingDirection =
-      match recBulletml with
-      | RecBulletml.Bulletml(attrs,_) ->
+      match bulletml with
+      | Bulletml.Bulletml(attrs,_) ->
         match attrs.bulletmlType with
         | Some x -> x
         | None -> ShootingDirection.BulletVertical
@@ -277,8 +277,8 @@ module BulletRunner =
         Tops = tops |> List.map (fun (s, p) -> s, p, FireContext.zero) }
 
     let bulletmlTask = new BulletmlTask(Step.resetChildActionElm, buildRootTops, scripts, initialState)
-    bulletmlTask.ResolveBulletRef <- RecOps.expandBulletRefOnceRec recBulletml
-    bulletmlTask.ResolveActionRef <- RecOps.expandActionRefOnceRec recBulletml
+    bulletmlTask.ResolveBulletRef <- BulletmlOps.expandBulletRefOnceRec bulletml
+    bulletmlTask.ResolveActionRef <- BulletmlOps.expandActionRefOnceRec bulletml
     bulletmlTask.ShootingDirection <- shootingDirection
     bulletmlTask
 

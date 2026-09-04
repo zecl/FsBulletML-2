@@ -22,7 +22,7 @@ open FsBulletML2
 /// 目盛りを合わせた記録 —— 3 つ の変異を同時に入れて走らせた:
 ///
 ///     上げる例外を System.Exception に        → 上の 2 本 が赤
-///     try の catch を Some Bulletml.Vanish に  → try の 2 本 が赤
+///     try の catch を Some Vanish に（当時あった腕）  → try の 2 本 が赤
 ///
 /// **この 4 本 だけが赤くなり、残り 566 本 は緑のまま**だった。
 /// 型が変わったことではなく、振る舞いを押さえていることの確認。

@@ -41,7 +41,7 @@ type RootAccel() =
   // term = 1.f が Init されるまで残るので、term も horizontal / vertical も
   // 一度も読まれない
   let accelScript =
-    RecCommand.Accel (
+    Action.Accel (
       Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "2")),
       Some (Vertical (Some { verticalType = VerticalType.Absolute }, numExpr "1")),
       Term (numExpr "5"))
@@ -80,7 +80,7 @@ type RootAccel() =
   /// 根の top* の中に直接書いた accel が、3 コマとも軌跡へ何も足さないことを見る
   [<Test>]
   member _.``top 直下の accel は、3 コマ動いても軌跡を動かさない``() =
-    let top = RecActionElm.Action ({ actionLabel = Some (ActionLabel "top") }, [ accelScript; RecCommand.Wait (numExpr "20") ])
+    let top = ActionElm.Action ({ actionLabel = Some (ActionLabel "top") }, [ accelScript; Action.Wait (numExpr "20") ])
     let p0 = Step.rootProgressActionElm env top
     let st0 = stateWith [ top, p0, FireContext.zero ]
     let r1 = Step.step noResolvers env st0
@@ -99,7 +99,7 @@ type RootAccel() =
   /// f01 x=1.200 y=0.600、f02 x=2.400 y=1.200）と一致する
   [<Test>]
   member _.``較正: Progress.initial のままだと、根の accel が本物の加速度になる``() =
-    let top = RecActionElm.Action ({ actionLabel = Some (ActionLabel "top") }, [ accelScript; RecCommand.Wait (numExpr "20") ])
+    let top = ActionElm.Action ({ actionLabel = Some (ActionLabel "top") }, [ accelScript; Action.Wait (numExpr "20") ])
     // rootProgress の代わりに Progress.initial で組む。accel は
     // PAccel (false, 0, 0, 0) になり、first = true（まだ評価前）と
     // 同じ扱いで最初のフレームに本当に評価される

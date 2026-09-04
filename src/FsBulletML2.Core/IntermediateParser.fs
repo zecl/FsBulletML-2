@@ -7,15 +7,15 @@ open FsBulletML2.DTD
 open FsBulletML2.Processable
 
 /// **XML を読んで木にし、定数を畳むところまで。**
-/// 木の上の操作は RecOps.fs へ切り出した。
+/// 木の上の操作は BulletmlOps.fs へ切り出した。
 ///
 /// 区切りは関数名で書いてある。**行番号を書くとこのコメント自身でずれる。**
 ///
 ///     役目                     先頭 〜 末尾の関数
 ///     ----------------------- --------------------------------------------
 ///     1. XML を読んで木にする   existsAttribute 〜 tryBulletmlFromXmlNode
-///     2. 定数を畳む             convertDirectionOption 〜 convertRecBulletmlForTest
-///     （RecOps.fs）木の上の操作 collect 〜 expandActionRefOnceRec
+///     2. 定数を畳む             convertDirectionOption 〜 foldConstantsForTest
+///     （BulletmlOps.fs）木の上の操作 collect 〜 expandActionRefOnceRec
 ///
 /// ## 二重木は畳んだ
 ///
@@ -37,7 +37,7 @@ open FsBulletML2.Processable
 /// **畳む前に呼び出しを数えること。そして「消える」と「短くなる」は別。**
 ///
 /// **役目の分けかたと、実装の依存は一致していない。** 役目 2 の小さい関数
-/// （convertDirection / convertTerm / convertParam など）は、RecOps の
+/// （convertDirection / convertTerm / convertParam など）は、BulletmlOps の
 /// 「param を差し込む」からも呼ばれる。切り出した側が
 /// `open FsBulletML2.IntermediateParser` しているのはそのため。
 ///
@@ -46,7 +46,7 @@ open FsBulletML2.Processable
 /// ここが計画書の言う「先に固定する」もの。**いまは既に分かれている。**
 ///
 ///     ロード時（Runner.load で 1 回）
-///       XML → 公開の木 → Rec*（定数を畳む）
+///       XML → 木 → 定数を畳む（foldConstants）
 ///       Resolvers を組む（expandBulletRefOnceRec / expandActionRefOnceRec を
 ///       部分適用しただけの、まだ何も解いていない関数 2 本）
 ///
@@ -283,7 +283,7 @@ module IntermediateParser =
       | None -> new BulletmlDTDViolationException("bulletml element attributes could not be read.") |> raise
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise
 
-  /// XmlNode to Bulletml.Action
+  /// XmlNode to action。**どの位置の腕を作るかは factory が決める**
   ///
   /// DTD :
   /// <!ELEMENT action (changeDirection | accel | vanish | changeSpeed | repeat | wait | (fire | fireRef) | (action | actionRef))*>
@@ -298,7 +298,7 @@ module IntermediateParser =
       factory(attrs, readCommands children)
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise
 
-  /// XmlNode to Bulletml.ActionRef
+  /// XmlNode to actionRef。**どの位置の腕を作るかは factory が決める**
   ///
   /// DTD :
   /// <!ELEMENT actionRef (param* )>
@@ -338,7 +338,7 @@ module IntermediateParser =
       new BulletmlDTDViolationException("repeat element should have Action or ActionRef.") |> raise
     result.[0] |> f
 
-  /// XmlNode to Bulletml.Bullet
+  /// XmlNode to bullet。**どの位置の腕を作るかは factory が決める**
   ///
   /// DTD :
   /// <!ELEMENT bullet (direction?, speed?, (action | actionRef)* )>
@@ -351,7 +351,7 @@ module IntermediateParser =
       factory(attr, tryFindDirection children, tryFindSpeed children, readActionElms children)
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise
 
-  /// XmlNode to Bulletml.BulletRef
+  /// XmlNode to bulletRef。**どの位置の腕を作るかは factory が決める**
   ///
   /// DTD :
   /// <!ELEMENT bulletRef (param* )>
@@ -381,7 +381,7 @@ module IntermediateParser =
       | _ -> new BulletmlDTDViolationException("not support element.") |> raise
     children |> List.tryPick f
 
-  /// XmlNode to Bulletml.Fire
+  /// XmlNode to fire。**どの位置の腕を作るかは factory が決める**
   ///
   /// DTD :
   /// <!ELEMENT fire (direction?, speed?, (bullet | bulletRef))>
@@ -398,7 +398,7 @@ module IntermediateParser =
       | None -> new BulletmlDTDViolationException("Fire element should have Bullet or BulletRef element.") |> raise
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise
 
-  /// XmlNode to Bulletml.FireRef
+  /// XmlNode to Action.FireRef
   ///
   /// DTD :
   /// <!ELEMENT fireRef (param* )>
@@ -416,7 +416,7 @@ module IntermediateParser =
       | _ -> new BulletmlDTDViolationException("FireRef element should have label attribute.") |> raise 
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise 
 
-  /// XmlNode to Bulletml.Accel
+  /// XmlNode to Action.Accel
   ///
   /// DTD :
   /// <!ELEMENT accel (horizontal?, vertical?, term)>  
@@ -466,7 +466,7 @@ module IntermediateParser =
         Action.ChangeDirection(direction, createTerm children "changeDirection")
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise
 
-  /// XmlNode to Bulletml.Wait
+  /// XmlNode to Action.Wait
   ///
   /// DTD :
   /// <!ELEMENT wait (#PCDATA)>
@@ -481,7 +481,7 @@ module IntermediateParser =
         | None -> new BulletmlDTDViolationException (sprintf "[%s] element should have #PCDATA." elementName) |> raise
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise 
 
-  /// XmlNode to Bulletml.Vanish
+  /// XmlNode to Action.Vanish
   ///
   /// DTD :
   /// <!ELEMENT vanish (#PCDATA)>
@@ -496,7 +496,7 @@ module IntermediateParser =
         | None -> Action.Vanish
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise 
 
-  /// XmlNode to Bulletml.Repeat
+  /// XmlNode to Action.Repeat
   ///
   /// DTD :
   /// <!ELEMENT repeat (times, (action | actionRef))>
@@ -631,7 +631,16 @@ module IntermediateParser =
     | Some(Vertical(attrs,s)) -> Vertical(attrs, Param.replaceIn prams s) |> Some
     | None -> None
  
-  let private convertRecBulletml' bulletml test = 
+  /// 定数を畳む。**$ を含まない式だけを eval して数へ潰し、文字に書き戻す。**
+  ///
+  /// 以前は convertRecBulletml という名前で、公開の木を走らせる木（Rec*）へ
+  /// 写しながら畳んでいた。**二重木を畳んで写す仕事が無くなったので、
+  /// 残ったのは畳みだけ** —— 名前をそちらに合わせた。
+  ///
+  /// 型は同じになったが走査は残る。**畳みは木を歩かないとかけられない。**
+  ///
+  /// test は小数の書き方だけを変える（下の toStr）。
+  let private foldConstants' bulletml test =
     // 値は BulletML の文書と同じ書き方（小数点は . ）で持ち回る。
     // F10 を既定カルチャで作ると , が混ざり、XPath が引数区切りと読んで落ちる。
     // test の側は元から不変（F# の string 演算子）で、明示に揃えただけ
@@ -676,57 +685,57 @@ module IntermediateParser =
     // しているので、腕が 1 対 1 に並ぶ。以前は平らな DU 同士だったので
     // 「どの位置に来たか」を型が持たず、bulletElmToBulletml のような
     // 位置を潰す変換を挟んでから 1 つの match で受けていた
-    let rec convertCommand (c: Action) : RecCommand =
+    let rec convertCommand (c: Action) : Action =
       match c with
       | ChangeDirection (direction, term) ->
-        RecCommand.ChangeDirection (repDirOne direction, repTerm term)
+        Action.ChangeDirection (repDirOne direction, repTerm term)
       | ChangeSpeed (speed, term) ->
-        RecCommand.ChangeSpeed (repSpdOne speed, repTerm term)
+        Action.ChangeSpeed (repSpdOne speed, repTerm term)
       | Accel (horizontal, vertical, term) ->
-        RecCommand.Accel (repHorizontal horizontal, repVertical vertical, repTerm term)
-      | Vanish -> RecCommand.Vanish
-      | Wait times -> RecCommand.Wait (repWait times)
+        Action.Accel (repHorizontal horizontal, repVertical vertical, repTerm term)
+      | Vanish -> Action.Vanish
+      | Wait times -> Action.Wait (repWait times)
       | Repeat (times, actionElm) ->
-        RecCommand.Repeat (repTimes times, convertActionElm actionElm)
+        Action.Repeat (repTimes times, convertActionElm actionElm)
       | Fire (attrs, direction, speed, bulletElm) ->
-        RecCommand.Fire (attrs, repDir direction, repSpd speed, convertBulletElm bulletElm)
-      | FireRef (attrs, prams) -> RecCommand.FireRef (attrs, prams)
+        Action.Fire (attrs, repDir direction, repSpd speed, convertBulletElm bulletElm)
+      | FireRef (attrs, prams) -> Action.FireRef (attrs, prams)
       | Action.Action (attrs, commands) ->
-        RecCommand.Action (attrs, commands |> List.map convertCommand)
-      | Action.ActionRef (attrs, prams) -> RecCommand.ActionRef (attrs, prams)
+        Action.Action (attrs, commands |> List.map convertCommand)
+      | Action.ActionRef (attrs, prams) -> Action.ActionRef (attrs, prams)
 
-    and convertActionElm (a: ActionElm) : RecActionElm =
+    and convertActionElm (a: ActionElm) : ActionElm =
       match a with
       | ActionElm.Action (attrs, commands) ->
-        RecActionElm.Action (attrs, commands |> List.map convertCommand)
-      | ActionElm.ActionRef (attrs, prams) -> RecActionElm.ActionRef (attrs, prams)
+        ActionElm.Action (attrs, commands |> List.map convertCommand)
+      | ActionElm.ActionRef (attrs, prams) -> ActionElm.ActionRef (attrs, prams)
 
-    and convertBulletElm (b: BulletElm) : RecBulletElm =
+    and convertBulletElm (b: BulletElm) : BulletElm =
       match b with
       | BulletElm.Bullet (attrs, direction, speed, actionElms) ->
-        RecBulletElm.Bullet (attrs, repDir direction, repSpd speed,
+        BulletElm.Bullet (attrs, repDir direction, repSpd speed,
                              actionElms |> List.map convertActionElm)
-      | BulletElm.BulletRef (attrs, prams) -> RecBulletElm.BulletRef (attrs, prams)
+      | BulletElm.BulletRef (attrs, prams) -> BulletElm.BulletRef (attrs, prams)
 
-    let convertTopElm (t: BulletmlElm) : RecTopElm =
+    let convertTopElm (t: BulletmlElm) : BulletmlElm =
       match t with
       | BulletmlElm.Bullet (attrs, direction, speed, actionElms) ->
-        RecTopElm.Bullet (attrs, repDir direction, repSpd speed,
+        BulletmlElm.Bullet (attrs, repDir direction, repSpd speed,
                           actionElms |> List.map convertActionElm)
       | BulletmlElm.Fire (attrs, direction, speed, bulletElm) ->
-        RecTopElm.Fire (attrs, repDir direction, repSpd speed, convertBulletElm bulletElm)
+        BulletmlElm.Fire (attrs, repDir direction, repSpd speed, convertBulletElm bulletElm)
       | BulletmlElm.Action (attrs, commands) ->
-        RecTopElm.Action (attrs, commands |> List.map convertCommand)
+        BulletmlElm.Action (attrs, commands |> List.map convertCommand)
 
     // 根は bulletml だけ。**公開の Bulletml も腕が 1 つ になったので、
     // ここで確かめる必要が無くなった** ——「どの要素でも表せる型」だった
     // 頃は `| _ -> raise` が要った
     match bulletml with
     | Bulletml.Bulletml (attrs, elms) ->
-      RecBulletml.Bulletml (attrs, elms |> List.map convertTopElm)
+      Bulletml.Bulletml (attrs, elms |> List.map convertTopElm)
 
-  let internal convertRecBulletml bulletml= 
-    convertRecBulletml' bulletml false
+  let internal foldConstants bulletml= 
+    foldConstants' bulletml false
 
-  let internal convertRecBulletmlForTest bulletml = 
-    convertRecBulletml' bulletml true
+  let internal foldConstantsForTest bulletml = 
+    foldConstants' bulletml true

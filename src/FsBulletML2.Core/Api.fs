@@ -44,7 +44,7 @@ module Body =
 
 /// 1 体の実行状態。**中身は不透明。**
 ///
-/// 台本（RecActionElm）と実行位置（Progress）を持つが、どちらもエンジンの
+/// 台本（ActionElm）と実行位置（Progress）を持つが、どちらもエンジンの
 /// 内部形なので外へ出さない。出すと、木の形を変えるたびに公開 API の
 /// 破壊的変更になる。フロントは受け取って持ち歩き、次のコマでそのまま返す。
 ///
@@ -216,28 +216,28 @@ module Runner =
   /// 読まれない —— 引かれるのは wait だけ（設計文書 5.6）。
   [<CompiledName "Load">]
   let load (rootEnv: Env) (bulletml: Bulletml) : BulletmlScript =
-    let rec' = IntermediateParser.convertRecBulletml bulletml
+    let rec' = IntermediateParser.foldConstants bulletml
     let resolvers : Step.Resolvers =
-      { Bullet = RecOps.expandBulletRefOnceRec rec'
-        Action = RecOps.expandActionRefOnceRec rec' }
-    // 根は bulletml しかない（RecBulletml の腕が 1 つ）
+      { Bullet = BulletmlOps.expandBulletRefOnceRec rec'
+        Action = BulletmlOps.expandActionRefOnceRec rec' }
+    // 根は bulletml しかない（Bulletml の腕が 1 つ）
     let shootingDirection =
       match rec' with
-      | RecBulletml.Bulletml (attrs, _) ->
+      | Bulletml.Bulletml (attrs, _) ->
           match attrs.bulletmlType with
           | Some x -> x
           | None -> ShootingDirection.BulletVertical
     // top* の並びは旧の toProcessable と同じ選び方（label が top で始まる action）
     let scripts =
       rec'
-      |> RecOps.getAction
+      |> BulletmlOps.getAction
       |> List.filter (function
-        | RecActionElm.Action (attrs, _) ->
+        | ActionElm.Action (attrs, _) ->
             match attrs.actionLabel with
             | Some label -> (ActionLabel.text label).StartsWith "top"
             | None -> false
         | _ -> false)
-      |> List.map (RecOps.convertRefActionElm rec')
+      |> List.map (BulletmlOps.convertRefActionElm rec')
     let rootState =
       { Pos = { X = 0.0f; Y = 0.0f }
         Speed = 0.0f

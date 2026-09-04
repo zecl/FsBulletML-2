@@ -196,8 +196,10 @@ module DTD =
   /// Innternal DSL
   ///
   /// **根。腕は bulletml 1 つ だけ。** 子は位置ごとの型（BulletmlElm /
-  /// Action / ActionElm / BulletElm、下）に分かれていて、走らせる木
-  /// （Rec*、上）と同じ形をしている。
+  /// Action / ActionElm / BulletElm、下）に分かれている。
+  ///
+  /// **エンジンが歩くのもこの木。** 以前は Rec* という別の 5 つ が並んで
+  /// いたが、腕まで同じだったので畳んだ（IntermediateParser の但し書き）。
   ///
   /// 以前はここに 13 腕 あった —— action / wait / fire / repeat …と、
   /// **根になれないものまで根の型に並んでいた。** XML を読む段が、どの位置の
@@ -206,7 +208,7 @@ module DTD =
   ///
   /// **根が 1 腕 になると、`| _ -> raise` が 2 か所 消える** ——
   /// Type / Name / Description の `| _ -> None` と、
-  /// convertRecBulletml の「走らせる木の根は bulletml でなければならない」。
+  /// foldConstants の「木の根は bulletml でなければならない」。
   [<StructuredFormatDisplay("{ToStructuredDisplay}")>]
   type Bulletml =
 /// BulletML DTD
@@ -265,32 +267,10 @@ module DTD =
     member private t.ToStructuredDisplay = t.ToString()
     override t.ToString () = stringifyFullName t
 
-  /// 走らせる木の別名。**公開の木と、腕まで同じ型。**
-  ///
-  /// 以前はここに Rec* 5 つ の定義が並んでいた。公開側（下）と
-  /// 腕の名前も引数の型も一致していて、違うのは並び順と属性だけだった
-  /// —— **同じものを 2 通りの名前で持っていた。**
-  ///
-  ///     RecCommand    = Action       action の子になれる 10 通り
-  ///     RecActionElm  = ActionElm    repeat / bullet の子
-  ///     RecBulletElm  = BulletElm    fire の子
-  ///     RecTopElm     = BulletmlElm  bulletml の子
-  ///     RecBulletml   = Bulletml     根
-  ///
-  /// 名前が残っているのは、呼び側 492 か所 を同じコミットで書き換えないため。
-  /// **型が 1 つ になった時点で、あとの書き換えは名前だけの仕事になる**
-  /// （別名なので、どちらの名前で書いても同じ型に解ける）。
-  ///
-  /// convertRecBulletml は写す仕事を失い、**定数を畳むだけ**になった。
-  type internal RecCommand = Action
-  type internal RecActionElm = ActionElm
-  type internal RecBulletElm = BulletElm
-  type internal RecTopElm = BulletmlElm
-  type internal RecBulletml = Bulletml
   /// BulletML を XML に書き戻す。
   ///
-  /// **以前は RecBulletml の member だった。** 公開の Bulletml と同じ型に
-  /// なったので member のままだと、Parser の Bulletml.ToXmlString（定数を
+  /// **以前は走らせる木の型の member だった。** その型が公開の Bulletml と
+  /// 同じになったので member のままだと、Parser の Bulletml.ToXmlString（定数を
   /// 畳んでから書く口）と名前がぶつかって自分を呼ぶ。関数に出した。
   ///
   /// ToString の override も落とした。**公開の Bulletml.ToString は
@@ -376,19 +356,19 @@ module DTD =
         writeChildren ()
         writer.WriteEndElement()
 
-      let rec writeCommand (c: RecCommand) =
+      let rec writeCommand (c: Action) =
         match c with
-        | RecCommand.ChangeDirection (direction, term) ->
+        | Action.ChangeDirection (direction, term) ->
           writer.WriteStartElement("changeDirection")
           writeDirection direction
           writeTerm term
           writer.WriteEndElement()
-        | RecCommand.ChangeSpeed (speed, term) ->
+        | Action.ChangeSpeed (speed, term) ->
           writer.WriteStartElement("changeSpeed")
           writeSpeed speed
           writeTerm term
           writer.WriteEndElement()
-        | RecCommand.Accel (horizontal, vertical, term) ->
+        | Action.Accel (horizontal, vertical, term) ->
           writer.WriteStartElement("accel")
           match horizontal with
           | Some (Horizontal.Horizontal(attrs, s)) ->
@@ -422,14 +402,14 @@ module DTD =
           | _ -> ()
           writeTerm term
           writer.WriteEndElement()
-        | RecCommand.Wait s ->
+        | Action.Wait s ->
           writer.WriteStartElement("wait")
           writer.WriteString(Expr.NumExpr.text s)
           writer.WriteEndElement()
-        | RecCommand.Vanish ->
+        | Action.Vanish ->
           writer.WriteStartElement("vanish")
           writer.WriteEndElement()
-        | RecCommand.Repeat (times, child) ->
+        | Action.Repeat (times, child) ->
           writer.WriteStartElement("repeat")
           match times with
           | Times s ->
@@ -438,52 +418,52 @@ module DTD =
             writer.WriteEndElement()
           writeActionElm child
           writer.WriteEndElement()
-        | RecCommand.Fire (attrs, direction, speed, child) ->
+        | Action.Fire (attrs, direction, speed, child) ->
           writeFireBody attrs direction speed (fun () -> writeBulletElm child)
-        | RecCommand.FireRef (attrs, prams) ->
+        | Action.FireRef (attrs, prams) ->
           writer.WriteStartElement("fireRef")
           writer.WriteAttributeString("label", FireLabel.text attrs.fireRefLabel)
           writeParams prams
           writer.WriteEndElement()
-        | RecCommand.Action (attrs, children) ->
+        | Action.Action (attrs, children) ->
           writeActionBody attrs (fun () -> children |> Seq.iter writeCommand)
-        | RecCommand.ActionRef (attrs, prams) ->
+        | Action.ActionRef (attrs, prams) ->
           writer.WriteStartElement("actionRef")
           writer.WriteAttributeString("label", ActionLabel.text attrs.actionRefLabel)
           writeParams prams
           writer.WriteEndElement()
 
-      and writeActionElm (a: RecActionElm) =
+      and writeActionElm (a: ActionElm) =
         match a with
-        | RecActionElm.Action (attrs, children) ->
+        | ActionElm.Action (attrs, children) ->
           writeActionBody attrs (fun () -> children |> Seq.iter writeCommand)
-        | RecActionElm.ActionRef (attrs, prams) ->
+        | ActionElm.ActionRef (attrs, prams) ->
           writer.WriteStartElement("actionRef")
           writer.WriteAttributeString("label", ActionLabel.text attrs.actionRefLabel)
           writeParams prams
           writer.WriteEndElement()
 
-      and writeBulletElm (b: RecBulletElm) =
+      and writeBulletElm (b: BulletElm) =
         match b with
-        | RecBulletElm.Bullet (attrs, direction, speed, children) ->
+        | BulletElm.Bullet (attrs, direction, speed, children) ->
           writeBulletBody attrs direction speed (fun () -> children |> Seq.iter writeActionElm)
-        | RecBulletElm.BulletRef (attrs, prams) ->
+        | BulletElm.BulletRef (attrs, prams) ->
           writer.WriteStartElement("bulletRef")
           writer.WriteAttributeString("label", BulletLabel.text attrs.bulletRefLabel)
           writeParams prams
           writer.WriteEndElement()
 
-      let writeTopElm (t: RecTopElm) =
+      let writeTopElm (t: BulletmlElm) =
         match t with
-        | RecTopElm.Bullet (attrs, direction, speed, children) ->
+        | BulletmlElm.Bullet (attrs, direction, speed, children) ->
           writeBulletBody attrs direction speed (fun () -> children |> Seq.iter writeActionElm)
-        | RecTopElm.Fire (attrs, direction, speed, child) ->
+        | BulletmlElm.Fire (attrs, direction, speed, child) ->
           writeFireBody attrs direction speed (fun () -> writeBulletElm child)
-        | RecTopElm.Action (attrs, children) ->
+        | BulletmlElm.Action (attrs, children) ->
           writeActionBody attrs (fun () -> children |> Seq.iter writeCommand)
 
       match this with
-      | RecBulletml.Bulletml (attrs, children) ->
+      | Bulletml.Bulletml (attrs, children) ->
         writer.WriteStartElement("bulletml")
         match attrs.bulletmlXmlns with
         | Some v -> writer.WriteAttributeString("xmlns", v)
