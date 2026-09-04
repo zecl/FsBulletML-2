@@ -8,6 +8,8 @@
     <AssemblyName>FsBulletML2.Sample.Unity2D.FSharp</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <!-- R3 の発火源。誰にも依存しないので先頭 -->
+    <Compile Include="FrameTicker.fs" />
     <Compile Include="BulletFunctions.fs" />
     <Compile Include="IBullet.fs" />
     <Compile Include="BaseBullet.fs" />
@@ -34,6 +36,26 @@
     <ProjectReference Include="..\..\FsBulletML2.Bullets\FsBulletML2.Bullets.fsproj" />
     <!-- COMPILE-ONLY UnityEngine stub. Not a substitute for the Unity Editor. -->
     <ProjectReference Include="..\..\..\src\UnityEngine.Stub\UnityEngine.Stub.csproj" Condition="'$(UseRealUnity)' != 'true'" />
+  </ItemGroup>
+  <!-- R3 と、その F# 向けの包み。
+
+       **R3 本体は NuGet から参照し、Assets へは置かない。** Unity 側には
+       同じ 1.3.1 が UPM（org.nuget.r3）で入る。両方置くと同名アセンブリが
+       2 つ になるので、Assets へ配るのは FSharp.Control.R3.dll だけ。
+
+       **UseRealUnity でも NuGet の R3 を参照する。** ここで要るのは
+       コンパイル時の型だけで、実行時に読まれるのは Unity 側の R3。
+       版を 1.3.1 でそろえてあるので中身は同じ。
+
+       **R3.Unity（com.cysharp.r3）の API は使わない。** `Observable.EveryUpdate`
+       も `AddTo(Component)` も `R3.Triggers` もあちらに居るが、それらは
+       UnityEngine.Stub でビルドする経路に持ち込めない ——
+       `namespace R3` に `static class Observable` をもう 1 つ 置くことになり、
+       本物と衝突する（CS0433）。代わりが `FrameTicker` と
+       `RegisterTo(destroyCancellationToken)`。詳しくは FrameTicker.fs -->
+  <ItemGroup>
+    <PackageReference Include="R3" Version="1.3.1" />
+    <PackageReference Include="FSharp.Control.R3" Version="0.3.1" />
   </ItemGroup>
   <!-- ECS のアセンブリ。**Unity がビルドした Library/ScriptAssemblies を指す。**
        PackageCache には dll が無く（ソースで配られている）、Unity が

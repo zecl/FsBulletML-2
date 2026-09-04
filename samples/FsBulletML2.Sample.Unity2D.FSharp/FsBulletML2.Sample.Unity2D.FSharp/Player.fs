@@ -1,21 +1,25 @@
 namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
-open System.Collections.Generic
-open System.Runtime.Serialization
+open R3
+// **R3 のあとに開くこと**（`Observable` が両方にある。FrameTicker の但し書き）
+open FSharp.Control.R3
 open UnityEngine
 open FsBulletML2
-open FsBulletML2.Unity2D 
- 
+open FsBulletML2.Unity2D
+
 type Player () =
   inherit MonoBehaviour ()
+
+  /// 受けたダメージ。**増えたら爆風**（購読は `Start`）。
+  /// **F# は let 束縛を val より前に置く**ので、ここに居る
+  let damageRp = new ReactiveProperty<int>(0)
+
   [<DefaultValue>]val mutable public bulletObject : GameObject
   [<DefaultValue>]val mutable public bombType : GameObject
   [<DefaultValue>]val mutable public speed : float32
   [<DefaultValue>]val mutable public isBomb : bool
-  [<DefaultValue>]val mutable public Damage : int
 
-  [<DefaultValue>]val mutable private counter : int
   [<DefaultValue>]val mutable private b2wayLeftBulletTask : BulletmlScript option
   [<DefaultValue>]val mutable private b2wayRightBulletTask : BulletmlScript option
   [<DefaultValue>]val mutable private hommingTask : BulletmlScript option
@@ -23,6 +27,10 @@ type Player () =
   interface IPlayerPosition with
     member this.PlayerPosX () = this.transform.position.x
     member this.PlayerPosY () = this.transform.position.y
+
+  /// 受けたダメージ。**Informations が読む**
+  member this.Damage = damageRp.Value
+  member this.DamageRp = damageRp
 
   member this.Awake () =
     // **Init が先。** 読む段の Env は BulletMLManager から rand と rank を
@@ -32,16 +40,47 @@ type Player () =
     this.b2wayRightBulletTask <- Runner.load (FrontEnv.Load()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet |> Some
     this.hommingTask <- Runner.load (FrontEnv.Load()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing |> Some
 
-  member this.X with get () = this.transform.position.x 
-                 and set (v) = this.transform.position <- Vector3(v, this.transform.position.y, this.transform.position.z) 
+  member this.X with get () = this.transform.position.x
+                 and set (v) = this.transform.position <- Vector3(v, this.transform.position.y, this.transform.position.z)
   member this.Y with get () = this.transform.position.y
-                 and set (v) = this.transform.position <- Vector3(this.transform.position.x, v, this.transform.position.z) 
+                 and set (v) = this.transform.position <- Vector3(this.transform.position.x, v, this.transform.position.z)
 
-  member this.Update () = 
+  /// 毎コマ の仕事を 4 本 の流れに割る。**旧は 1 つ の Update に畳んであった。**
+  ///
+  /// 割ると、それぞれの条件が `filter` に出る —— 旧は入力が 0 のコマでも
+  /// 座標を計算し直していて、**止めているのか動かしているのかが字から読めなかった。**
+  member this.Start () =
+    let update = FrameTicker.Frames
 
-    let x = Input.GetAxisRaw("Horizontal")
-    let y = Input.GetAxisRaw("Vertical")
+    // 1. 移動。**入力が入っているコマだけ**通す
+    update
+    |> Observable.map (fun _ -> struct (Input.GetAxisRaw "Horizontal", Input.GetAxisRaw "Vertical"))
+    |> Observable.filter (fun struct (x, y) -> x <> 0.0f || y <> 0.0f)
+    |> subscribeUntilDestroy this (fun struct (x, y) -> this.ApplyMove x y)
 
+    // 2. Z を押している間ずっと 2way
+    update
+    |> Observable.filter (fun _ -> Input.GetKey KeyCode.Z)
+    |> subscribeUntilDestroy this (fun _ ->
+        this.Shoot2WayLeftBullet ()
+        this.Shoot2WayRightBullet ())
+
+    // 3. ホーミングは 61 コマ に 1 回 だけ。
+    //    **旧は counter を自分で数えていた** —— 毎コマ +1 して 61 で 0 に戻し、
+    //    61 のコマだけ撃つ形。通し番号で同じ間隔になる
+    update
+    |> Observable.mapi (fun i _ -> i)
+    |> Observable.filter (fun i -> i % 61 = 60 && Input.GetKey KeyCode.Z)
+    |> subscribeUntilDestroy this (fun _ -> this.ShootHomingBullet ())
+
+    // 4. ダメージが増えたら爆風。**`skip 1` は初期値の 0 を捨てるため**
+    //    （ReactiveProperty は購読した瞬間に現在値を 1 個 流す）
+    (damageRp :> Observable<int>)
+    |> Observable.skip 1
+    |> subscribeUntilDestroy this (fun _ ->
+        if this.isBomb then Bomb.GenerateBomb(this.bombType, this.transform.position))
+
+  member private this.ApplyMove (x: float32) (y: float32) =
     let mx = this.X + x / 100.f * this.speed
     if (mx >= 0.4f && mx <= 4.4f) then
         this.X <- mx
@@ -49,15 +88,6 @@ type Player () =
     let my = this.Y + y / 100.f * this.speed
     if (my > -6.0f && my <= -0.4f) then
         this.Y <- my
-
-    this.counter <- this.counter + 1
-    if (Input.GetKey(KeyCode.Z)) then
-      this.Shoot2WayLeftBullet()
-      this.Shoot2WayRightBullet()
-      this.ShootHomingBullet()
-
-    if (this.counter > 60) then
-        this.counter <- 0
 
   /// 弾を 1 発 撃つ。**prefab ではなく Entity を作る。**
   /// 台本が無ければ何もしない（Awake が走る前に呼ばれた場合）
@@ -72,16 +102,20 @@ type Player () =
   member this.Shoot2WayRightBullet () =
     this.Fire (this.transform.position + new Vector3(0.1f, 0.1f, 0.f)) this.b2wayRightBulletTask
 
+  /// **間隔の判定はここに無い。** 持っているのは流れの側（`Start` の 3 番）
   member this.ShootHomingBullet () =
-    if this.counter > 60 then
-      this.Fire this.transform.position this.hommingTask
+    this.Fire this.transform.position this.hommingTask
 
   /// 敵弾が当たった。**当たり判定は BulletEcsDriver がやる** ——
-  /// ECS の弾は Collider2D を持たないので、OnTriggerEnter2D は届かない
+  /// ECS の弾は Collider2D を持たないので、OnTriggerEnter2D は届かない。
+  ///
+  /// **爆風はここで出さない。** ダメージを増やすだけで、
+  /// 出すのは `Start` の 4 番（`damageRp` の購読）
   member this.HitByEnemyBullet () =
-    if (this.isBomb) then Bomb.GenerateBomb(this.bombType, this.transform.position)
-    this.Damage <- this.Damage + 1
+    damageRp.Value <- damageRp.Value + 1
 
   member this.OnTriggerEnter2D (collier:Collider2D) =
     // GameObject の弾（もう出ないが、prefab が残っている経路）向け
     this.HitByEnemyBullet()
+
+  member this.OnDestroy () = damageRp.Dispose()

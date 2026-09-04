@@ -80,6 +80,19 @@ namespace UnityEngine
         public static T FindAnyObjectByType<T>() where T : Object => default;
         public static T[] FindObjectsByType<T>() where T : Object => System.Array.Empty<T>();
         public static T[] FindObjectsByType<T>(FindObjectsInactive findObjectsInactive) where T : Object => System.Array.Empty<T>();
+
+        /// <summary>
+        /// <b>本物はここに「壊されたか」の判定が入っている。</b>
+        /// Unity は壊した Object を <b>null のように振る舞う非 null 参照</b>に
+        /// するので、素の参照比較では生きていると読んでしまう。
+        ///
+        /// 偽物は壊す仕組みを持たないので参照比較そのまま。
+        /// <b>ここが通ることは、生存判定が正しいことを 1 つ も保証しない。</b>
+        /// </summary>
+        public static bool operator ==(Object a, Object b) => ReferenceEquals(a, b);
+        public static bool operator !=(Object a, Object b) => !ReferenceEquals(a, b);
+        public override bool Equals(object other) => ReferenceEquals(this, other);
+        public override int GetHashCode() => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
     }
 
     public class GameObject : Object
@@ -117,6 +130,16 @@ namespace UnityEngine
     public class MonoBehaviour : Behaviour
     {
         public bool useGUILayout { get; set; }
+
+        /// <summary>
+        /// この component が壊されたときに取り消される印。
+        /// <b>R3 の購読を切るのに使う</b> —— <c>subscription.RegisterTo(token)</c>。
+        ///
+        /// 本物は Unity 2022.2 以降 の MonoBehaviour が持つ。ここが偽物なので
+        /// 決して取り消されないが、<b>コンパイルが通るかを見るのが目的</b>。
+        /// </summary>
+        public System.Threading.CancellationToken destroyCancellationToken { get; }
+            = System.Threading.CancellationToken.None;
     }
 
     public class Transform : Component

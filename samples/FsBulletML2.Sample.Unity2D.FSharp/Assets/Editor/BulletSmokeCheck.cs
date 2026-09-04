@@ -172,9 +172,16 @@ public static class BulletSmokeCheck
             failures++;
         }
 
-        if (Application.isBatchMode)
+        LastFailures = failures;
+        if (Application.isBatchMode && !SuppressExit)
         {
             EditorApplication.Exit(failures == 0 ? 0 : 1);
         }
     }
+
+    /// <summary>集約門から呼ぶときは Exit を抑える。見よ <see cref="SampleChecks"/></summary>
+    public static bool SuppressExit;
+
+    /// <summary>直前の走行で見つかった食い違いの数</summary>
+    public static int LastFailures;
 }

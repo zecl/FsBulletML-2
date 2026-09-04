@@ -1,13 +1,21 @@
-﻿namespace FsBulletML2.Sample.Unity2D.FSharp
+namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
+open R3
 open UnityEngine
 
 type BgScroll () =
   inherit MonoBehaviour ()
   [<SerializeField;DefaultValue>]val mutable public scrollSpeed : float32
-  
-  member this.Update () =
+
+  /// 背景を毎コマ 少しずつ流す。
+  ///
+  /// **Renderer は 1 回 だけ引く。** 旧は毎コマ `GetComponent` を呼んでいた ——
+  /// あれは型で component を走査するので、毎コマ 払う理由が無い
+  member this.Start () =
     let r = this.GetComponent<Renderer>()
-    let newTextureOffset = new Vector2(r.material.mainTextureOffset.x , r.material.mainTextureOffset.y - Time.deltaTime * this.scrollSpeed)
-    r.material.mainTextureOffset <- newTextureOffset
+    FrameTicker.Frames
+    |> subscribeUntilDestroy this (fun _ ->
+        let offset = r.material.mainTextureOffset
+        r.material.mainTextureOffset <-
+          Vector2(offset.x, offset.y - Time.deltaTime * this.scrollSpeed))
