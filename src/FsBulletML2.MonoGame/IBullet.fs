@@ -71,3 +71,6 @@ module BulletmlLoad =
   /// 旧 BulletRunner.envWithoutAim と同じ狙いで、段階 4 で Env を組む責任が
   /// フロントへ移ったぶん、判断もフロントに来た
   let noAimEnv () : FsBulletML2.Domain.Env = loadEnv ()
+
+  // FrontEnv.noAim も同じ形。**3 つ に増えたので、門で 3 つ が一致することを
+  // 見ている**（MonoGameEnvGate）。名前を分けたまま値のずれだけ止める

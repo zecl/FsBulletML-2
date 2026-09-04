@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2.MonoGame
+namespace FsBulletML2.MonoGame
 
 open System
 open System.Collections.Generic
@@ -17,32 +17,9 @@ type BaseBullet () as this =
   /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish の置き場所
   let mutable finished = false
 
-  /// 自機を狙う向き。旧 GetAimDir の式そのまま。
-  /// 旧はエンジンが IBulletmlObject.GetAimDir を呼び返していたが、
-  /// いまは Env を組むためにフロントが自分で呼ぶ
-  let aimDirAt (x: float32) (y: float32) =
-    float32 (Math.Atan2(float (BulletMLManager.GetPlayerPosX() - x),
-                        float -(BulletMLManager.GetPlayerPosY() - y)))
-
-  /// 産まれる弾の位置から見た向き。旧 GetSpawnAimDir。
-  ///
-  /// 産まれた弾がどこに出るかは下の Spawn が決めていて、位置を入れずに
-  /// 作るので原点。同じ式に原点を入れる。**片方だけ直すと軌跡が割れる**
-  let spawnAimDir () = aimDirAt 0.0f 0.0f
-
-  /// 旧 GetSpawnEnemyAimDir。産まれたばかりの弾は TargetEnemy を持たないので、
-  /// 原点にいちばん近い敵をその場で選ぶ
-  let spawnEnemyAimDir () =
-    if ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then 0.0f
-    else
-      let mutable md = Single.MaxValue
-      let mutable target = defaultof<IBullet>
-      for enemy in Manager.enemies do
-        let d = Vector2.Distance (Vector2(0.0f, 0.0f), Vector2(enemy.X, enemy.Y))
-        if md > d then
-          target <- enemy
-          md <- d
-      float32 (Math.Atan2(float (target.X - 0.0f), -1.0 * float (target.Y - 0.0f)))
+  // 自機・産まれる弾の向きを出す式と、Env の組み立ては FrontEnv.fs に出した。
+  // **散らしておくと、4 本 の aim の取り違えを門で当てられない**
+  // （型はどれも float32 なので入れ替えても通る）
 
   interface IBullet with
     member this.Pos with get () = this.pos
@@ -102,15 +79,10 @@ type BaseBullet () as this =
       float32 (Math.Atan2(float (this.self.TargetEnemy.X - x),
                           -1.0 * float (this.self.TargetEnemy.Y - y)))
 
-  /// このコマの Env を、いまの位置から組む。旧 BulletRunner.envOfGlobal の写し。
+  /// このコマの Env を、いまの位置から組む。中身は FrontEnv.at。
   /// **組む位置が変わると aim がずれる**ので、step の直前（差分を足す前）に組む
   member private this.EnvAt (x: float32) (y: float32) : Env =
-    { Rand = BulletMLManager.GetRandom
-      Rank = BulletMLManager.GetRank ()
-      AimDir = aimDirAt x y
-      EnemyAimDir = this.EnemyAimDirAt x y
-      SpawnAimDir = spawnAimDir ()
-      SpawnEnemyAimDir = spawnEnemyAimDir () }
+    FrontEnv.at this.EnemyAimDirAt x y
 
   /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ。
   ///

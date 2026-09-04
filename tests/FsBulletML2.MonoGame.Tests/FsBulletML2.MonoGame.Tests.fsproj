@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateProgramFile>true</GenerateProgramFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>FsBulletML2.MonoGame.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="EnvGate.fs" />
+  </ItemGroup>
+  <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
+       手のせいか版のせいかが割れない -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="FsUnit" Version="5.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FsBulletML2.MonoGame\FsBulletML2.MonoGame.fsproj" />
+  </ItemGroup>
+</Project>
