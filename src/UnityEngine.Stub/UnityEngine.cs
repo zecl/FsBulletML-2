@@ -39,6 +39,7 @@ namespace UnityEngine
         public float x, y, z, w;
         public static Quaternion identity => new Quaternion();
         public static Quaternion AngleAxis(float angle, Vector3 axis) => identity;
+        public static Quaternion Euler(float x, float y, float z) => identity;
     }
 
     public struct Rect
@@ -102,6 +103,7 @@ namespace UnityEngine
     {
         public GameObject gameObject { get; } = new GameObject();
         public Transform transform { get; } = new Transform();
+        public bool CompareTag(string tag) => false;
         public string tag { get => gameObject.tag; set => gameObject.tag = value; }
         public T GetComponent<T>() => default;
         public Component GetComponent(Type type) => null;
@@ -126,22 +128,75 @@ namespace UnityEngine
     public class Renderer : Component
     {
         public Material material { get; set; } = new Material();
+        public Material[] materials { get; set; } = System.Array.Empty<Material>();
+        public Material[] sharedMaterials { get; set; } = System.Array.Empty<Material>();
         public string sortingLayerName { get; set; }
         public int sortingOrder { get; set; }
+        public void GetPropertyBlock(MaterialPropertyBlock block) { }
+        public void SetPropertyBlock(MaterialPropertyBlock block) { }
+    }
+
+    public class MeshRenderer : Renderer { }
+
+    /// <summary>材質を共有したまま個別に色やテクスチャを差す口</summary>
+    public class MaterialPropertyBlock
+    {
+        public void SetTexture(string name, Texture value) { }
+        public void SetColor(string name, Color value) { }
+    }
+
+    public enum CameraClearFlags
+    {
+        Skybox = 1,
+        SolidColor = 2,
+        Depth = 3,
+        Nothing = 4,
+    }
+
+    public class Camera : Behaviour
+    {
+        public static Camera main => null;
+        public CameraClearFlags clearFlags { get; set; }
+        public Color backgroundColor { get; set; }
+        public bool orthographic { get; set; }
+        public float orthographicSize { get; set; }
+        public float fieldOfView { get; set; }
+        public float nearClipPlane { get; set; }
+        public float farClipPlane { get; set; }
+        public int cullingMask { get; set; }
+    }
+
+    public enum LightType
+    {
+        Spot = 0,
+        Directional = 1,
+        Point = 2,
+        Area = 3,
+    }
+
+    public class Light : Behaviour
+    {
+        public LightType type { get; set; }
+        public float intensity { get; set; }
+        public Color color { get; set; }
     }
 
     public class Material : Object
     {
         public Material() {}
         public Material(Shader shader) {}
+        public Shader shader { get; set; }
         public Vector2 mainTextureOffset { get; set; }
         public Texture mainTexture { get; set; }
         public int renderQueue { get; set; }
         public bool enableInstancing { get; set; }
+        public bool doubleSidedGI { get; set; }
         public bool HasProperty(string name) => false;
         public void SetFloat(string name, float value) { }
         public void SetColor(string name, Color value) { }
         public void SetTexture(string name, Texture value) { }
+        public Texture GetTexture(string name) => null;
+        public Color GetColor(string name) => Color.white;
         public void SetOverrideTag(string tag, string val) { }
         public void EnableKeyword(string keyword) { }
         public void DisableKeyword(string keyword) { }
@@ -272,6 +327,12 @@ namespace UnityEngine.Rendering
         AlphaTest = 2450,
         Transparent = 3000,
         Overlay = 4000,
+    }
+
+    /// <summary>いま使われているレンダリングパイプライン。URP へ移ったかを見る</summary>
+    public static class GraphicsSettings
+    {
+        public static UnityEngine.Object defaultRenderPipeline { get; set; }
     }
 }
 

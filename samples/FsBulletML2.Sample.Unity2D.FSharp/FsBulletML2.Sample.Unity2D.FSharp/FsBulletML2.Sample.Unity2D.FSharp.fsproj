@@ -16,6 +16,8 @@
     <Compile Include="Bomb.fs" />
     <!-- ECS。BulletEcs が型（BulletSim / FrontEnv）、Factory が生成、
          Driver が毎コマ回す。Enemy / Player より前に置く（あちらが使う） -->
+    <!-- URP の安全網。Driver より前（あちらが呼ぶ） -->
+    <Compile Include="UrpPlayModeCompat.fs" />
     <Compile Include="BulletEcs.fs" />
     <Compile Include="BulletEntityFactory.fs" />
     <Compile Include="Enemy.fs" />
@@ -63,6 +65,10 @@
     </Reference>
     <Reference Include="Unity.Burst">
       <HintPath>$(UnityScriptAssemblies)\Unity.Burst.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Universal.Runtime">
+      <HintPath>$(UnityScriptAssemblies)\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.RenderPipelines.Core.Runtime">

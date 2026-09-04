@@ -141,6 +141,10 @@ type BulletEcsBootstrap () =
   member this.Awake () = this.Configure ()
 
   member this.Configure () =
+    // **これが先。** シーンは Built-in の前提のままなので、URP で描ける形に
+    // 直さないと自機も敵も背景も出ない（実際に真っ暗になった）
+    UrpPlayModeCompat.Apply ()
+
     let player = UnityEngine.Object.FindAnyObjectByType<Player>()
     let enemy = UnityEngine.Object.FindAnyObjectByType<Enemy>()
     let hasPlayer = not (isNull (box player))

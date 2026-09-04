@@ -150,3 +150,29 @@ namespace Unity.Rendering
             MaterialMeshInfo materialMeshInfo) { }
     }
 }
+
+namespace UnityEngine.Rendering.Universal
+{
+    // COMPILE-ONLY stub. URP へ移したあとカメラを組み直す面だけ。
+
+    public enum CameraRenderType
+    {
+        Base = 0,
+        Overlay = 1,
+    }
+
+    public class UniversalAdditionalCameraData : UnityEngine.MonoBehaviour
+    {
+        public CameraRenderType renderType { get; set; }
+        public bool renderPostProcessing { get; set; }
+        public System.Collections.Generic.List<UnityEngine.Camera> cameraStack { get; }
+            = new System.Collections.Generic.List<UnityEngine.Camera>();
+        public void SetRenderer(int index) { }
+    }
+
+    public static class CameraExtensions
+    {
+        public static UniversalAdditionalCameraData GetUniversalAdditionalCameraData(this UnityEngine.Camera camera)
+            => new UniversalAdditionalCameraData();
+    }
+}
