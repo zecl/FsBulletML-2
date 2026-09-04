@@ -10,18 +10,21 @@ public class Informations : MonoBehaviour
     public bool showInEditor = false;
 
     /// <summary>
-    /// フレームレートの上限。<b>これは設計値であって、出せる上限ではない。</b>
+    /// フレームレートの上限。<b>-1 で無制限。</b>
     ///
-    /// 「40 fps しか出ない」と読み違えやすいので、下の表示に上限も並べてある
-    /// （実際に読み違えた）。<b>重さを見たいときは上限を外すこと</b> ——
-    /// 画面の「無制限」ボタンか、ここを -1 にする。
+    /// <b>以前は 40 に固定していた。</b> 意図した設計ではなく、
+    /// 「40 fps しか出ない」と読める状態がそのまま残っていただけだった。
+    /// 外したので、いま出ている数はそのまま実力。
+    ///
+    /// 表示には上限も並べてある —— 数だけだと「これしか出ない」と
+    /// 「上限に張り付いている」を見分けられない（実際に読み違えた）。
     ///
     /// 参考: エンジン（Runner.StepWith）が 1 コマ に使うのは弾 121 本 で
-    /// 0.12 ms、ホーミング 25 本 で 0.43 ms。<b>40 fps の予算 25 ms に対して
-    /// 2% 未満</b>なので、fps が落ちるならエンジンの外を疑うこと
+    /// 0.12 ms、ホーミング 25 本 で 0.43 ms。<b>60 fps の予算 16.7 ms に対して
+    /// 3% 未満</b>なので、fps が落ちるならエンジンの外を疑うこと
     /// （実測は Assets/Editor/BulletSmokeCheck.cs で出せる）。
     /// </summary>
-    public int targetFps = 40;
+    public int targetFps = -1;
 
     private Enemy enemy;
     private Player player;
@@ -73,14 +76,14 @@ public class Informations : MonoBehaviour
             this.show = !this.show;
         }
 
-        // **上限を外して測るためのボタン。** 「40 しか出ない」が上限のせいか
-        // 本当に重いのかは、外してみないと割れない
+        // 上限を掛け直せるボタン。**既定は無制限。**
+        // 掛けたときと外したときで数が変わるかを、その場で見比べるため
         if (Application.isPlaying)
         {
             var capped = Application.targetFrameRate > 0;
-            if (GUI.Button(new Rect(360, 5, 80, 22), capped ? "上限を外す" : "上限 " + targetFps))
+            if (GUI.Button(new Rect(360, 5, 80, 22), capped ? "上限を外す" : "上限 60"))
             {
-                Application.targetFrameRate = capped ? -1 : targetFps;
+                Application.targetFrameRate = capped ? -1 : 60;
             }
         }
 
