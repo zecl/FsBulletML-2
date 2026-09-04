@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2.Sample.Unity2D.FSharp
+namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
 open System.Collections.Generic
@@ -25,10 +25,12 @@ type Player () =
     member this.PlayerPosY () = this.transform.position.y
 
   member this.Awake () =
+    // **Init が先。** 読む段の Env は BulletMLManager から rand と rank を
+    // 引くので、口を差し込む前に読むと NullReference になる
     BulletMLManager.Init(new BulletFunctions(this))
-    this.b2wayLeftBulletTask <- Runner.load (loadEnv ()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet |> Some
-    this.b2wayRightBulletTask <- Runner.load (loadEnv ()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet |> Some
-    this.hommingTask <- Runner.load (loadEnv ()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing |> Some
+    this.b2wayLeftBulletTask <- Runner.load (FrontEnv.Load()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet |> Some
+    this.b2wayRightBulletTask <- Runner.load (FrontEnv.Load()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayRightBullet |> Some
+    this.hommingTask <- Runner.load (FrontEnv.Load()) FsBulletML2.Bullets.PlayerBullet.PlayerBullet.homing |> Some
 
   member this.X with get () = this.transform.position.x 
                  and set (v) = this.transform.position <- Vector3(v, this.transform.position.y, this.transform.position.z) 
@@ -57,29 +59,29 @@ type Player () =
     if (this.counter > 60) then
         this.counter <- 0
 
-  member private this.GetBulletPrefubInstance (position:Vector3, rotation:Quaternion) =
-    InstanceManager.InstantiatePrefab(this.bulletObject, position, rotation)
+  /// 弾を 1 発 撃つ。**prefab ではなく Entity を作る。**
+  /// 台本が無ければ何もしない（Awake が走る前に呼ばれた場合）
+  member private this.Fire (position: Vector3) (script: BulletmlScript option) =
+    match script with
+    | Some s -> BulletEntityFactory.SpawnPlayer(position, s) |> ignore
+    | None -> ()
 
   member this.Shoot2WayLeftBullet () =
-    let position = this.transform.position + new Vector3(-0.1f,0.1f,0.f)
-    let bullet = this.GetBulletPrefubInstance(position, this.transform.rotation)
-    let b = bullet.GetComponent<PlayerBullet>()
-    b.SetScript(this.b2wayLeftBulletTask)
+    this.Fire (this.transform.position + new Vector3(-0.1f, 0.1f, 0.f)) this.b2wayLeftBulletTask
 
   member this.Shoot2WayRightBullet () =
-    let position = this.transform.position + new Vector3(0.1f, 0.1f, 0.f)
-    let bullet = this.GetBulletPrefubInstance(position, this.transform.rotation)
-    let b = bullet.GetComponent<PlayerBullet>()
-    b.SetScript(this.b2wayRightBulletTask)
-  
+    this.Fire (this.transform.position + new Vector3(0.1f, 0.1f, 0.f)) this.b2wayRightBulletTask
+
   member this.ShootHomingBullet () =
     if this.counter > 60 then
-      let position = this.transform.position
-      let bullet = this.GetBulletPrefubInstance(position, this.transform.rotation)
-      let b = bullet.GetComponent<PlayerBullet>()
-      (b :> IBullet).GetDefaultBullet().Init()
-      b.SetScript(this.hommingTask)
+      this.Fire this.transform.position this.hommingTask
 
-  member this.OnTriggerEnter2D (collier:Collider2D) =
+  /// 敵弾が当たった。**当たり判定は BulletEcsDriver がやる** ——
+  /// ECS の弾は Collider2D を持たないので、OnTriggerEnter2D は届かない
+  member this.HitByEnemyBullet () =
     if (this.isBomb) then Bomb.GenerateBomb(this.bombType, this.transform.position)
     this.Damage <- this.Damage + 1
+
+  member this.OnTriggerEnter2D (collier:Collider2D) =
+    // GameObject の弾（もう出ないが、prefab が残っている経路）向け
+    this.HitByEnemyBullet()

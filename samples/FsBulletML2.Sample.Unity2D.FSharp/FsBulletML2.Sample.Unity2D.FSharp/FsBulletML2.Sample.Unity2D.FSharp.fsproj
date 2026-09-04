@@ -14,8 +14,14 @@
     <Compile Include="EnemyBullet.fs" />
     <Compile Include="PlayerBullet.fs" />
     <Compile Include="Bomb.fs" />
+    <!-- ECS。BulletEcs が型（BulletSim / FrontEnv）、Factory が生成、
+         Driver が毎コマ回す。Enemy / Player より前に置く（あちらが使う） -->
+    <Compile Include="BulletEcs.fs" />
+    <Compile Include="BulletEntityFactory.fs" />
     <Compile Include="Enemy.fs" />
     <Compile Include="Player.fs" />
+    <!-- Driver は Enemy / Player を参照するので、そのあと -->
+    <Compile Include="BulletEcsDriver.fs" />
     <Compile Include="Informations.fs" />
     <Compile Include="BgScroll.fs" />
     <Compile Include="ParticleSortingLayer.fs" />
@@ -27,7 +33,42 @@
     <!-- COMPILE-ONLY UnityEngine stub. Not a substitute for the Unity Editor. -->
     <ProjectReference Include="..\..\..\src\UnityEngine.Stub\UnityEngine.Stub.csproj" Condition="'$(UseRealUnity)' != 'true'" />
   </ItemGroup>
+  <!-- ECS のアセンブリ。**Unity がビルドした Library/ScriptAssemblies を指す。**
+       PackageCache には dll が無く（ソースで配られている）、Unity が
+       プロジェクトごとにビルドする。**だから一度 Unity にプロジェクトを
+       開かせてからでないと、ここは解決しない。** -->
+  <PropertyGroup Condition="'$(UnityScriptAssemblies)' == ''">
+    <UnityScriptAssemblies>$(MSBuildThisFileDirectory)..\Library\ScriptAssemblies</UnityScriptAssemblies>
+  </PropertyGroup>
   <ItemGroup Condition="'$(UseRealUnity)' == 'true'">
+    <Reference Include="Unity.Entities">
+      <HintPath>$(UnityScriptAssemblies)\Unity.Entities.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Collections">
+      <HintPath>$(UnityScriptAssemblies)\Unity.Collections.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Mathematics">
+      <HintPath>$(UnityScriptAssemblies)\Unity.Mathematics.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Transforms">
+      <HintPath>$(UnityScriptAssemblies)\Unity.Transforms.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Entities.Graphics">
+      <HintPath>$(UnityScriptAssemblies)\Unity.Entities.Graphics.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Burst">
+      <HintPath>$(UnityScriptAssemblies)\Unity.Burst.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Core.Runtime">
+      <HintPath>$(UnityScriptAssemblies)\Unity.RenderPipelines.Core.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <!-- RuntimeInitializeOnLoadMethod が PreserveAttribute を要求する。
          属性そのものは CoreModule に在るが、その基底がこちらに居る -->
     <Reference Include="Unity.Scripting">

@@ -1,7 +1,7 @@
-using System;
 using UnityEditor;
 using UnityEngine;
 using FsBulletML2;
+using FsBulletML2.Sample.Unity2D.FSharp;
 
 /// <summary>
 /// <b>弾が出ることを機械に言わせる。</b>
@@ -13,49 +13,23 @@ using FsBulletML2;
 /// </code>
 ///
 /// <b>コンパイルが通ることと、弾が出ることは別。</b>
-/// Body のコンストラクタは名前付き引数で位置ずれを落とすようにしてあるが、
-/// <c>speed: Dir</c> のような値の取り違えは名前が正しいので通ってしまう。
-/// ここは実際に <see cref="BulletSim"/> を数コマ 回して、
-/// <b>撃たれた弾の数と、動いた距離</b>を出す。
+/// 同梱の C# サンプルでは、この形の門が実際に穴を 1 つ 見つけた ——
+/// F# の判別共用体は参照型なので既定値が null になり、入れ忘れたまま
+/// <c>Runner.StepWith</c> に渡すとエンジンが match したところで落ちる。
+/// コンパイルは通るので、走らせるまで出ない。
 ///
 /// <b>ECS の World は要らない。</b> <see cref="BulletSim.Step"/> は撃たれた弾を
 /// コールバックで渡す形なので、数えるだけの関数を渡せばエンティティを
 /// 作らずに回せる。ここで測りたいのはエンジンとの受け渡しであって、
 /// 描画やエンティティ管理ではない。
 ///
-/// <b>0 発 を緑にしない。</b> 弾が 1 発 も出なければ失敗として扱う ——
-/// 「落ちなかった」は「動いた」の証拠にならない。
-///
-/// <b>較正した。</b> 既存が緑のまま、この門だけが赤くなる変異:
+/// <b>この門が守らない範囲</b>:
 /// <list type="bullet">
-/// <item>BulletSim.Step が spawn を呼ばないようにする
-///       → 撃った 0 発 / 動いた 0 本 で exit 1</item>
+/// <item><b>値の取り違え</b>。名前が正しくて値が違うものは、弾は出るので通る</item>
+/// <item><b>描画と当たり判定</b>。World もシーンも使わないので分からない</item>
+/// <item><b>BulletEcsDriver / BulletEntityFactory</b>。あちらは EntityManager を
+///       触るので、World を作らないと回せない</item>
 /// </list>
-///
-/// <b>「BulletType の既定値を消す」は、いまのこの門では落ちない。</b>
-/// 見つけたのは事実（この門の初版が NullReferenceException を出した）だが、
-/// そのあと <c>Fire</c> に <c>root.BulletType = type;</c> を足したので、
-/// <b>既定が null でも上書きされて通ってしまう</b>。あとで F# サンプル側の
-/// 同じ門で当て直したときに、緑のまま通ることに気づいた。
-///
-/// F# 側は <c>BulletType</c> を渡さない経路を 1 本 残して守っている
-/// （<c>samples/FsBulletML2.Sample.Unity2D.FSharp/Assets/Editor/BulletSmokeCheck.cs</c>）。
-/// **こちらは守っていない。** 直すなら同じ形にすること。
-///
-/// <b>守れない範囲</b>（ここが緑でも見ていないもの）:
-/// <list type="bullet">
-/// <item><b>値の取り違え</b>。<c>speed: Dir</c> のように名前が正しくて値が
-///       違うものは、弾は出るし動くので通ってしまう。
-///       軌跡そのものを控えと突き合わせないと見えない</item>
-/// <item><b>描画と当たり判定</b>。ECS の World もシーンも使わずに回すので、
-///       弾が見えるか・当たるかはここでは分からない</item>
-/// <item><b>GameObject 側（BaseBullet）は通っていない。</b> あちらは
-///       MonoBehaviour で transform に触るので、シーン無しでは回せない。
-///       ただし Step の中身は BulletSim と同じ形で写してある</item>
-/// </list>
-///
-/// 通っているのは 3 本 —— <b>敵の弾幕と、自機の弾 2 本</b>（自機側は
-/// BulletType.Player の枝を通るので、敵だけでは当たらない）。
 /// </summary>
 public static class BulletSmokeCheck
 {
@@ -69,16 +43,28 @@ public static class BulletSmokeCheck
     }
 
     /// <summary>
-    /// 弾幕を 1 本 走らせて「撃った数 / 場の数 / 動いた数」を出す。
-    /// 撃つか動くかが 0 なら赤にする。
+    /// 弾幕を 1 本 走らせる。
+    ///
+    /// <paramref name="type"/> に null を渡すと <b>BulletType を入れずに</b>
+    /// 走らせる —— <b>既定値が消えたときに落ちる経路</b>。
+    /// F# の判別共用体は参照型なので、既定を書き忘れると null になり、
+    /// エンジンが match したところで NullReferenceException になる。
+    /// **明示的に入れてしまうと、その穴は門をすり抜ける**（実際にすり抜けた）。
     /// </summary>
     static int Fire(string label, BulletmlScript script, BulletKind kind,
                     FsBulletML2.DTD.BulletType type, float x, float y)
     {
         var failures = 0;
 
-        var root = new BulletSim { Kind = kind, BulletType = type, X = x, Y = y };
+        var root = new BulletSim();
+        root.Kind = kind;
+        if (type != null)
+        {
+            root.BulletType = type;
+        }
         root.Init();
+        root.X = x;
+        root.Y = y;
         root.SetScript(script, null);
         root.IsBullet = false;
 
@@ -89,7 +75,10 @@ public static class BulletSmokeCheck
         {
             born++;
             var body = child.Body;
-            var sim = new BulletSim { Kind = parent.Kind, BulletType = parent.BulletType };
+            var sim = new BulletSim();
+            sim.Kind = parent.Kind;
+            // 親の種別を引き継ぐ。**BulletEntityFactory.SpawnChild と同じ形**
+            sim.BulletType = parent.BulletType;
             sim.Init();
             sim.SetScript(parent.Script, child);
             sim.X = body.Pos.X;
@@ -121,31 +110,9 @@ public static class BulletSmokeCheck
             }
         }
 
-        // **エンジンが 1 コマ に何 ms 使うか。** 描画も ECS も通さない値なので、
-        // 「FPS が出ない」の出どころがエンジンかどうかを割るのに使う。
-        // 60 FPS の予算は 16.7 ms、40 FPS なら 25 ms
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        var laps = 0;
-        for (int frame = 0; frame < 60; frame++)
-        {
-            var count = live.Count;
-            for (int i = 0; i < count; i++)
-            {
-                if (live[i].Used)
-                {
-                    // 産まれた弾は数えるだけにする。ここで増やすと 2 倍 に膨らむ
-                    live[i].Step((p, c) => { });
-                    laps++;
-                }
-            }
-        }
-        sw.Stop();
-        var msPerFrame = sw.Elapsed.TotalMilliseconds / 60.0;
-
         Debug.Log(string.Format(
-            "[BulletSmokeCheck] {0}: 60 コマ で 撃った {1} 発 / 場に {2} 本 / 動いた {3} 本"
-            + " / エンジンだけで 1 コマ {4:F3} ms（弾 {5} 本 を回した。60 FPS の予算 16.7 ms）",
-            label, born, live.Count, moved, msPerFrame, live.Count));
+            "[BulletSmokeCheck] {0}: 60 コマ で 撃った {1} 発 / 場に {2} 本 / 動いた {3} 本",
+            label, born, live.Count, moved));
 
         // **0 件 を緑にしない。** 撃たない・動かないなら、受け渡しのどこかが
         // 切れている（コンパイルは通るので、ここでしか出ない）
@@ -171,17 +138,19 @@ public static class BulletSmokeCheck
         {
             BulletMLManager.Init(new FixedManager());
 
-            // 敵の弾幕。Enemy.GetBulletml の先頭と同じもの
+            // 敵の弾幕。Enemy.GetBulletml の先頭と同じもの。
+            // **BulletType を渡さない** —— BulletSim の既定値が生きているかを
+            // ここで見る（渡してしまうと、既定が null でも通ってしまう）
             var info = FsBulletML2.Bullets.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA;
             failures += Fire(
-                info.Name,
-                info.Script(FrontEnv.Load()),
+                info.Name + "（BulletType は既定値のまま）",
+                Runner.Load(FrontEnv.Load(), info.Bulletml),
                 BulletKind.Enemy,
-                FsBulletML2.DTD.BulletType.Enemy,
+                null,
                 2.4f, -0.5f);
 
-            // 自機の弾。**Player.Awake と同じ通り道**（Bulletml から Runner.Load）。
-            // 敵の弾とは通る枝が違う（BulletType.Player の分岐、SpawnEnemyAimDir）
+            // 自機の弾。**Player.Awake と同じ通り道**。
+            // 敵の弾とは通る枝が違う（BulletType.Player の分岐）
             failures += Fire(
                 "自機の 2way（左）",
                 Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.PlayerBullet.PlayerBullet.b2wayLeftBullet),

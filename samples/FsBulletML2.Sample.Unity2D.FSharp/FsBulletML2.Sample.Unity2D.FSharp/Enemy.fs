@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2.Sample.Unity2D.FSharp
+namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
 open System.Collections.Generic
@@ -18,8 +18,11 @@ type Enemy () =
   [<DefaultValue>]val mutable public bombType : GameObject
   [<DefaultValue>]val mutable public BulletName : string
   [<System.NonSerialized>]
-  [<DefaultValue>]val mutable public BulletmlInfo : BulletmlInfo 
-  [<DefaultValue>]val mutable public Bullet : EnemyBullet 
+  [<DefaultValue>]val mutable public BulletmlInfo : BulletmlInfo
+  /// 撃った弾幕の根。**GameObject ではなく Entity になった。**
+  /// ひと回りしたかを見るのに持ち回る
+  [<System.NonSerialized>]
+  [<DefaultValue>]val mutable public RootSim : BulletSim
   [<DefaultValue>]val mutable public Life : int
   [<DefaultValue>]val mutable public MaxLife : int
   [<DefaultValue>]val mutable public isBomb : bool
@@ -40,11 +43,17 @@ type Enemy () =
     this.bullets <- this.GetBulletml() |> Seq.toList  
     this.SetBulletmlInfo()
 
-  member this.OnTriggerEnter2D(collier:Collider2D) =
+  /// 自機弾が当たった。**当たり判定は BulletEcsDriver がやる** ——
+  /// ECS の弾は Collider2D を持たないので、OnTriggerEnter2D は届かない
+  member this.HitByPlayerBullet () =
     if (this.isBomb) then Bomb.GenerateBomb(this.bombType, this.transform.position)
     this.Life <- this.Life - 1
     if (this.Life <= 0) then
       this.Next()
+
+  member this.OnTriggerEnter2D(collier:Collider2D) =
+    // GameObject の弾（もう出ないが、prefab が残っている経路）向け
+    this.HitByPlayerBullet()
 
   override this.Update () = 
     if (Input.GetKeyDown(KeyCode.Return)) then
@@ -56,32 +65,28 @@ type Enemy () =
 
     base.Update()
 
-  override this.GetBulletPrefubInstance () =
-    let bullet = InstanceManager.InstantiatePrefab(this.bulletObject, this.transform.position, Quaternion.identity)
-    let b = bullet.GetComponent<BaseBullet>() 
-    let b = b.GetDefaultBullet ()
-    b.Init()
-    bullet
+  /// **もう prefab を実体化しない。** 弾は Entity になった。
+  /// GameObject 側の口は残してあるが、呼ばれても何も作らない
+  /// （`bulletObject` は弾の見た目の見本として Bootstrap が読む）
+  override this.GetBulletPrefubInstance () = null
 
+  /// 撃った弾幕がひと回りしたか。旧は GameObject の DefaultBullet.Finished を
+  /// 見ていた。ECS では Entity が控えている（`BulletSim.Finished`）
   member this.IsFinish () =
-    if (this.Bullet :> obj = null) then
-      false
-    else
-      let bullet = this.Bullet.GetDefaultBullet ()
-      if bullet.Finished then
-        InstanceManager.Destroy(this.Bullet.gameObject)
-      bullet.Finished
+    if isNull (box this.RootSim) then false
+    elif this.RootSim.Finished then
+      BulletEntityFactory.DestroySim this.RootSim
+      this.RootSim <- Unchecked.defaultof<BulletSim>
+      true
+    else false
 
-  member this.Shoot () = 
+  member this.Shoot () =
     let self = this.GetDefaultBullet ()
     if (self.Used) then
-      let bullet = this.GetBulletPrefubInstance()
-      this.Bullet <- bullet.GetComponent<EnemyBullet>()
-      let script = FsBulletML2.Runner.load (loadEnv ()) this.BulletmlInfo.Bulletml |> Some
-      this.Bullet.GetDefaultBullet().Root <- true
-      this.Bullet.SetScript(script)    
-      
-
+      // 弾幕は撃つたびに読み直す。読む段の Env は aim を読まない
+      // （撃つ弾ごとの位置がまだ無い）
+      let script = FsBulletML2.Runner.load (FrontEnv.Load()) this.BulletmlInfo.Bulletml
+      this.RootSim <- BulletEntityFactory.SpawnEnemy(this.transform.position, script, true)
 
   member this.Next () = 
     this.DestroyEnemyBullet()
@@ -107,8 +112,8 @@ type Enemy () =
 
 
   member this.DestroyEnemyBullet () =
-    let bullets = GameObject.FindGameObjectsWithTag("EnemyBullet")
-    bullets |> Seq.iter (fun bullet -> InstanceManager.Destroy(bullet))
+    BulletEntityFactory.DestroyAllEnemy()
+    this.RootSim <- Unchecked.defaultof<BulletSim>
 
   member this.SetBulletmlInfo () =
     let bulletmlInfo = this.bullets.[this.BulletIndex]

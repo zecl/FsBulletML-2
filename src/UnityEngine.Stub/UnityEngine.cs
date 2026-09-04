@@ -23,6 +23,7 @@ namespace UnityEngine
         public float x, y, z;
         public Vector3(float x, float y) { this.x = x; this.y = y; this.z = 0f; }
         public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+        public static Vector3 zero => new Vector3(0f, 0f, 0f);
         public static float Distance(Vector3 a, Vector3 b)
         {
             float dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
@@ -66,6 +67,7 @@ namespace UnityEngine
     public class Object
     {
         public string name { get; set; }
+        public static void DontDestroyOnLoad(Object target) { }
         public static Object Instantiate(Object original) => original;
         public static Object Instantiate(Object original, Vector3 position, Quaternion rotation) => original;
         public static T Instantiate<T>(T original) where T : Object => original;
@@ -81,12 +83,15 @@ namespace UnityEngine
 
     public class GameObject : Object
     {
+        public GameObject() {}
+        public GameObject(string name) { this.name = name; }
         public string tag { get; set; }
         public Transform transform { get; } = new Transform();
         public bool activeSelf { get; private set; } = true;
         public void SetActive(bool value) { activeSelf = value; }
         public T GetComponent<T>() => default;
         public Component GetComponent(Type type) => null;
+        public T AddComponent<T>() where T : Component => default;
         public static GameObject Find(string name) => null;
         public static GameObject[] FindGameObjectsWithTag(string tag) => Array.Empty<GameObject>();
         public static new T FindObjectOfType<T>() where T : Object => default;
@@ -127,7 +132,74 @@ namespace UnityEngine
 
     public class Material : Object
     {
+        public Material() {}
+        public Material(Shader shader) {}
         public Vector2 mainTextureOffset { get; set; }
+        public Texture mainTexture { get; set; }
+        public int renderQueue { get; set; }
+        public bool enableInstancing { get; set; }
+        public bool HasProperty(string name) => false;
+        public void SetFloat(string name, float value) { }
+        public void SetColor(string name, Color value) { }
+        public void SetTexture(string name, Texture value) { }
+        public void SetOverrideTag(string tag, string val) { }
+        public void EnableKeyword(string keyword) { }
+        public void DisableKeyword(string keyword) { }
+    }
+
+    public class Shader : Object
+    {
+        public static Shader Find(string name) => null;
+    }
+
+    public class Texture : Object { }
+
+    public class Texture2D : Texture
+    {
+        public static Texture2D whiteTexture => new Texture2D();
+    }
+
+    public struct Color
+    {
+        public float r, g, b, a;
+        public static Color white => new Color { r = 1f, g = 1f, b = 1f, a = 1f };
+    }
+
+    public struct Bounds
+    {
+        public Vector3 center, extents;
+    }
+
+    public class Sprite : Object
+    {
+        public Vector2[] vertices => System.Array.Empty<Vector2>();
+        public ushort[] triangles => System.Array.Empty<ushort>();
+        public Vector2[] uv => System.Array.Empty<Vector2>();
+        public Texture2D texture => Texture2D.whiteTexture;
+        public Bounds bounds => new Bounds();
+    }
+
+    public class SpriteRenderer : Renderer
+    {
+        public Sprite sprite { get; set; }
+        public Color color { get; set; }
+    }
+
+    /// <summary>描画に渡す形。Entities Graphics が RenderMeshArray に入れる</summary>
+    public class Mesh : Object
+    {
+        public void SetVertices(Vector3[] vertices) { }
+        public void SetUVs(int channel, Vector2[] uvs) { }
+        public void SetTriangles(int[] triangles, int submesh) { }
+        public void RecalculateBounds() { }
+        public void RecalculateNormals() { }
+    }
+
+    public enum MotionVectorGenerationMode
+    {
+        Camera = 0,
+        Object = 1,
+        ForceNoMotion = 2,
     }
 
     public class ParticleSystem : Component
@@ -138,7 +210,17 @@ namespace UnityEngine
 
     public class ParticleSystemRenderer : Renderer { }
 
-    public class Collider2D : Component { }
+    public class Collider2D : Component
+    {
+        public Bounds bounds => new Bounds();
+    }
+
+    /// <summary>MonoBehaviour の Update が呼ばれる順。小さいほど先</summary>
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class DefaultExecutionOrder : Attribute
+    {
+        public DefaultExecutionOrder(int order) { }
+    }
 
     public static class Time
     {
@@ -162,6 +244,39 @@ namespace UnityEngine
     {
         public static int vSyncCount { get; set; }
     }
+}
+
+namespace UnityEngine.Rendering
+{
+    // COMPILE-ONLY stub. 透過で描くときに使う面だけ。
+
+    public enum ShadowCastingMode
+    {
+        Off = 0,
+        On = 1,
+        TwoSided = 2,
+        ShadowsOnly = 3,
+    }
+
+    public enum BlendMode
+    {
+        Zero = 0,
+        One = 1,
+        SrcAlpha = 5,
+        OneMinusSrcAlpha = 10,
+    }
+
+    public enum RenderQueue
+    {
+        Geometry = 2000,
+        AlphaTest = 2450,
+        Transparent = 3000,
+        Overlay = 4000,
+    }
+}
+
+namespace UnityEngine
+{
 
     public enum RuntimeInitializeLoadType
     {
