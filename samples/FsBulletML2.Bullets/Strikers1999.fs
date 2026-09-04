@@ -1,4 +1,13 @@
-﻿namespace FsBulletML2.Bullets.EnemyBullet.Sdmkun
+// **このファイルは生成物。手で直すと次の焼き直しで消える。**
+//
+// 人が書くのは samples/FsBulletML2.Bullets.Dsl（CE）のほう。ここは
+// その値を DU で直に組んだ形へ写したもので、突き合わせ門の相手として置いてある。
+//
+// 焼き直し:
+//     dotnet build samples/FsBulletML2.Bullets.Dsl -c Release
+//     dotnet fsi samples/FsBulletML2.Bullets.Dsl/gen.fsx
+
+namespace FsBulletML2.Bullets.EnemyBullet.Sdmkun
 open FsBulletML2
 
 /// 白い弾幕くんより
@@ -11,108 +20,127 @@ module Strikers1999 =
   let hanabi =
     createBulletmlInfo <|
     Bulletml
-      ({bulletmlXmlns = Some "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml";
-        bulletmlType = Some BulletVertical;
-        bulletmlName = Some "ストライカーズ1999の花火かも。by 白い弾幕くん";
-        bulletmlDescription = None},
-       [BulletmlElm.Action
-          ({actionLabel = Some (ActionLabel "top");},
-           [Repeat
-              (Times (numExpr "3"),
-               Action
-                 ({actionLabel = None;},
-                  [Fire
-                     ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "180")),
-                      Some (Speed (None,numExpr "3")),
-                      BulletRef ({bulletRefLabel = BulletLabel "fastHanabi";},[]));
-                   Wait (numExpr "110-$rank*60")]))]);
-        BulletmlElm.Action
-          ({actionLabel = Some (ActionLabel "fastFour");},
-           [Fire
-              ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "5")),
-               Some (Speed (None,numExpr "2+$rank")),
-               Bullet ({bulletLabel = None;},None,None,[]));
-            Fire
-              ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-10")),
-               Some (Speed (None,numExpr "2+$rank")),
-               Bullet ({bulletLabel = None;},None,None,[]));
-            Fire
-              ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "15")),
-               Some (Speed (None,numExpr "1.5+$rank")),
-               Bullet ({bulletLabel = None;},None,None,[]));
-            Fire
-              ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-20")),
-               Some (Speed (None,numExpr "1.5+$rank")),
-               Bullet ({bulletLabel = None;},None,None,[]))]);
-        BulletmlElm.Action
-          ({actionLabel = Some (ActionLabel "slowFour");},
-           [Fire
-              ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "5")),
-               Some (Speed (None,numExpr "1+$rank*0.8")),
-               Bullet ({bulletLabel = None;},None,None,[]));
-            Fire
-              ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-10")),
-               Some (Speed (None,numExpr "1+$rank*0.8")),
-               Bullet ({bulletLabel = None;},None,None,[]));
-            Fire
-              ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "15")),
-               Some (Speed (None,numExpr "0.7+$rank*0.8")),
-               Bullet ({bulletLabel = None;},None,None,[]));
-            Fire
-              ({fireLabel = None;},
-               Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "-20")),
-               Some (Speed (None,numExpr "0.7+$rank*0.8")),
-               Bullet ({bulletLabel = None;},None,None,[]))]);
-        BulletmlElm.Bullet
-          ({bulletLabel = Some (BulletLabel "fastHanabi");},None,None,
-           [Action
-              ({actionLabel = None;},
-               [Wait (numExpr "15");
-                Fire
-                  ({fireLabel = None;},
-                   Some (Direction (Some {directionType = Aim;},numExpr "0")),
-                   Some (Speed (None,numExpr "2.5+$rank")),
-                   Bullet ({bulletLabel = None;},None,None,[]));
-                Action.ActionRef ({actionRefLabel = ActionLabel "fastFour";},[]);
-                Repeat
-                  (Times (numExpr "16"),
-                   Action
-                     ({actionLabel = None;},
-                      [Fire
-                         ({fireLabel = None;},
-                          Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "32.5")),
-                          Some (Speed (None,numExpr "2.5+$rank")),
-                          Bullet ({bulletLabel = None;},None,None,[]));
-                       Action.ActionRef ({actionRefLabel = ActionLabel "fastFour";},[])]));
-                FireRef ({fireRefLabel = FireLabel "slowHanabi";},[]); Vanish])]);
-        BulletmlElm.Fire
-          ({fireLabel = Some (FireLabel "slowHanabi");},None,None,
-           Bullet
-             ({bulletLabel = None;},None,None,
-              [Action
-                 ({actionLabel = None;},
-                  [Fire
-                     ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Absolute;},numExpr "0")),
-                      Some (Speed (None,numExpr "1.3+$rank*0.8")),
-                      Bullet ({bulletLabel = None;},None,None,[]));
-                   Action.ActionRef ({actionRefLabel = ActionLabel "slowFour";},[]);
-                   Repeat
-                     (Times (numExpr "16"),
-                      Action
-                        ({actionLabel = None;},
-                         [Fire
-                            ({fireLabel = None;},
-                             Some
-                               (Direction (Some {directionType = DirectionType.Sequence;},numExpr "32.5")),
-                             Some (Speed (None,numExpr "1.3+$rank*0.8")),
-                             Bullet ({bulletLabel = None;},None,None,[]));
-                          Action.ActionRef ({actionRefLabel = ActionLabel "slowFour";},[])])); Vanish])]))])
+      ({bulletmlXmlns = Some "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml"; bulletmlType = Some ShootingDirection.BulletVertical; bulletmlName = Some "ストライカーズ1999の花火かも。by 白い弾幕くん"; bulletmlDescription = None},
+        [
+          BulletmlElm.Action ({actionLabel = Some (ActionLabel "top")},
+            [
+              Action.Repeat (Times (numExpr "3"),
+                ActionElm.Action ({actionLabel = None},
+                  [
+                    Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Absolute}, numExpr "180")), Some (Speed (None, numExpr "3")),
+                      BulletElm.BulletRef ({bulletRefLabel = BulletLabel "fastHanabi"}, [])
+                    )
+                    Action.Wait (numExpr "110-$rank*60")
+                  ]
+                )
+              )
+            ]
+          )
+          BulletmlElm.Action ({actionLabel = Some (ActionLabel "fastFour")},
+            [
+              Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "5")), Some (Speed (None, numExpr "2+$rank")),
+                BulletElm.Bullet ({bulletLabel = None}, None, None,
+                  []
+                )
+              )
+              Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "-10")), Some (Speed (None, numExpr "2+$rank")),
+                BulletElm.Bullet ({bulletLabel = None}, None, None,
+                  []
+                )
+              )
+              Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "15")), Some (Speed (None, numExpr "1.5+$rank")),
+                BulletElm.Bullet ({bulletLabel = None}, None, None,
+                  []
+                )
+              )
+              Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "-20")), Some (Speed (None, numExpr "1.5+$rank")),
+                BulletElm.Bullet ({bulletLabel = None}, None, None,
+                  []
+                )
+              )
+            ]
+          )
+          BulletmlElm.Action ({actionLabel = Some (ActionLabel "slowFour")},
+            [
+              Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "5")), Some (Speed (None, numExpr "1+$rank*0.8")),
+                BulletElm.Bullet ({bulletLabel = None}, None, None,
+                  []
+                )
+              )
+              Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "-10")), Some (Speed (None, numExpr "1+$rank*0.8")),
+                BulletElm.Bullet ({bulletLabel = None}, None, None,
+                  []
+                )
+              )
+              Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "15")), Some (Speed (None, numExpr "0.7+$rank*0.8")),
+                BulletElm.Bullet ({bulletLabel = None}, None, None,
+                  []
+                )
+              )
+              Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "-20")), Some (Speed (None, numExpr "0.7+$rank*0.8")),
+                BulletElm.Bullet ({bulletLabel = None}, None, None,
+                  []
+                )
+              )
+            ]
+          )
+          BulletmlElm.Bullet ({bulletLabel = Some (BulletLabel "fastHanabi")}, None, None,
+            [
+              ActionElm.Action ({actionLabel = None},
+                [
+                  Action.Wait (numExpr "15")
+                  Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Aim}, numExpr "0")), Some (Speed (None, numExpr "2.5+$rank")),
+                    BulletElm.Bullet ({bulletLabel = None}, None, None,
+                      []
+                    )
+                  )
+                  Action.ActionRef ({actionRefLabel = ActionLabel "fastFour"}, [])
+                  Action.Repeat (Times (numExpr "16"),
+                    ActionElm.Action ({actionLabel = None},
+                      [
+                        Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "32.5")), Some (Speed (None, numExpr "2.5+$rank")),
+                          BulletElm.Bullet ({bulletLabel = None}, None, None,
+                            []
+                          )
+                        )
+                        Action.ActionRef ({actionRefLabel = ActionLabel "fastFour"}, [])
+                      ]
+                    )
+                  )
+                  Action.FireRef ({fireRefLabel = FireLabel "slowHanabi"}, [])
+                  Action.Vanish
+                ]
+              )
+            ]
+          )
+          BulletmlElm.Fire ({fireLabel = Some (FireLabel "slowHanabi")}, None, None,
+            BulletElm.Bullet ({bulletLabel = None}, None, None,
+              [
+                ActionElm.Action ({actionLabel = None},
+                  [
+                    Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Absolute}, numExpr "0")), Some (Speed (None, numExpr "1.3+$rank*0.8")),
+                      BulletElm.Bullet ({bulletLabel = None}, None, None,
+                        []
+                      )
+                    )
+                    Action.ActionRef ({actionRefLabel = ActionLabel "slowFour"}, [])
+                    Action.Repeat (Times (numExpr "16"),
+                      ActionElm.Action ({actionLabel = None},
+                        [
+                          Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "32.5")), Some (Speed (None, numExpr "1.3+$rank*0.8")),
+                            BulletElm.Bullet ({bulletLabel = None}, None, None,
+                              []
+                            )
+                          )
+                          Action.ActionRef ({actionRefLabel = ActionLabel "slowFour"}, [])
+                        ]
+                      )
+                    )
+                    Action.Vanish
+                  ]
+                )
+              ]
+            )
+          )
+        ]
+      )

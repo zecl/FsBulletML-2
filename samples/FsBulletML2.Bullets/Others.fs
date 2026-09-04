@@ -1,49 +1,98 @@
-﻿namespace FsBulletML2.Bullets.EnemyBullet
+// **このファイルは生成物。手で直すと次の焼き直しで消える。**
+//
+// 人が書くのは samples/FsBulletML2.Bullets.Dsl（CE）のほう。ここは
+// その値を DU で直に組んだ形へ写したもので、突き合わせ門の相手として置いてある。
+//
+// 焼き直し:
+//     dotnet build samples/FsBulletML2.Bullets.Dsl -c Release
+//     dotnet fsi samples/FsBulletML2.Bullets.Dsl/gen.fsx
+
+namespace FsBulletML2.Bullets.EnemyBullet
 open FsBulletML2
 
 /// その他
 [<RequireQualifiedAccess>]
-module Others = 
+module Others =
 
   /// 全方位弾
-  let AllWay = 
+  let AllWay =
     createBulletmlInfo <|
-    Bulletml({ bulletmlXmlns = None; bulletmlType = Some ShootingDirection.BulletVertical; bulletmlName = Some "全方位弾"; bulletmlDescription = None},
-        [BulletmlElm.Action ({actionLabel = Some (ActionLabel "circle");},
-            [Action.Repeat
-                (Times (numExpr "$1"),
-                Action ({actionLabel = None;},
-                    [Fire ({fireLabel = None;},
-                      Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "360/$1")),
-                      None,
-                      Bullet ({bulletLabel = None;}, None, None,[]))]))]);
-          BulletmlElm.Action ({actionLabel = Some (ActionLabel "top");},
-            [Action.Repeat
-                (Times (numExpr "30"),
-                ActionElm.Action ({actionLabel = None;},
-                    [Action.ActionRef ({actionRefLabel = ActionLabel "circle";}, ["20"]); Wait (numExpr "20")]))])])
+    Bulletml
+      ({bulletmlXmlns = None; bulletmlType = Some ShootingDirection.BulletVertical; bulletmlName = Some "全方位弾"; bulletmlDescription = None},
+        [
+          BulletmlElm.Action ({actionLabel = Some (ActionLabel "circle")},
+            [
+              Action.Repeat (Times (numExpr "$1"),
+                ActionElm.Action ({actionLabel = None},
+                  [
+                    Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "360/$1")), None,
+                      BulletElm.Bullet ({bulletLabel = None}, None, None,
+                        []
+                      )
+                    )
+                  ]
+                )
+              )
+            ]
+          )
+          BulletmlElm.Action ({actionLabel = Some (ActionLabel "top")},
+            [
+              Action.Repeat (Times (numExpr "30"),
+                ActionElm.Action ({actionLabel = None},
+                  [
+                    Action.ActionRef ({actionRefLabel = ActionLabel "circle"}, ["20"])
+                    Action.Wait (numExpr "20")
+                  ]
+                )
+              )
+            ]
+          )
+        ]
+      )
 
   /// 前方5way弾
-  let b5way = 
+  let b5way =
     createBulletmlInfo <|
-    Bulletml ({bulletmlXmlns = None; bulletmlType = Some BulletVertical; bulletmlName = Some "前方5way弾"; bulletmlDescription = None},
-        [BulletmlElm.Action ({actionLabel = Some (ActionLabel "top");},
-            [Fire ({fireLabel = None;},
-                Some (Direction (Some {directionType = DirectionType.Relative;},numExpr "-20+180")),
-                None,
-                Bullet ({bulletLabel = None;},None,None,[]));
-             Repeat
-                (Times (numExpr "4"),
-                 Action ({actionLabel = None;},
-                    [Fire ({fireLabel = None;},
-                        Some (Direction (Some {directionType = DirectionType.Sequence;},numExpr "10")),
-                        None,
-                        Bullet ({bulletLabel = None;},None,None,[]))]))])])
+    Bulletml
+      ({bulletmlXmlns = None; bulletmlType = Some ShootingDirection.BulletVertical; bulletmlName = Some "前方5way弾"; bulletmlDescription = None},
+        [
+          BulletmlElm.Action ({actionLabel = Some (ActionLabel "top")},
+            [
+              Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Relative}, numExpr "-20+180")), None,
+                BulletElm.Bullet ({bulletLabel = None}, None, None,
+                  []
+                )
+              )
+              Action.Repeat (Times (numExpr "4"),
+                ActionElm.Action ({actionLabel = None},
+                  [
+                    Action.Fire ({fireLabel = None}, Some (Direction (Some {directionType = DirectionType.Sequence}, numExpr "10")), None,
+                      BulletElm.Bullet ({bulletLabel = None}, None, None,
+                        []
+                      )
+                    )
+                  ]
+                )
+              )
+            ]
+          )
+        ]
+      )
 
   /// 初期方向Aim弾１発
-  let homingOne = 
+  let homingOne =
     createBulletmlInfo <|
-    Bulletml({bulletmlXmlns = None; bulletmlType = None; bulletmlName = Some "初期方向Aim弾１発"; bulletmlDescription = None},
-        [BulletmlElm.Action ({actionLabel = Some (ActionLabel "top");},
-           [Fire ({fireLabel = None;},None,None,
-                Bullet ({bulletLabel = None;},None,None,[]))])])
+    Bulletml
+      ({bulletmlXmlns = None; bulletmlType = None; bulletmlName = Some "初期方向Aim弾１発"; bulletmlDescription = None},
+        [
+          BulletmlElm.Action ({actionLabel = Some (ActionLabel "top")},
+            [
+              Action.Fire ({fireLabel = None}, None, None,
+                BulletElm.Bullet ({bulletLabel = None}, None, None,
+                  []
+                )
+              )
+            ]
+          )
+        ]
+      )

@@ -1,7 +1,7 @@
 // **このファイルは生成物。手で直すと次の焼き直しで消える。**
 //
 // 焼き直し:
-//     dotnet build samples/FsBulletML2.Bullets -c Release
+//     dotnet build samples/FsBulletML2.Bullets.Dsl -c Release
 //     dotnet fsi samples/FsBulletML2.Bullets.Dsl/gen.fsx
 
 namespace FsBulletML2.Bullets.Dsl
