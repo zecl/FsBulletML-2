@@ -15,12 +15,38 @@ open FsBulletML2.Benchmarks.Harness
 /// BenchmarkDotNet は台本 1 本 ごとに別プロセスを立てる。**別プロセスの数を
 /// そのまま前後で引き算しない。** 走行と走行のあいだに台のほうが動く。
 
-/// StepBenchmarks が測る 4 本。--counts と表示の順を揃えるためにここに置く
+/// --counts と --alloc が回す台本。先頭 4 本 は StepBenchmarks と同じもので、
+/// 表示の順を揃えるためにここに置く。
+///
+/// **wide は「子の多い action」を物差しに載せるために足した。**
+///
+/// `Step.action` の `ps / running` を配列にする手は、いちど 試して戻して
+/// ある（Step.fs の但し書き）。形の上では O(n^2) だが、`List.toArray` を
+/// 2 本 と `List.ofArray` を 1 本 作る固定費のほうが高くつく、という理由で、
+/// 確保が 4 本 とも増えた。
+///
+/// **その 4 本 の action は、子が最大 2 / 2 / 2 / 3 個 しかない。**
+/// 手が狙っているのは子の多い action なので、**却下の測定は当てる先に
+/// 届いていなかった。** コーパス 227 本 を静的に数えると子は最大 32 個
+/// （[OtakuTwo]_dis_bee_1、以下）で、15 個 以上 を持つ台本が 13 本 ある。
+///
+///     子の数    action の数   その子の総数
+///     1〜3            1,205         2,180   全体の 41.6%
+///     10 以上            69           938   全体の 17.9%
+///     20 以上             4            94   全体の  1.8%
+///
+/// 却下そのものは 4 本 については正しい。**一般化されていたのが誤り。**
 let private scenarios =
   [ "move",   "Content/xml/Enemy/move.xml"
     "5way",   "Content/xml/EnemyBullet/5way.xml"
     "10Way",  "Content/xml/EnemyBullet/10Way.xml"
-    "homing", "Content/xml/EnemyBullet/[G_DARIUS]_homing_laser.xml" ]
+    "homing", "Content/xml/EnemyBullet/[G_DARIUS]_homing_laser.xml"
+    "wide",   "Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_dis_bee_1.xml" ]
+
+/// StepBenchmarks（時間）に載っているのは先頭 4 本 だけ。**wide は確保の
+/// 物差しにしか載っていない。** 却下の根拠が確保だったので、まず確保で
+/// 測り直せる形にした。確保で効きが出たら、そのとき時間の物差しへ載せる。
+let private onBdn = 4
 
 /// その台本が、その変更を見られるのかを出す。**数を比べる前にここを見る。**
 ///
@@ -99,9 +125,19 @@ let private alloc () =
       let a = allocApi doc 60
       let o = allocOld doc 60
       let ratio = (float a / float o - 1.0) * 100.0
-      let bdn = calibration.[name]
-      printfn "%-8s %12d B %12d B %+8.1f%% %+8.1f%% %+7.1f"
-              name a o ratio bdn (ratio - bdn)
+      // 校正値は BDN の物差しに載っている台本にしかない。**無いものを
+      // 0 や「一致」で埋めない** —— 埋めると、校正していない列を
+      // 校正済みと読んでしまう
+      match calibration.TryGetValue name with
+      | true, bdn ->
+        printfn "%-8s %12d B %12d B %+8.1f%% %+8.1f%% %+7.1f"
+                name a o ratio bdn (ratio - bdn)
+      | _ ->
+        printfn "%-8s %12d B %12d B %+8.1f%% %9s %8s"
+                name a o ratio "—" "—"
+  printfn ""
+  printfn "校正値が「—」の台本は BDN の物差しに載っていない（%d 本 目 以降）。" (onBdn + 1)
+  printfn "**絶対値の前後比較には使えるが、比の妥当性は誰も見ていない。**"
   printfn ""
   printfn "**絶対値は BenchmarkDotNet の Allocated と一致しない。** あちらは"
   printfn "ウォームアップ後の定常状態を測り、こちらは下ごしらえ（木を組む段）を"

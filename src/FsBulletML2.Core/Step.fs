@@ -438,13 +438,14 @@ module internal Step =
     | ActionElm.Action (attrs, children) -> action rs attrs children p fc
     | ActionElm.ActionRef _ -> action rs { actionLabel = None } [] p fc
 
-  /// **ps / running を配列にして idx で触る形は、試して戻した。**
+  /// **ps / running を配列にして idx で触る形は、試して戻した。
+  /// ただし却下の範囲は「子が 2〜3 個 の台本」まで。**
   ///
   /// 形の上では二乗になっている —— `List.item idx` が O(idx)、書き戻しの
   /// `List.mapi` が毎回 全体を作り直すので、子が n 個 の action は走査で
   /// O(n^2) のセルを作る。
   ///
-  /// だが実物の action は子が数個 しかない。`BREAKDOWN.md` の
+  /// だが実物の action は子が数個 しかない。`COUNTS.md` の
   /// 「List.mapi 作ったセル」は homing で 9,168、`action` 訪問が 3,233 で、
   /// **平均 2.8 個**。配列にすると `List.toArray` を 2 本 と `List.ofArray` を
   /// 1 本、action を訪れるたびに作るので、そちらのほうが高くつく。
@@ -452,9 +453,26 @@ module internal Step =
   /// 実測（`--alloc`）で確保が 4 本 とも増えた ——
   /// move +0.9% / 5way +0.3% / 10Way +0.3% / homing +1.1%。
   ///
+  /// ### その 4 本 に、狙っている形は載っていなかった
+  ///
+  /// 手が当てようとしているのは**子の多い action**。ところが測った 4 本 の
+  /// action は、子が最大 2 / 2 / 2 / 3 個 しかない。
+  ///
+  /// **却下そのものは 4 本 については正しい。一般化されていたのが誤り。**
+  ///
+  /// コーパス 227 本 を静的に数えると、`<action>` は 1,695 個 で子は平均
+  /// 3.09 個、**最大 32 個**（`[OtakuTwo]_dis_bee_1`）。子 10 個 以上 の
+  /// action が 69 個 あり、子全体の 17.9% を占める。
+  ///
+  /// `--alloc` / `--counts` に `wide`（その最大 32 個 の台本）を足した。
+  /// **これで「子の多い action」が物差しに載った。**
+  /// 基準線は 33ab88c＋ で 新 API 3,233,256 B / 旧 API 3,662,976 B。
+  ///
+  /// 時間の物差し（`StepBenchmarks`）にはまだ載せていない —— 却下の根拠が
+  /// 確保だったので、まず確保で測り直せる形にした。
+  ///
   /// **形が O(n^2) であることと、その台本でそこが効くことは別。**
-  /// `COUNTS.md` が同じことを木の歩きについて言っている。子を何十個 も持つ
-  /// action を物差しに載せてから、また考えること。
+  /// そして**効かないと測った台本に、その形が載っていたかは別。**
   and action (rs: Resolvers) (_attrs: ActionAttrs) (children: Action list)
              (p: Progress) (fc: FireContext)
       : Sim<RunState * Progress * FireContext> =
