@@ -83,7 +83,6 @@ GameObject:
   m_Component:
   - 4: {fileID: 98867558}
   - 20: {fileID: 98867557}
-  - 92: {fileID: 98867556}
   - 124: {fileID: 98867555}
   - 81: {fileID: 98867554}
   m_Layer: 0
@@ -101,13 +100,6 @@ AudioListener:
   m_GameObject: {fileID: 98867553}
   m_Enabled: 1
 --- !u!124 &98867555
-Behaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 98867553}
-  m_Enabled: 1
---- !u!92 &98867556
 Behaviour:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
@@ -566,7 +558,6 @@ GameObject:
   - 4: {fileID: 2094294248}
   - 20: {fileID: 2094294247}
   - 124: {fileID: 2094294246}
-  - 92: {fileID: 2094294245}
   - 114: {fileID: 2094294249}
   m_Layer: 13
   m_Name: guiCamera
@@ -575,13 +566,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!92 &2094294245
-Behaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 2094294243}
-  m_Enabled: 1
 --- !u!124 &2094294246
 Behaviour:
   m_ObjectHideFlags: 0
