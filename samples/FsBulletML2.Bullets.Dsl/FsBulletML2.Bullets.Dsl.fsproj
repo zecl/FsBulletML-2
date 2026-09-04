@@ -37,6 +37,7 @@
     <Compile Include="Xsoldier.fs" />
     <Compile Include="Others.fs" />
     <Compile Include="Player.fs" />
+    <Compile Include="All.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />

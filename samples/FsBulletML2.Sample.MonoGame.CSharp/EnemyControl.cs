@@ -10,72 +10,7 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
     {
         public static IEnumerable<BulletmlInfo> Bullets()
         {
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Guwange.round_2_boss_circle_fire;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Psyvariar.b4_D_boss_MZIQ;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Strikers1999.hanabi;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.MAD.b10flower_2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.OtakuTwo.dis_bee_1;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.OtakuTwo.dis_bee_2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.OtakuTwo.dis_bee_3;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.OtakuTwo.roll_misago;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.OtakuTwo.slow_move;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.OtakuTwo.circle_fireworks2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.DragonBlaze.nebyurosu_2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.GWange._roll_gara;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.knight_2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.GWange.round_trip_bit;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.b88way;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.bit;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.rollbar;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Tenmado.b5_boss_1;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Tenmado.b5_boss_3;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Dodonpachi.hibachi;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Dodonpachi.kitiku_1; 
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Dodonpachi.kitiku_2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.hibachi_2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.hibachi_3;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.EspRade.round_5_boss_gara_4;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.EspRade.round_5_boss_gara_3;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.EspRade.round_5_boss_gara_2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.EspRade.round_5_boss_gara_1_a;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.EspRade.round_123_boss_izuna_hakkyou;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_1_boss;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_3_boss;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_3_boss_2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_3_boss_last;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_4_boss;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.StormCalibar.last_boss_double_roll_bullets;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.MAD.acc_n_dec;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.MAD.circular_model;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.MAD.wind_cl;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.MAD.gnnnyari;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.MAD.mossari;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.MAD.double_w;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.star_in_the_sky;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.guruguru;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.backfire;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.yokokasoku;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.entangled_space;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.ellipse_bomb;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.gyakuhunsya;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.fujin_ranbu_true;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Bulletsmorph.double_seduction;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.accusation;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.XiiStag.b3b;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.KetuiLt.b2boss_winder_crash;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.ChaosSeed.big_monkey_boss;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Guwange.round_4_boss_eye_ball;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_4_boss_2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_4_boss_4;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_4_boss_5;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_5_boss_1;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_5_boss_2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_6_boss_1;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_6_boss_2;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_6_boss_3;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_6_boss_4;
-            yield return FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Daiouzyou.round_6_boss_5;           
+            return FsBulletML2.Bullets.Dsl.All.bullets;
         }
     }
 }

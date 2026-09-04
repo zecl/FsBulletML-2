@@ -398,15 +398,56 @@ let files =
 
 Directory.CreateDirectory outDir |> ignore
 
+/// 全弾幕の一覧（All.fs）。**BulletmlInfo を持つものだけ載せる。**
+///
+/// PlayerBullet の 3 本 は Bulletml を直に持っていて型が違うので入らない。
+/// あちらは自機弾として名前で使うもので、並べても意味がない。
+let generateAll (names: string list) =
+  let out = StringBuilder()
+  let w (s: string) = out.Append(s).Append('\n') |> ignore
+  w "// **このファイルは生成物。手で直すと次の焼き直しで消える。**"
+  w "//"
+  w "// 焼き直し:"
+  w "//     dotnet build samples/FsBulletML2.Bullets -c Release"
+  w "//     dotnet fsi samples/FsBulletML2.Bullets.Dsl/gen.fsx"
+  w ""
+  w "namespace FsBulletML2.Bullets.Dsl"
+  w "open FsBulletML2"
+  w ""
+  w "[<RequireQualifiedAccess>]"
+  w "module All ="
+  w ""
+  w (sprintf "  /// 同梱の弾幕 %d 個。**PlayerBullet の 3 本 は Bulletml を直に持つので入らない**" names.Length)
+  w "  let bullets : BulletmlInfo list ="
+  names
+  |> List.iteri (fun i n ->
+      let head = if i = 0 then "    [ " else "      "
+      w (head + n))
+  w "    ]"
+  out.ToString()
+
 let mutable total = 0
+let allInfos = ResizeArray<string>()
 for f in files do
   let p = parseFile f
   total <- total + p.Entries.Length
   let text = generate p
   let dest = Path.Combine(outDir, p.File)
   File.WriteAllText(dest, text.Replace("\n", "\r\n"), UTF8Encoding(false))
+  // 一覧に載せるのは BulletmlInfo を持つものだけ
+  let shortNs = p.Namespace.Substring("FsBulletML2.Bullets.".Length)
+  for e in p.Entries do
+    match valueOf p.Namespace p.ModuleName e.Name with
+    | Choice1Of2 _ -> allInfos.Add(shortNs + "." + p.ModuleName + "." + e.Name)
+    | Choice2Of2 _ -> ()
 
-printfn "生成: %d ファイル / 値 %d 個" files.Length total
+File.WriteAllText(
+  Path.Combine(outDir, "All.fs"),
+  (generateAll (List.ofSeq allInfos)).Replace("\n", "\r\n"),
+  UTF8Encoding(false))
+
+printfn "生成: %d ファイル / 値 %d 個（All.fs に載せた BulletmlInfo は %d 個）"
+  (files.Length + 1) total allInfos.Count
 printfn ""
 printfn "=== 表現できなかった形 ==="
 if gaps.Count = 0 then printfn "  0 件"

@@ -72,7 +72,7 @@ type Enemy () =
   /// いまは `bulletIndexRp` が動いたことが唯一の合図で、
   /// `Next` も `Prev` も番号を動かすだけ。
   member this.Start () =
-    this.bullets <- this.GetBulletml() |> Seq.toList
+    this.bullets <- FsBulletML2.Bullets.Dsl.All.bullets
     let update = FrameTicker.Frames
     let indexes = bulletIndexRp :> Observable<int>
     let lives = lifeRp :> Observable<int>
@@ -180,19 +180,6 @@ type Enemy () =
   member this.DestroyEnemyBullet () =
     BulletEntityFactory.DestroyAllEnemy()
     this.RootSim <- Unchecked.defaultof<BulletSim>
-
-  member this.GetBulletml() : seq<BulletmlInfo> =
-    seq {
-        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
-        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Strikers1999.hanabi
-        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.DragonBlaze.nebyurosu_2
-        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.GWange._roll_gara
-        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Original.knight_2
-        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.GWange.round_trip_bit
-        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.b88way
-        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.bit
-        yield FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.Noiz2sa.rollbar
-    }
 
   member this.OnDestroy () =
     bulletIndexRp.Dispose()
