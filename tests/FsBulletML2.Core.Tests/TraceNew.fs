@@ -15,9 +15,9 @@ open FsBulletML2.Domain
 module TraceNew =
 
   let private fmt (v: float32) =
-    let r = Math.Round(float v, Trace.digits)
+    let r = Math.Round(float v, TraceFormat.digits)
     let r = if r = 0.0 then 0.0 else r
-    r.ToString("F" + string Trace.digits, CultureInfo.InvariantCulture)
+    r.ToString("F" + string TraceFormat.digits, CultureInfo.InvariantCulture)
 
   /// FakeBullet.GetAimDir と同じ式。ずれると全弾幕が割れる
   let private aimDir (px: float32) (py: float32) (pos: Vec2) =

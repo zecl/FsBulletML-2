@@ -1,29 +1,20 @@
 ﻿namespace FsBulletML2.Benchmarks
-// 旧 API（IBulletmlObject / BulletRunner.run）の Obsolete 警告を、
-// **このファイルだけ**止める。ここは旧経路を「対照」として意図して測る側で、
-// 新旧を同じプロセスに並べるのがこのファイルの仕事だから
-// （bench/FsBulletML2.Benchmarks/README.md の「測るときの約束」）。
-//
-// プロジェクト単位（NoWarn）では止めない。止めると、**新しく書いた測定が
-// うっかり旧 API を使っても警告が出なくなる**。効きがファイル単位であることは
-// 較正済み —— nowarn を置いていないファイルで旧 API に触ると FS0044 が出る。
-#nowarn "44"
 
 open System.Collections.Generic
 open System.IO
 open FsBulletML2
-open FsBulletML2.Processable
 open FsBulletML2.Core.Tests
 
 /// 弾幕を N フレーム 走らせるだけの下ごしらえ。
 ///
-/// テストの Trace.run と同じ回し方をするが、軌跡の文字列を組まない。
+/// テストの TraceApi と同じ回し方をするが、軌跡の文字列を組まない。
 /// 文字列の組み立て（StringBuilder と sprintf と Math.Round）は、測りたい
 /// 走行そのものより重くなりうるので、ここには入れない。
 ///
 /// 弾の実体は tests の FakeBullet をそのまま借りる（fsproj でリンクしている）。
-/// 同じ形の実装を 2 つ 持つと、片方だけが古びて、ベンチとテストが別のものを
-/// 測っていることに誰も気づかなくなる。
+/// **借りているのは物理量の箱と、`FakeEnemy` の位置。** 同じ形の実装を
+/// 2 つ 持つと、片方だけが古びて、ベンチとテストが別のものを測っていることに
+/// 誰も気づかなくなる。
 module Harness =
 
   /// samples に入っている実物の BulletML。tests の CorpusData と同じ集め方。
@@ -62,7 +53,7 @@ module Harness =
   ///
   /// StepBenchmarks は GlobalSetup でここを済ませ、測定区間から外している。
   /// 読んだ木は走行のあいだ使い回してよい（DTD の木は不変で、
-  /// convertBulletmlTask は毎回 新しい Rec の木と Progress を組む）。
+  /// Runner.load は毎回 新しい台本と Progress を組む）。
   /// 使い回して答えが変わらないことは、StepBenchmarks の Setup が
   /// 読み直した木との弾数の一致で確かめている。
   let parseXml (xml: string) : Bulletml = readXmlString xml
@@ -78,8 +69,9 @@ module Harness =
   // 置き換えてある（Program.fs の baseline / baselineAt）。
   //
   // 弾の実体は tests の FakeBullet を借りる。新経路が使うのは位置と物理量だけ。
-  // aim は FakeBullet.GetAimDir と**同じ式**をここで組む —— 片方だけ直すと、
-  // ベンチとテストが違うものを走らせることになる。
+  // aim は TraceApi が組むのと**同じ式**をここで書く —— 片方だけ直すと、
+  // ベンチとテストが違うものを走らせることになる。式が割れていないことは、
+  // 橋 227 本 と控えが軌跡の値で見ている。
   //
   // 並びは ResizeArray で持ち、その場で書き換える。**リストを毎回 組み直すと
   // 1 コマ O(n²) になり、600 発 の台本では測定器のほうが対象より重くなる**
@@ -120,8 +112,8 @@ module Harness =
       Rank = BulletMLManager.GetRank ()
       AimDir = aimDirAt x y
       EnemyAimDir = enemyAimDirAt x y
-      // 産まれた弾は原点に出る（FakeBullet.GetNewBullet が位置を入れずに作る）。
-      // 旧経路と同じ値になるようにしてある
+      // 産まれた弾は原点に出る（下で FakeBullet を位置を入れずに作る）。
+      // TraceApi の spawnAim と同じ値になるようにしてある
       SpawnAimDir = aimDirAt 0.0f 0.0f
       SpawnEnemyAimDir = enemyAimDirAt 0.0f 0.0f }
 
@@ -138,7 +130,7 @@ module Harness =
     let script = Runner.load (loadEnv ()) doc
     let born = List<FakeBullet>()
     let root = FakeBullet(0, born)
-    (root :> IBulletmlObject).Init()
+    root.Init()
     let live = List<LiveApi>()
     live.Add { Bullet = root; Run = Runner.newRoot script }
     { Script = script; Live = live; Born = born }
@@ -149,7 +141,7 @@ module Harness =
       let count = p.Live.Count
       for i in 0 .. count - 1 do
         let it = p.Live.[i]
-        let bo = it.Bullet :> IBulletmlObject
+        let bo = it.Bullet
         if bo.Used then
           let body = { it.Run.Body with Pos = { X = bo.X; Y = bo.Y } }
           // 台本が無い弾は aim を読まない（BulletRun.HasNoScript の但し書き）
@@ -168,13 +160,12 @@ module Harness =
             else f.Run
           for child in f.Spawned do
             let cb = FakeBullet(p.Born.Count + 1, p.Born)
-            let cbo = cb :> IBulletmlObject
-            cbo.Init()
-            cbo.IsBullet <- true
-            cbo.X <- child.Body.Pos.X
-            cbo.Y <- child.Body.Pos.Y
-            cbo.Dir <- child.Body.Dir
-            cbo.Speed <- child.Body.Speed
+            cb.Init()
+            cb.IsBullet <- true
+            cb.X <- child.Body.Pos.X
+            cb.Y <- child.Body.Pos.Y
+            cb.Dir <- child.Body.Dir
+            cb.Speed <- child.Body.Speed
             p.Born.Add cb
             p.Live.Add { Bullet = cb; Run = child }
     p.Born.Count
@@ -209,14 +200,14 @@ module Harness =
     let script = Runner.load (loadEnv ()) doc
     let born = List<FakeBullet>()
     let root = FakeBullet(0, born)
-    (root :> IBulletmlObject).Init()
+    root.Init()
     let live = List<LiveApi>()
     live.Add { Bullet = root; Run = Runner.newRoot script }
     for _ in 0 .. frames - 1 do
       let count = live.Count
       for i in 0 .. count - 1 do
         let it = live.[i]
-        let bo = it.Bullet :> IBulletmlObject
+        let bo = it.Bullet
         if bo.Used then
           let body = { it.Run.Body with Pos = { X = bo.X; Y = bo.Y } }
           builds <- builds + 1
@@ -234,13 +225,12 @@ module Harness =
             else f.Run
           for child in f.Spawned do
             let cb = FakeBullet(born.Count + 1, born)
-            let cbo = cb :> IBulletmlObject
-            cbo.Init()
-            cbo.IsBullet <- true
-            cbo.X <- child.Body.Pos.X
-            cbo.Y <- child.Body.Pos.Y
-            cbo.Dir <- child.Body.Dir
-            cbo.Speed <- child.Body.Speed
+            cb.Init()
+            cb.IsBullet <- true
+            cb.X <- child.Body.Pos.X
+            cb.Y <- child.Body.Pos.Y
+            cb.Dir <- child.Body.Dir
+            cb.Speed <- child.Body.Speed
             born.Add cb
             live.Add { Bullet = cb; Run = child }
     builds
@@ -271,7 +261,7 @@ module Harness =
       let count = p.Live.Count
       for i in 0 .. count - 1 do
         let it = p.Live.[i]
-        let bo = it.Bullet :> IBulletmlObject
+        let bo = it.Bullet
         if bo.Used then
           if finished.Contains it.Bullet then deadCalls <- deadCalls + 1
           else liveCalls <- liveCalls + 1
@@ -292,13 +282,12 @@ module Harness =
             else f.Run
           for child in f.Spawned do
             let cb = FakeBullet(p.Born.Count + 1, p.Born)
-            let cbo = cb :> IBulletmlObject
-            cbo.Init()
-            cbo.IsBullet <- true
-            cbo.X <- child.Body.Pos.X
-            cbo.Y <- child.Body.Pos.Y
-            cbo.Dir <- child.Body.Dir
-            cbo.Speed <- child.Body.Speed
+            cb.Init()
+            cb.IsBullet <- true
+            cb.X <- child.Body.Pos.X
+            cb.Y <- child.Body.Pos.Y
+            cb.Dir <- child.Body.Dir
+            cb.Speed <- child.Body.Speed
             p.Born.Add cb
             p.Live.Add { Bullet = cb; Run = child }
     liveCalls, deadCalls
@@ -357,3 +346,14 @@ module Harness =
   /// 比較の相手は Program.fs の `baseline`（記録した絶対値）に移してある
   let allocApi (doc: Bulletml) (frames: int) : int64 =
     allocOf (fun () -> runPreparedApi (prepareApi doc) frames)
+
+  /// その走行で場に出た弾の数（根を含む）。
+  ///
+  /// **確保の数と並べて出すため。** この口が数えている確保には、エンジンの
+  /// ぶんだけでなく**測定器自身が作る `FakeBullet` のぶんも入っている。**
+  /// 実際に踏んだ —— `FakeBullet` から旧 API の面を落としてフィールドが
+  /// 減ったとき、5 本 とも確保が下がった。エンジンは 1 行 も変えていない。
+  /// 弾 1 個 あたり 40 B で、`move`（弾 1 個）はちょうど -40 B だった。
+  /// **弾数を並べておけば、その手の下がり方は掛け算で見分けられる。**
+  let bulletCount (doc: Bulletml) (frames: int) : int =
+    runPreparedApi (prepareApi doc) frames + 1

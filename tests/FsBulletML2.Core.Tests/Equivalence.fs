@@ -12,13 +12,11 @@ open FsBulletML2.Processable
 /// 227 本の実物を突き合わせる橋。突き合わせる相手は 2 種類あり、
 /// 意味がまったく違う。
 ///
-///   1. 「227 本を、BulletRunner 経由と Step.step 直接呼びで突き合わせる」
-///      —— Trace.run（BulletRunner を介す、いま出荷している経路）と
+///   1. 「227 本を、公開 API と Step.step 直接呼びで突き合わせる」
+///      —— TraceApi.run（Runner.load / stepWith。**出荷する経路**）と
 ///      TraceNew.run（Step.step を直接呼ぶ経路）はどちらも同じ Step.step を
-///      指す。ここが割れるのは、BulletRunner という薄い橋渡し層
-///      （stateOfBullet / applyToBullet / applySpawn）が Step.step の
-///      直接呼びと食い違ったとき —— たとえば applySpawn だけが持つ後処理
-///      （PendingBulletAim の解決）を TraceNew.run 側が写し忘れたとき。
+///      指す。ここが割れるのは、公開 API の層（Runner.load / stepWith /
+///      restart / Env の組み方）が Step.step の直接呼びと食い違ったとき。
 ///      **新旧エンジンの比較ではない。**
 ///
 ///   2. 「227 本を、凍結した旧エンジン（4077ed6）の軌跡と突き合わせる」
@@ -27,16 +25,21 @@ open FsBulletML2.Processable
 ///      あらかじめ凍結してあり（tests/TestData/trace/
 ///      corpus-trace-varying-old-4077ed6.tsv。作り直す道具と手順は
 ///      tools/frozen-corpus/DumpFrozenCorpus.fs の先頭コメント）、
-///      Trace.run（HEAD）の出力と突き合わせる。**旧エンジンはもう
+///      TraceApi.run（HEAD）の出力と突き合わせる。**旧エンジンはもう
 ///      存在しないので、これが本物の新旧を見る唯一の場所。**
 ///
-/// 過去 —— 削除より前の版 —— では 1 の Trace.run が「旧エンジン」を指して
-/// いたので、1 の橋がそのまま新旧の比較になっていた。削除後は Trace.run も
-/// TraceNew.run もどちらも新エンジンを指すようになり、1 の橋は「新旧」から
-/// 「BulletRunner 対 Step.step 直接呼び」へ意味が変わった。にもかかわらず
-/// テスト名と控えのラベルは「新旧で突き合わせる」のままだった。緑のまま
-/// 中身の意味が入れ替わっていたことになる —— 名前と実際に比べているものを
-/// 一致させておくこと
+/// **1 は 3 度 意味が変わっている。** 削除より前は基準側が「旧エンジン」
+/// そのものだったので新旧の比較だった。削除後は「BulletRunner 対 Step.step
+/// 直接呼び」になり、名前だけが「新旧」のまま緑で残っていた（そのとき直した）。
+/// 旧 API の互換シムを落としたいま、基準側は公開 API になった。
+/// **緑のまま中身の意味が入れ替わる。名前と実際に比べているものを、
+/// 意味が変わるたびに一致させること。**
+///
+/// **旧 API を基準にしていた 2 本 は 1 本 に畳んだ。** 3 つ の書き手
+/// （BulletRunner 経由 / Step.step 直接 / 公開 API）のうち 1 つ が消えたので、
+/// 残る対は 1 組 しかない。畳んだぶん、`viaRunnerCache`（同じ走行を
+/// 2 本 の試験で共有するための辞書）と `NonParallelizable` も要らなくなった
+/// —— グローバル可変（BulletMLManager）を触らなくなったため。
 ///
 /// RunBoth が返す、突き合わせの結果。文字列（Text）だけだと「割れ 0」の
 /// 部分文字列一致でしか門を書けず、220 本が同じ例外へ吸われて
@@ -52,31 +55,7 @@ type BridgeReport =
     Text : string }
 
 [<TestFixture>]
-[<NonParallelizable>]
 type Equivalence() =
-
-  /// **BulletRunner 経由・定数 $rand の軌跡を 1 回 だけ走らせて使い回す。**
-  ///
-  /// 下の 2 本 の試験（Step.step 直接呼びとの突き合わせ / 公開 API との
-  /// 突き合わせ）が、**同じ設定で同じ関数を走らせていた** ——
-  /// `BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))` のあと
-  /// `Trace.run xml 60`。227 本 ぶんが丸ごと重複していた。
-  ///
-  /// 軌跡は文字列で不変なので、共有しても試験の間で状態は漏れない。
-  /// 例外で落ちる 3 本 はキャッシュに入らず毎回 走るが、3 本 なので放っておく。
-  ///
-  /// **この fixture は NonParallelizable。** 可変の辞書を持てるのはそのため
-  /// （BulletMLManager が static mutable なので、どのみち逐次でしか走らない）。
-  static let viaRunnerCache = Dictionary<string, string>()
-
-  static let viaRunnerCached (path: string) (xml: string) =
-    match viaRunnerCache.TryGetValue path with
-    | true, v -> v
-    | _ ->
-        BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
-        let v = Trace.run xml 60
-        viaRunnerCache.[path] <- v
-        v
 
   /// 走らせ方を 2 つ受け取り、227 本ぜんぶを突き合わせた報告を返す。
   /// どちらも「いまのソースを実際に走らせる」関数であることが前提
@@ -198,41 +177,25 @@ type Equivalence() =
           name, Ok (int cols.[1], int cols.[2], cols.[3]))
     |> Map.ofArray
 
+  /// **公開 API だけで 227 本 が走り、Step.step 直接呼びと一致する。**
+  ///
+  /// TraceApi は internal を 1 つも使わない（あちらの docstring 参照）ので、
+  /// これが緑ということは「フロントは公開の型だけで弾幕を走らせられる」
+  /// ということ。旧 API では 19 メンバ の `IBulletmlObject` を実装する必要があった。
+  ///
+  /// 定数の $rand なので「引く回数・引く順」の割れは見えない
+  /// （下のテストの docstring 参照）。回数の割れは下の橋（凍結した旧エンジン
+  /// との突き合わせ）が見る。
   [<Test>]
-  member _.``227 本を、BulletRunner 経由と Step.step 直接呼びで突き合わせると全部 一致する``() =
-    // 定数の $rand。この形では「引く回数・引く順」の割れは見えない
-    // （下のテストの docstring 参照）。ここで見ているのは BulletRunner
-    // という薄い橋渡し層が Step.step の直接呼びと食い違っていないかだけで、
-    // 新旧エンジンの比較ではない（クラスの docstring 参照）
+  member _.``227 本を、公開 API と Step.step 直接呼びで突き合わせると全部 一致する``() =
     let rand, rank, px, py = 0.5f, 0.5f, 30.0f, 100.0f
-    // 基準側は viaRunnerCached（下の試験と同じ設定なので走行を共有する）
+    let viaApi (xml: string) = TraceApi.run (fun () -> rand) rank px py xml 60
     let direct (xml: string) = TraceNew.run (fun () -> rand) rank px py xml 60
-    let report = Equivalence.RunBothWith viaRunnerCached direct
+    let report = Equivalence.RunBoth viaApi direct
     TestContext.WriteLine report.Text
     // 部分文字列一致（"割れ 0 " を含み "一致 0 " を含まない）だけだと、220 本が
     // 同じ例外へ吸われて「一致 3 / 割れ 0 / 比べられず 224」になっても
     // 通ってしまう。実測した数そのものを門にする
-    report.Total |> should equal 227
-    report.Ok |> should equal 224
-    report.Ng |> should equal 0
-    report.Skipped |> should equal 3
-
-  /// 段階 4 の合格条件。**公開 API だけで 227 本 が走り、旧経路と一致する。**
-  ///
-  /// TraceApi は internal を 1 つも使わない（あちらの docstring 参照）ので、
-  /// これが緑ということは「フロントは IBulletmlObject の 19 メンバを
-  /// 実装せずに弾幕を走らせられる」ということ。
-  ///
-  /// 上の「BulletRunner 経由 対 Step.step 直接呼び」と同じく、定数の $rand
-  /// では引く回数の割れは見えない。回数の割れは下の橋（旧エンジンとの
-  /// 突き合わせ）が見る。
-  [<Test>]
-  member _.``227 本を、BulletRunner 経由と公開 API で突き合わせると全部 一致する``() =
-    let rand, rank, px, py = 0.5f, 0.5f, 30.0f, 100.0f
-    // 基準側は viaRunnerCached（上の試験と同じ設定なので走行を共有する）
-    let viaApi (xml: string) = TraceApi.run (fun () -> rand) rank px py xml 60
-    let report = Equivalence.RunBothWith viaRunnerCached viaApi
-    TestContext.WriteLine report.Text
     report.Total |> should equal 227
     report.Ok |> should equal 224
     report.Ng |> should equal 0
@@ -249,11 +212,11 @@ type Equivalence() =
   /// —— 旧エンジンはもう存在しないので、これが本物の新旧を見る唯一の場所
   /// （クラスの docstring 参照）。
   ///
-  /// **基準側を Trace.run（BulletRunner 経由の旧い口）から付け替えてある。**
-  /// 互換の口を落とすと Trace.run が消えるので、その前にこの門を旧い口から
-  /// 切り離した。付け替えても軌跡が変わらないことは、上の橋
-  /// （Trace.run と TraceApi.run が 227 本 で一致する）が生きているうちに
-  /// 実測で確かめてある。
+  /// **基準側は Trace.run（BulletRunner 経由の旧い口）から付け替えてある。**
+  /// 互換の口を落とすと Trace.run が消えるので、**消す前に**この門を旧い口から
+  /// 切り離した。付け替えても軌跡が変わらないことは、当時まだ生きていた橋
+  /// （Trace.run と TraceApi.run が 227 本 で一致する）で実測してある。
+  /// **順が逆だと、付け替えが正しいことを確かめる相手が居なくなっていた。**
   ///
   /// 較正: rootProgress の Wait の腕を外す（木を組む段の wait の引きを
   /// 丸ごと消し、Progress.initial に落とす）と、このテストは
@@ -335,9 +298,7 @@ type Equivalence() =
 
   [<Test>]
   member _.``橋は、1 か所だけ違う軌跡を見つける``() =
-    let run (xml: string) =
-      BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
-      Trace.run xml 60
+    let run (xml: string) = TraceApi.run (fun () -> 0.5f) 0.5f 30.0f 100.0f xml 60
     // 片方の軌跡の、真ん中あたりの 1 行だけを書き換える
     let broken (xml: string) =
       let lines = (run xml).Split('\n')

@@ -1,6 +1,4 @@
 ﻿namespace FsBulletML2.Core.Tests
-// **nowarn "44" は外した。** このファイルはもう旧 API を通らない。
-// 外しておくと、うっかり旧経路へ戻したときに FS0044 が出る（門になる）。
 
 open NUnit.Framework
 

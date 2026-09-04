@@ -115,14 +115,31 @@ let private counts () =
 /// 「BDN が出した Allocated の差」を突き合わせて確かめるもので、
 /// それは 3 回 やって README に記録がある（上の但し書き）。**次に BDN で
 /// 測れる大きさの手を打ったとき、4 回目 をやってここを更新する。**
-let private baselineAt = "e831bd9（走査の書き戻しを List.updateAt にした版）"
+/// **取り直した。前の記録との差は、エンジンではなく測定器が動いた分。**
+///
+/// 旧 API を落として `FakeBullet` から 19 メンバ の面が消え、弾 1 個 が
+/// **40 B 小さくなった**。この口の確保には測定器の弾も入るので、5 本 とも下がる。
+/// 掛け算で合う ——
+///
+///     move    弾   1  -40 B        1 x 40 = 40      ちょうど
+///     5way    弾 301  -12,040 B  301 x 40 = 12,040  ちょうど
+///     10Way   弾 601  -24,040 B  601 x 40 = 24,040  ちょうど
+///     homing  弾  34  -2,032 B    34 x 40 = 1,360   +672 は下の雑音
+///     wide    弾 131  -5,624 B   131 x 40 = 5,240   +384 は下の雑音
+///
+/// **残差 672 / 384 / 312 は、旧 API を落とす前から同じ台本に出ていた幅**
+/// （Harness.allocOf の段階的 JIT の但し書き）。だから残差は新しい現象ではない。
+///
+/// 下の値は 3 回 走らせた最頻値。**±400 B 程度 は雑音**なので、
+/// そこを追いかけて更新しないこと。
+let private baselineAt = "旧 API 廃止（BulletRunner を消し、FakeBullet を小さくした版）"
 
 let private baseline =
-  dict [ "move",     313_360L
-         "5way",   3_605_592L
-         "10Way",  7_490_320L
-         "homing", 4_122_872L
-         "wide",   3_163_432L ]
+  dict [ "move",     313_320L
+         "5way",   3_593_552L
+         "10Way",  7_465_968L
+         "homing", 4_120_840L
+         "wide",   3_157_808L ]
 
 let private alloc () =
   fixManager ()
@@ -139,7 +156,7 @@ let private alloc () =
         | None -> ()
         | Some path ->
           let doc = parseXml (System.IO.File.ReadAllText path)
-          yield name, allocApi doc 60 ]
+          yield name, allocApi doc 60, bulletCount doc 60 ]
 
   measure () |> ignore
   let rows = measure ()
@@ -147,17 +164,22 @@ let private alloc () =
     if (Corpus.findBySuffix suffix).IsNone then
       printfn "%-8s %s が見つかりません" name suffix
 
-  printfn "%-8s %14s %14s %10s %9s" "台本" "新 API" "記録" "差" "差(%)"
-  for name, a in rows do
+  printfn "%-8s %14s %14s %10s %9s %7s %9s" "台本" "新 API" "記録" "差" "差(%)" "弾" "差/弾"
+  for name, a, n in rows do
     match baseline.TryGetValue name with
     | true, b ->
-      printfn "%-8s %12d B %12d B %+9d B %+8.2f%%"
-              name a b (a - b) (float (a - b) / float b * 100.0)
+      let d = a - b
+      let perBullet = if n = 0 then "—" else sprintf "%+.1f B" (float d / float n)
+      printfn "%-8s %12d B %12d B %+9d B %+8.2f%% %7d %9s"
+              name a b d (float d / float b * 100.0) n perBullet
     | _ ->
       // **記録の無い台本を 0 や「一致」で埋めない。** 埋めると、
       // 控えていない列を控えたものと読む
-      printfn "%-8s %12d B %14s %10s %9s" name a "—" "—" "—"
+      printfn "%-8s %12d B %14s %10s %9s %7d %9s" name a "—" "—" "—" n "—"
   printfn ""
+  printfn "**「差/弾」が 5 本 とも同じ値なら、動いたのは測定器のほう。**"
+  printfn "この口の確保には、測定器自身が作る FakeBullet のぶんも入っている。"
+  printfn "実際に踏んだ —— FakeBullet から旧 API の面を落としただけで 5 本 とも下がった。"
   // 0 件 を緑にしない。台本が 1 本 も見つからなければ表は空のまま通る
   printfn "測った台本 %d 本（%d 本 中）。0 なら測れていない。" (List.length rows) (List.length scenarios)
   printfn "**1 巡 空けて 2 巡目 を出している。** それでも再現性は 0 にならない ——"

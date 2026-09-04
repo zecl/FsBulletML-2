@@ -9,7 +9,6 @@ using FsBulletML2;
 using FsBulletML2.MonoGame;
 using BulletType = FsBulletML2.DTD.BulletType;
 using EnemyBullet = FsBulletML2.MonoGame.EnemyBullet;
-using IBulletmlObject = FsBulletML2.Processable.IBulletmlObject;
 
 namespace FsBulletML2.Sample.MonoGame.CSharp
 {

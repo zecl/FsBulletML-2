@@ -4,9 +4,9 @@ open System.IO
 open System.Text.RegularExpressions
 open NUnit.Framework
 
-/// `BulletRunner.run` が返すものを、呼ぶ側がどう使っているかを固める。
+/// 1 コマ進める呼び出しが返すものを、呼ぶ側がどう使っているかを固める。
 ///
-/// run が返すのは **差分**（そのフレームの移動量）で、呼ぶ側が座標に足す。
+/// 返るのは **差分**（そのフレームの移動量）で、呼ぶ側が座標に足す。
 /// 3 で見つけたとおり、絶対値を返す枝に届くと座標が膨らむ。膨らむ量は
 /// 呼ぶ側の係数しだいで、同梱では MonoGame が 1 倍、Unity2D が 1/100。
 ///
@@ -22,12 +22,12 @@ open NUnit.Framework
 ///
 /// **網が前提にしている書き方**（いまの 6 ファイルは全部この形）。
 ///
-///   let result = BulletRunner.run x      返り値の名前が `result`
+///   let result = ...step...              返り値の名前が `result`
 ///   self.X <- self.X + (x / 100)         代入の左が `.X` / `.Y` で終わる
 ///
 /// **この形から外れると、係数の行だけが控えから消える。**
 ///
-///   var d = BulletRunner.run(this)                        run の行は載る
+///   var d = Runner.step(...)                              step の行は載る
 ///   self.Position = self.Position + new Vector2(d.X, d.Y) **この行は載らない**
 ///
 /// 変数名が `result` でなく、代入の左が `.Position` なのでどちらの網にも当たらない。
@@ -68,12 +68,7 @@ type CallingConvention() =
 
   /// 1 コマ進める呼び出しと、返り値を座標へ入れる行。
   ///
-  /// 経路が 2 本 ある。**両方 当てないと、片方へ移したフロントが控えから
-  /// 黙って消える**（実際に MonoGame を新 API へ移したとき、差分を足す行が
-  /// 網から外れて 3 行 が控えから落ちた）。
-  ///
-  ///   旧  BulletRunner.run          → RunResult.X / .Y
-  ///   新  Runner.step / stepWith    → Frame.Delta.X / .Y
+  ///   Runner.step / stepWith    → Frame.Delta.X / .Y
   ///
   /// **入口の名前で当てる網は、入口が増えるたびに漏れる。** 三度 踏んだ ——
   /// 新 API を足したとき、Obsolete の説明文に当たったとき、そして
@@ -84,7 +79,16 @@ type CallingConvention() =
   /// **控えの行数が減ったら、まず網が漏れていないかを疑うこと**
   /// —— 減った行は「消えた呼び出し」ではなく「見えなくなった呼び出し」で
   /// あることが、ここでは 3 回中 3 回 だった。
-  let callsRun = Regex(@"BulletRunner\.run\b|Runner\.[Ss]tep")
+  ///
+  /// **旧の腕（`BulletRunner\.run\b`）は外した。** `BulletRunner` を消したので
+  /// 当てる先が 0 になった。**4 回目 は「消えた呼び出し」のほうだった** ——
+  /// 控えから `src/FsBulletML2.Core/BulletRunner.fs` の 1 行 が落ちるのが正しい。
+  ///
+  /// なお `samples/.../Unity2D.CSharp` の 4 行 は控えに残っているが、
+  /// あれは `usesResult`（`result.X`）で当たっているだけで、そのサンプルは
+  /// **もう Core に対してコンパイルできない**（`BulletRunner.Run` を呼んでいる。
+  /// sln に入っていないのでビルドは割れない）。移すか消すかは未決。
+  let callsRun = Regex(@"Runner\.[Ss]tep")
   let usesResult = Regex(@"result\.[XY]\b|\.Delta\.[XY]\b")
   /// `self.X <- self.X + ...` / `self.X = self.X + ...` の形（足しているか代入か）
   let movesPos = Regex(@"\.[XY]\s*(<-|=)\s*[^;]*\.[XY]\s*[+\-]")
@@ -104,9 +108,9 @@ type CallingConvention() =
     let read = files |> List.map (fun f -> relative f, File.ReadAllLines f)
 
     // コメントだけの行は外す。**この門が見たいのは呼び出しで、散文の中の
-    // 言及ではない。** 網（BulletRunner\.run）は文字で当てるので、
-    // 「BulletRunner.run に渡す」と書いた doc コメントにも当たり、
-    // 説明を書き足しただけで控えが割れる（実際に割れた）。
+    // 言及ではない。** 網は文字で当てるので、「Runner.step に渡す」と
+    // 書いた doc コメントにも当たり、説明を書き足しただけで控えが割れる
+    // （実際に割れた）。
     //
     // 外して安全なのは、`//` で始まる行が F# でも C# でも定義上 呼び出しに
     // ならないため。**行の途中から始まるコメントは外していない** ——
@@ -138,7 +142,7 @@ type CallingConvention() =
       |> List.partition (fun (_, lines, _) -> inPipeline (String.concat "\n" lines))
 
     let lines =
-      [ yield "run が返すのは差分。呼ぶ側が座標に足す。"
+      [ yield "step が返すのは差分。呼ぶ側が座標に足す。"
         yield "係数と Y の符号はフロントごとに違う（MonoGame は 1 倍、Unity2D は 1/100 で Y を反転）。"
         yield ""
         for (file, _, hit) in core |> List.sortBy (fun (n, _, _) -> n) do

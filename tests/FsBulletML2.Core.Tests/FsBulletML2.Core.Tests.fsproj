@@ -12,13 +12,12 @@
     <Compile Include="Fake.fs" />
     <Compile Include="StepEntry.fs" />
     <Compile Include="EnvTests.fs" />
-    <Compile Include="Trace.fs" />
+    <Compile Include="TraceFormat.fs" />
     <Compile Include="TraceNew.fs" />
     <Compile Include="TraceApi.fs" />
     <Compile Include="Divergence.fs" />
     <Compile Include="Golden.fs" />
     <Compile Include="TraceRun.fs" />
-    <Compile Include="TraceDriverBridge.fs" />
     <Compile Include="Smoke.fs" />
     <Compile Include="Timing.fs" />
     <Compile Include="Behavior.fs" />
