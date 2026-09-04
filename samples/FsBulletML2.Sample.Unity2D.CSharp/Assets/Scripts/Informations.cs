@@ -25,7 +25,39 @@ public class Informations : MonoBehaviour
     /// 3% 未満</b>なので、fps が落ちるならエンジンの外を疑うこと
     /// （実測は Assets/Editor/BulletSmokeCheck.cs で出せる）。
     /// </summary>
-    public int targetFps = 60;
+    public int targetFps = DefaultTargetFps;
+
+    /// <summary>既定の上限。<see cref="ApplyCapOnPlay"/> が Play の頭で使う</summary>
+    public const int DefaultTargetFps = 60;
+
+    /// <summary>
+    /// <b>Play に入った時点で上限を掛ける。</b>
+    ///
+    /// これを <c>Informations.Awake</c> だけに任せると、<b>シーンに
+    /// Informations が居ること</b>と<b>その Awake が先に走ること</b>に依存する。
+    /// どちらも外から見て分からないので、シーンに何が居ようが効く場所へ出した。
+    ///
+    /// Informations がシーンに居れば、そのあと Awake が inspector の値で
+    /// 上書きする（既定は同じ 60）。
+    /// </summary>
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void ApplyCapOnPlay()
+    {
+        ApplyCap(DefaultTargetFps);
+    }
+
+    /// <summary>
+    /// 上限の掛け方。<b>vSync が先。</b>
+    ///
+    /// vSyncCount が 1 以上 だと Unity は targetFrameRate を無視して画面の
+    /// リフレッシュレートに従う。品質設定「Good」では 1 なので、
+    /// <b>切らないと 60 に押さえられない</b>（実際に押さえられなかった）。
+    /// </summary>
+    static void ApplyCap(int fps)
+    {
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = fps;
+    }
 
     private Enemy enemy;
     private Player player;
@@ -48,12 +80,9 @@ public class Informations : MonoBehaviour
 
     void Awake()
     {
-        // **vSync を先に切る。** vSyncCount が 1 以上 だと Unity は
-        // targetFrameRate を無視して画面のリフレッシュレートに従う。
-        // 品質設定（Good）では 1 になっていて、そのままだと 60 に押さえられない
-        // ——「上限 60 のはずなのに出すぎる」はここ。
-        QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = targetFps;
+        // 上限そのものは ApplyCapOnPlay が Play の頭で掛けている。
+        // ここは inspector で変えた値を反映するための上書き
+        ApplyCap(targetFps);
         enemy = FindAnyObjectByType<Enemy>();
         player = FindAnyObjectByType<Player>();
         useGUILayout = false;
@@ -131,7 +160,7 @@ public class Informations : MonoBehaviour
             var capped = Application.targetFrameRate > 0;
             if (GUI.Button(new Rect(360, 5, 80, 22), capped ? "上限を外す" : "上限 " + targetFps))
             {
-                Application.targetFrameRate = capped ? -1 : targetFps;
+                ApplyCap(capped ? -1 : targetFps);
             }
         }
 
