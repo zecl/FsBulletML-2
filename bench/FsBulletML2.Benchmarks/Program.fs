@@ -112,29 +112,72 @@ let private calibratedAt = "1967613（Sim を型の別名にした版）"
 
 let private calibration = dict [ "move", -33.4; "5way", -14.7; "10Way", -14.2; "homing", -8.9 ]
 
+/// **記録した確保。旧 API の列が消えても残る側の物差し。**
+///
+/// 上の calibration は**新旧の比**なので、旧の列を落とすと土台ごと無くなる。
+/// こちらは新 API の絶対値そのものを控えておいて、走行のたびに
+/// 「記録からどう動いたか」を出す。
+///
+/// **正しさの門ではない。** Core を触れば動くのが正しく、動いたときに
+/// それが手の効きなのか、無関係な変更に伴うドリフト（既知の幅 4,120 B。
+/// 下の「確保は決定的」の但し書き）なのかを読むための目印。
+///
+/// **軸の確認はこれではできない。** 軸は「この口が出した差」と
+/// 「BDN が出した Allocated の差」を突き合わせて確かめるもので、
+/// それは 3 回 やって README に記録がある。**次に BDN で測れる大きさの手を
+/// 打ったとき、4 回目 をやってここを更新する。**
+let private baselineAt = "e831bd9（走査の書き戻しを List.updateAt にした版）"
+
+let private baseline =
+  dict [ "move",     313_360L
+         "5way",   3_605_592L
+         "10Way",  7_490_320L
+         "homing", 4_122_872L
+         "wide",   3_163_432L ]
+
 let private alloc () =
   fixManager ()
   printfn "1 走行（60 コマ）の確保。BenchmarkDotNet を通さない即席の物差し。"
   printfn ""
-  printfn "%-8s %14s %14s %9s %9s %8s" "台本" "新 API" "旧 API" "比" "校正値" "差"
-  for name, suffix in scenarios do
-    match Corpus.findBySuffix suffix with
-    | None -> printfn "%-8s %s が見つかりません" name suffix
-    | Some path ->
-      let doc = parseXml (System.IO.File.ReadAllText path)
-      let a = allocApi doc 60
-      let o = allocOld doc 60
-      let ratio = (float a / float o - 1.0) * 100.0
-      // 校正値は BDN の物差しに載っている台本にしかない。**無いものを
-      // 0 や「一致」で埋めない** —— 埋めると、校正していない列を
-      // 校正済みと読んでしまう
-      match calibration.TryGetValue name with
-      | true, bdn ->
-        printfn "%-8s %12d B %12d B %+8.1f%% %+8.1f%% %+7.1f"
-                name a o ratio bdn (ratio - bdn)
-      | _ ->
-        printfn "%-8s %12d B %12d B %+8.1f%% %9s %8s"
-                name a o ratio "—" "—"
+  // 1 度 だけ測って、2 つ の表に使い回す。allocApi / allocOld はどちらも
+  // 中で 1 回 空回ししてから測るので、ここで 2 度 呼ぶと倍の時間がかかる
+  let rows =
+    [ for name, suffix in scenarios do
+        match Corpus.findBySuffix suffix with
+        | None ->
+          printfn "%-8s %s が見つかりません" name suffix
+        | Some path ->
+          let doc = parseXml (System.IO.File.ReadAllText path)
+          yield name, allocApi doc 60, allocOld doc 60 ]
+
+  printfn "%-8s %14s %14s %10s %9s" "台本" "新 API" "記録" "差" "差(%)"
+  for name, a, _ in rows do
+    match baseline.TryGetValue name with
+    | true, b ->
+      printfn "%-8s %12d B %12d B %+9d B %+8.2f%%"
+              name a b (a - b) (float (a - b) / float b * 100.0)
+    | _ ->
+      // **記録の無い台本を 0 や「一致」で埋めない。** 埋めると、
+      // 控えていない列を控えたものと読む
+      printfn "%-8s %12d B %14s %10s %9s" name a "—" "—" "—"
+  printfn ""
+  printfn "記録は %s で、この口自身が出した値。" baselineAt
+  printfn "**正しさの門ではない。** Core を触れば動くのが正しく、動いたときに"
+  printfn "それが手の効きなのか、無関係な変更に伴うドリフト（既知の幅 4,120 B）"
+  printfn "なのかを読むための目印。**手を打ったら Program.fs の baseline と"
+  printfn "baselineAt を更新する。**"
+  printfn ""
+  printfn "--- ここから下は旧 API の列。**廃止と一緒に消える** ---"
+  printfn ""
+  printfn "%-8s %14s %9s %9s %8s" "台本" "旧 API" "比" "校正値" "差"
+  for name, a, o in rows do
+    let ratio = (float a / float o - 1.0) * 100.0
+    // 校正値は BDN の物差しに載っている台本にしかない。**無いものを
+    // 0 や「一致」で埋めない** —— 埋めると、校正していない列を
+    // 校正済みと読んでしまう
+    match calibration.TryGetValue name with
+    | true, bdn -> printfn "%-8s %12d B %+8.1f%% %+8.1f%% %+7.1f" name o ratio bdn (ratio - bdn)
+    | _ ->         printfn "%-8s %12d B %+8.1f%% %9s %8s" name o ratio "—" "—"
   printfn ""
   printfn "校正値が「—」の台本は BDN の物差しに載っていない（%d 本 目 以降）。" (onBdn + 1)
   printfn "**絶対値の前後比較には使えるが、比の妥当性は誰も見ていない。**"
