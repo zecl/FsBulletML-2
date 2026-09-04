@@ -46,29 +46,42 @@ module TraceApi =
       mutable Alive : bool
       Id : int }
 
-  let run (rand: unit -> float32) (rank: float32) (px: float32) (py: float32)
-          (xml: string) (frames: int) : string =
+  /// `run` の、走行の途中で rank や自機の位置を動かせる形。
+  ///
+  /// 旧の `Trace.runWith` は走行の途中で `BulletMLManager`（グローバル）を
+  /// 差し替えていた。**新 API はフロントが毎コマ `Env` を渡す形なので、
+  /// 値を読む口を関数にするだけで足りる** —— 差し替えるグローバルが要らない。
+  /// `onFrame` はそのコマを回す前に呼ぶ（旧と同じ位置）。
+  ///
+  /// **spawn 側の aim は毎コマ 組み直す。** 対になる
+  /// `FakeBullet.GetSpawnAimDir` は呼ばれるたびに自機の位置を読むので、
+  /// 走行前に 1 回 計算して使い回すと、自機が動く走行で値が割れる。
+  /// `run` が使い回せていたのは px / py が固定だったから。
+  let runWithParams (onFrame: int -> unit)
+                    (rand: unit -> float32) (rank: unit -> float32)
+                    (px: unit -> float32) (py: unit -> float32)
+                    (xml: string) (frames: int) : string =
     // 産まれた弾がどこに出るかは、対になる FakeBullet.GetNewBullet が決める。
     // あちらは位置を入れずに作るので原点。同じ式に原点を入れた値を載せる
-    let spawnAim = aimDir px py 0.0f 0.0f
-    let spawnEnemyAim = enemyAimDir 0.0f 0.0f
+    let spawnAim () = aimDir (px ()) (py ()) 0.0f 0.0f
+    let spawnEnemyAim () = enemyAimDir 0.0f 0.0f
     let envAt (x: float32) (y: float32) : Env =
       { Rand = rand
-        Rank = rank
-        AimDir = aimDir px py x y
+        Rank = rank ()
+        AimDir = aimDir (px ()) (py ()) x y
         EnemyAimDir = enemyAimDir x y
-        SpawnAimDir = spawnAim
-        SpawnEnemyAimDir = spawnEnemyAim }
+        SpawnAimDir = spawnAim ()
+        SpawnEnemyAimDir = spawnEnemyAim () }
 
     // 木を組む段。撃つ弾ごとの位置がまだ無いので aim は 0 で組む
     let rootEnv : Env =
-      { Rand = rand; Rank = rank; AimDir = 0.0f; EnemyAimDir = 0.0f
-        SpawnAimDir = spawnAim; SpawnEnemyAimDir = spawnEnemyAim }
+      { Rand = rand; Rank = rank (); AimDir = 0.0f; EnemyAimDir = 0.0f
+        SpawnAimDir = spawnAim (); SpawnEnemyAimDir = spawnEnemyAim () }
 
     /// aim を読まないと分かっているコマの Env。同梱フロントの noAimEnv と
     /// 同じ形（aim 4 本 を 0 に、Rand / Rank はそのまま）
     let noAimEnv () : Env =
-      { Rand = rand; Rank = rank; AimDir = 0.0f; EnemyAimDir = 0.0f
+      { Rand = rand; Rank = rank (); AimDir = 0.0f; EnemyAimDir = 0.0f
         SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
     let script = Runner.load rootEnv (readXmlString xml)
 
@@ -78,6 +91,7 @@ module TraceApi =
     let mutable seen = 1
 
     for i in 0 .. frames - 1 do
+      onFrame i
       sb.AppendLine(sprintf "f%02d" i) |> ignore
       let liveCount = all.Count
       for j in 0 .. liveCount - 1 do
@@ -118,3 +132,11 @@ module TraceApi =
         seen <- seen + 1
 
     sb.ToString().Replace("\r\n", "\n")
+
+  /// 値を動かさない走行。runWithParams の薄い包み。
+  ///
+  /// **橋 227 本 と Golden の大半がここを通る。** 包みにしたあとも
+  /// 出力が 1 バイト も動かないことは、それらが緑であることで押さえている
+  let run (rand: unit -> float32) (rank: float32) (px: float32) (py: float32)
+          (xml: string) (frames: int) : string =
+    runWithParams ignore rand (fun () -> rank) (fun () -> px) (fun () -> py) xml frames
