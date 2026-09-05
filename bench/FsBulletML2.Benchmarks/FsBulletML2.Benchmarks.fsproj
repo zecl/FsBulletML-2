@@ -18,6 +18,7 @@
     <!-- 弾の実体はテストと同じものを使う。同じ形の実装を 2 つ 持つと、
          片方だけが古びて、ベンチとテストが別のものを測っていることに
          誰も気づかなくなる。実体は tests 側の 1 本 だけ -->
+    <Compile Include="FixedManager.fs" />
     <Compile Include="..\..\tests\FsBulletML2.Core.Tests\Fake.fs" Link="Fake.fs" />
     <Compile Include="Harness.fs" />
     <Compile Include="StepBenchmarks.fs" />
@@ -30,6 +31,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Front\FsBulletML2.Front.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
   </ItemGroup>
 

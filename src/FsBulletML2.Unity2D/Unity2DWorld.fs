@@ -1,5 +1,6 @@
 namespace FsBulletML2.Unity2D
 
+open System.Collections.Generic
 open FsBulletML2
 open FsBulletML2.Front
 
@@ -15,7 +16,8 @@ open FsBulletML2.Front
 type Unity2DWorld() =
 
   let near =
-    NearestEnemy<IDefaultBullet>(Manager.enemies, (fun e -> e.X), (fun e -> e.Y))
+    NearestEnemy<IDefaultBullet>((fun () -> Manager.enemies :> IReadOnlyList<IDefaultBullet>),
+                                 (fun e -> e.X), (fun e -> e.Y))
 
   /// 覚えている相手を捨てる。次に聞かれたら選び直す
   member _.Forget () = near.Forget ()

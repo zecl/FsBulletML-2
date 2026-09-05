@@ -1,5 +1,6 @@
 namespace FsBulletML2.MonoGame
 
+open System.Collections.Generic
 open FsBulletML2
 open FsBulletML2.Front
 
@@ -23,7 +24,8 @@ open FsBulletML2.Front
 type MonoGameWorld() =
 
   let near =
-    NearestEnemy<IBullet>(Manager.enemies, (fun e -> e.X), (fun e -> e.Y))
+    NearestEnemy<IBullet>((fun () -> Manager.enemies :> IReadOnlyList<IBullet>),
+                          (fun e -> e.X), (fun e -> e.Y))
 
   /// 覚えている相手を捨てる。次に聞かれたら選び直す
   member _.Forget () = near.Forget ()

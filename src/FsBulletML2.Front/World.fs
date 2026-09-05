@@ -1,5 +1,6 @@
 namespace FsBulletML2.Front
 
+open System
 open System.Collections.Generic
 
 /// ゲームの側だけが知っていることを、エンジンの手前で聞く口。
@@ -51,8 +52,18 @@ type IWorld =
 /// **`PosOf` でなく `ex` / `ey` の 2 本。** `Vec2` を口ごしに返すほうが
 /// 1.3 ns / 回 遅い。5way 1 走行 では 0.04% 相当なので速さでは決まらないが、
 /// 遅いほうを選ぶ理由も無い。
+///
+/// **一覧そのものでなく、一覧を返すものを受ける。** Unity の GameObject 側は
+/// `FindGameObjectsWithTag` を「相手が要るとき」に初めて引く。作るときに
+/// 引いてしまうと、弾を作った時点の一覧で固まる。
+/// 引く回数は覚えたあと 0 回 なので、この 1 段 は測った経路に載らない。
 [<Sealed>]
-type NearestEnemy<'E>(enemies: IReadOnlyList<'E>, ex: 'E -> float32, ey: 'E -> float32) =
+type NearestEnemy<'E>(enemies: Func<IReadOnlyList<'E>>,
+                      ex: Func<'E, float32>,
+                      ey: Func<'E, float32>) =
+
+  let ex e = ex.Invoke e
+  let ey e = ey.Invoke e
 
   let mutable target : 'E = Unchecked.defaultof<'E>
   let mutable hasTarget = false
@@ -72,9 +83,10 @@ type NearestEnemy<'E>(enemies: IReadOnlyList<'E>, ex: 'E -> float32, ey: 'E -> f
   /// `(x, y)` からいちばん近い相手を **1 度 だけ** 選び、以後はそれを返す
   member _.TryFrom (x: float32, y: float32, outX: outref<float32>, outY: outref<float32>) : bool =
     if not hasTarget then
-      let mutable best = System.Single.MaxValue
-      for i in 0 .. enemies.Count - 1 do
-        let e = enemies.[i]
+      let list = enemies.Invoke ()
+      let mutable best = Single.MaxValue
+      for i in 0 .. list.Count - 1 do
+        let e = list.[i]
         let d = NearestEnemy<'E>.Dist (ex e - x) (ey e - y)
         if best > d then
           best <- d
@@ -89,11 +101,12 @@ type NearestEnemy<'E>(enemies: IReadOnlyList<'E>, ex: 'E -> float32, ey: 'E -> f
 
   /// **覚えずに**、その場でいちばん近い相手を選ぶ
   member _.TryNearest (x: float32, y: float32, outX: outref<float32>, outY: outref<float32>) : bool =
-    let mutable best = System.Single.MaxValue
+    let list = enemies.Invoke ()
+    let mutable best = Single.MaxValue
     let mutable found = false
     let mutable near = Unchecked.defaultof<'E>
-    for i in 0 .. enemies.Count - 1 do
-      let e = enemies.[i]
+    for i in 0 .. list.Count - 1 do
+      let e = list.[i]
       let d = NearestEnemy<'E>.Dist (ex e - x) (ey e - y)
       if best > d then
         best <- d

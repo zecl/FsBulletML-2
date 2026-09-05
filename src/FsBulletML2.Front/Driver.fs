@@ -13,6 +13,7 @@ module FrontEnv =
   ///
   /// 使ってよい条件は `BulletRun.HasNoScript` の但し書き。
   /// **`at` と欄が 1 つ でもずれたら、片方だけ直したということ**
+  [<CompiledName "NoAim">]
   let noAim (world: IWorld) : Env =
     { Rand = world.Rand
       Rank = world.Rank
@@ -24,6 +25,7 @@ module FrontEnv =
   /// **組む位置が変わると aim がずれる**ので、呼ぶ側は step の直前
   /// （差分を足す前）に組むこと。走らせ直しの前は、差分を足した**あと**に組む
   /// （旧 `BaseBullet` が apply のあとで `envOfGlobal` を呼ぶのと同じ順）。
+  [<CompiledName "At">]
   let at (world: IWorld) (space: Space) (origin: SpawnOrigin) (x: float32) (y: float32) : Env =
     let struct (sx, sy) = Aiming.spawnPoint origin x y
     let mutable tx = 0.0f
@@ -46,6 +48,7 @@ module FrontEnv =
   /// **この枝を既定にしてある。** 同梱のフロントは全部 これを通していたが、
   /// 通し忘れても答えは同じで速さだけ落ちる（5way で 24%）ので、
   /// 忘れたことが門に出ない
+  [<CompiledName "ForRun">]
   let forRun (world: IWorld) (space: Space) (origin: SpawnOrigin)
              (run: BulletRun) (x: float32) (y: float32) : Env =
     if run.HasNoScript then noAim world else at world space origin x y
@@ -58,6 +61,7 @@ module FrontEnv =
 module Driver =
 
   /// 1 コマ 進める。**差分を足す前の位置**を渡すこと
+  [<CompiledName "Step">]
   let step (script: BulletmlScript) (world: IWorld) (space: Space) (origin: SpawnOrigin)
            (run: BulletRun) (motion: Motion) : Frame =
     let env = FrontEnv.forRun world space origin run motion.Pos.X motion.Pos.Y
@@ -69,6 +73,7 @@ module Driver =
   /// `Finished` のコマで呼んでいるが、`restart` は wait / changeDirection /
   /// changeSpeed の term を引き直すので、呼ぶか呼ばないかで乱数の並びが変わる。
   /// ここが既定を作ると、その決めごとを黙って奪うことになる
+  [<CompiledName "Restart">]
   let restart (world: IWorld) (space: Space) (origin: SpawnOrigin)
               (run: BulletRun) (x: float32) (y: float32) : BulletRun =
     Runner.restart (FrontEnv.forRun world space origin run x y) run

@@ -100,7 +100,6 @@ module internal CorpusData =
   let all : Lazy<Row list> =
     lazy (
       let sw = Diagnostics.Stopwatch.StartNew()
-      BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
       let files = uniqueSamples ()
       File.WriteAllText(progressPath, "")
       [ for f in files do
@@ -140,13 +139,10 @@ module internal CorpusData =
 /// wait を直したとき、控えが 17 本 動いたのに smoke の 3 つの数は
 /// 1 つも動かなかった。走らせた軌跡を捨てていたので、同じ走行から指紋を残す
 /// ようにした（走行そのものは増えていない）。
+/// **`NonParallelizable` を外した。** グローバル（`BulletMLManager`）を
+/// `SetUp` で書き換えていたのが唯一の理由で、その `SetUp` ごと消えた。
 [<TestFixture>]
-[<NonParallelizable>]
 type Corpus() =
-
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
 
   [<Test>]
   member _.``samples の弾幕を全部 60 フレーム走らせる``() =

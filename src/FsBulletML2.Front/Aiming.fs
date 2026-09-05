@@ -33,11 +33,13 @@ module Aiming =
   ///
   /// **`Math.Atan2` を double で通してから float32 に落とす。**
   /// Unity の `Mathf.Atan2` も中身は同じで、値が 1 ビット も動かない。
+  [<CompiledName "Toward">]
   let toward (space: Space) (fx: float32) (fy: float32) (tx: float32) (ty: float32) : float32 =
     let dy = ty - fy
     let dy = if space = Space.YDown then -dy else dy
     float32 (System.Math.Atan2(float (tx - fx), float dy))
 
   /// `origin` に従って、産まれる弾の位置を返す
+  [<CompiledName "SpawnPoint">]
   let spawnPoint (origin: SpawnOrigin) (x: float32) (y: float32) : struct (float32 * float32) =
     if origin = SpawnOrigin.AtOrigin then struct (0.0f, 0.0f) else struct (x, y)

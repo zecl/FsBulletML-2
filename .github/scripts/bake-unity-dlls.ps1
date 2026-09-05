@@ -39,8 +39,10 @@ $RepoRoot = $RepoRoot -replace '\\', '/'
 # **ここだけが手で書いた対応。** 残り（どの dll を置くか・何を参照するか）は
 # 追跡している一覧と proj から引く。
 $Reps = @{
+  # 焼き元は .Compile。**Assets が参照するものを過不足なく持っているのは
+  # ここだけ** —— Bullets.Dsl は Front を引かないので、Front.dll が出ない
   'samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/FsBulletML2' =
-    'samples/FsBulletML2.Bullets.Dsl/FsBulletML2.Bullets.Dsl.fsproj'
+    'samples/FsBulletML2.Sample.Unity2D.CSharp.Compile/FsBulletML2.Sample.Unity2D.CSharp.Compile.csproj'
   'samples/FsBulletML2.Sample.Unity2D.FSharp/Assets/FsBulletML2' =
     'samples/FsBulletML2.Sample.Unity2D.FSharp/FsBulletML2.Sample.Unity2D.FSharp/FsBulletML2.Sample.Unity2D.FSharp.fsproj'
 }

@@ -38,9 +38,11 @@ open NUnit.Framework
 /// **前提を書いて残すほうを採った。** 控えにファイル名だけの行が出ていたら、
 /// その形になっていないかを見ること。
 ///
-/// **`NonParallelizable` を付けていないのは意図。** 他の fixture は
-/// `BulletMLManager` という 1 つのグローバル可変を触るので逐次でないと混ざるが、
-/// ここはソースを読むだけで走らせない。**規約から外れて見えるが、漏れではない。**
+/// **`NonParallelizable` を付けていない。** ここはソースを読むだけで走らせない。
+/// 以前は「他の fixture はグローバル可変（`BulletMLManager`）を触るので
+/// 逐次でないと混ざるが、ここは違う」と書いてあったが、**この試験
+/// プロジェクトにグローバルを触る fixture はもう 1 つ も無い**
+/// （口ごと `FsBulletML2.Front` へ移した）。
 [<TestFixture>]
 type CallingConvention() =
 

@@ -8,12 +8,10 @@ samples/FsBulletML2.Sample.MonoGame.FSharp/Enemy.fs
     let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
 
 samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/BaseBullet.cs
-    var f = Runner.StepWith(Script, EnvNow(rn), rn, motion);
     X = X + (f.Delta.X / 100);
     Y = Y - (f.Delta.Y / 100);
 
 samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/ECS/BulletSim.cs
-    var f = Runner.StepWith(Script, EnvNow(rn), rn, motion);
     X = X + (f.Delta.X / 100f);
     Y = Y - (f.Delta.Y / 100f);
 
@@ -37,4 +35,4 @@ run の経路に居ないが、座標を足している所（件数だけ）:
   samples/FsBulletML2.Sample.MonoGame.FSharp/Background.fs         1 行
   samples/FsBulletML2.Sample.MonoGame.FSharp/Player.fs             4 行
 
-―― 本体 8 ファイル / 16 行（0 なら走査か網が壊れている）
+―― 本体 8 ファイル / 14 行（0 なら走査か網が壊れている）

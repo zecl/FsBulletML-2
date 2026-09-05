@@ -3,18 +3,10 @@ namespace FsBulletML2.Core.Tests
 open System.Collections.Generic
 open FsBulletML2
 
-/// $rand / $rank / 自機位置を固定する。BulletMLManager は static mutable なので
-/// fixture ごとに Init し直すこと。
-///
-/// **走らせる側はもうここを読まない**（新 API は Env を引数で受ける）。
-/// 残っているのは、同梱フロントの `FrontEnv` がグローバルから Env を組む形
-/// なので、フロント側の門（`FsBulletML2.MonoGame.Tests`）とベンチが要るため
-type FixedManager(rand: float32, rank: float32, playerX: float32, playerY: float32) =
-  interface IBulletMLManager with
-    member _.GetRandom() = rand
-    member _.GetRank() = rank
-    member _.GetPlayerPosX() = playerX
-    member _.GetPlayerPosY() = playerY
+// グローバルの口（IBulletMLManager / BulletMLManager）は FsBulletML2.Front へ
+// 移した。**この試験プロジェクトはもうそこを触らない** ——
+// 新 API は Env を引数で受けるので、走らせる側にグローバルは要らない。
+// 固定値の実装が要るのはベンチだけなので、bench/FixedManager.fs に置いてある。
 
 /// 決定的だが値が変わる $rand の列。定数（FixedManager）だと、getValue が
 /// 「何番めに呼ばれたか」に関わらず同じ値を返すので、引く回数や引く順が

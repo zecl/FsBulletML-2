@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Linq;
 using FsBulletML2;
+using FsBulletML2.Front;
 using R3;
 using BulletType = FsBulletML2.DTD.BulletType;
 
@@ -23,7 +24,11 @@ public abstract class BaseBullet : MonoBehaviour
     protected GameObject bulletObject;
     [field: SerializeField]
     public bool Root { get; set; }
-    private GameObject TargetEnemy;
+    /// <summary>
+    /// この弾から見た世界。<b>弾 1 個 につき 1 個</b>
+    /// —— 狙う相手を覚えるのが弾ごとなので使い回せない。
+    /// </summary>
+    readonly GameObjectWorld world = new GameObjectWorld();
     public abstract GameObject GetBulletPrefubInstance();
     public GameObject BulletPrefab => bulletObject;
 
@@ -128,7 +133,8 @@ public abstract class BaseBullet : MonoBehaviour
             dir: Dir,
             accel: new FsBulletML2.Domain.Vec2(AccelerationX, AccelerationY));
 
-        var f = Runner.StepWith(Script, EnvNow(rn), rn, motion);
+        // Env を組む位置も、台本が無い弾の枝も Driver が持っている
+        var f = Driver.Step(Script, world, CSharpWorld.Space, CSharpWorld.Origin, rn, motion);
         var after = f.Run.Motion;
         Speed = after.Speed;
         Dir = after.Dir;
@@ -161,7 +167,7 @@ public abstract class BaseBullet : MonoBehaviour
         // 走らせ直しの Env は、位置を更新したあとの自分から組む
         // （旧 BaseBullet が座標を足したあとで envOfGlobal を呼ぶのと同じ順）
         Run = f.Finished
-            ? Runner.Restart(EnvNow(f.Run), f.Run)
+            ? Driver.Restart(world, CSharpWorld.Space, CSharpWorld.Origin, f.Run, X, Y)
             : f.Run;
     }
 
@@ -200,7 +206,7 @@ public abstract class BaseBullet : MonoBehaviour
         // 旧はここで task.Init(envOfGlobal this) を呼んで木を歩き直していた
         if (Run.HasValue)
         {
-            Run = Runner.Restart(EnvNow(Run.Value), Run.Value);
+            Run = Driver.Restart(world, CSharpWorld.Space, CSharpWorld.Origin, Run.Value, X, Y);
         }
     }
 
@@ -209,51 +215,4 @@ public abstract class BaseBullet : MonoBehaviour
         this.Used = false;
     }
 
-    /// <summary>
-    /// このコマの Env。<b>台本が無い弾は aim を読まない</b>ので、
-    /// そのときは Atan2 を 4 本 とも省く（BulletRun.HasNoScript の但し書き）。
-    /// </summary>
-    FsBulletML2.Domain.Env EnvNow(BulletRun run)
-    {
-        return run.HasNoScript
-            ? FrontEnv.NoAim()
-            : FrontEnv.At(X, Y, GetEnemyAimDir());
-    }
-
-    /// <summary>
-    /// いちばん近い敵を狙う向き。旧 GetEnemyAimDir の式そのまま。
-    /// <b>選んだ相手を覚えるところも旧と同じ</b> —— 毎コマ 選び直すと
-    /// 相手が入れ替わって軌跡が変わる。
-    /// </summary>
-    public float GetEnemyAimDir()
-    {
-        if (this.TargetEnemy != null)
-        {
-            return Mathf.Atan2(this.TargetEnemy.transform.position.x - this.X, this.TargetEnemy.transform.position.y - this.Y);
-        }
-        else
-        {
-            var enemies = GameObject.FindGameObjectsWithTag("Enemy");
-            if (!enemies.Any())
-            {
-                return 0;
-            }
-            else
-            {
-                GameObject near = enemies[0];
-                float nearDist = Vector2.Distance(this.transform.position, near.transform.position);
-                for (int i = 1; i < enemies.Length; i++)
-                {
-                    var d = Vector2.Distance(this.transform.position, enemies[i].transform.position);
-                    if (d < nearDist)
-                    {
-                        nearDist = d;
-                        near = enemies[i];
-                    }
-                }
-                this.TargetEnemy = near;
-                return Mathf.Atan2(this.TargetEnemy.transform.position.x - this.X, this.TargetEnemy.transform.position.y - this.Y);
-            }
-        }
-    }
 }

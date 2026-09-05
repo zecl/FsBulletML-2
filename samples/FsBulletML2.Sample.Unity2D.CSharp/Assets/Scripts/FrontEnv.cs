@@ -1,29 +1,22 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using FsBulletML2;
+using FsBulletML2.Front;
 using Microsoft.FSharp.Core;
-// Domain は F# の module（C# からは型）なので using できない。別名を張る
-using Env = FsBulletML2.Domain.Env;
 
 /// <summary>
-/// このサンプルが <c>Env</c> を組むところ。<b>4 本 の aim を入れる場所はここだけ。</b>
+/// このサンプルが <c>FsBulletML2.Front</c> の口に答えるところ。
 ///
-/// 以前は BaseBullet と BulletSim にそれぞれ GetAimDir / GetSpawnAimDir /
-/// GetEnemyAimDir / GetSpawnEnemyAimDir が生えていて、エンジンが呼び返していた。
-/// 新 API はフロントが Env を組んで渡すので、呼び返しは無い。
+/// <b>式そのものはここに無い。</b> aim 4 本 は <c>Aiming.Toward</c> の
+/// <c>Space</c> 違いで、MonoGame の同じ関数と 1 ビット しか違わなかった
+/// （凍結は tests/FsBulletML2.Front.Tests/AimingFreeze.fs）。
 ///
-/// 散らしておくと <c>Aim</c> に <c>Spawn</c> を入れるような取り違えを
-/// 門で当てられない（型はどれも float なので通ってしまう）。
-/// 同梱の FsBulletML2.MonoGame.FrontEnv と同じ理由でここに集めてある。
-///
-/// <b>式はこのフロント固有。</b> MonoGame 版とは 2 つ 違う。
-/// <list type="bullet">
-/// <item>Y の符号   こちらは反転しない（Unity は上が正）。MonoGame は -(py - y)</item>
-/// <item>Spawn の元 こちらは撃った側と同じ場所に作るので Aim と同値。
-///                  MonoGame は原点に作るので別式</item>
-/// </list>
+/// <b>狙う相手の選び方だけが弾の種類で違う</b>ので、そこを派生で分ける ——
+/// GameObject の弾は一度 選んだ相手を持ち回り、ECS の弾は
+/// BulletEcsRuntime.Enemy を毎コマ 見る。
 /// </summary>
-public static class FrontEnv
+public abstract class CSharpWorld : IWorld
 {
     /// <summary>
     /// <c>Env.Rand</c> に入れる F# の関数値。<b>1 個 だけ作って使い回す。</b>
@@ -40,59 +33,81 @@ public static class FrontEnv
     /// 乱数とランクだけで、aim 4 本 は撃つ弾ごとの位置がまだ無いので
     /// 読まれない。欄が無ければ取り違えようがない。
     /// </summary>
-    public static float Rank => BulletMLManager.GetRank();
+    public static float LoadRank => BulletMLManager.GetRank();
+
+    /// <summary>Unity は Y が上向き。</summary>
+    public const Space Space = FsBulletML2.Front.Space.YUp;
 
     /// <summary>
-    /// 自機を狙う向き。旧 GetAimDir の式そのまま。
-    /// 旧はエンジンが呼び返していたが、いまは Env を組むためにフロントが自分で呼ぶ。
-    /// </summary>
-    public static float AimAtPlayer(float x, float y)
-    {
-        return Mathf.Atan2(
-            BulletMLManager.GetPlayerPosX() - x,
-            BulletMLManager.GetPlayerPosY() - y);
-    }
-
-    /// <summary>
-    /// このコマの <c>Env</c> を、いまの位置から組む。旧 BulletRunner.envOfGlobal の写し。
-    ///
-    /// <b>組む位置が変わると aim がずれる</b>ので、呼ぶ側は step の直前
-    /// （差分を足す前）に組むこと。
-    ///
-    /// <paramref name="enemyAim"/> だけ引数で受けるのは、<b>狙う相手の選び方が
-    /// 弾の種類で違う</b>ため —— ECS の弾は BulletEcsRuntime.Enemy を見て、
-    /// GameObject の弾は一度 選んだ相手を持ち回る。残り 3 本 はグローバルと
-    /// 位置だけで決まるので、ここに閉じている。
-    ///
-    /// <b>Spawn 側は撃った側と同じ値。</b> 産まれた弾は撃った側と同じ場所に作る
+    /// 産まれた弾は撃った側と同じ場所に作る
     /// （BulletEntityFactory.SpawnChild が parent.X / parent.Y をそのまま渡す）。
     /// <b>片方だけ直すと軌跡が割れる。</b>
     /// </summary>
-    public static Env At(float x, float y, float enemyAim)
-    {
-        var aim = AimAtPlayer(x, y);
-        // Aim と SpawnAim は別の型。値は同じでも、入れ替えるとコンパイルで落ちる
-        // （3 番目 と 4 番目 を入れ替えて CS1503 になることを確かめてある）
-        return new Env(
-            RandFunc,
-            BulletMLManager.GetRank(),
-            new FsBulletML2.Domain.Aim(toPlayer: aim, toEnemy: enemyAim),
-            new FsBulletML2.Domain.SpawnAim(toPlayer: aim, toEnemy: enemyAim));
-    }
+    public const SpawnOrigin Origin = FsBulletML2.Front.SpawnOrigin.AtShooter;
+
+    FSharpFunc<Unit, float> IWorld.Rand => RandFunc;
+    float IWorld.Rank => BulletMLManager.GetRank();
+    float IWorld.PlayerX => BulletMLManager.GetPlayerPosX();
+    float IWorld.PlayerY => BulletMLManager.GetPlayerPosY();
+
+    public abstract bool TryTargetFrom(float x, float y, out float ex, out float ey);
 
     /// <summary>
-    /// aim を読まないと分かっているコマの <c>Env</c>。aim 4 本 を 0 に。
-    ///
-    /// 使ってよい条件は <c>BulletRun.HasNoScript</c> の但し書きにある。
-    /// <b><c>At</c> と欄が 1 つ でもずれたら、片方だけ直したということ。</b>
+    /// <b>撃った側と同じ相手。</b> このフロントは撃った側と同じ場所に弾を作る。
     /// </summary>
-    public static Env NoAim()
-    {
-        return new Env(
-            RandFunc,
-            BulletMLManager.GetRank(),
-            new FsBulletML2.Domain.Aim(toPlayer: 0f, toEnemy: 0f),
-            new FsBulletML2.Domain.SpawnAim(toPlayer: 0f, toEnemy: 0f));
-    }
+    public bool TrySpawnTargetFrom(float x, float y, out float ex, out float ey)
+        => TryTargetFrom(x, y, out ex, out ey);
+}
 
+/// <summary>
+/// GameObject の弾から見た世界。<b>弾 1 個 につき 1 個。</b>
+///
+/// 敵は <c>FindGameObjectsWithTag</c> で引く。<b>作るときではなく、
+/// 相手が要るときに初めて引く</b>ので <c>NearestEnemy</c> に
+/// 「一覧を返すもの」を渡している。
+/// </summary>
+public sealed class GameObjectWorld : CSharpWorld
+{
+    static readonly Func<IReadOnlyList<GameObject>> Enemies =
+        () => GameObject.FindGameObjectsWithTag("Enemy");
+
+    readonly NearestEnemy<GameObject> near =
+        new NearestEnemy<GameObject>(
+            Enemies,
+            g => g.transform.position.x,
+            g => g.transform.position.y);
+
+    /// <summary>覚えている相手を捨てる。次に聞かれたら選び直す。</summary>
+    public void Forget() => near.Forget();
+
+    /// <summary>
+    /// 一度 選んだ相手を持ち回る。<b>毎コマ 選び直すと相手が入れ替わって
+    /// 軌跡が変わる。</b>
+    /// </summary>
+    public override bool TryTargetFrom(float x, float y, out float ex, out float ey)
+        => near.TryFrom(x, y, out ex, out ey);
+}
+
+/// <summary>
+/// ECS の弾から見た世界。<b>敵は 1 体 しか居ない</b>ので一覧を持たず、
+/// <c>BulletEcsRuntime.Enemy</c> をそのまま答える ——
+/// 口が一覧を要求しないのはこのため。
+/// </summary>
+public sealed class EcsWorld : CSharpWorld
+{
+    public override bool TryTargetFrom(float x, float y, out float ex, out float ey)
+    {
+        var enemy = BulletEcsRuntime.Enemy;
+        if (enemy == null)
+        {
+            ex = 0f;
+            ey = 0f;
+            return false;
+        }
+
+        var p = enemy.transform.position;
+        ex = p.x;
+        ey = p.y;
+        return true;
+    }
 }

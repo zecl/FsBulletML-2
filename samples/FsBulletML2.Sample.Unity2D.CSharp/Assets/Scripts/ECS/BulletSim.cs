@@ -1,6 +1,7 @@
 using Unity.Entities;
 using UnityEngine;
 using FsBulletML2;
+using FsBulletML2.Front;
 using BulletType = FsBulletML2.DTD.BulletType;
 
 /// <summary>
@@ -103,7 +104,7 @@ public class BulletSim : IComponentData
         // この時点の位置（撃たれた直後は、まだ親の位置へ移す前）で組むところも旧のまま
         if (Run.HasValue)
         {
-            Run = Runner.Restart(EnvNow(Run.Value), Run.Value);
+            Run = Driver.Restart(world, CSharpWorld.Space, CSharpWorld.Origin, Run.Value, X, Y);
         }
     }
 
@@ -113,32 +114,9 @@ public class BulletSim : IComponentData
     }
 
     /// <summary>
-    /// いちばん近い敵を狙う向き。旧 GetEnemyAimDir の式そのまま。
-    /// ECS の弾は相手を覚えず、毎コマ BulletEcsRuntime.Enemy を見る
-    /// （この場面では敵が 1 体 しか居ないので、選び直しても相手が変わらない）。
+    /// この弾から見た世界。<b>敵は 1 体 しか居ない</b>ので一覧を持たない。
     /// </summary>
-    public float EnemyAimDir()
-    {
-        var enemy = BulletEcsRuntime.Enemy;
-        if (enemy == null)
-        {
-            return 0f;
-        }
-
-        var p = enemy.transform.position;
-        return Mathf.Atan2(p.x - X, p.y - Y);
-    }
-
-    /// <summary>
-    /// このコマの Env。<b>台本が無い弾は aim を読まない</b>ので、
-    /// そのときは Atan2 を 4 本 とも省く（BulletRun.HasNoScript の但し書き）。
-    /// </summary>
-    public FsBulletML2.Domain.Env EnvNow(BulletRun run)
-    {
-        return run.HasNoScript
-            ? FrontEnv.NoAim()
-            : FrontEnv.At(X, Y, EnemyAimDir());
-    }
+    readonly EcsWorld world = new EcsWorld();
 
     /// <summary>
     /// 1 コマ進める。<b>座標は呼ぶ側が足す</b>（Frame.Delta は差分）。
@@ -165,7 +143,8 @@ public class BulletSim : IComponentData
             dir: Dir,
             accel: new FsBulletML2.Domain.Vec2(AccelerationX, AccelerationY));
 
-        var f = Runner.StepWith(Script, EnvNow(rn), rn, motion);
+        // Env を組む位置も、台本が無い弾の枝も Driver が持っている
+        var f = Driver.Step(Script, world, CSharpWorld.Space, CSharpWorld.Origin, rn, motion);
         var after = f.Run.Motion;
         Speed = after.Speed;
         Dir = after.Dir;
@@ -194,7 +173,7 @@ public class BulletSim : IComponentData
         // 走らせ直しの Env は、位置を更新したあとの自分から組む
         // （旧 BulletSim が座標を足したあとで envOfGlobal を呼ぶのと同じ順）
         Run = f.Finished
-            ? Runner.Restart(EnvNow(f.Run), f.Run)
+            ? Driver.Restart(world, CSharpWorld.Space, CSharpWorld.Origin, f.Run, X, Y)
             : f.Run;
     }
 }

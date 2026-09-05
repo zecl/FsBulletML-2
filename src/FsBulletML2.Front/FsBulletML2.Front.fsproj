@@ -8,6 +8,7 @@
     <AssemblyName>FsBulletML2.Front</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Manager.fs" />
     <Compile Include="Aiming.fs" />
     <Compile Include="World.fs" />
     <Compile Include="Driver.fs" />

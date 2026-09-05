@@ -105,13 +105,10 @@ module internal ExprCorpus =
     try Value (getValueByXPath env s) with e -> Threw (e.GetType().Name)
 
 
+/// **`NonParallelizable` を外した。** グローバル（`BulletMLManager`）を
+/// `SetUp` で書き換えていたのが唯一の理由で、その `SetUp` ごと消えた。
 [<TestFixture>]
-[<NonParallelizable>]
 type ExprTests() =
-
-  [<SetUp>]
-  member _.SetUp() =
-    BulletMLManager.Init(FixedManager(0.5f, 0.5f, 30.0f, 100.0f))
 
   /// 当てる先が本当に在るか。0 件を緑にしない
   [<Test>]

@@ -50,7 +50,7 @@ type DriverEquiv() =
   /// Front の口を、一覧を持つフロントとして実装した側。
   /// `NearestEnemy` を弾 1 個 につき 1 個 持つ
   let world (rand: unit -> float32) =
-    let near = NearestEnemy<struct (float32 * float32)>(enemies, ex, ey)
+    let near = NearestEnemy<struct (float32 * float32)>((fun () -> enemies), ex, ey)
     { new IWorld with
         member _.Rand = rand
         member _.Rank = 0.5f
