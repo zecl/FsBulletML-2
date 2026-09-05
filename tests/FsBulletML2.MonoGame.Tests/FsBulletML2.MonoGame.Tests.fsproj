@@ -16,6 +16,7 @@
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
     <PackageReference Include="FsUnit" Version="5.0.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FsBulletML2.MonoGame\FsBulletML2.MonoGame.fsproj" />

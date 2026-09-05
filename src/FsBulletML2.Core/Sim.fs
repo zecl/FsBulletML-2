@@ -102,18 +102,6 @@ module Sim =
   let internal emitMany (es: Effect list) : Sim<unit> =
     fun _ st -> { Value = (); State = st; Emit = ValueSome (fun rest -> es @ rest) }
 
-  /// **テストから bind を呼ぶための入口。中身は bind そのもの。**
-  ///
-  /// bind は inline で、本体が internal な Sim / SimResult を使う。F# の
-  /// inline は「展開先から本体の参照先が全部 見えている」ことを要求するので、
-  /// **別アセンブリからは展開できない**（FS1118。素の
-  /// `Sim.bind (fun _ -> Sim.ret 1) (Sim.ret ())` 1 行 で落ちる）。
-  /// ここで 1 枚 包むと、展開は Core の中で済む。
-  ///
-  /// **Core の中からは呼ばないこと** —— 呼べてしまうが、包んだ時点で
-  /// inline の効きが消える。Core が使うのは bind のほう。
-  let internal bindForTests (f: 'a -> Sim<'b>) (m: Sim<'a>) : Sim<'b> = bind f m
-
   /// 走らせて、効果を並びに潰す
   let internal run env st (m: Sim<'a>) =
     let r = m env st
@@ -145,7 +133,7 @@ type internal SimBuilder() =
 
 /// **テストから CE を書くための入口。SimBuilder と inline 属性だけが違う。**
 ///
-/// 理由は Sim.bindForTests の但し書きと同じ —— テストのアセンブリからは
+/// テストのアセンブリからは
 /// inline なメンバを展開できない。ここで 1 枚 包み、展開を Core の中で済ませる。
 ///
 /// **メンバは 1 つ も独自の中身を持たず、全部 SimBuilder へ委譲する。**

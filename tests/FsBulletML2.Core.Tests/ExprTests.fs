@@ -351,8 +351,14 @@ type ExprTests() =
     Assert.That(float v, Is.EqualTo(0.0).Within(1e-9), "同じ式の中の $rand は同じ値になること")
 
   /// 読む費用は 1 回きり。走行中は木を評価するだけ、という形になっているか。
-  /// 数そのものは置かない（台で動く）。桁だけ見る
+  /// 数そのものは置かない（台で動く）。桁だけ見る。
+  ///
+  /// **計測器を挟むと落ちる。** カバレッジ収集の下で 9.1 倍 まで下がって
+  /// 赤くなった（下限は 10 倍）。両側が同じだけ遅くなるわけではないので、
+  /// 区分を付けて外せるようにしてある ——
+  /// `dotnet test --filter "TestCategory!=Timing"`
   [<Test>]
+  [<Category("Timing")>]
   member _.``木の評価は getValueByXPath より桁で速い``() =
     let s = "(0.8 + 1.1*$1*(180-$1)/(90*90)) * (0.5+0.5*$rand) * (0.5+0.5*$rank)"
     let env = ExprCorpus.envOf 0.5f 0.5f

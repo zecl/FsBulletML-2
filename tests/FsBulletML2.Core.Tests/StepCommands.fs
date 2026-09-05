@@ -957,8 +957,8 @@ type StepCommands() =
     // 同じ手続きループへ書き換えてあるが、その while が simForTests { } の
     // ブロックの中に書かれていると、コンパイラが builder.While へ
     // 書き換えてしまう。SimBuilder.While は
-    //   guard() が真なら Sim.bindForTests (fun () -> While(guard,body)) (body())
-    // で、1 周につき Sim.bindForTests を 1 段 積む再帰（末尾再帰ではない）。
+    //   guard() が真なら Sim.bind (fun () -> While(guard,body)) (body())
+    // で、1 周につき Sim.bind を 1 段 積む再帰（末尾再帰ではない）。
     // times が万のオーダーだとここで StackOverflow する
     // （$"[G_DARIUS]_homing_laser.xml" のような実物にも times=9999 が
     // あるが、corpus は全部 body に wait を持つので 1 コマに 1 周しか

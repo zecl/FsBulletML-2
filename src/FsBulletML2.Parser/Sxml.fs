@@ -58,6 +58,6 @@ module Sxml =
   
   [<CompiledName "ParseFromFile">]
   let parseFromFile sxmlFile = 
-    let sr = new StreamReader((sxmlFile:string), Encoding.GetEncoding("UTF-8"))
+    use sr = new StreamReader((sxmlFile:string), Encoding.GetEncoding("UTF-8"))
     let input = sr.ReadToEnd()
     parse input

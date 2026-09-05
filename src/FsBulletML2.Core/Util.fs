@@ -13,7 +13,6 @@ module internal Util =
   // TODO: do not bring BinaryFormatter back; add a typed clone if another type needs a deep copy.
 
   open System.Diagnostics
-  let dprintf fmt = Printf.ksprintf Debug.Write fmt
   let dprintfn fmt = Printf.ksprintf Debug.WriteLine fmt
 
 [<RequireQualifiedAccess>]

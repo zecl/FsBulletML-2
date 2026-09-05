@@ -13,6 +13,7 @@
     <Compile Include="XmlParse.fs" />
     <Compile Include="OtherParse.fs" />
     <Compile Include="Snippet.fs" />
+    <Compile Include="ReadEntryPoints.fs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\TestData\**\*">
