@@ -1,0 +1,138 @@
+name: PR
+
+# 変更されたコードから、走らせる試験を機械が決める。
+# 決め方は .github/scripts/affected.ps1、その校正は affected.Tests.ps1。
+# **対応表を手で書かない** —— 参照が変わったとき表だけが古びるのを避けるため。
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      full:
+        description: 選ばずに全部 走らせる
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  select:
+    name: 選ぶ
+    runs-on: ubuntu-latest
+    outputs:
+      tests: ${{ steps.pick.outputs.tests }}
+      builds: ${{ steps.pick.outputs.builds }}
+      full: ${{ steps.pick.outputs.full }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 載せ忘れたプロジェクトは CI から見ると存在しない。緑のまま素通りする
+      - name: slnx から漏れた proj が無いか
+        shell: pwsh
+        run: ./.github/scripts/guard-slnx.ps1
+
+      # 判断する側そのものの校正。**これが赤いときは、下の緑を信じてはいけない**
+      - name: 選ぶ道具の校正
+        shell: pwsh
+        run: ./.github/scripts/affected.Tests.ps1
+
+      - name: 締めの校正
+        shell: pwsh
+        run: ./.github/scripts/gate.Tests.ps1
+
+      - name: 変更から選ぶ
+        id: pick
+        shell: pwsh
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          FORCE_FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.full }}
+        run: |
+          $opt = @{}
+          if ($env:FORCE_FULL -eq 'true') {
+            $opt['ForceFull'] = $true
+          } else {
+            $base = git merge-base "origin/$env:BASE_REF" HEAD
+            if (-not $base) { throw "merge-base が引けない: origin/$env:BASE_REF" }
+            Write-Host "起点 $base （origin/$env:BASE_REF との merge-base）"
+            $opt['Base'] = $base
+          }
+          ./.github/scripts/affected.ps1 @opt | Out-Null
+
+  test:
+    name: 試験 ${{ matrix.project.name }}
+    needs: select
+    if: needs.select.outputs.tests != '[]'
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.select.outputs.tests) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: dotnet test
+        run: dotnet test ${{ matrix.project.path }} -c Release --logger "trx;LogFileName=${{ matrix.project.name }}.trx"
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: trx-${{ matrix.project.name }}
+          path: '**/TestResults/*.trx'
+
+  # 試験が 1 本 も触らないサンプルとベンチ。**Core の公開型を変えたときに
+  # ここが壊れる** —— 試験は通るのに使う側が build できない、が起きる層
+  build:
+    name: build ${{ matrix.project.name }}
+    needs: select
+    if: needs.select.outputs.builds != '[]'
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.select.outputs.builds) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - run: dotnet build ${{ matrix.project.path }} -c Release
+
+  # 枝分かれした job をまとめて 1 つ の必須チェックにする。
+  # **skipped を成功として数えない** —— 選ばれなかったのか、落ちて飛ばされたのかは
+  # 別のことなので、select の結果を見て分ける
+  gate:
+    name: 締め
+    needs: [select, test, build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        env:
+          SELECT: ${{ needs.select.result }}
+          TEST: ${{ needs.test.result }}
+          BUILD: ${{ needs.build.result }}
+          TESTS: ${{ needs.select.outputs.tests }}
+          BUILDS: ${{ needs.select.outputs.builds }}
+        run: ./.github/scripts/gate.ps1
