@@ -112,7 +112,13 @@ namespace UnityEngine
         public GameObject() {}
         public GameObject(string name) { this.name = name; }
         public string tag { get; set; }
-        public Transform transform { get; } = new Transform();
+
+        // **遅らせて作る。** 即座に作ると Transform -> Component ->
+        // GameObject -> Transform で無限に降りて StackOverflow になる
+        // （Transform は Component の派生）。コンパイルだけなら踏まないので、
+        // フロントを実際に回す門を建てるまで誰も気づかなかった
+        Transform _transform;
+        public Transform transform => _transform ??= new Transform();
         public bool activeSelf { get; private set; } = true;
         public void SetActive(bool value) { activeSelf = value; }
         public T GetComponent<T>() => default;
@@ -126,8 +132,12 @@ namespace UnityEngine
 
     public class Component : Object
     {
-        public GameObject gameObject { get; } = new GameObject();
-        public Transform transform { get; } = new Transform();
+        // **遅らせて作る**（GameObject.transform と同じ理由）。
+        // 自分が Transform ならそれ自身を返す —— Unity でもそうなっている
+        GameObject _gameObject;
+        public GameObject gameObject => _gameObject ??= new GameObject();
+        Transform _transform;
+        public Transform transform => _transform ??= (this as Transform) ?? new Transform();
         public bool CompareTag(string tag) => false;
         public string tag { get => gameObject.tag; set => gameObject.tag = value; }
         public T GetComponent<T>() => default;

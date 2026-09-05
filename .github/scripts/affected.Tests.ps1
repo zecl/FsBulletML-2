@@ -69,7 +69,8 @@ function CheckThrows {
 
 $allTests = @(
 'FsBulletML2.Core.Tests', 'FsBulletML2.Dsl.Tests', 'FsBulletML2.Front.Tests',
-'FsBulletML2.MonoGame.Tests', 'FsBulletML2.Parser.Tests', 'FsBulletML2.TypeProviders.Tests')
+'FsBulletML2.MonoGame.Tests', 'FsBulletML2.Parser.Tests', 'FsBulletML2.TypeProviders.Tests',
+'FsBulletML2.Unity2D.Tests')
 $allBuilds = @(
   'FsBulletML2.Benchmarks',
   'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
@@ -123,7 +124,7 @@ Check 'MonoGame だけなら MonoGame.Tests と、それが build しないサ�
 # **ここが本体。** Parser を触っても Dsl.Tests は走らない。
 Check 'Parser だけなら Dsl.Tests は走らない' `
   @('src/FsBulletML2.Parser/Sxml.fs') `
-  @('FsBulletML2.Core.Tests', 'FsBulletML2.Front.Tests', 'FsBulletML2.MonoGame.Tests', 'FsBulletML2.Parser.Tests', 'FsBulletML2.TypeProviders.Tests') `
+  @('FsBulletML2.Core.Tests', 'FsBulletML2.Front.Tests', 'FsBulletML2.MonoGame.Tests', 'FsBulletML2.Parser.Tests', 'FsBulletML2.TypeProviders.Tests', 'FsBulletML2.Unity2D.Tests') `
   @('FsBulletML2.Benchmarks', 'FsBulletML2.Sample.MonoGame.CSharp',
     'FsBulletML2.Sample.MonoGame.FSharp', 'FsBulletML2.Sample.TypeProviders.Debug')
 
@@ -228,7 +229,7 @@ function CheckShape {
 
 CheckShape '0 件 でも空配列' @('README.md') 0 0
 CheckShape '1 件 が配列のまま出る' @('tests/FsBulletML2.Parser.Tests/ReadEntryPoints.fs') 1 0
-CheckShape '複数' @('src/FsBulletML2.Parser/Sxml.fs') 5 4
+CheckShape '複数' @('src/FsBulletML2.Parser/Sxml.fs') 6 4
 
 Write-Host ''
 if ($fails -gt 0) {

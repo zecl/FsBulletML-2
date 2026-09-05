@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateProgramFile>true</GenerateProgramFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML2.Unity2D.Tests</RootNamespace>
+    <AssemblyName>FsBulletML2.Unity2D.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="EnvGate.fs" />
+    <Compile Include="FrontRunGolden.fs" />
+    <Compile Include="FrontRun.fs" />
+  </ItemGroup>
+  <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
+       手のせいか版のせいかが割れない -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="FsUnit" Version="5.0.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FsBulletML2.Unity2D\FsBulletML2.Unity2D.fsproj" />
+    <!-- 弾幕を XML から読む。**本番と同じ口**（MonoGame.Tests と同じ理由） -->
+    <ProjectReference Include="..\..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
+  </ItemGroup>
+</Project>

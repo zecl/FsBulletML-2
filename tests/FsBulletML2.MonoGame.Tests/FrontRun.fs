@@ -38,6 +38,9 @@ type FrontRun() =
           <direction type="aim">10</direction>
           <speed>2</speed>
           <bullet>
+            <!-- **弾じたいの aim。** これが無いと Env の Spawn 側が
+                 一度も読まれず、SpawnOrigin を取り違えても軌跡が動かない -->
+            <direction type="aim">0</direction>
             <action>
               <changeDirection>
                 <direction type="absolute">180</direction><term>4</term>

@@ -34,5 +34,6 @@
     <Project Path="tests/FsBulletML2.MonoGame.Tests/FsBulletML2.MonoGame.Tests.fsproj" />
     <Project Path="tests/FsBulletML2.Parser.Tests/FsBulletML2.Parser.Tests.fsproj" />
     <Project Path="tests/FsBulletML2.TypeProviders.Tests/FsBulletML2.TypeProviders.Tests.fsproj" />
+    <Project Path="tests/FsBulletML2.Unity2D.Tests/FsBulletML2.Unity2D.Tests.fsproj" />
   </Folder>
 </Solution>
