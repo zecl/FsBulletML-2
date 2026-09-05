@@ -24,7 +24,6 @@ type DefaultBullet (transform:Transform) as this =
   /// 返しきるので、その巻き戻しは無い —— null のときは実体を作らずに
   /// 進む。同梱サンプル 4 つ は全部 override しているので届かない経路で、
   /// override し忘れた状態は弾が 1 発 も出ないので動くゲームでは観測できない。
-  /// **旧の意味論が要るなら、Obsolete の旧 API 経路が残っている**
   abstract member GetBulletPrefubInstance: unit -> IDefaultBullet
   default this.GetBulletPrefubInstance () = defaultof<IDefaultBullet>
 

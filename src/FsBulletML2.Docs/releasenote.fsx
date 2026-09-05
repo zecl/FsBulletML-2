@@ -8,7 +8,7 @@ FsBulletML2.Core
 0.10.0
 -------------
 - .NET 10 対応。``FsBulletML2.Core`` は ``net10.0`` と ``netstandard2.1``。``FsBulletML2.Parser`` は ``net10.0``。
-- ビルドは ``FsBulletML2.Library.sln`` を使用（旧 ``FsBulletML2.sln`` は .NET Framework 時代のまま）。
+- ビルドは ``FsBulletML2.Library.slnx`` を使用。
 - ``BinaryFormatter`` によるタスクの clone をやめた。
 - MonoGame は ``MonoGame.Framework.DesktopGL`` 3.8.5。
 - Unity 2D サンプルは Unity 6。Unity Web Player は使わない。
