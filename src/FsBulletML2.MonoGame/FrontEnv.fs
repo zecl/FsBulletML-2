@@ -27,11 +27,12 @@ open FsBulletML2.Domain
 /// このフロントを使うゲームが自前で Env を組みたいときにも要る。
 module FrontEnv =
 
-  /// 自機への差分。**角度にするのは Core**（`Env.AimDir` が Atan2(X, Y) を回す）。
-  /// Y を反転するのはこのフロントの座標系（旧 GetAimDir の式のまま）
-  let aimAtPlayer (x: float32) (y: float32) : Vec2 =
-    { X = BulletMLManager.GetPlayerPosX() - x
-      Y = -(BulletMLManager.GetPlayerPosY() - y) }
+  /// 自機を狙う向き。旧 GetAimDir の式そのまま。
+  /// 旧はエンジンが IBulletmlObject.GetAimDir を呼び返していたが、
+  /// いまは Env を組むためにフロントが自分で呼ぶ
+  let aimAtPlayer (x: float32) (y: float32) =
+    float32 (Math.Atan2(float (BulletMLManager.GetPlayerPosX() - x),
+                        float -(BulletMLManager.GetPlayerPosY() - y)))
 
   /// 産まれる弾の位置から見た向き。旧 GetSpawnAimDir。
   ///
@@ -44,8 +45,8 @@ module FrontEnv =
   ///
   /// **弾が覚えている相手を使う EnemyAimDirAt とはここが違う** ——
   /// あちらは一度 選んだ相手を持ち回る（毎コマ 選び直すと軌跡が変わる）
-  let spawnAimAtEnemy () : Vec2 =
-    if ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then { X = 0.0f; Y = 0.0f }
+  let spawnAimAtEnemy () =
+    if ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then 0.0f
     else
       let mutable md = Single.MaxValue
       let mutable target = defaultof<IBullet>
@@ -54,7 +55,7 @@ module FrontEnv =
         if md > d then
           target <- enemy
           md <- d
-      { X = target.X - 0.0f; Y = -(target.Y - 0.0f) }
+      float32 (Math.Atan2(float (target.X - 0.0f), -1.0 * float (target.Y - 0.0f)))
 
   /// このコマの Env を、いまの位置から組む。旧 BulletRunner.envOfGlobal の写し。
   ///
@@ -64,22 +65,22 @@ module FrontEnv =
   /// `enemyAimAt` だけ引数で受けるのは、**弾が覚えている相手に依る**ため
   /// （BaseBullet.EnemyAimDirAt が TargetEnemy を持ち回る）。
   /// 残り 3 本 はグローバルと位置だけで決まるので、ここに閉じている。
-  let at (enemyAimAt: float32 -> float32 -> Vec2) (x: float32) (y: float32) : Env =
+  let at (enemyAimAt: float32 -> float32 -> float32) (x: float32) (y: float32) : Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimVec = aimAtPlayer x y
-      EnemyAimVec = enemyAimAt x y
-      SpawnAimVec = spawnAimAtPlayer ()
-      SpawnEnemyAimVec = spawnAimAtEnemy () }
+      AimDir = aimAtPlayer x y
+      EnemyAimDir = enemyAimAt x y
+      SpawnAimDir = spawnAimAtPlayer ()
+      SpawnEnemyAimDir = spawnAimAtEnemy () }
 
-  /// aim を読まないと分かっているコマの Env。差分 4 本 を 0 に。
+  /// aim を読まないと分かっているコマの Env。aim 4 本 を 0 に。
   ///
   /// 使ってよい条件は BulletRun.HasNoScript の但し書きにある。
   /// **`at` と欄が 1 つ でもずれたら、片方だけ直したということ**
   let noAim () : Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimVec = { X = 0.0f; Y = 0.0f }
-      EnemyAimVec = { X = 0.0f; Y = 0.0f }
-      SpawnAimVec = { X = 0.0f; Y = 0.0f }
-      SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
+      AimDir = 0.0f
+      EnemyAimDir = 0.0f
+      SpawnAimDir = 0.0f
+      SpawnEnemyAimDir = 0.0f }

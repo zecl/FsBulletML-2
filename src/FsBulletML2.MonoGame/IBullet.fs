@@ -57,10 +57,10 @@ module BulletmlLoad =
   let loadEnv () : FsBulletML2.Domain.Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimVec = { X = 0.0f; Y = 0.0f }
-      EnemyAimVec = { X = 0.0f; Y = 0.0f }
-      SpawnAimVec = { X = 0.0f; Y = 0.0f }
-      SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
+      AimDir = 0.0f
+      EnemyAimDir = 0.0f
+      SpawnAimDir = 0.0f
+      SpawnEnemyAimDir = 0.0f }
 
   /// aim を読まないと分かっているコマの Env。中身は loadEnv と同じだが、
   /// **意味が違うので名前を分けてある** —— あちらは「木を組む段はまだ

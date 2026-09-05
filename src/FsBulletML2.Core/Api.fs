@@ -70,8 +70,8 @@ type BulletRun internal (state: BulletState) =
   ///
   ///   let env =
   ///     if run.HasNoScript then { Rand = r; Rank = k
-  ///                               AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }
-  ///                               SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
+  ///                               AimDir = 0.0f; EnemyAimDir = 0.0f
+  ///                               SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
   ///     else 本物の aim を組む
   ///
   /// **なぜ「生きている top が無い」ではなく「台本が無い」なのか。**
@@ -80,21 +80,23 @@ type BulletRun internal (state: BulletState) =
   /// changeDirection type="aim" の term を引き直すので **aim を読みうる**。
   /// 台本が空なら restart は空を歩くだけなので、両方 まとめて安全。
   ///
-  /// **この枝が守るものは、Env が差分を持つようになって変わった。**
-  ///
-  /// 置いたときの理由は「Atan2 を 4 本 省く」で、5way は時間が
-  /// 1,578 → 1,197 us（−24.2%）になった。いまは `Env` が角度でなく差分を
-  /// 持ち、Atan2 は `AimDir` を読んだときにしか回らないので、**その理由は
-  /// もう無い。**
-  ///
-  /// 残っているのは**いちばん近い敵を探す走査**。同梱フロントの
-  /// `spawnAimAtEnemy` と `EnemyAimDirAt` は敵の一覧を舐めるので、
-  /// aim を組む＝敵の数だけ回る。ここは遅延にできない（結果が差分そのもの
-  /// なので、遅らせるには包みを作ることになり確保が増える）。
-  /// **枝を外すと、台本を持たない弾でも毎コマ 敵を探すことになる。**
+  /// 効きの大きさ（実測・5way 60 コマ）: Env を 1 回 組むのが 23.02 ns。
+  /// 1 走行の Env 構築が 17,820 回 で、うち 96.7% がこれに当たるので、
+  /// 積は 397 us。走行そのものが 1,578 us なので **時間の 25%** が上界。
+  /// 実測は 1,578 → 1,197 us（−24.2%）で、ほぼ天井まで取れた。
   ///
   /// **確保は 1 バイト も減らない。** 同梱フロントの noAimEnv は「aim を 0 に
-  /// した Env を組む」ので、値の組み立てはそのまま残る。
+  /// した Env を組む」ので、record の割り当てはそのまま残る。省けているのは
+  /// Atan2 4 本 の計算だけ。実測でも 5,722.33 → 5,722.34 KB と動いていない。
+  /// **確保は決定的な数なので、この「動かなかった」は結果として読める**
+  /// —— 動いていたら skip 以外の何かも一緒に変わっている。
+  ///
+  /// move と homing は死んだコマが 0 なので効かない（`--counts` の「対照」）。
+  /// 実測も −4.2% / −1.2% で、この台のノイズ床のうち。
+  ///
+  /// **時間だけが消えて確保が動かない**のは、費用の中身がレコードではなく
+  /// Atan2 だから —— aim 4 本 を組む 29.8 ns のうち 28.5 ns（96%）が Atan2 で、
+  /// レコードの確保は 1.3 ns。内訳は bench/FsBulletML2.Benchmarks/BREAKDOWN.md
   member _.HasNoScript = List.isEmpty state.Tops
 
   member _.Body : Body =
@@ -186,8 +188,8 @@ type Frame =
 ///   // 読む段（弾幕 1 本 につき 1 回）。この段では aim は読まれない
 ///   let loadEnv =
 ///     { Rand = rand; Rank = rank
-///       AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }
-///       SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
+///       AimDir = 0.0f; EnemyAimDir = 0.0f
+///       SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
 ///   let script = Runner.load loadEnv (readXmlString xml)
 ///   let mutable run = Runner.newRoot script
 ///

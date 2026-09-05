@@ -89,18 +89,18 @@ type DefaultBullet (transform:Transform) as this =
       this.RunTask(FSharpFunc.ToAction2 apply)
 
   /// 自機を狙う向き。旧 GetAimDir の式そのまま
-  member private this.AimDir () : Vec2 =
+  member private this.AimDir () =
     let me = self ()
-    { X = BulletMLManager.GetPlayerPosX() - me.X
-      Y = BulletMLManager.GetPlayerPosY() - me.Y }
+    float32 (Math.Atan2(float (BulletMLManager.GetPlayerPosX() - me.X),
+                        float (BulletMLManager.GetPlayerPosY() - me.Y)))
 
   /// いちばん近い敵を狙う向き。旧 GetEnemyAimDir の式そのまま。
   /// 選んだ相手を TargetEnemy に覚えるところも旧と同じ
-  member private this.EnemyAimDir () : Vec2 =
+  member private this.EnemyAimDir () =
     let me = self ()
     if me.TargetEnemy :> obj <> null then
-      { X = me.TargetEnemy.X - me.X; Y = me.TargetEnemy.Y - me.Y }
-    elif ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then { X = 0.f; Y = 0.f }
+      Mathf.Atan2((me.TargetEnemy.X - me.X), 1.f * (me.TargetEnemy.Y - me.Y))
+    elif ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then 0.f
     else
       let mutable md = Single.MaxValue
       for enemy in Manager.enemies do
@@ -108,7 +108,7 @@ type DefaultBullet (transform:Transform) as this =
         if md > d then
           me.TargetEnemy <- enemy
           md <- d
-      { X = me.TargetEnemy.X - me.X; Y = me.TargetEnemy.Y - me.Y }
+      Mathf.Atan2((me.TargetEnemy.X - me.X), 1.f * (me.TargetEnemy.Y - me.Y))
 
   /// このコマの Env。旧 BulletRunner.envOfGlobal の写し。
   ///
@@ -121,10 +121,10 @@ type DefaultBullet (transform:Transform) as this =
     let enemyAim = this.EnemyAimDir ()
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimVec = aim
-      EnemyAimVec = enemyAim
-      SpawnAimVec = aim
-      SpawnEnemyAimVec = enemyAim }
+      AimDir = aim
+      EnemyAimDir = enemyAim
+      SpawnAimDir = aim
+      SpawnEnemyAimDir = enemyAim }
 
   /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ
   ///

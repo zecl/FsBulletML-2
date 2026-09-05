@@ -11,7 +11,7 @@ open FsBulletML2.Domain
 [<TestFixture>]
 type SimTests() =
 
-  let env = { Rand = (fun () -> 0.5f); Rank = 0.25f; AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }; SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
+  let env = { Rand = (fun () -> 0.5f); Rank = 0.25f; AimDir = 0.f; EnemyAimDir = 0.f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
 
   let st0 =
     { Pos = { X = 0.f; Y = 0.f }

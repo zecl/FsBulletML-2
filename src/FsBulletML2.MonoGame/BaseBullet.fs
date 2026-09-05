@@ -64,10 +64,11 @@ type BaseBullet () as this =
   /// いちばん近い敵を狙う向き。旧 GetEnemyAimDir の式そのまま。
   /// 選んだ相手を TargetEnemy に覚えるところも旧と同じ
   /// （覚えないと毎コマ選び直して相手が入れ替わり、軌跡が変わる）
-  member private this.EnemyAimDirAt (x: float32) (y: float32) : Vec2 =
+  member private this.EnemyAimDirAt (x: float32) (y: float32) =
     if this.self.TargetEnemy :> obj <> null then
-      { X = this.self.TargetEnemy.X - x; Y = -(this.self.TargetEnemy.Y - y) }
-    elif ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then { X = 0.0f; Y = 0.0f }
+      float32 (Math.Atan2(float (this.self.TargetEnemy.X - x),
+                          -1.0 * float (this.self.TargetEnemy.Y - y)))
+    elif ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then 0.0f
     else
       let mutable md = Single.MaxValue
       for enemy in Manager.enemies do
@@ -75,7 +76,8 @@ type BaseBullet () as this =
         if md > d then
           this.self.TargetEnemy <- enemy
           md <- d
-      { X = this.self.TargetEnemy.X - x; Y = -(this.self.TargetEnemy.Y - y) }
+      float32 (Math.Atan2(float (this.self.TargetEnemy.X - x),
+                          -1.0 * float (this.self.TargetEnemy.Y - y)))
 
   /// このコマの Env を、いまの位置から組む。中身は FrontEnv.at。
   /// **組む位置が変わると aim がずれる**ので、step の直前（差分を足す前）に組む

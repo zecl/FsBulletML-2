@@ -19,11 +19,11 @@ module TraceNew =
     r.ToString("F" + string TraceFormat.digits, CultureInfo.InvariantCulture)
 
   /// FakeBullet.GetAimDir と同じ式。ずれると全弾幕が割れる
-  let private aimDir (px: float32) (py: float32) (pos: Vec2) : Vec2 =
-    { X = px - pos.X; Y = -(py - pos.Y) }
+  let private aimDir (px: float32) (py: float32) (pos: Vec2) =
+    float32 (Math.Atan2(float (px - pos.X), float -(py - pos.Y)))
 
-  let private enemyAimDir (pos: Vec2) : Vec2 =
-    { X = FakeEnemy.X - pos.X; Y = -(FakeEnemy.Y - pos.Y) }
+  let private enemyAimDir (pos: Vec2) =
+    float32 (Math.Atan2(float (FakeEnemy.X - pos.X), -1.0 * float (FakeEnemy.Y - pos.Y)))
 
   type private Live =
     { mutable St : BulletState
@@ -65,8 +65,8 @@ module TraceNew =
     let spawnAim = aimDir px py origin
     let spawnEnemyAim = enemyAimDir origin
     let rootEnv : Env =
-      { Rand = rand; Rank = rank; AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }
-        SpawnAimVec = spawnAim; SpawnEnemyAimVec = spawnEnemyAim }
+      { Rand = rand; Rank = rank; AimDir = 0.f; EnemyAimDir = 0.f
+        SpawnAimDir = spawnAim; SpawnEnemyAimDir = spawnEnemyAim }
     let initial =
       { Pos = { X = 0.f; Y = 0.f }
         Speed = 0.f
@@ -91,10 +91,10 @@ module TraceNew =
           let env =
             { Rand = rand
               Rank = rank
-              AimVec = aimDir px py b.St.Pos
-              EnemyAimVec = enemyAimDir b.St.Pos
-              SpawnAimVec = spawnAim
-              SpawnEnemyAimVec = spawnEnemyAim }
+              AimDir = aimDir px py b.St.Pos
+              EnemyAimDir = enemyAimDir b.St.Pos
+              SpawnAimDir = spawnAim
+              SpawnEnemyAimDir = spawnEnemyAim }
           let r = Step.step resolvers env b.St
           let vanishedNow = r.Effects |> List.exists (fun e -> e = Vanished)
           let st = { r.State with Pos = { X = r.State.Pos.X + r.Delta.X
@@ -110,10 +110,10 @@ module TraceNew =
               let reinitEnv =
                 { Rand = rand
                   Rank = rank
-                  AimVec = aimDir px py st.Pos
-                  EnemyAimVec = enemyAimDir st.Pos
-                  SpawnAimVec = spawnAim
-                  SpawnEnemyAimVec = spawnEnemyAim }
+                  AimDir = aimDir px py st.Pos
+                  EnemyAimDir = enemyAimDir st.Pos
+                  SpawnAimDir = spawnAim
+                  SpawnEnemyAimDir = spawnEnemyAim }
               { st with
                   Tops =
                     st.Tops

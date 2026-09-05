@@ -43,8 +43,8 @@ type ApiUsageExample() =
     // 読む段（弾幕 1 本 につき 1 回）。この段では aim は読まれない
     let loadEnv =
       { Rand = rand; Rank = rank
-        AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }
-        SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
+        AimDir = 0.0f; EnemyAimDir = 0.0f
+        SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
     let script = Runner.load loadEnv (readXmlString Xml)
     let mutable run = Runner.newRoot script
 
@@ -54,7 +54,7 @@ type ApiUsageExample() =
 
     // 毎コマ
     for _ in 1 .. 3 do
-      let env = { loadEnv with AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f } }
+      let env = { loadEnv with AimDir = 0.0f; EnemyAimDir = 0.0f }
       let f = Runner.stepWith script env run { run.Body with Pos = myPos }
       myPos <- { X = myPos.X + f.Delta.X; Y = myPos.Y + f.Delta.Y }
       run <- f.Run
@@ -71,8 +71,8 @@ type ApiUsageExample() =
   member _.``撃たれた弾は、親と同じ script で次のコマから回せる``() =
     let loadEnv =
       { Rand = (fun () -> 0.5f); Rank = 0.5f
-        AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }
-        SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
+        AimDir = 0.0f; EnemyAimDir = 0.0f
+        SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
     let script = Runner.load loadEnv (readXmlString Xml)
     let root = Runner.newRoot script
 

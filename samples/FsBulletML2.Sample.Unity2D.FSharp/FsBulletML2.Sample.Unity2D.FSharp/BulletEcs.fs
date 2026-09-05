@@ -62,34 +62,34 @@ type FrontEnv private () =
   static let randFunc : unit -> float32 = fun () -> BulletMLManager.GetRandom()
 
   /// 自機を狙う向き。旧 DefaultBullet.AimDir の式そのまま
-  static member AimAtPlayer (x: float32) (y: float32) : Vec2 =
-    { X = BulletMLManager.GetPlayerPosX() - x; Y = BulletMLManager.GetPlayerPosY() - y }
+  static member AimAtPlayer (x: float32) (y: float32) =
+    Mathf.Atan2(BulletMLManager.GetPlayerPosX() - x, BulletMLManager.GetPlayerPosY() - y)
 
   /// このコマの Env を、いまの位置から組む。
   /// **組む位置が変わると aim がずれる**ので、step の直前（差分を足す前）に組む。
   ///
   /// `enemyAim` を引数で受けるのは、狙う相手の選び方が場面で違うため。
   /// 残り 3 本 はグローバルと位置だけで決まるので、ここに閉じている。
-  static member At (x: float32) (y: float32) (enemyAim: Vec2) : Env =
+  static member At (x: float32) (y: float32) (enemyAim: float32) : Env =
     let aim = FrontEnv.AimAtPlayer x y
     { Rand = randFunc
       Rank = BulletMLManager.GetRank ()
-      AimVec = aim
-      EnemyAimVec = enemyAim
+      AimDir = aim
+      EnemyAimDir = enemyAim
       // 産まれた弾は撃った側と同じ場所に作る（SpawnChild が親の位置を渡す）
-      SpawnAimVec = aim
-      SpawnEnemyAimVec = enemyAim }
+      SpawnAimDir = aim
+      SpawnEnemyAimDir = enemyAim }
 
-  /// aim を読まないと分かっているコマの Env。差分 4 本 を 0 に。
+  /// aim を読まないと分かっているコマの Env。aim 4 本 を 0 に。
   /// 使ってよい条件は `BulletRun.HasNoScript` の但し書き。
   /// **`At` と欄が 1 つ でもずれたら、片方だけ直したということ**
   static member NoAim () : Env =
     { Rand = randFunc
       Rank = BulletMLManager.GetRank ()
-      AimVec = { X = 0.0f; Y = 0.0f }
-      EnemyAimVec = { X = 0.0f; Y = 0.0f }
-      SpawnAimVec = { X = 0.0f; Y = 0.0f }
-      SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
+      AimDir = 0.0f
+      EnemyAimDir = 0.0f
+      SpawnAimDir = 0.0f
+      SpawnEnemyAimDir = 0.0f }
 
   /// 弾幕を読む段の Env。中身は NoAim と同じだが**意味が違うので名前を分ける**。
   /// 木を組む段は撃つ弾ごとの位置がまだ無いので aim を読まない
@@ -178,12 +178,12 @@ type BulletSim () =
 
   /// いちばん近い敵を狙う向き。旧 DefaultBullet.EnemyAimDir の式そのまま。
   /// この場面では敵が 1 体 しか居ないので、毎コマ 選び直しても相手が変わらない
-  member this.EnemyAimDir () : Vec2 =
+  member this.EnemyAimDir () =
     let t = BulletEcsRuntime.EnemyTransform
-    if isNull (box t) then { X = 0.0f; Y = 0.0f }
+    if isNull (box t) then 0.0f
     else
       let p = t.position
-      { X = p.x - this.X; Y = p.y - this.Y }
+      Mathf.Atan2(p.x - this.X, p.y - this.Y)
 
   /// このコマの Env。**台本が無い弾は aim を読まない**ので、
   /// そのときは Atan2 を 4 本 とも省く（`BulletRun.HasNoScript` の但し書き）

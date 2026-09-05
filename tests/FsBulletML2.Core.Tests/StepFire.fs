@@ -10,15 +10,9 @@ open FsBulletML2.Domain
 [<TestFixture>]
 type StepFire() =
 
-  // 4 つとも別の向きになる差分を入れてある。同じにすると、fire 側と
-  // bullet 側で基準を取り違えていても門が緑のまま通る。
-  // どれも 0 にしないのは、既定値のままでも一致してしまうのを避けるため
-  let env =
-    { Rand = (fun () -> 0.5f); Rank = 0.5f
-      AimVec = { X = 1.0f; Y = 0.0f }            // Atan2 で  π/2
-      EnemyAimVec = { X = 1.0f; Y = 1.0f }       //           π/4
-      SpawnAimVec = { X = -1.0f; Y = 0.0f }      //          -π/2
-      SpawnEnemyAimVec = { X = -1.0f; Y = 1.0f } }  //       -π/4
+  // 4 つとも別の値にしてある。同じ値にすると、fire 側と bullet 側で
+  // 基準を取り違えていても門が緑のまま通る
+  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimDir = 1.0f; EnemyAimDir = 2.0f; SpawnAimDir = 3.0f; SpawnEnemyAimDir = 4.0f }
 
   let state =
     { Pos = { X = 5.f; Y = 7.f }
@@ -112,8 +106,8 @@ type StepFire() =
     let _, _, w = Sim.run env state (stepFire noResolvers script (PFire false) FireContext.zero)
     match w with
     | [ Spawn b ] ->
-        // 30 度 = π/6 に env.SpawnAimDir が足された値。
-        // 撃った側の env.AimDir を混ぜていれば別の値になるので、
+        // 30 度 = π/6 に env.SpawnAimDir（3.0）が足された値。
+        // 撃った側の env.AimDir（1.0）を混ぜていれば約 1.524 になるので、
         // 取り違えるとここで割れる
         b.Dir |> should (equalWithin 0.0001) (Step.calcDir (env.SpawnAimDir + float32 (System.Math.PI / 6.0)))
     | _ -> Assert.Fail (sprintf "Spawn 1 つのはずが %A" w)
