@@ -1,7 +1,4 @@
 ﻿namespace FsBulletML2
-// 定数を畳む段の小さい関数を、param の差し込みでも使う。
-// module をまたぐので開いておく
-open FsBulletML2.IntermediateParser
 
 /// BulletML の木の上の操作。**IntermediateParser から切り出したもの。**
 ///
@@ -24,6 +21,29 @@ open FsBulletML2.IntermediateParser
 ///
 /// **接尾辞は型の名残ではなく、新旧を分ける仕事をしている。**
 module internal BulletmlOps =
+
+  let internal convertDirectionOption  = fun prams -> function
+    | Some (Direction(attrs,s)) -> Direction(attrs, Param.replaceIn prams s) |> Some
+    | None -> None
+
+  let internal convertDirection  = fun prams -> function Direction(attrs,s) -> Direction(attrs, Param.replaceIn prams s) 
+
+  let internal convertSpeedOption = fun prams -> function
+    | Some (Speed(attrs,s)) -> Speed(attrs, Param.replaceIn prams s) |> Some
+    | None -> None
+
+  let internal convertSpeed = fun prams -> function Speed(attrs,s) -> Speed(attrs, Param.replaceIn prams s) 
+  let internal convertTerm = fun prams -> function Term(s) -> Term(Param.replaceIn prams s)
+  let internal convertTimes = fun prams -> function | Times(s) -> Times(Param.replaceIn prams s)
+  let internal convertParam = fun prams -> List.map (fun s -> Param.replace s prams) 
+  let internal convertWait = fun prams -> function | s -> Param.replaceIn prams s
+
+  let internal convertHorizontalOption = fun prams -> function 
+    | Some(Horizontal(attrs,s)) -> Horizontal(attrs, Param.replaceIn prams s) |> Some
+    | None -> None
+  let internal convertVerticalOption = fun prams -> function 
+    | Some(Vertical(attrs,s)) -> Vertical(attrs, Param.replaceIn prams s) |> Some
+    | None -> None
 
   /// 木を隅々まで歩いて、名前の付いた要素を集める。
   ///

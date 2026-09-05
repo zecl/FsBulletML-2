@@ -13,8 +13,8 @@ open FsBulletML2.DTD
 ///     役目                     先頭 〜 末尾の関数
 ///     ----------------------- --------------------------------------------
 ///     1. XML を読んで木にする   existsAttribute 〜 tryBulletmlFromXmlNode
-///     2. 定数を畳む             convertDirectionOption 〜 foldConstantsForTest
-///     （BulletmlOps.fs）木の上の操作 collect 〜 expandActionRefOnceRec
+///     2. 定数を畳む             foldConstants' 〜 foldConstantsForTest
+///     （BulletmlOps.fs）木の上の操作 convertDirectionOption 〜 expandActionRefOnceRec
 ///
 /// ## 二重木は畳んだ
 ///
@@ -34,11 +34,6 @@ open FsBulletML2.DTD
 ///     公開 → Rec の写し  125 行  畳んでも走査は残る（畳みがぶら下がる）
 ///
 /// **畳む前に呼び出しを数えること。そして「消える」と「短くなる」は別。**
-///
-/// **役目の分けかたと、実装の依存は一致していない。** 役目 2 の小さい関数
-/// （convertDirection / convertTerm / convertParam など）は、BulletmlOps の
-/// 「param を差し込む」からも呼ばれる。切り出した側が
-/// `open FsBulletML2.IntermediateParser` しているのはそのため。
 ///
 /// ## ロード時と実行時の境界
 ///
@@ -607,28 +602,6 @@ module IntermediateParser =
       xml |> convertBulletmlFromXmlNode |> Some
     with | _ -> None
 
-  let internal convertDirectionOption  = fun prams -> function
-    | Some (Direction(attrs,s)) -> Direction(attrs, Param.replaceIn prams s) |> Some
-    | None -> None
-
-  let internal convertDirection  = fun prams -> function Direction(attrs,s) -> Direction(attrs, Param.replaceIn prams s) 
-
-  let internal convertSpeedOption = fun prams -> function
-    | Some (Speed(attrs,s)) -> Speed(attrs, Param.replaceIn prams s) |> Some
-    | None -> None
-
-  let internal convertSpeed = fun prams -> function Speed(attrs,s) -> Speed(attrs, Param.replaceIn prams s) 
-  let internal convertTerm = fun prams -> function Term(s) -> Term(Param.replaceIn prams s)
-  let internal convertTimes = fun prams -> function | Times(s) -> Times(Param.replaceIn prams s)
-  let internal convertParam = fun prams -> List.map (fun s -> Param.replace s prams) 
-  let internal convertWait = fun prams -> function | s -> Param.replaceIn prams s
-
-  let internal convertHorizontalOption = fun prams -> function 
-    | Some(Horizontal(attrs,s)) -> Horizontal(attrs, Param.replaceIn prams s) |> Some
-    | None -> None
-  let internal convertVerticalOption = fun prams -> function 
-    | Some(Vertical(attrs,s)) -> Vertical(attrs, Param.replaceIn prams s) |> Some
-    | None -> None
  
   /// 定数を畳む。**$ を含まない式だけを eval して数へ潰し、文字に書き戻す。**
   ///
