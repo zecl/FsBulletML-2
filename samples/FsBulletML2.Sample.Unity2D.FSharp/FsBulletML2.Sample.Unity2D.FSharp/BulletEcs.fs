@@ -80,7 +80,7 @@ type FrontEnv private () =
       SpawnAimVec = aim
       SpawnEnemyAimVec = enemyAim }
 
-  /// aim を読まないと分かっているコマの Env。aim 4 本 を 0 に。
+  /// aim を読まないと分かっているコマの Env。差分 4 本 を 0 に。
   /// 使ってよい条件は `BulletRun.HasNoScript` の但し書き。
   /// **`At` と欄が 1 つ でもずれたら、片方だけ直したということ**
   static member NoAim () : Env =
