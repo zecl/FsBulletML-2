@@ -28,6 +28,16 @@ namespace Unity.Mathematics
         public static quaternion AxisAngle(float3 axis, float angle) => identity;
     }
 
+    /// <summary>Unity.Mathematics の関数群。使うぶんだけ</summary>
+    public static class math
+    {
+        public static float max(float a, float b) => System.Math.Max(a, b);
+        public static int max(int a, int b) => System.Math.Max(a, b);
+        public static float min(float a, float b) => System.Math.Min(a, b);
+        public static int min(int a, int b) => System.Math.Min(a, b);
+        public static float abs(float a) => System.Math.Abs(a);
+    }
+
     public struct float4x4
     {
         public static float4x4 identity => new float4x4();
@@ -82,6 +92,44 @@ namespace Unity.Entities
         public Unity.Collections.NativeArray<Entity> ToEntityArray(Unity.Collections.Allocator allocator)
             => new Unity.Collections.NativeArray<Entity>();
         public void Dispose() { }
+    }
+
+    /// <summary>
+    /// ECS の System。**C# サンプルだけが使う** —— F# サンプルは
+    /// `SystemBase` を避けて `FrameTicker` から回している
+    /// （理由は samples/FsBulletML2.Sample.Unity2D.FSharp の BulletEcsDriver.fs）。
+    ///
+    /// 本物は Roslyn の生成器が partial の相方を足すが、compile を通すだけなら
+    /// 空の基底で足りる
+    /// </summary>
+    public abstract partial class SystemBase
+    {
+        public EntityManager EntityManager => new EntityManager();
+        protected virtual void OnCreate() { }
+        protected virtual void OnUpdate() { }
+        protected virtual void OnDestroy() { }
+        protected EntityQuery GetEntityQuery(params ComponentType[] componentTypes) => new EntityQuery();
+        protected EntityQuery GetEntityQuery(params Type[] componentTypes) => new EntityQuery();
+    }
+
+    public partial class SimulationSystemGroup : SystemBase { }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class UpdateInGroupAttribute : Attribute
+    {
+        public UpdateInGroupAttribute(Type groupType) { }
+    }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class UpdateBeforeAttribute : Attribute
+    {
+        public UpdateBeforeAttribute(Type systemType) { }
+    }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class UpdateAfterAttribute : Attribute
+    {
+        public UpdateAfterAttribute(Type systemType) { }
     }
 
     public struct EntityManager
@@ -142,6 +190,13 @@ namespace Unity.Transforms
     {
         public Unity.Mathematics.float4x4 Value;
     }
+
+    /// <summary>
+    /// 上の LocalToWorld を作る本物の System。**印としてしか使わない**
+    /// —— C# サンプルが `[UpdateBefore(typeof(TransformSystemGroup))]` で
+    /// 順を指定するために型の名前だけ要る
+    /// </summary>
+    public partial class TransformSystemGroup : Unity.Entities.SystemBase { }
 }
 
 namespace Unity.Rendering

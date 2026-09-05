@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsPackable>false</IsPackable>
+    <Description>COMPILE-ONLY twin of the Unity C# sample. Unity owns the sources; this project only compiles them.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="R3UnityShim.cs" />
+    <Compile Include="..\FsBulletML2.Sample.Unity2D.CSharp\Assets\Scripts\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Bullets.Dsl\FsBulletML2.Bullets.Dsl.fsproj" />
+    <ProjectReference Include="..\..\src\UnityEngine.Stub\UnityEngine.Stub.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="R3" Version="1.3.1" />
+  </ItemGroup>
+
+</Project>

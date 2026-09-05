@@ -73,7 +73,8 @@ $allTests = @(
 $allBuilds = @(
   'FsBulletML2.Benchmarks',
   'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
-  'FsBulletML2.Sample.TypeProviders.Debug', 'FsBulletML2.Sample.Unity2D.FSharp')
+  'FsBulletML2.Sample.TypeProviders.Debug',
+  'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
 Write-Host '=== 多いほう'
 
@@ -87,20 +88,28 @@ Check 'global.json は全部' @('global.json') $allTests $allBuilds
 
 Check 'slnx を触ると全部' @('FsBulletML2.slnx') $allTests $allBuilds
 
-# Unity の C# は Assets に在って、追跡されている csproj がどこにも無い。
-# 割り当て不明に落ちて全部 走る —— **拾えてはいないが、黙って落とさない。**
-Check 'Unity の Assets も割り当て不明として全部' `
+# Unity の C# は Assets に在り、その中に csproj は無い（Unity が生成する側は
+# 追跡していない）。compile するのは隣の `.Compile` で、あちらは
+# `<Compile Include="..\...\Assets\Scripts\**\*.cs" />` で引いている。
+# **割り当ては場所で決めるので、この変更は不明に落ちて全部 走る** ——
+# `.Compile` もその「全部」に入るので、compile はされる。
+Check 'Unity の Assets は割り当て不明。全部 走るので .Compile も入る' `
   @('samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/FrontEnv.cs') $allTests $allBuilds
+
+# **.Compile 自身を触ったら、それ 1 本 だけ。** 何も参照していないので
+Check '.Compile 自身なら 1 本 だけ' `
+  @('samples/FsBulletML2.Sample.Unity2D.CSharp.Compile/R3UnityShim.cs') `
+  @() @('FsBulletML2.Sample.Unity2D.CSharp.Compile')
 
 Write-Host '=== 少ないほう'
 
-# Dsl は samples/Bullets.Dsl 経由でサンプル 3 つ に届く。**試験は 1 本 だが
-# build は 3 本 残る** —— 弾幕 DSL を変えると弾幕定義のほうが先に壊れるので
-Check 'Dsl だけなら試験は Dsl.Tests だけ、build は弾幕を使うサンプル 3 つ' `
+# Dsl は samples/Bullets.Dsl 経由でサンプル 4 つ に届く。**試験は 1 本 だが
+# build は 4 本 残る** —— 弾幕 DSL を変えると弾幕定義のほうが先に壊れるので
+Check 'Dsl だけなら試験は Dsl.Tests だけ、build は弾幕を使うサンプル 4 つ' `
   @('src/FsBulletML2.Dsl/BulletDsl.fs') `
   @('FsBulletML2.Dsl.Tests') `
   @('FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
-    'FsBulletML2.Sample.Unity2D.FSharp')
+    'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
 Check 'MonoGame だけなら MonoGame.Tests と、それが build しないサンプル 2 つ' `
   @('src/FsBulletML2.MonoGame/Manager.fs') `
@@ -125,11 +134,11 @@ Check '試験そのものを触ったらその試験だけ' `
 Check 'サンプルの弾幕は Dsl.Tests が見ている' `
   @('samples/FsBulletML2.Bullets/Bullets.fs') @('FsBulletML2.Dsl.Tests') @()
 
-Check '弾幕 DSL 版はサンプル 3 つ にも届く' `
+Check '弾幕 DSL 版はサンプル 4 つ にも届く' `
   @('samples/FsBulletML2.Bullets.Dsl/Bullets.fs') `
   @('FsBulletML2.Dsl.Tests') `
   @('FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
-    'FsBulletML2.Sample.Unity2D.FSharp')
+    'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
 Write-Host '=== git が返す名前'
 

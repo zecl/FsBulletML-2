@@ -16,6 +16,8 @@ namespace UnityEngine
         public static Vector2 operator -(Vector2 a, Vector2 b) => new Vector2(a.x - b.x, a.y - b.y);
         public static Vector2 operator +(Vector2 a, Vector2 b) => new Vector2(a.x + b.x, a.y + b.y);
         public static implicit operator Vector3(Vector2 v) => new Vector3(v.x, v.y, 0f);
+        public static Vector2 zero => new Vector2(0f, 0f);
+        public static Vector2 one => new Vector2(1f, 1f);
     }
 
     public struct Vector3
@@ -57,6 +59,10 @@ namespace UnityEngine
         public const float Deg2Rad = 0.0174532924f;
         public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
         public static float Abs(float v) => Math.Abs(v);
+        public static float Max(float a, float b) => Math.Max(a, b);
+        public static int Max(int a, int b) => Math.Max(a, b);
+        public static float Min(float a, float b) => Math.Min(a, b);
+        public static int Min(int a, int b) => Math.Min(a, b);
     }
 
     public enum FindObjectsInactive
@@ -93,6 +99,12 @@ namespace UnityEngine
         public static bool operator !=(Object a, Object b) => !ReferenceEquals(a, b);
         public override bool Equals(object other) => ReferenceEquals(this, other);
         public override int GetHashCode() => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
+
+        /// <summary>
+        /// <c>if (self &amp;&amp; ...)</c> と書ける Unity の癖。上の == と同じ理由で、
+        /// <b>偽物では「壊されたか」を見ていない</b>
+        /// </summary>
+        public static implicit operator bool(Object exists) => !ReferenceEquals(exists, null);
     }
 
     public class GameObject : Object
@@ -280,9 +292,39 @@ namespace UnityEngine
         ForceNoMotion = 2,
     }
 
+    public enum ParticleSystemSimulationSpace { Local, World, Custom }
+    public enum ParticleSystemStopAction { None, Disable, Destroy, Callback }
+    public enum ParticleSystemStopBehavior { StopEmitting, StopEmittingAndClear }
+
     public class ParticleSystem : Component
     {
+        /// <summary>1 発 だけ出すときに渡す粒。使われる欄だけ持つ</summary>
+        public struct EmitParams
+        {
+            public Vector3 position { get; set; }
+            public bool applyShapeToPosition { get; set; }
+        }
+
+        /// <summary>
+        /// <b>本物は struct。</b> 取り出して書き換えても本体に伝わらないので、
+        /// Unity 側でも同じ書き方で効かないことがある。ここは compile を通すだけ
+        /// </summary>
+        public struct MainModule
+        {
+            public bool playOnAwake { get; set; }
+            public bool loop { get; set; }
+            public ParticleSystemSimulationSpace simulationSpace { get; set; }
+            public ParticleSystemStopAction stopAction { get; set; }
+        }
+
+        public MainModule main => new MainModule();
         public bool IsAlive() => false;
+        public void Emit(int count) { }
+        public void Emit(EmitParams emitParams, int count) { }
+        public void Play() { }
+        public void Stop() { }
+        public void Stop(bool withChildren) { }
+        public void Stop(bool withChildren, ParticleSystemStopBehavior behavior) { }
         public ParticleSystemRenderer GetRenderer() => new ParticleSystemRenderer();
     }
 
@@ -306,6 +348,8 @@ namespace UnityEngine
         /// <summary>Time.timeScale の影響を受けない実時間。fps を数えるのに使う</summary>
         public static float unscaledDeltaTime => 0f;
         public static float realtimeSinceStartup => 0f;
+        public static float unscaledTime => 0f;
+        public static float time => 0f;
     }
 
     public static class Application
@@ -403,6 +447,8 @@ namespace UnityEngine
     {
         public static void LogError(object message) { }
         public static void Log(object message) { }
+        public static void LogWarning(object message) { }
+        public static void LogWarning(object message, Object context) { }
     }
 
     public class ExecuteInEditMode : Attribute { }
@@ -410,5 +456,28 @@ namespace UnityEngine
     public class RequireComponent : Attribute
     {
         public RequireComponent(Type type) { }
+    }
+
+    /// <summary>Inspector に出すスライダの範囲。値は使われない</summary>
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class RangeAttribute : Attribute
+    {
+        public RangeAttribute(float min, float max) { }
+    }
+
+    public class AudioClip : Object { }
+
+    public class AudioSource : Behaviour
+    {
+        public AudioClip clip { get; set; }
+        public float volume { get; set; }
+        public bool loop { get; set; }
+        public bool mute { get; set; }
+        public bool playOnAwake { get; set; }
+        public bool isPlaying => false;
+        public void Play() { }
+        public void Stop() { }
+        public void PlayOneShot(AudioClip clip) { }
+        public void PlayOneShot(AudioClip clip, float volumeScale) { }
     }
 }
