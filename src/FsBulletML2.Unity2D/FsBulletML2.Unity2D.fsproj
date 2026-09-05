@@ -6,7 +6,6 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RootNamespace>FsBulletML2.Unity2D</RootNamespace>
     <AssemblyName>FsBulletML2.Unity2D</AssemblyName>
-    <DefineConstants>$(DefineConstants);NET40</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />

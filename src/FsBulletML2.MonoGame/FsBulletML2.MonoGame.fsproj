@@ -6,7 +6,6 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RootNamespace>FsBulletML2.MonoGame</RootNamespace>
     <AssemblyName>FsBulletML2.MonoGame</AssemblyName>
-    <DefineConstants>$(DefineConstants);NET40</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
