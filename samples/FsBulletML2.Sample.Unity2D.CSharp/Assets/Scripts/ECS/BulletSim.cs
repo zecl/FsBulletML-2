@@ -73,14 +73,19 @@ public class BulletSim : IComponentData
     /// <summary>
     /// 弾幕を割り当てる。根から始めるときは <paramref name="run"/> を null にする。
     /// 撃たれた弾には、親から受け取った実行位置をそのまま渡す。
-    /// </summary>
+    ///
+    /// <b>根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。</b>
+    /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
+    /// 立てておくこと。    /// </summary>
     public void SetScript(BulletmlScript script, BulletRun? run)
     {
         Script = script;
         Finished = false;
         Run = run.HasValue
             ? run
-            : (script != null ? Runner.NewRoot(script) : (BulletRun?)null);
+            : (script != null
+                ? (IsBullet ? Runner.NewShot(BulletType, script) : Runner.NewRoot(BulletType, script))
+                : (BulletRun?)null);
     }
 
     public void Init()
@@ -154,17 +159,14 @@ public class BulletSim : IComponentData
         // 物理量はフロントが持っている。毎コマ入れ直す（旧 stateOfBullet）。
         // **名前付き引数で書く理由は BaseBullet.RunTask の但し書き**
         // （位置ずれは落ちるが、値の取り違えは落ちない）
-        var body = new Body(
+        var motion = new Motion(
             pos: new FsBulletML2.Domain.Vec2(X, Y),
             speed: Speed,
             dir: Dir,
-            accel: new FsBulletML2.Domain.Vec2(AccelerationX, AccelerationY),
-            kind: BulletType,
-            isBullet: IsBullet,
-            hasFired: BulletRoot);
+            accel: new FsBulletML2.Domain.Vec2(AccelerationX, AccelerationY));
 
-        var f = Runner.StepWith(Script, EnvNow(rn), rn, body);
-        var after = f.Run.Body;
+        var f = Runner.StepWith(Script, EnvNow(rn), rn, motion);
+        var after = f.Run.Motion;
         Speed = after.Speed;
         Dir = after.Dir;
         AccelerationX = after.Accel.X;

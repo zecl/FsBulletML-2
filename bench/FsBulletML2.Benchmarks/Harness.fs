@@ -141,7 +141,7 @@ module Harness =
     let root = FakeBullet(0, born)
     root.Init()
     let live = List<LiveApi>()
-    live.Add { Bullet = root; Run = Runner.newRoot script }
+    live.Add { Bullet = root; Run = Runner.newRoot BulletType.Enemy script }
     { Script = script; Live = live; Born = born }
 
   let runPreparedApi (p: PreparedApi) (frames: int) : int =
@@ -152,13 +152,13 @@ module Harness =
         let it = p.Live.[i]
         let bo = it.Bullet
         if bo.Used then
-          let body = { it.Run.Body with Pos = { X = bo.X; Y = bo.Y } }
+          let body = { it.Run.Motion with Pos = { X = bo.X; Y = bo.Y } }
           // 台本が無い弾は aim を読まない（BulletRun.HasNoScript の但し書き）
           let env = if it.Run.HasNoScript then noAimEnv () else envAt bo.X bo.Y
           let f = Runner.stepWith p.Script env it.Run body
           bo.X <- bo.X + f.Delta.X
           bo.Y <- bo.Y + f.Delta.Y
-          let after = f.Run.Body
+          let after = f.Run.Motion
           bo.Speed <- after.Speed
           bo.Dir <- after.Dir
           if f.Vanished || f.Retired then bo.Used <- false
@@ -171,10 +171,10 @@ module Harness =
             let cb = FakeBullet(p.Born.Count + 1, p.Born)
             cb.Init()
             cb.IsBullet <- true
-            cb.X <- child.Body.Pos.X
-            cb.Y <- child.Body.Pos.Y
-            cb.Dir <- child.Body.Dir
-            cb.Speed <- child.Body.Speed
+            cb.X <- child.Motion.Pos.X
+            cb.Y <- child.Motion.Pos.Y
+            cb.Dir <- child.Motion.Dir
+            cb.Speed <- child.Motion.Speed
             p.Born.Add cb
             p.Live.Add { Bullet = cb; Run = child }
     p.Born.Count
@@ -216,19 +216,19 @@ module Harness =
     let root = FakeBullet(0, born)
     root.Init()
     let live = List<LiveApi>()
-    live.Add { Bullet = root; Run = Runner.newRoot script }
+    live.Add { Bullet = root; Run = Runner.newRoot BulletType.Enemy script }
     for _ in 0 .. frames - 1 do
       let count = live.Count
       for i in 0 .. count - 1 do
         let it = live.[i]
         let bo = it.Bullet
         if bo.Used then
-          let body = { it.Run.Body with Pos = { X = bo.X; Y = bo.Y } }
+          let body = { it.Run.Motion with Pos = { X = bo.X; Y = bo.Y } }
           builds <- builds + 1
-          let f = Runner.step script (envAt bo.X bo.Y) (it.Run.WithBody body)
+          let f = Runner.step script (envAt bo.X bo.Y) (it.Run.WithMotion body)
           bo.X <- bo.X + f.Delta.X
           bo.Y <- bo.Y + f.Delta.Y
-          let after = f.Run.Body
+          let after = f.Run.Motion
           bo.Speed <- after.Speed
           bo.Dir <- after.Dir
           if f.Vanished || f.Retired then bo.Used <- false
@@ -241,10 +241,10 @@ module Harness =
             let cb = FakeBullet(born.Count + 1, born)
             cb.Init()
             cb.IsBullet <- true
-            cb.X <- child.Body.Pos.X
-            cb.Y <- child.Body.Pos.Y
-            cb.Dir <- child.Body.Dir
-            cb.Speed <- child.Body.Speed
+            cb.X <- child.Motion.Pos.X
+            cb.Y <- child.Motion.Pos.Y
+            cb.Dir <- child.Motion.Dir
+            cb.Speed <- child.Motion.Speed
             born.Add cb
             live.Add { Bullet = cb; Run = child }
     builds
@@ -279,13 +279,13 @@ module Harness =
         if bo.Used then
           if finished.Contains it.Bullet then deadCalls <- deadCalls + 1
           else liveCalls <- liveCalls + 1
-          let body = { it.Run.Body with Pos = { X = bo.X; Y = bo.Y } }
+          let body = { it.Run.Motion with Pos = { X = bo.X; Y = bo.Y } }
           let env = if it.Run.HasNoScript then noAimEnv () else envAt bo.X bo.Y
           let f = Runner.stepWith p.Script env it.Run body
           if f.Finished then finished.Add it.Bullet |> ignore
           bo.X <- bo.X + f.Delta.X
           bo.Y <- bo.Y + f.Delta.Y
-          let after = f.Run.Body
+          let after = f.Run.Motion
           bo.Speed <- after.Speed
           bo.Dir <- after.Dir
           if f.Vanished || f.Retired then bo.Used <- false
@@ -298,10 +298,10 @@ module Harness =
             let cb = FakeBullet(p.Born.Count + 1, p.Born)
             cb.Init()
             cb.IsBullet <- true
-            cb.X <- child.Body.Pos.X
-            cb.Y <- child.Body.Pos.Y
-            cb.Dir <- child.Body.Dir
-            cb.Speed <- child.Body.Speed
+            cb.X <- child.Motion.Pos.X
+            cb.Y <- child.Motion.Pos.Y
+            cb.Dir <- child.Motion.Dir
+            cb.Speed <- child.Motion.Speed
             p.Born.Add cb
             p.Live.Add { Bullet = cb; Run = child }
     liveCalls, deadCalls

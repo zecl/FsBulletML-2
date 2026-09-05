@@ -4,14 +4,18 @@ open FsBulletML2.Domain
 
 /// 弾の物理量。フロントが持ち、毎コマ渡して毎コマ受け取る。
 ///
-/// BulletState からエンジンの内部（台本と実行位置）を抜いた残り。
-/// 数だけなので公開してよい。前のコマの答えをそのまま返す必要はなく、
+/// **数だけ。** 弾の立場（どちらを狙うか / 撃たれた弾か / 自分も撃ったか）は
+/// エンジンが持っていて、ここには出てこない。前は同じ型に混ぜていたが、
+/// フロントが毎コマ組み直す型にエンジンの持ち物が入っていると、
+/// **フロントの古い値がエンジンの値を毎コマ上書きできてしまう。**
+///
+/// 前のコマの答えをそのまま返す必要はなく、
 /// **フロントが自分で動かした結果を入れてよい**（画面外へ弾いた、
 /// 親の位置へ移した、など）。旧の runWithEnv も毎コマ弾から読み直していて、
 /// その規約をここへ移してある。
 ///
-/// **[<Struct>] にしてある。** フロントは 1 弾 1 コマ ごとに run.Body で読み、
-/// WithBody で書き戻す。参照型のままだとその往復で毎回 ヒープを踏み、
+/// **[<Struct>] にしてある。** フロントは 1 弾 1 コマ ごとに run.Motion で読み、
+/// WithMotion で書き戻す。参照型のままだとその往復で毎回 ヒープを踏み、
 /// 弾の数に比例して確保が増える。
 ///
 /// 実測（同じプロセスで旧 API と並べた）: struct にする前は 5way で確保が
@@ -19,27 +23,19 @@ open FsBulletML2.Domain
 /// 出て、弾 1 個 の move では逆に減っていた**ので、往復の割り当てが
 /// 出どころと読んだ。
 [<Struct>]
-type Body =
+type Motion =
   { Pos : Vec2
     Speed : float32
     Dir : float32
-    Accel : Vec2
-    Kind : BulletType
-    /// 撃たれた弾か。根の敵は false
-    IsBullet : bool
-    /// 自分も子を撃ったか。旧の BulletRoot
-    HasFired : bool }
+    Accel : Vec2 }
 
-module Body =
+module Motion =
 
   let zero =
     { Pos = { X = 0.0f; Y = 0.0f }
       Speed = 0.0f
       Dir = 0.0f
-      Accel = { X = 0.0f; Y = 0.0f }
-      Kind = BulletType.Enemy
-      IsBullet = false
-      HasFired = false }
+      Accel = { X = 0.0f; Y = 0.0f } }
 
 /// 1 体の実行状態。**中身は不透明。**
 ///
@@ -99,26 +95,29 @@ type BulletRun internal (state: BulletState) =
   /// レコードの確保は 1.3 ns。内訳は bench/FsBulletML2.Benchmarks/BREAKDOWN.md
   member _.HasNoScript = List.isEmpty state.Tops
 
-  member _.Body : Body =
+  member _.Motion : Motion =
     { Pos = state.Pos
       Speed = state.Speed
       Dir = state.Dir
-      Accel = state.Accel
-      Kind = state.Kind
-      IsBullet = state.IsBullet
-      HasFired = state.HasFired }
+      Accel = state.Accel }
+
+  /// この弾の立場。根を作るときに決まり、撃たれた弾は親から継ぐ。
+  ///
+  /// **エンジンが持っていて、あとから差し替える口は無い。** aim をどちらへ
+  /// 向けるかがこれで決まる（`Step.fs` の
+  /// `if self.Kind = BulletType.Player then env.EnemyAimDir else env.AimDir`）。
+  /// フロントが毎コマ渡す形だったころは、**フロントの持つ値が
+  /// エンジンの値を毎コマ上書きしていた。**
+  member _.Kind : BulletType = state.Kind
 
   /// 物理量を差し替える。台本と実行位置はそのまま持ち越す
-  member _.WithBody (b: Body) =
+  member _.WithMotion (m: Motion) =
     BulletRun
       { state with
-          Pos = b.Pos
-          Speed = b.Speed
-          Dir = b.Dir
-          Accel = b.Accel
-          Kind = b.Kind
-          IsBullet = b.IsBullet
-          HasFired = b.HasFired }
+          Pos = m.Pos
+          Speed = m.Speed
+          Dir = m.Dir
+          Accel = m.Accel }
 
 /// 読み込んだ弾幕。**中身は不透明。**
 ///
@@ -187,14 +186,14 @@ type Frame =
 ///
 ///   // 読む段（弾幕 1 本 につき 1 回）。**Env は取らない**
 ///   let script = Runner.load rand rank (readXmlString xml)
-///   let mutable run = Runner.newRoot script
+///   let mutable run = Runner.newRoot BulletType.Enemy script
 ///
 ///   // 毎コマ
 ///   let env =
 ///     { Rand = rand; Rank = rank
 ///       AimDir = ...; EnemyAimDir = ...
 ///       SpawnAimDir = ...; SpawnEnemyAimDir = ... }
-///   let f = Runner.stepWith script env run { run.Body with Pos = myPos }
+///   let f = Runner.stepWith script env run { run.Motion with Pos = myPos }
 ///   myPos <- myPos + f.Delta
 ///   run <- f.Run
 ///   for child in f.Spawned do ...
@@ -259,10 +258,24 @@ module Runner =
           |> List.map (fun s -> s, Step.rootProgressActionElm rootEnv s, FireContext.zero) }
     BulletmlScript (resolvers, shootingDirection, rootState)
 
-  /// 根の弾（敵そのもの）の実行状態
+  /// 根の実行状態。**撃たれた弾ではないもの**（敵そのもの、自機そのもの）。
+  ///
+  /// `kind` は狙う先を決める —— `Player` なら敵を、`Enemy` なら自機を狙う
+  /// （`Step.fs` の `if self.Kind = BulletType.Player then env.EnemyAimDir
+  /// else env.AimDir`）。**ここで 1 回 だけ決まる。** 撃たれた弾は親から
+  /// 継ぐので、フロントが毎コマ渡し直す口はどこにも無い。
   [<CompiledName "NewRoot">]
-  let newRoot (script: BulletmlScript) : BulletRun =
-    BulletRun script.RootState
+  let newRoot (kind: BulletType) (script: BulletmlScript) : BulletRun =
+    BulletRun { script.RootState with Kind = kind; IsBullet = false }
+
+  /// 撃たれた弾として根から始める。**自機が撃つ弾がこれ** ——
+  /// エンジンから産まれたのではなく、フロントが 1 発目 として起こす。
+  ///
+  /// `newRoot` との違いは `Frame.Retired` だけ。撃たれた弾でありかつ自分も
+  /// 撃ったときに立つので、回収してよいかがフロントに伝わる。
+  [<CompiledName "NewShot">]
+  let newShot (kind: BulletType) (script: BulletmlScript) : BulletRun =
+    BulletRun { script.RootState with Kind = kind; IsBullet = true }
 
   /// 全 top が終わった弾を、最初から走らせ直す。旧の task.Init(env)。
   ///
@@ -302,26 +315,23 @@ module Runner =
 
   /// 物理量を入れ替えてから 1 コマ進める。**フロントはふつうこちらを使う。**
   ///
-  /// `step script env (run.WithBody body)` と答えは同じだが、**中間の
+  /// `step script env (run.WithMotion motion)` と答えは同じだが、**中間の
   /// BulletRun を作らない。**
   ///
   /// なぜ分けたか。フロントは弾の位置を自分で持っていて、毎コマ入れ直す
-  /// （旧 stateOfBullet の規約）。それを WithBody で書くと 1 弾 1 コマ ごとに
+  /// （旧 stateOfBullet の規約）。それを WithMotion で書くと 1 弾 1 コマ ごとに
   /// BulletRun が 1 個 余分に出る。**弾の数に比例するので、弾幕では効く。**
   ///
   /// 実測（同じプロセスで旧 API と並べた 5way / 60 コマ）:
-  ///   WithBody 経由  6,211 KB   旧 API 比 +13.2%
+  ///   WithMotion 経由  6,211 KB   旧 API 比 +13.2%
   ///   こちら         5,722 KB   旧 API 比  +4.3%
   [<CompiledName "StepWith">]
-  let stepWith (script: BulletmlScript) (env: Env) (run: BulletRun) (b: Body) : Frame =
+  let stepWith (script: BulletmlScript) (env: Env) (run: BulletRun) (m: Motion) : Frame =
     let st = run.State
     let st =
       { st with
-          Pos = b.Pos
-          Speed = b.Speed
-          Dir = b.Dir
-          Accel = b.Accel
-          Kind = b.Kind
-          IsBullet = b.IsBullet
-          HasFired = b.HasFired }
+          Pos = m.Pos
+          Speed = m.Speed
+          Dir = m.Dir
+          Accel = m.Accel }
     toFrame (Step.step script.Resolvers env st)

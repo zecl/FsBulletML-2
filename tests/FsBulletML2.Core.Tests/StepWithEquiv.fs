@@ -5,7 +5,7 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.Domain
 
-/// Runner.stepWith が Runner.step（WithBody 経由）と同じ答えを返すこと。
+/// Runner.stepWith が Runner.step（WithMotion 経由）と同じ答えを返すこと。
 ///
 /// **出荷側は stepWith しか呼ばない**（フロント 2 つ・ベンチ・TraceApi）ので、
 /// ここが無いと step のほうが誰にも確かめられなくなる。逆に、片方だけ直したら
@@ -35,18 +35,15 @@ type StepWithEquiv() =
       SpawnAimDir = 1.1f
       SpawnEnemyAimDir = -1.3f }
 
-  let body =
+  let motion : Motion =
     { Pos = { X = 3.0f; Y = -4.0f }
       Speed = 1.5f
       Dir = 0.25f
-      Accel = { X = 0.1f; Y = -0.2f }
-      Kind = BulletType.Enemy
-      IsBullet = true
-      HasFired = false }
+      Accel = { X = 0.1f; Y = -0.2f } }
 
   /// 227 本 の実物で突き合わせる。1 本 ずつ、両方に独立な同じ列を渡す
   [<Test>]
-  member _.``227 本 とも stepWith と WithBody+step が同じ答えを返す``() =
+  member _.``227 本 とも stepWith と WithMotion+step が同じ答えを返す``() =
     let files = CorpusData.uniqueSamples ()
     files |> List.length |> should be (greaterThan 100)
     let mutable compared = 0
@@ -57,16 +54,18 @@ type StepWithEquiv() =
         let b = stream ()
         let scriptA = Runner.load a 0.5f (readXmlString xml)
         let scriptB = Runner.load b 0.5f (readXmlString xml)
-        let runA = Runner.newRoot scriptA
-        let runB = Runner.newRoot scriptB
-        let fa = Runner.stepWith scriptA (envWith a) runA body
-        let fb = Runner.step scriptB (envWith b) (runB.WithBody body)
+        // 撃たれた弾として起こす。Retired の腕（IsBullet && HasFired）を
+        // 通したいので newRoot ではなく newShot
+        let runA = Runner.newShot BulletType.Enemy scriptA
+        let runB = Runner.newShot BulletType.Enemy scriptB
+        let fa = Runner.stepWith scriptA (envWith a) runA motion
+        let fb = Runner.step scriptB (envWith b) (runB.WithMotion motion)
         fa.Delta |> should equal fb.Delta
         fa.Finished |> should equal fb.Finished
         fa.Retired |> should equal fb.Retired
         fa.Vanished |> should equal fb.Vanished
         fa.Spawned.Length |> should equal fb.Spawned.Length
-        fa.Run.Body |> should equal fb.Run.Body
+        fa.Run.Motion |> should equal fb.Run.Motion
         compared <- compared + 1
       with
       // 読む段で落ちる 3 本（DTD 違反）はここでも比べられない。

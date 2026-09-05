@@ -53,12 +53,21 @@ type DefaultBullet (transform:Transform) as this =
     member _.Script = script
     member _.Finished = finished
 
+    /// 弾幕を割り当てる。`r` が None なら根から始める。
+    ///
+    /// **根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。**
+    /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
+    /// 立てておくこと（同梱の弾はどれも Awake で立てている）
     member _.SetScript (s, r) =
       script <- s
       finished <- false
+      let me = self ()
       run <- match r with
              | Some _ -> r
-             | None -> s |> Option.map Runner.newRoot
+             | None ->
+                 s |> Option.map (fun sc ->
+                   if me.IsBullet then Runner.newShot me.BulletType sc
+                   else Runner.newRoot me.BulletType sc)
 
     member this.Vanish () = (this :> IDefaultBullet).Used <- false
 
@@ -139,17 +148,17 @@ type DefaultBullet (transform:Transform) as this =
   member private this.Spawn (child: BulletRun) =
     let newBullet = this.GetBulletPrefubInstance ()
     if newBullet :> obj <> null then
-      let body = child.Body
+      let motion = child.Motion
       newBullet.Init ()
       newBullet.IsBullet <- true
       newBullet.BulletType <- (self ()).BulletType
       // 弾幕は親と同じものを引き継ぐ。引き継がないと、弾の中に残った
       // bulletRef / actionRef を誰も解けない
       newBullet.SetScript (script, Some child)
-      newBullet.X <- body.Pos.X
-      newBullet.Y <- body.Pos.Y
-      newBullet.Dir <- body.Dir
-      newBullet.Speed <- body.Speed
+      newBullet.X <- motion.Pos.X
+      newBullet.Y <- motion.Pos.Y
+      newBullet.Dir <- motion.Dir
+      newBullet.Speed <- motion.Speed
 
   member this.RunTask(apply:Action<_,_>) =
     let apply = Action.toFSharpFunc2 apply
@@ -158,18 +167,15 @@ type DefaultBullet (transform:Transform) as this =
     | Some sc, Some rn ->
         me.ShootingDirection <- sc.ShootingDirection
         // 物理量はフロントが持っている。毎コマ入れ直す（旧 stateOfBullet）
-        let body =
-          { rn.Body with
-              Pos = { X = me.X; Y = me.Y }
-              Speed = me.Speed
-              Dir = me.Dir
-              Accel = { X = me.AccelerationX; Y = me.AccelerationY }
-              Kind = me.BulletType
-              IsBullet = me.IsBullet }
+        let motion : Motion =
+          { Pos = { X = me.X; Y = me.Y }
+            Speed = me.Speed
+            Dir = me.Dir
+            Accel = { X = me.AccelerationX; Y = me.AccelerationY } }
         // 台本が無い弾は aim を読まない（BulletRun.HasNoScript の但し書き）
         let env = if rn.HasNoScript then noAimEnv () else this.EnvNow ()
-        let f = Runner.stepWith sc env rn body
-        let after = f.Run.Body
+        let f = Runner.stepWith sc env rn motion
+        let after = f.Run.Motion
         me.Speed <- after.Speed
         me.Dir <- after.Dir
         me.AccelerationX <- after.Accel.X

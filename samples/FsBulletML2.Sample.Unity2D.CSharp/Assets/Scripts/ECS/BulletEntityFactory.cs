@@ -87,11 +87,11 @@ public static class BulletEntityFactory
     {
         var sim = Spawn(parent.Kind, parent.X, parent.Y, root: false);
         sim.SetScript(parent.Script, child);
-        var body = child.Body;
-        sim.X = body.Pos.X;
-        sim.Y = body.Pos.Y;
-        sim.Dir = body.Dir;
-        sim.Speed = body.Speed;
+        var motion = child.Motion;
+        sim.X = motion.Pos.X;
+        sim.Y = motion.Pos.Y;
+        sim.Dir = motion.Dir;
+        sim.Speed = motion.Speed;
         return sim;
     }
 
@@ -103,11 +103,11 @@ public static class BulletEntityFactory
         var kind = object.Equals(emitter.BulletType, BulletType.Player) ? BulletKind.Player : BulletKind.Enemy;
         var sim = Spawn(kind, emitter.X, emitter.Y, root: false);
         sim.SetScript(emitter.Script, child);
-        var body = child.Body;
-        sim.X = body.Pos.X;
-        sim.Y = body.Pos.Y;
-        sim.Dir = body.Dir;
-        sim.Speed = body.Speed;
+        var motion = child.Motion;
+        sim.X = motion.Pos.X;
+        sim.Y = motion.Pos.Y;
+        sim.Dir = motion.Dir;
+        sim.Speed = motion.Speed;
         return sim;
     }
 

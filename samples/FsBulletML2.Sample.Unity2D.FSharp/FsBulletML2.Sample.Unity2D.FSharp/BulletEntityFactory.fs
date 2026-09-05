@@ -187,11 +187,11 @@ type BulletEntityFactory private () =
   static member SpawnChild (parent: BulletSim, child: BulletRun) =
     let sim = BulletEntityFactory.Spawn(parent.Kind, parent.X, parent.Y, false)
     sim.SetScript(parent.Script, Some child)
-    let body = child.Body
-    sim.X <- body.Pos.X
-    sim.Y <- body.Pos.Y
-    sim.Dir <- body.Dir
-    sim.Speed <- body.Speed
+    let motion = child.Motion
+    sim.X <- motion.Pos.X
+    sim.Y <- motion.Pos.Y
+    sim.Dir <- motion.Dir
+    sim.Speed <- motion.Speed
     sim
 
   static member Destroy (entity: Entity) =

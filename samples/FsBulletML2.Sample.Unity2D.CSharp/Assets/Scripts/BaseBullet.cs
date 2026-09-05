@@ -85,6 +85,10 @@ public abstract class BaseBullet : MonoBehaviour
 
     /// <summary>
     /// 弾幕を割り当てる。根から始めるときは <paramref name="run"/> を null にする。
+    ///
+    /// <b>根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。</b>
+    /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
+    /// 立てておくこと（同梱の弾はどれもコンストラクタか Awake で立てている）。
     /// </summary>
     public void SetScript(BulletmlScript script, BulletRun? run)
     {
@@ -92,7 +96,9 @@ public abstract class BaseBullet : MonoBehaviour
         Finished = false;
         Run = run.HasValue
             ? run
-            : (script != null ? Runner.NewRoot(script) : (BulletRun?)null);
+            : (script != null
+                ? (IsBullet ? Runner.NewShot(BulletType, script) : Runner.NewRoot(BulletType, script))
+                : (BulletRun?)null);
     }
 
     /// <summary>
@@ -109,24 +115,21 @@ public abstract class BaseBullet : MonoBehaviour
         ShootingDirection = Script.ShootingDirection;
         // 物理量はフロントが持っている。毎コマ入れ直す（旧 stateOfBullet）。
         //
-        // **名前付き引数で書く。** F# 側は `{ rn.Body with Pos = ... }` と
+        // **名前付き引数で書く。** F# 側は `{ rn.Motion with Pos = ... }` と
         // 欄の名前で書けるが、C# にレコードの with が無いのでコンストラクタを
-        // 並べることになり、**float が 2 本 並ぶ speed / dir と、bool が
-        // 2 本 並ぶ isBullet / hasFired が位置ずれしても通ってしまう。**
-        // 名前を書けば位置ずれはコンパイルで落ちる（綴り違いで較正済み）。
-        // ただし**値そのものを取り違えた場合は落ちない** —— `speed: Dir` は
-        // 名前が正しいので通る。そこは軌跡でしか見えない
-        var body = new Body(
+        // 並べることになり、**float が 2 本 並ぶ speed / dir が位置ずれしても
+        // 通ってしまう。** 名前を書けば位置ずれはコンパイルで落ちる
+        // （綴り違いで較正済み）。ただし**値そのものを取り違えた場合は
+        // 落ちない** —— `speed: Dir` は名前が正しいので通る。
+        // そこは軌跡でしか見えない
+        var motion = new Motion(
             pos: new FsBulletML2.Domain.Vec2(X, Y),
             speed: Speed,
             dir: Dir,
-            accel: new FsBulletML2.Domain.Vec2(AccelerationX, AccelerationY),
-            kind: BulletType,
-            isBullet: IsBullet,
-            hasFired: BulletRoot);
+            accel: new FsBulletML2.Domain.Vec2(AccelerationX, AccelerationY));
 
-        var f = Runner.StepWith(Script, EnvNow(rn), rn, body);
-        var after = f.Run.Body;
+        var f = Runner.StepWith(Script, EnvNow(rn), rn, motion);
+        var after = f.Run.Motion;
         Speed = after.Speed;
         Dir = after.Dir;
         AccelerationX = after.Accel.X;

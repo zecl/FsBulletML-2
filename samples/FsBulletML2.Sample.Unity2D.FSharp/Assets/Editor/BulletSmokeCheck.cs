@@ -65,8 +65,10 @@ public static class BulletSmokeCheck
         root.Init();
         root.X = x;
         root.Y = y;
-        root.SetScript(script, null);
+        // **SetScript より前に立てる。** 根の立場（狙う先と、撃たれた弾か）は
+        // SetScript が 1 回 だけ読んで Core へ渡す
         root.IsBullet = false;
+        root.SetScript(script, null);
 
         var live = new System.Collections.Generic.List<BulletSim> { root };
         var born = 0;
@@ -74,17 +76,17 @@ public static class BulletSmokeCheck
         System.Action<BulletSim, BulletRun> spawn = (parent, child) =>
         {
             born++;
-            var body = child.Body;
+            var motion = child.Motion;
             var sim = new BulletSim();
             sim.Kind = parent.Kind;
             // 親の種別を引き継ぐ。**BulletEntityFactory.SpawnChild と同じ形**
             sim.BulletType = parent.BulletType;
             sim.Init();
             sim.SetScript(parent.Script, child);
-            sim.X = body.Pos.X;
-            sim.Y = body.Pos.Y;
-            sim.Dir = body.Dir;
-            sim.Speed = body.Speed;
+            sim.X = motion.Pos.X;
+            sim.Y = motion.Pos.Y;
+            sim.Dir = motion.Dir;
+            sim.Speed = motion.Speed;
             live.Add(sim);
         };
 

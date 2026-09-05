@@ -153,14 +153,21 @@ type BulletSim () =
 
   interface IComponentData
 
-  /// 弾幕を割り当てる。根から始めるときは `run` を None にする
+  /// 弾幕を割り当てる。根から始めるときは `run` を None にする。
+  ///
+  /// **根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。**
+  /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
+  /// 立てておくこと（Spawn が Init の前後で両方 立てている）
   member this.SetScript (script: BulletmlScript, run: BulletRun option) =
     this.Script <- script
     this.Finished <- false
     this.Run <-
       match run with
       | Some _ -> run
-      | None -> if isNull (box script) then None else Some (Runner.newRoot script)
+      | None ->
+          if isNull (box script) then None
+          elif this.IsBullet then Some (Runner.newShot this.BulletType script)
+          else Some (Runner.newRoot this.BulletType script)
 
   member this.Init () =
     this.Root <- false
@@ -204,17 +211,14 @@ type BulletSim () =
 
       this.ShootingDirection <- this.Script.ShootingDirection
       // 物理量はフロントが持っている。毎コマ入れ直す（旧 stateOfBullet）
-      let body =
+      let motion : Motion =
         { Pos = { X = this.X; Y = this.Y }
           Speed = this.Speed
           Dir = this.Dir
-          Accel = { X = this.AccelerationX; Y = this.AccelerationY }
-          Kind = this.BulletType
-          IsBullet = this.IsBullet
-          HasFired = this.BulletRoot }
+          Accel = { X = this.AccelerationX; Y = this.AccelerationY } }
 
-      let f = Runner.stepWith this.Script (this.EnvNow rn) rn body
-      let after = f.Run.Body
+      let f = Runner.stepWith this.Script (this.EnvNow rn) rn motion
+      let after = f.Run.Motion
       this.Speed <- after.Speed
       this.Dir <- after.Dir
       this.AccelerationX <- after.Accel.X

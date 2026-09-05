@@ -60,7 +60,7 @@ module TraceApi =
   let runDetailed (rootKind: BulletType) (onFrame: int -> unit)
                   (rand: unit -> float32) (rank: unit -> float32)
                   (px: unit -> float32) (py: unit -> float32)
-                  (xml: string) (frames: int) : string * Body list =
+                  (xml: string) (frames: int) : string * BulletRun list =
     // 産まれた弾がどこに出るかは、対になる FakeBullet.GetNewBullet が決める。
     // あちらは位置を入れずに作るので原点。同じ式に原点を入れた値を載せる
     let spawnAim () = aimDir (px ()) (py ()) 0.0f 0.0f
@@ -86,10 +86,11 @@ module TraceApi =
     let script = Runner.load rand (rank ()) (readXmlString xml)
 
     let all = List<Live>()
-    all.Add { Run = Runner.newRoot script; X = 0.0f; Y = 0.0f; Alive = true; Id = 0 }
-    // 産まれた弾の Body を産まれた順に控える。軌跡の文字列には出ない面
+    // 根の種別はここで 1 回 だけ決まる。撃たれた弾は Core が親から継ぐ
+    all.Add { Run = Runner.newRoot rootKind script; X = 0.0f; Y = 0.0f; Alive = true; Id = 0 }
+    // 産まれた弾を産まれた順に控える。軌跡の文字列には出ない面
     // （BulletType など）を見る試験のため
-    let spawnedBodies = List<Body>()
+    let spawnedRuns = List<BulletRun>()
     let sb = StringBuilder()
     let mutable seen = 1
 
@@ -100,19 +101,16 @@ module TraceApi =
       for j in 0 .. liveCount - 1 do
         let b = all.[j]
         if b.Alive then
-          // 物理量はフロントが持っている。毎コマ入れ直す（旧の stateOfBullet）
-          // 根の種別だけ差し替える。撃たれた弾は Core が親から継ぐので触らない
-          // （旧は o.BulletType <- Player を 1 回 置いて、run が毎コマ 読んでいた）
-          let body =
-            if b.Id = 0 then { b.Run.Body with Pos = { X = b.X; Y = b.Y }; Kind = rootKind }
-            else { b.Run.Body with Pos = { X = b.X; Y = b.Y } }
+          // 物理量はフロントが持っている。毎コマ入れ直す（旧の stateOfBullet）。
+          // **種別はもう渡らない** —— 根は newRoot で、撃たれた弾は親から継ぐ
+          let motion = { b.Run.Motion with Pos = { X = b.X; Y = b.Y } }
           // **同梱フロントと同じ skip をここでも通す。** 通さないと、この橋は
           // 本番と違う経路を見ることになり、skip の条件が間違っていても
           // 227 本 が緑のまま通ってしまう（BulletRun.HasNoScript の但し書き）
           let env = if b.Run.HasNoScript then noAimEnv () else envAt b.X b.Y
-          let f = Runner.stepWith script env b.Run body
-          b.X <- f.Run.Body.Pos.X + f.Delta.X
-          b.Y <- f.Run.Body.Pos.Y + f.Delta.Y
+          let f = Runner.stepWith script env b.Run motion
+          b.X <- f.Run.Motion.Pos.X + f.Delta.X
+          b.Y <- f.Run.Motion.Pos.Y + f.Delta.Y
           // 走らせ直しの Env は、移動したあとの位置から組む（旧 BaseBullet が
           // apply のあとで envOfGlobal を呼ぶのと同じ順）
           b.Run <-
@@ -124,22 +122,22 @@ module TraceApi =
           let mark = if f.Finished then "P+" else "P-"
           sb.Append(sprintf "  b%d %s x=%s y=%s d=%s s=%s"
                       b.Id mark (fmt b.X) (fmt b.Y)
-                      (fmt f.Run.Body.Dir) (fmt f.Run.Body.Speed)) |> ignore
+                      (fmt f.Run.Motion.Dir) (fmt f.Run.Motion.Speed)) |> ignore
           if f.Vanished then sb.Append(" vanish") |> ignore
           sb.AppendLine() |> ignore
           for child in f.Spawned do
-            spawnedBodies.Add child.Body
+            spawnedRuns.Add child
             all.Add { Run = child
-                      X = child.Body.Pos.X
-                      Y = child.Body.Pos.Y
+                      X = child.Motion.Pos.X
+                      Y = child.Motion.Pos.Y
                       Alive = true
                       Id = all.Count }
       while seen < all.Count do
         let b = all.[seen]
-        sb.AppendLine(sprintf "  +b%d d=%s s=%s" b.Id (fmt b.Run.Body.Dir) (fmt b.Run.Body.Speed)) |> ignore
+        sb.AppendLine(sprintf "  +b%d d=%s s=%s" b.Id (fmt b.Run.Motion.Dir) (fmt b.Run.Motion.Speed)) |> ignore
         seen <- seen + 1
 
-    sb.ToString().Replace("\r\n", "\n"), List.ofSeq spawnedBodies
+    sb.ToString().Replace("\r\n", "\n"), List.ofSeq spawnedRuns
 
   /// 根は敵。軌跡だけ要るとき
   let runWithParams (onFrame: int -> unit)
@@ -151,18 +149,18 @@ module TraceApi =
   /// 根の種別を変えて回し、**産まれた弾だけ**を産まれた順に出す。
   ///
   /// 標準の軌跡には種別の列が無いので別口にしてある。`run` は根を敵で
-  /// 組む（`Api.load` の `RootState` が `BulletType.Enemy` 固定）ので、
+  /// 組む（`runWithParams` が `BulletType.Enemy` を渡す）ので、
   /// Player を見る試験はここを通る。
   ///
   /// 書式は旧の `PlayerAndTops.runAsPlayer` をそのまま写す。違うと控えが
   /// 全行 動いて、移植が正しいかを読めなくなる
   let runSpawnedAs (kind: BulletType) (rand: unit -> float32) (rank: float32)
                    (px: float32) (py: float32) (xml: string) (frames: int) : string =
-    let _, bodies =
+    let _, runs =
       runDetailed kind ignore rand (fun () -> rank) (fun () -> px) (fun () -> py) xml frames
-    bodies
-    |> List.mapi (fun i (b: Body) ->
-        sprintf "+b%d d=%s s=%s type=%A" (i + 1) (fmt b.Dir) (fmt b.Speed) b.Kind)
+    runs
+    |> List.mapi (fun i (r: BulletRun) ->
+        sprintf "+b%d d=%s s=%s type=%A" (i + 1) (fmt r.Motion.Dir) (fmt r.Motion.Speed) r.Kind)
     |> String.concat "\n"
     |> fun s -> if s = "" then s else s + "\n"
 

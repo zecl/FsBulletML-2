@@ -44,7 +44,7 @@ type ApiUsageExample() =
     // この段が読むのは乱数とランクだけで、aim は撃つ弾ごとの位置が
     // まだ無いので読まれない
     let script = Runner.load rand rank (readXmlString Xml)
-    let mutable run = Runner.newRoot script
+    let mutable run = Runner.newRoot BulletType.Enemy script
 
     let mutable myPos = { X = 0.0f; Y = 0.0f }
     let spawned = ResizeArray<BulletRun>()
@@ -56,7 +56,7 @@ type ApiUsageExample() =
         { Rand = rand; Rank = rank
           AimDir = 0.0f; EnemyAimDir = 0.0f
           SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
-      let f = Runner.stepWith script env run { run.Body with Pos = myPos }
+      let f = Runner.stepWith script env run { run.Motion with Pos = myPos }
       myPos <- { X = myPos.X + f.Delta.X; Y = myPos.Y + f.Delta.Y }
       run <- f.Run
       for child in f.Spawned do spawned.Add child
@@ -73,7 +73,7 @@ type ApiUsageExample() =
     let rand () = 0.5f
     let rank = 0.5f
     let script = Runner.load rand rank (readXmlString Xml)
-    let root = Runner.newRoot script
+    let root = Runner.newRoot BulletType.Enemy script
 
     // aim を読まないと分かっているコマの Env
     let noAim =
@@ -81,12 +81,12 @@ type ApiUsageExample() =
         AimDir = 0.0f; EnemyAimDir = 0.0f
         SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
 
-    let f = Runner.stepWith script noAim root root.Body
+    let f = Runner.stepWith script noAim root root.Motion
     f.Spawned |> should not' (be Empty)
 
     // 撃たれた弾を 1 コマ 回す。**同じ script を渡す** —— 弾の中に残った
     // bulletRef / actionRef は、その script の入口でしか解けない
     let child = f.Spawned |> List.head
-    let cf = Runner.stepWith script noAim child child.Body
+    let cf = Runner.stepWith script noAim child child.Motion
     // 素の bullet なので台本を持たない。HasNoScript が立つ
     cf.Run.HasNoScript |> should equal true
