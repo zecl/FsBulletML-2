@@ -18,9 +18,9 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
     public class Player
     {
         private static string XmlPath(string name) => Path.Combine(AppContext.BaseDirectory, "Content", "xml", "PlayerBullet", name);
-        private static Bulletml b2wayLeftBullet = Xml.readXml(XmlPath("2wayLeft.xml"));
-        private static Bulletml b2wayRightBullet = Xml.readXml(XmlPath("2wayRight.xml"));
-        private static Bulletml homing = Xml.readXml(XmlPath("homing.xml"));
+        private static Bulletml b2wayLeftBullet = BulletmlModule.readXml(XmlPath("2wayLeft.xml"));
+        private static Bulletml b2wayRightBullet = BulletmlModule.readXml(XmlPath("2wayRight.xml"));
+        private static Bulletml homing = BulletmlModule.readXml(XmlPath("homing.xml"));
 
         private int Timer { get; set; }
         public Vector2 Pos { get; set; }

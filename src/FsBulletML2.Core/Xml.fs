@@ -138,18 +138,4 @@ module Xml =
     static member ReadIgnoreWhitespaceString (xmlUri : string) : string =
       (xmlUri,readerSettingsIgnoreWhitespace) ||> loadXml
 
-  let readXmlString (xml : string) : Bulletml =
-    use reader = new System.IO.StringReader(xml)
-    use reader = XmlReader.Create(reader, readerSettingsIndented)
-    XmlNode.Read(xml, reader) |> IntermediateParser.convertBulletmlFromXmlNode
-  let tryReadXmlString (xml : string) : Bulletml option =
-    use reader = new System.IO.StringReader(xml)
-    use reader = XmlReader.Create(reader, readerSettingsIndented)
-    XmlNode.Read(xml, reader) |> IntermediateParser.tryBulletmlFromXmlNode
-
-  let readXml (xmlFile : string) : Bulletml =
-    use reader = XmlReader.Create((xmlFile:string), readerSettingsIndented)
-    XmlNode.Read(xmlFile, reader) |> IntermediateParser.convertBulletmlFromXmlNode
-  let tryReadXml (xmlFile : string) : Bulletml option =
-    use reader = XmlReader.Create((xmlFile:string), readerSettingsIndented)
-    XmlNode.Read(xmlFile, reader) |> IntermediateParser.tryBulletmlFromXmlNode
+  // XML から Bulletml を読む口は FsBulletML2.Parser の Bulletml モジュール。
