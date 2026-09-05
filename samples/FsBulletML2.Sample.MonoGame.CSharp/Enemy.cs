@@ -74,7 +74,7 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
 
         public void SetMoveBulletmlInfo(BulletmlInfo bulletmlInfo) 
         {
-            ((IEnemy)this).SetScript(bulletmlInfo.Script(FrontLoad.Rand, FrontLoad.Rank()), null);
+            ((IEnemy)this).SetScript(bulletmlInfo.Script(FrontLoad.Rand, FrontLoad.Rank()));
         }
 
         public void SetBulletmlInfo(string bulletName, BulletmlInfo bulletmlInfo) 

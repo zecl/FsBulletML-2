@@ -149,7 +149,7 @@ module Harness =
           let body = { it.Run.Motion with Pos = { X = bo.X; Y = bo.Y } }
           // 台本が無い弾は aim を読まない（BulletRun.HasNoScript の但し書き）
           let env = if it.Run.HasNoScript then noAimEnv () else envAt bo.X bo.Y
-          let f = Runner.stepWith p.Script env it.Run body
+          let f = Runner.stepWith env it.Run body
           bo.X <- bo.X + f.Delta.X
           bo.Y <- bo.Y + f.Delta.Y
           let after = f.Run.Motion
@@ -219,7 +219,7 @@ module Harness =
         if bo.Used then
           let body = { it.Run.Motion with Pos = { X = bo.X; Y = bo.Y } }
           builds <- builds + 1
-          let f = Runner.step script (envAt bo.X bo.Y) (it.Run.WithMotion body)
+          let f = Runner.step (envAt bo.X bo.Y) (it.Run.WithMotion body)
           bo.X <- bo.X + f.Delta.X
           bo.Y <- bo.Y + f.Delta.Y
           let after = f.Run.Motion
@@ -275,7 +275,7 @@ module Harness =
           else liveCalls <- liveCalls + 1
           let body = { it.Run.Motion with Pos = { X = bo.X; Y = bo.Y } }
           let env = if it.Run.HasNoScript then noAimEnv () else envAt bo.X bo.Y
-          let f = Runner.stepWith p.Script env it.Run body
+          let f = Runner.stepWith env it.Run body
           if f.Finished then finished.Add it.Bullet |> ignore
           bo.X <- bo.X + f.Delta.X
           bo.Y <- bo.Y + f.Delta.Y

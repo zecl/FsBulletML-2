@@ -58,7 +58,8 @@ public class BulletSim : IComponentData
     public bool Used { get; set; }
 
     /// <summary>走らせている弾幕。撃たれた弾は親と同じものを引き継ぐ</summary>
-    public BulletmlScript Script { get; private set; }
+    /// <summary>走らせている弾幕。<b>実行状態の中に居る</b>（<c>BulletRun.Script</c>）。</summary>
+    public BulletmlScript Script => Run.HasValue ? Run.Value.Script : null;
 
     /// <summary>
     /// この弾 1 体 の実行位置。<b>台本が無いあいだは null。</b>
@@ -78,15 +79,22 @@ public class BulletSim : IComponentData
     /// <b>根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。</b>
     /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
     /// 立てておくこと。    /// </summary>
-    public void SetScript(BulletmlScript script, BulletRun? run)
+    public void SetScript(BulletmlScript script)
     {
-        Script = script;
         Finished = false;
-        Run = run.HasValue
-            ? run
-            : (script != null
-                ? (IsBullet ? Runner.NewShot(BulletType, script) : Runner.NewRoot(BulletType, script))
-                : (BulletRun?)null);
+        Run = script != null
+            ? (IsBullet ? Runner.NewShot(BulletType, script) : Runner.NewRoot(BulletType, script))
+            : (BulletRun?)null;
+    }
+
+    /// <summary>
+    /// 撃たれた弾を、エンジンから受け取った実行状態で始める。
+    /// <b>弾幕を渡す口が無い</b> —— <c>BulletRun</c> が親のものを持っている。
+    /// </summary>
+    public void SetRun(BulletRun run)
+    {
+        Finished = false;
+        Run = run;
     }
 
     public void Init()
@@ -127,7 +135,7 @@ public class BulletSim : IComponentData
     /// </summary>
     public void Step(System.Action<BulletSim, BulletRun> spawn)
     {
-        if (Script == null || !Run.HasValue)
+        if (!Run.HasValue)
         {
             return;
         }
@@ -144,7 +152,7 @@ public class BulletSim : IComponentData
             accel: new FsBulletML2.Domain.Vec2(AccelerationX, AccelerationY));
 
         // Env を組む位置も、台本が無い弾の枝も Driver が持っている
-        var f = Driver.Step(Script, world, CSharpWorld.Space, CSharpWorld.Origin, rn, motion);
+        var f = Driver.Step(world, CSharpWorld.Space, CSharpWorld.Origin, rn, motion);
         var after = f.Run.Motion;
         Speed = after.Speed;
         Dir = after.Dir;

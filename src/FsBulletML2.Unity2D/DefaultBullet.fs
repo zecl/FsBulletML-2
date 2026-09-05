@@ -54,24 +54,27 @@ type DefaultBullet (transform:Transform) as this =
     member val ShootingDirection = ShootingDirection.BulletVertical with get, set
     member val Radius = 0.1f with get, set
 
-    member _.Script = script
+    member _.Script = run |> Option.map (fun r -> r.Script)
     member _.Finished = finished
 
-    /// 弾幕を割り当てる。`r` が None なら根から始める。
+    /// 弾幕を割り当てて根から始める。
     ///
     /// **根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。**
     /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
     /// 立てておくこと（同梱の弾はどれも Awake で立てている）
-    member _.SetScript (s, r) =
-      script <- s
+    member _.SetScript (s) =
       finished <- false
       let me = self ()
-      run <- match r with
-             | Some _ -> r
-             | None ->
-                 s |> Option.map (fun sc ->
-                   if me.IsBullet then Runner.newShot me.BulletType sc
-                   else Runner.newRoot me.BulletType sc)
+      run <-
+        s |> Option.map (fun sc ->
+          if me.IsBullet then Runner.newShot me.BulletType sc
+          else Runner.newRoot me.BulletType sc)
+
+    /// 撃たれた弾を、エンジンから受け取った実行状態で始める。
+    /// **弾幕を渡す口が無い** —— `BulletRun` が親のものを持っている
+    member _.SetRun (r: BulletRun) =
+      finished <- false
+      run <- Some r
 
     member this.Vanish () = (this :> IDefaultBullet).Used <- false
 
@@ -121,9 +124,9 @@ type DefaultBullet (transform:Transform) as this =
       newBullet.Init ()
       newBullet.IsBullet <- true
       newBullet.BulletType <- (self ()).BulletType
-      // 弾幕は親と同じものを引き継ぐ。引き継がないと、弾の中に残った
-      // bulletRef / actionRef を誰も解けない
-      newBullet.SetScript (script, Some child)
+      // 弾幕は親と同じものを引き継ぐ。**引き継ぎ忘れる書き方がもう無い**
+      // —— BulletRun が弾幕を持っている
+      newBullet.SetRun child
       newBullet.X <- motion.Pos.X
       newBullet.Y <- motion.Pos.Y
       newBullet.Dir <- motion.Dir
@@ -132,9 +135,9 @@ type DefaultBullet (transform:Transform) as this =
   member this.RunTask(apply:Action<_,_>) =
     let apply = Action.toFSharpFunc2 apply
     let me = self ()
-    match script, run with
-    | Some sc, Some rn ->
-        me.ShootingDirection <- sc.ShootingDirection
+    match run with
+    | Some rn ->
+        me.ShootingDirection <- rn.Script.ShootingDirection
         // 物理量はフロントが持っている。毎コマ入れ直す（旧 stateOfBullet）
         let motion : Motion =
           { Pos = { X = me.X; Y = me.Y }
@@ -143,7 +146,7 @@ type DefaultBullet (transform:Transform) as this =
             Accel = { X = me.AccelerationX; Y = me.AccelerationY } }
         // 台本が無い弾は aim を読まない（BulletRun.HasNoScript の但し書き）
         // Env を組む位置も、台本が無い弾の枝も Driver が持っている
-        let f = Driver.step sc world Unity2DFront.space Unity2DFront.origin rn motion
+        let f = Driver.step world Unity2DFront.space Unity2DFront.origin rn motion
         let after = f.Run.Motion
         me.Speed <- after.Speed
         me.Dir <- after.Dir

@@ -54,7 +54,7 @@ type Enemy (life) as this =
       base.RunTask(System.Action<_,_>(apply))
 
   member this.SetMoveBulletmlInfo(bulletmlInfo:BulletmlInfo) =
-    (this :> IEnemy).SetScript(Some (bulletmlInfo.Script (loadRand, loadRank ())), None)
+    (this :> IEnemy).SetScript(Some (bulletmlInfo.Script (loadRand, loadRank ())))
 
   member this.SetBulletTask(bulletName, bulletmlInfo) = 
     this.bulletName <- bulletName

@@ -62,14 +62,14 @@ public static class BulletEntityFactory
     public static BulletSim SpawnEnemy(Vector3 position, BulletmlScript script, bool root)
     {
         var sim = Spawn(BulletKind.Enemy, position.x, position.y, root);
-        sim.SetScript(script, null);
+        sim.SetScript(script);
         return sim;
     }
 
     public static BulletSim SpawnPlayer(Vector3 position, BulletmlScript script)
     {
         var sim = Spawn(BulletKind.Player, position.x, position.y, root: false);
-        sim.SetScript(script, null);
+        sim.SetScript(script);
         return sim;
     }
 
@@ -86,7 +86,7 @@ public static class BulletEntityFactory
     public static BulletSim SpawnChild(BulletSim parent, BulletRun child)
     {
         var sim = Spawn(parent.Kind, parent.X, parent.Y, root: false);
-        sim.SetScript(parent.Script, child);
+        sim.SetRun(child);
         var motion = child.Motion;
         sim.X = motion.Pos.X;
         sim.Y = motion.Pos.Y;
@@ -102,7 +102,7 @@ public static class BulletEntityFactory
     {
         var kind = object.Equals(emitter.BulletType, BulletType.Player) ? BulletKind.Player : BulletKind.Enemy;
         var sim = Spawn(kind, emitter.X, emitter.Y, root: false);
-        sim.SetScript(emitter.Script, child);
+        sim.SetRun(child);
         var motion = child.Motion;
         sim.X = motion.Pos.X;
         sim.Y = motion.Pos.Y;

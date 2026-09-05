@@ -13,4 +13,4 @@ type PlayerBullet () as this =
 
   /// 弾幕を割り当てる。根から始めるので実行状態は Core に作らせる
   member this.SetScript(script) =
-    (this :> IBullet).SetScript(script, None)
+    (this :> IBullet).SetScript(script)

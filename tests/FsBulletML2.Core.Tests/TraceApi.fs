@@ -104,7 +104,7 @@ module TraceApi =
           // 本番と違う経路を見ることになり、skip の条件が間違っていても
           // 227 本 が緑のまま通ってしまう（BulletRun.HasNoScript の但し書き）
           let env = if b.Run.HasNoScript then noAimEnv () else envAt b.X b.Y
-          let f = Runner.stepWith script env b.Run motion
+          let f = Runner.stepWith env b.Run motion
           b.X <- f.Run.Motion.Pos.X + f.Delta.X
           b.Y <- f.Run.Motion.Pos.Y + f.Delta.Y
           // 走らせ直しの Env は、移動したあとの位置から組む（旧 BaseBullet が

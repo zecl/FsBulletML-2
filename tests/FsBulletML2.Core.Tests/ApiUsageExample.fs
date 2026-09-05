@@ -56,7 +56,7 @@ type ApiUsageExample() =
         { Rand = rand; Rank = rank
           Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
           Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
-      let f = Runner.stepWith script env run { run.Motion with Pos = myPos }
+      let f = Runner.stepWith env run { run.Motion with Pos = myPos }
       myPos <- { X = myPos.X + f.Delta.X; Y = myPos.Y + f.Delta.Y }
       run <- f.Run
       for child in f.Spawned do spawned.Add child
@@ -81,12 +81,12 @@ type ApiUsageExample() =
         Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
         Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
 
-    let f = Runner.stepWith script noAim root root.Motion
+    let f = Runner.stepWith noAim root root.Motion
     f.Spawned |> should not' (be Empty)
 
     // 撃たれた弾を 1 コマ 回す。**同じ script を渡す** —— 弾の中に残った
     // bulletRef / actionRef は、その script の入口でしか解けない
     let child = f.Spawned |> List.head
-    let cf = Runner.stepWith script noAim child child.Motion
+    let cf = Runner.stepWith noAim child child.Motion
     // 素の bullet なので台本を持たない。HasNoScript が立つ
     cf.Run.HasNoScript |> should equal true

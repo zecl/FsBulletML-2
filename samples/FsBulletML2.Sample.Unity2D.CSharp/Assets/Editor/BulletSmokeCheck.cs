@@ -82,7 +82,7 @@ public static class BulletSmokeCheck
         // **SetScript より前に立てる。** 根の立場（狙う先と、撃たれた弾か）は
         // SetScript が 1 回 だけ読んで Core へ渡す
         root.IsBullet = false;
-        root.SetScript(script, null);
+        root.SetScript(script);
 
         var live = new System.Collections.Generic.List<BulletSim> { root };
         var born = 0;
@@ -93,7 +93,7 @@ public static class BulletSmokeCheck
             var motion = child.Motion;
             var sim = new BulletSim { Kind = parent.Kind, BulletType = parent.BulletType };
             sim.Init();
-            sim.SetScript(parent.Script, child);
+            sim.SetRun(child);
             sim.X = motion.Pos.X;
             sim.Y = motion.Pos.Y;
             sim.Dir = motion.Dir;

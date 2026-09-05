@@ -56,8 +56,8 @@ type StepWithEquiv() =
         // 通したいので newRoot ではなく newShot
         let runA = Runner.newShot BulletType.Enemy scriptA
         let runB = Runner.newShot BulletType.Enemy scriptB
-        let fa = Runner.stepWith scriptA (envWith a) runA motion
-        let fb = Runner.step scriptB (envWith b) (runB.WithMotion motion)
+        let fa = Runner.stepWith (envWith a) runA motion
+        let fb = Runner.step (envWith b) (runB.WithMotion motion)
         fa.Delta |> should equal fb.Delta
         fa.Finished |> should equal fb.Finished
         fa.Retired |> should equal fb.Retired

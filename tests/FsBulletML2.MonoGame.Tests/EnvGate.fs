@@ -51,7 +51,8 @@ type private StubBullet(x: float32, y: float32) =
     member val ShootingDirection = ShootingDirection.BulletVertical with get, set
     member _.Init() = ()
     member _.Vanish() = ()
-    member _.SetScript(_, _) = ()
+    member _.SetScript(_) = ()
+    member _.SetRun(_) = ()
     member _.Script = None
     member _.Finished = false
 

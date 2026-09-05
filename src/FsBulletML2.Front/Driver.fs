@@ -62,10 +62,10 @@ module Driver =
 
   /// 1 コマ 進める。**差分を足す前の位置**を渡すこと
   [<CompiledName "Step">]
-  let step (script: BulletmlScript) (world: IWorld) (space: Space) (origin: SpawnOrigin)
+  let step (world: IWorld) (space: Space) (origin: SpawnOrigin)
            (run: BulletRun) (motion: Motion) : Frame =
     let env = FrontEnv.forRun world space origin run motion.Pos.X motion.Pos.Y
-    Runner.stepWith script env run motion
+    Runner.stepWith env run motion
 
   /// 全 top が終わった弾を走らせ直す。**差分を足したあとの位置**を渡すこと。
   ///

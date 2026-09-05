@@ -12,8 +12,8 @@ type BaseBullet () as this =
   [<DefaultValue>]val mutable pos : Vector2
   [<DefaultValue>]val mutable private self : IBullet
 
-  /// 走らせている弾幕と、その実行状態。旧の Task option を 2 つ に割ったもの
-  let mutable script : BulletmlScript option = None
+  /// 走らせている実行状態。**弾幕はこの中に居る**（`BulletRun.Script`）
+  /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish の置き場所
   let mutable run : BulletRun option = None
   /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish の置き場所
   let mutable finished = false
@@ -42,24 +42,27 @@ type BaseBullet () as this =
     member val ShootingDirection = ShootingDirection.BulletVertical with get, set
     member val Radius = 0.f with get, set
 
-    member _.Script = script
+    member _.Script = run |> Option.map (fun r -> r.Script)
     member _.Finished = finished
 
-    /// 弾幕を割り当てる。`r` が None なら根から始める。
+    /// 弾幕を割り当てて根から始める。
     ///
     /// **根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。**
     /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
     /// 立てておくこと（同梱の弾はどれもコンストラクタで立てている）
-    member this.SetScript (s, r) =
-      script <- s
+    member this.SetScript (s) =
       finished <- false
       let self = this.self
-      run <- match r with
-             | Some _ -> r
-             | None ->
-                 s |> Option.map (fun sc ->
-                   if self.IsBullet then Runner.newShot self.BulletType sc
-                   else Runner.newRoot self.BulletType sc)
+      run <-
+        s |> Option.map (fun sc ->
+          if self.IsBullet then Runner.newShot self.BulletType sc
+          else Runner.newRoot self.BulletType sc)
+
+    /// 撃たれた弾を、エンジンから受け取った実行状態で始める。
+    /// **弾幕を渡す口が無い** —— `BulletRun` が親のものを持っている
+    member _.SetRun (r: BulletRun) =
+      finished <- false
+      run <- Some r
 
     member this.Vanish () = this.self.Used <- false
 
@@ -86,9 +89,9 @@ type BaseBullet () as this =
     match newBullet.BulletType with
     | Player -> Manager.addPlayerBullet(newBullet)
     | Enemy -> Manager.addEnemyBullet(newBullet)
-    // 弾幕は親と同じものを引き継ぐ。引き継がないと、弾の中に残った
-    // bulletRef / actionRef を誰も解けない
-    newBullet.SetScript (script, Some child)
+    // 弾幕は親と同じものを引き継ぐ。**引き継ぎ忘れる書き方がもう無い**
+    // —— BulletRun が弾幕を持っている
+    newBullet.SetRun child
     newBullet.X <- motion.Pos.X
     newBullet.Y <- motion.Pos.Y
     newBullet.Dir <- motion.Dir
@@ -96,9 +99,9 @@ type BaseBullet () as this =
 
   member this.RunTask(apply:Action<_,_>) =
     let apply = Action.toFSharpFunc2 apply
-    match script, run with
-    | Some sc, Some rn ->
-        this.self.ShootingDirection <- sc.ShootingDirection
+    match run with
+    | Some rn ->
+        this.self.ShootingDirection <- rn.Script.ShootingDirection
         // 物理量はフロントが持っている。毎コマ入れ直す（旧 stateOfBullet）
         let motion : Motion =
           { Pos = { X = this.self.X; Y = this.self.Y }
@@ -106,7 +109,7 @@ type BaseBullet () as this =
             Dir = this.self.Dir
             Accel = { X = this.self.AccelerationX; Y = this.self.AccelerationY } }
         // Env を組む位置も、台本が無い弾の枝も Driver が持っている
-        let f = Driver.step sc world MonoGameFront.space MonoGameFront.origin rn motion
+        let f = Driver.step world MonoGameFront.space MonoGameFront.origin rn motion
         let after = f.Run.Motion
         this.self.Speed <- after.Speed
         this.self.Dir <- after.Dir

@@ -35,7 +35,11 @@ type IBullet =
   /// 弾幕を割り当てる。根から始めるときは run を None にする
   /// （Runner.newRoot が使われる）。撃たれた弾には、親が Frame.Spawned で
   /// 受け取った BulletRun をそのまま渡す
-  abstract SetScript : BulletmlScript option * BulletRun option -> unit
+  /// 根から始める。実行状態は Core に作らせる
+  abstract SetScript : BulletmlScript option -> unit
+  /// 撃たれた弾を、エンジンから受け取った実行状態で始める。
+  /// **弾幕を渡す口が無い** —— 実行状態が親のものを持っている
+  abstract SetRun : BulletRun -> unit
   /// いま走らせている弾幕。撃たれた弾へ引き継ぐために読む
   abstract Script : BulletmlScript option with get
   /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish。

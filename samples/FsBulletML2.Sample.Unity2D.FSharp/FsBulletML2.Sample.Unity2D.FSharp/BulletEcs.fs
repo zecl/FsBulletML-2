@@ -144,9 +144,11 @@ type BulletSim () =
   member val BulletType = BulletType.Enemy with get, set
   member val ShootingDirection = ShootingDirection.BulletVertical with get, set
 
-  /// 走らせている弾幕。撃たれた弾は親と同じものを引き継ぐ。
-  /// **F# の型に null は入れられない**ので defaultof で置く
-  member val Script : BulletmlScript = Unchecked.defaultof<BulletmlScript> with get, set
+  /// 走らせている弾幕。**実行位置の中に居る**（`BulletRun.Script`）
+  member this.Script =
+    match this.Run with
+    | Some r -> r.Script
+    | None -> Unchecked.defaultof<BulletmlScript>
   /// この弾 1 体 の実行位置。**台本が無いあいだは None**
   member val Run : BulletRun option = None with get, set
   /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish
@@ -154,21 +156,23 @@ type BulletSim () =
 
   interface IComponentData
 
-  /// 弾幕を割り当てる。根から始めるときは `run` を None にする。
+  /// 弾幕を割り当てて根から始める。
   ///
   /// **根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。**
   /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
   /// 立てておくこと（Spawn が Init の前後で両方 立てている）
-  member this.SetScript (script: BulletmlScript, run: BulletRun option) =
-    this.Script <- script
+  member this.SetScript (script: BulletmlScript) =
     this.Finished <- false
     this.Run <-
-      match run with
-      | Some _ -> run
-      | None ->
-          if isNull (box script) then None
-          elif this.IsBullet then Some (Runner.newShot this.BulletType script)
-          else Some (Runner.newRoot this.BulletType script)
+      if isNull (box script) then None
+      elif this.IsBullet then Some (Runner.newShot this.BulletType script)
+      else Some (Runner.newRoot this.BulletType script)
+
+  /// 撃たれた弾を、エンジンから受け取った実行位置で始める。
+  /// **弾幕を渡す口が無い** —— `BulletRun` が親のものを持っている
+  member this.SetRun (run: BulletRun) =
+    this.Finished <- false
+    this.Run <- Some run
 
   member this.Init () =
     this.Root <- false
@@ -207,7 +211,7 @@ type BulletSim () =
           Accel = { X = this.AccelerationX; Y = this.AccelerationY } }
 
       // Env を組む位置も、台本が無い弾の枝も Driver が持っている
-      let f = Driver.step this.Script world EcsFront.space EcsFront.origin rn motion
+      let f = Driver.step world EcsFront.space EcsFront.origin rn motion
       let after = f.Run.Motion
       this.Speed <- after.Speed
       this.Dir <- after.Dir

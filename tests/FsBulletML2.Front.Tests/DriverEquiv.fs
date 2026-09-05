@@ -132,7 +132,7 @@ type DriverEquiv() =
         if b.Alive then
           let w = worlds.[j]
           let motion = { b.Run.Motion with Pos = { X = b.X; Y = b.Y } }
-          let f = Driver.step script w space origin b.Run motion
+          let f = Driver.step w space origin b.Run motion
           let mutable nb = b
           nb.X <- f.Run.Motion.Pos.X + f.Delta.X
           nb.Y <- f.Run.Motion.Pos.Y + f.Delta.Y
@@ -172,7 +172,7 @@ type DriverEquiv() =
           let env =
             if b.Run.HasNoScript then noAim
             else directEnv rand t flip spawnAtOrigin b.X b.Y
-          let f = Runner.stepWith script env b.Run motion
+          let f = Runner.stepWith env b.Run motion
           let mutable nb = b
           nb.X <- f.Run.Motion.Pos.X + f.Delta.X
           nb.Y <- f.Run.Motion.Pos.Y + f.Delta.Y

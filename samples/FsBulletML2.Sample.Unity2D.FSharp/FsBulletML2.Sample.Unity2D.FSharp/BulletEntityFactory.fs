@@ -167,13 +167,13 @@ type BulletEntityFactory private () =
   /// 敵が弾幕を撃つ。根から始めるので実行位置は Core に作らせる
   static member SpawnEnemy (position: Vector3, script: BulletmlScript, root: bool) =
     let sim = BulletEntityFactory.Spawn(BulletKind.Enemy, position.x, position.y, root)
-    sim.SetScript(script, None)
+    sim.SetScript(script)
     sim
 
   /// 自機が弾を撃つ
   static member SpawnPlayer (position: Vector3, script: BulletmlScript) =
     let sim = BulletEntityFactory.Spawn(BulletKind.Player, position.x, position.y, false)
-    sim.SetScript(script, None)
+    sim.SetScript(script)
     sim
 
   /// 撃たれた弾を実体にする。旧 GetBulletPrefubInstance ＋ Spawn の合わせ。
@@ -186,7 +186,8 @@ type BulletEntityFactory private () =
   /// 同じ値を入れているのはこのため。**片方だけ直すと軌跡が割れる。**
   static member SpawnChild (parent: BulletSim, child: BulletRun) =
     let sim = BulletEntityFactory.Spawn(parent.Kind, parent.X, parent.Y, false)
-    sim.SetScript(parent.Script, Some child)
+    // 弾幕は親と同じものを引き継ぐ。**引き継ぎ忘れる書き方がもう無い**
+    sim.SetRun child
     let motion = child.Motion
     sim.X <- motion.Pos.X
     sim.Y <- motion.Pos.Y

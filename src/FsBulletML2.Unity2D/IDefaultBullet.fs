@@ -35,7 +35,11 @@ type IDefaultBullet =
   abstract Init : unit -> unit
   abstract Vanish : unit -> unit
   /// 弾幕を割り当てる。根から始めるときは run を None にする
-  abstract SetScript : BulletmlScript option * BulletRun option -> unit
+  /// 根から始める。実行状態は Core に作らせる
+  abstract SetScript : BulletmlScript option -> unit
+  /// 撃たれた弾を、エンジンから受け取った実行状態で始める。
+  /// **弾幕を渡す口が無い** —— 実行状態が親のものを持っている
+  abstract SetRun : BulletRun -> unit
   abstract Script : BulletmlScript option with get
   /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish
   abstract Finished : bool with get

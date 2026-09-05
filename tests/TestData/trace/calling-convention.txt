@@ -20,7 +20,7 @@ samples/FsBulletML2.Sample.Unity2D.FSharp/FsBulletML2.Sample.Unity2D.FSharp/Bull
     this.Y <- this.Y - (f.Delta.Y / Settings.Display.PixcelsToUnits)
 
 src/FsBulletML2.Front/Driver.fs
-    Runner.stepWith script env run motion
+    Runner.stepWith env run motion
 
 src/FsBulletML2.MonoGame/BaseBullet.fs
     let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y

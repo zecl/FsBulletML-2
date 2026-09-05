@@ -37,6 +37,23 @@ module Motion =
       Dir = 0.0f
       Accel = { X = 0.0f; Y = 0.0f } }
 
+/// 読み込んだ弾幕。**中身は不透明。**
+///
+/// 輪を解く入口（bulletRef / actionRef を 1 段だけ解く）と、根の top* と、
+/// bulletml の type を持つ。1 本 の弾幕につき 1 個 作って、そこから出た弾
+/// 全部で使い回す —— 撃たれた弾の中に残った参照も、同じ入口で解ける。
+[<Sealed>]
+type BulletmlScript internal (resolvers: Step.Resolvers,
+                              shootingDirection: ShootingDirection,
+                              rootState: BulletState) =
+
+  member internal _.Resolvers = resolvers
+
+  /// bulletml の type。弾の見た目や向きの基準にフロントが使う
+  member _.ShootingDirection = shootingDirection
+
+  member internal _.RootState = rootState
+
 /// 1 体の実行状態。**中身は不透明。**
 ///
 /// 台本（ActionElm）と実行位置（Progress）を持つが、どちらもエンジンの
@@ -54,9 +71,19 @@ module Motion =
 /// Runner.newRoot / step / restart / WithBody のどれかを通ったものだけが
 /// フロントへ出る。
 [<Struct>]
-type BulletRun internal (state: BulletState) =
+type BulletRun internal (script: BulletmlScript, state: BulletState) =
 
   member internal _.State = state
+
+  /// 走らせている弾幕。**撃たれた弾は親のものを引き継ぐ。**
+  ///
+  /// 以前はフロントが持ち回って毎コマ `stepWith` へ渡していた。撃たれた弾に
+  /// 親と同じものを渡し忘れると、弾の中に残った `bulletRef` / `actionRef` を
+  /// 誰も解けない —— **その渡し忘れが書けなくなった。**
+  ///
+  /// 代償は箱が 8 バイト から 16 バイト になること。struct なのでヒープは
+  /// 踏まないが、`Frame.Spawned` の連結の節には入る（弾 1 個 につき 8 バイト）。
+  member _.Script = script
 
   /// 走らせる台本が 1 本 も無い。**このコマは aim を読まない。**
   ///
@@ -112,29 +139,12 @@ type BulletRun internal (state: BulletState) =
 
   /// 物理量を差し替える。台本と実行位置はそのまま持ち越す
   member _.WithMotion (m: Motion) =
-    BulletRun
+    BulletRun (script,
       { state with
           Pos = m.Pos
           Speed = m.Speed
           Dir = m.Dir
-          Accel = m.Accel }
-
-/// 読み込んだ弾幕。**中身は不透明。**
-///
-/// 輪を解く入口（bulletRef / actionRef を 1 段だけ解く）と、根の top* と、
-/// bulletml の type を持つ。1 本 の弾幕につき 1 個 作って、そこから出た弾
-/// 全部で使い回す —— 撃たれた弾の中に残った参照も、同じ入口で解ける。
-[<Sealed>]
-type BulletmlScript internal (resolvers: Step.Resolvers,
-                              shootingDirection: ShootingDirection,
-                              rootState: BulletState) =
-
-  member internal _.Resolvers = resolvers
-
-  /// bulletml の type。弾の見た目や向きの基準にフロントが使う
-  member _.ShootingDirection = shootingDirection
-
-  member internal _.RootState = rootState
+          Accel = m.Accel })
 
 /// 1 コマの結果。
 ///
@@ -193,7 +203,7 @@ type Frame =
 ///     { Rand = rand; Rank = rank
 ///       Aim = { ToPlayer = ...; ToEnemy = ... }
 ///       Spawn = { ToPlayer = ...; ToEnemy = ... } }
-///   let f = Runner.stepWith script env run { run.Motion with Pos = myPos }
+///   let f = Runner.stepWith env run { run.Motion with Pos = myPos }
 ///   myPos <- myPos + f.Delta
 ///   run <- f.Run
 ///   for child in f.Spawned do ...
@@ -266,7 +276,7 @@ module Runner =
   /// 継ぐので、フロントが毎コマ渡し直す口はどこにも無い。
   [<CompiledName "NewRoot">]
   let newRoot (kind: BulletType) (script: BulletmlScript) : BulletRun =
-    BulletRun { script.RootState with Kind = kind; IsBullet = false }
+    BulletRun (script, { script.RootState with Kind = kind; IsBullet = false })
 
   /// 撃たれた弾として根から始める。**自機が撃つ弾がこれ** ——
   /// エンジンから産まれたのではなく、フロントが 1 発目 として起こす。
@@ -275,7 +285,7 @@ module Runner =
   /// 撃ったときに立つので、回収してよいかがフロントに伝わる。
   [<CompiledName "NewShot">]
   let newShot (kind: BulletType) (script: BulletmlScript) : BulletRun =
-    BulletRun { script.RootState with Kind = kind; IsBullet = true }
+    BulletRun (script, { script.RootState with Kind = kind; IsBullet = true })
 
   /// 全 top が終わった弾を、最初から走らせ直す。旧の task.Init(env)。
   ///
@@ -288,21 +298,24 @@ module Runner =
   [<CompiledName "Restart">]
   let restart (env: Env) (run: BulletRun) : BulletRun =
     let st = run.State
-    BulletRun
+    BulletRun (run.Script,
       { st with
           Tops =
             st.Tops
-            |> List.map (fun (s, _, fc) -> s, Step.resetChildActionElm env s, fc) }
+            |> List.map (fun (s, _, fc) -> s, Step.resetChildActionElm env s, fc) })
 
   /// 1 コマ進める
-  let inline private toFrame (r: StepResult) : Frame =
+  let inline private toFrame (script: BulletmlScript) (r: StepResult) : Frame =
     let mutable vanished = false
     let mutable spawned = []
     for effect in r.Effects do
       match effect with
       | Vanished -> vanished <- true
-      | Spawn child -> spawned <- BulletRun child :: spawned
-    { Run = BulletRun r.State
+      // **撃たれた弾は親の弾幕を引き継ぐ。** 引き継がないと、弾の中に残った
+      // bulletRef / actionRef を誰も解けない。以前はここをフロントが
+      // 手で渡していた（渡し忘れが書けた）
+      | Spawn child -> spawned <- BulletRun (script, child) :: spawned
+    { Run = BulletRun (script, r.State)
       Delta = r.Delta
       Spawned = List.rev spawned
       Vanished = vanished
@@ -310,8 +323,9 @@ module Runner =
       Retired = r.Retired }
 
   [<CompiledName "Step">]
-  let step (script: BulletmlScript) (env: Env) (run: BulletRun) : Frame =
-    toFrame (Step.step script.Resolvers env run.State)
+  let step (env: Env) (run: BulletRun) : Frame =
+    let script = run.Script
+    toFrame script (Step.step script.Resolvers env run.State)
 
   /// 物理量を入れ替えてから 1 コマ進める。**フロントはふつうこちらを使う。**
   ///
@@ -326,7 +340,8 @@ module Runner =
   ///   WithMotion 経由  6,211 KB   旧 API 比 +13.2%
   ///   こちら         5,722 KB   旧 API 比  +4.3%
   [<CompiledName "StepWith">]
-  let stepWith (script: BulletmlScript) (env: Env) (run: BulletRun) (m: Motion) : Frame =
+  let stepWith (env: Env) (run: BulletRun) (m: Motion) : Frame =
+    let script = run.Script
     let st = run.State
     let st =
       { st with
@@ -334,4 +349,4 @@ module Runner =
           Speed = m.Speed
           Dir = m.Dir
           Accel = m.Accel }
-    toFrame (Step.step script.Resolvers env st)
+    toFrame script (Step.step script.Resolvers env st)
