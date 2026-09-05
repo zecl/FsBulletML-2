@@ -128,12 +128,35 @@ jobs:
 
       - run: dotnet build ${{ matrix.project.path }} -c Release
 
+  # 同梱 dll に対して Unity C# のソースを compile し直す。
+  # **Unity が見るのと同じものを参照する** —— 焼き忘れると、ソースは新しい
+  # 名前を指し dll は古い名前しか持たない状態になる（実際に 2 回 やっている）。
+  #
+  # **選ばずに毎回 走らせる。** Core を参照しないので数秒で終わるし、
+  # 条件を書くと「選ばれなかったから skip」と「壊れて skip」が混ざる。
+  # 焼き直しは .github/scripts/bake-unity-dlls.ps1。
+  shipped:
+    name: 同梱 dll
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - run: dotnet build samples/FsBulletML2.Sample.Unity2D.CSharp.Compile -c Release -p:UseShippedDlls=true
+
   # 枝分かれした job をまとめて 1 つ の必須チェックにする。
   # **skipped を成功として数えない** —— 選ばれなかったのか、落ちて飛ばされたのかは
   # 別のことなので、select の結果を見て分ける
   gate:
     name: 締め
-    needs: [select, test, build]
+    needs: [select, test, build, shipped]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -143,6 +166,7 @@ jobs:
           SELECT: ${{ needs.select.result }}
           TEST: ${{ needs.test.result }}
           BUILD: ${{ needs.build.result }}
+          SHIPPED: ${{ needs.shipped.result }}
           TESTS: ${{ needs.select.outputs.tests }}
           BUILDS: ${{ needs.select.outputs.builds }}
         run: ./.github/scripts/gate.ps1

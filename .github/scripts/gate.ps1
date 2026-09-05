@@ -20,6 +20,7 @@ param(
   [string]$Select = $env:SELECT,
   [string]$TestResult = $env:TEST,
   [string]$BuildResult = $env:BUILD,
+  [string]$ShippedResult = $env:SHIPPED,
   [string]$PickedTests = $env:TESTS,
   [string]$PickedBuilds = $env:BUILDS,
   [switch]$Quiet
@@ -28,12 +29,16 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if (-not $Quiet) {
-  Write-Host "選ぶ   $Select"
-  Write-Host "試験   $TestResult   （選ばれた: $PickedTests）"
-  Write-Host "build  $BuildResult  （選ばれた: $PickedBuilds）"
+  Write-Host "選ぶ     $Select"
+  Write-Host "試験     $TestResult   （選ばれた: $PickedTests）"
+  Write-Host "build    $BuildResult  （選ばれた: $PickedBuilds）"
+  Write-Host "同梱 dll $ShippedResult  （選ばずに毎回 走る）"
 }
 
 if ($Select -ne 'success') { throw "選ぶところが $Select。先の結果は読めない" }
+
+# **これは選ばれる側ではない。** 毎回 走るので、success 以外は全部 誤り
+if ($ShippedResult -ne 'success') { throw "同梱 dll が $ShippedResult" }
 
 foreach ($p in @(
     @{ Name = '試験';  Result = $TestResult;  Picked = $PickedTests },

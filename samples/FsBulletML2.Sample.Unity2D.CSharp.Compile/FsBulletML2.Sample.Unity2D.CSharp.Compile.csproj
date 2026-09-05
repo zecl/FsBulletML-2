@@ -9,15 +9,47 @@
     <Description>COMPILE-ONLY twin of the Unity C# sample. Unity owns the sources; this project only compiles them.</Description>
   </PropertyGroup>
 
+  <!--
+    参照先を 2 通り 切り替える。**見ているものが違う。**
+
+      既定                    いまの Core を参照する
+                              -> ソースが新しい API に追いついているか
+      -p:UseShippedDlls=true  Assets/FsBulletML2/*.dll を参照する
+                              -> **Unity が見るのと同じもの。** dll の焼き忘れが出る
+
+    後者が Unity の側の再現。焼き忘れると、ソースは新しい名前を指し
+    dll は古い名前しか持たない状態になる（実際に 2 回 やっている）。
+    焼き直しは .github/scripts/bake-unity-dlls.ps1。
+
+    **中身だけ変えて API が同じときは、後者も緑になる。** そこは見ていない
+    —— ソース変更のたびに焼くと binary の差分が積むので、狙いを
+    「Unity が壊れる形」に絞ってある。
+  -->
+
+
   <ItemGroup>
     <Compile Include="R3UnityShim.cs" />
     <Compile Include="..\FsBulletML2.Sample.Unity2D.CSharp\Assets\Scripts\**\*.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <PropertyGroup>
+    <_Shipped>..\FsBulletML2.Sample.Unity2D.CSharp\Assets\FsBulletML2</_Shipped>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseShippedDlls)' != 'true'">
     <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
     <ProjectReference Include="..\FsBulletML2.Bullets.Dsl\FsBulletML2.Bullets.Dsl.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseShippedDlls)' == 'true'">
+    <Reference Include="FsBulletML2.Core"><HintPath>$(_Shipped)\FsBulletML2.Core.dll</HintPath></Reference>
+    <Reference Include="FsBulletML2.Dsl"><HintPath>$(_Shipped)\FsBulletML2.Dsl.dll</HintPath></Reference>
+    <Reference Include="FsBulletML2.Bullets.Dsl"><HintPath>$(_Shipped)\FsBulletML2.Bullets.Dsl.dll</HintPath></Reference>
+    <Reference Include="FSharp.Core"><HintPath>$(_Shipped)\FSharp.Core.dll</HintPath></Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\UnityEngine.Stub\UnityEngine.Stub.csproj" />
   </ItemGroup>
 

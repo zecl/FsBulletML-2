@@ -18,22 +18,26 @@ $ErrorActionPreference = 'Stop'
 $gate = Join-Path (Split-Path -Parent $PSCommandPath) 'gate.ps1'
 $one = '[{"name":"a","path":"x"}]'
 
+# sh は「同梱 dll」。**選ばれる側ではなく毎回 走る**ので、success 以外は誤り
 $cases = @(
-  @{ name = '全部 選ばれて全部 緑';     sel = 'success'; t = 'success';   b = 'success'; tp = $one;  bp = $one;  want = $true }
-  @{ name = '試験 0 件・build だけ';    sel = 'success'; t = 'skipped';   b = 'success'; tp = '[]';  bp = $one;  want = $true }
-  @{ name = 'md だけ（両方 0 件）';     sel = 'success'; t = 'skipped';   b = 'skipped'; tp = '[]';  bp = '[]';  want = $true }
-  @{ name = '試験が落ちた';             sel = 'success'; t = 'failure';   b = 'success'; tp = $one;  bp = $one;  want = $false }
-  @{ name = 'build が落ちた';           sel = 'success'; t = 'success';   b = 'failure'; tp = $one;  bp = $one;  want = $false }
-  @{ name = '選ばれたのに skip された'; sel = 'success'; t = 'skipped';   b = 'success'; tp = $one;  bp = $one;  want = $false }
-  @{ name = '選ぶところが落ちた';       sel = 'failure'; t = 'skipped';   b = 'skipped'; tp = '';    bp = '';    want = $false }
-  @{ name = '試験が cancel された';     sel = 'success'; t = 'cancelled'; b = 'success'; tp = $one;  bp = $one;  want = $false }
+  @{ name = '全部 選ばれて全部 緑';     sel = 'success'; t = 'success';   b = 'success'; sh = 'success'; tp = $one;  bp = $one;  want = $true }
+  @{ name = '試験 0 件・build だけ';    sel = 'success'; t = 'skipped';   b = 'success'; sh = 'success'; tp = '[]';  bp = $one;  want = $true }
+  @{ name = 'md だけ（両方 0 件）';     sel = 'success'; t = 'skipped';   b = 'skipped'; sh = 'success'; tp = '[]';  bp = '[]';  want = $true }
+  @{ name = '試験が落ちた';             sel = 'success'; t = 'failure';   b = 'success'; sh = 'success'; tp = $one;  bp = $one;  want = $false }
+  @{ name = 'build が落ちた';           sel = 'success'; t = 'success';   b = 'failure'; sh = 'success'; tp = $one;  bp = $one;  want = $false }
+  @{ name = '選ばれたのに skip された'; sel = 'success'; t = 'skipped';   b = 'success'; sh = 'success'; tp = $one;  bp = $one;  want = $false }
+  @{ name = '選ぶところが落ちた';       sel = 'failure'; t = 'skipped';   b = 'skipped'; sh = 'skipped'; tp = '';    bp = '';    want = $false }
+  @{ name = '試験が cancel された';     sel = 'success'; t = 'cancelled'; b = 'success'; sh = 'success'; tp = $one;  bp = $one;  want = $false }
+  @{ name = '同梱 dll が落ちた';        sel = 'success'; t = 'success';   b = 'success'; sh = 'failure'; tp = $one;  bp = $one;  want = $false }
+  @{ name = '同梱 dll が skip された';  sel = 'success'; t = 'success';   b = 'success'; sh = 'skipped'; tp = $one;  bp = $one;  want = $false }
+  @{ name = 'md だけでも同梱 dll は走る'; sel = 'success'; t = 'skipped'; b = 'skipped'; sh = 'failure'; tp = '[]';  bp = '[]';  want = $false }
 )
 
 $fails = 0
 foreach ($c in $cases) {
   $passed = $true
   try {
-    & $gate -Select $c.sel -TestResult $c.t -BuildResult $c.b `
+    & $gate -Select $c.sel -TestResult $c.t -BuildResult $c.b -ShippedResult $c.sh `
             -PickedTests $c.tp -PickedBuilds $c.bp -Quiet
   } catch { $passed = $false }
   if ($passed -eq $c.want) {
