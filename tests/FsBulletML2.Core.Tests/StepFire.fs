@@ -199,7 +199,7 @@ type StepFire() =
 
   [<Test>]
   member _.``fire は、撃たれた弾の action の中身の getValue も先に引く``() =
-    // 現行の createTask は bulletElm.Init(env) を先頭で呼び、Wait /
+    // 旧の createTask は bulletElm.Init(env) を先頭で呼び、Wait /
     // ChangeDirection / ChangeSpeed を Action / Repeat / Fire / Bullet を
     // 辿って先に引く（Processable.fs の Init 参照）。ここを Progress.initial で
     // 組むと、この分の乱数消費が丸ごと消えて、fire の直後から乱数列が
@@ -223,9 +223,9 @@ type StepFire() =
     draws |> should equal 3
 
   [<Test>]
-  member _.``bullet の speed は、$rand を含まない定数式でも現行と同じく 2 回 getValue を読む``() =
+  member _.``bullet の speed は、$rand を含まない定数式でも旧と同じく 2 回 getValue を読む``() =
     // getValue は式の中身に関わらず env.Rand () を無条件に呼ぶ（TryParse.eval に
-    // 渡す前に呼ぶ）。現行は bullet 側の speed をこの式のまま 2 回読んでいる
+    // 渡す前に呼ぶ）。旧は bullet 側の speed をこの式のまま 2 回読んでいる
     // （createTask 相当と、fireCommand 相当）。
     // 1 回めの結果は 2 回めの書き込みで必ず上書きされて使われないが、
     // getValue の呼び出しそのものは残るので、"9" のような $rand を含まない
@@ -247,7 +247,7 @@ type StepFire() =
     // bullet 側に speed が書いてあるので、bullet の速さ (5) をそのまま
     // SrcSpeed に採用して latch を立てる。fire 側の speed "2" は
     // getValue すら呼ばれない（bullet 側が勝つ、の 1 段深いところにある
-    // 現行の fireCommand の癖）
+    // 旧の fireCommand の癖）
     //
     // 2 発め: latch が立っているので、今度は fire 側の speed "0"（sequence）
     // を実際に読み、SrcSpeed(5) + 0 = 5。bullet 側に speed が無いので、

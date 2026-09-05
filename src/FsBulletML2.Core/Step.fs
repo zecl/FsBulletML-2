@@ -33,15 +33,15 @@ module internal Step =
   /// 全弾幕の軌跡がずれる
   let private zeroExpr = numExpr "0"
 
-  /// wait。現行の waitCommand を写す。
+  /// wait。旧の waitCommand を写す。
   ///
   ///   term >= 0 なら 1 減らす
   ///   その後まだ term >= 0 なら Stopped、そうでなければ Ended
   ///
-  /// term の評価は初回だけ。現行は Init() が入れているが、こちらは
+  /// term の評価は初回だけ。旧は Init() が入れているが、こちらは
   /// initial が評価しないので started で 1 度だけ評価する
   ///
-  /// term を 1 減らしてから判定する形は、現行の off-by-one を写した。
+  /// term を 1 減らしてから判定する形は、旧の off-by-one を写した。
   /// 単純化してはいけない
   let wait (waitExpr: Expr.NumExpr) (p: Progress) : Sim<RunState * Progress> =
     sim {
@@ -60,21 +60,22 @@ module internal Step =
         return Ended, PWait (true, left)
     }
 
-  /// vanish。現行の vanishCommand を写す
+  /// vanish。旧の vanishCommand を写す
   let vanish (p: Progress) : Sim<RunState * Progress> =
     sim {
       do! Sim.emit Vanished
       return Ended, PVanish true
     }
 
-  /// accel。現行の accelCommand を写す。
+  /// accel。旧の accelCommand を写す。
   ///
   /// 終わり方が changeDirection / changeSpeed と違う。
   /// term < 0 で終わり、そのとき加算しない
   ///
-  /// 省略された軸は convertRecBulletmlEx が { Absolute, "0" } で埋めるので、
-  /// 木を組む段では常に値を持つ。ここで None を処理するのは、
-  /// Action.Accel が option を持つため。その場合も現行と同じく
+  /// 旧は木を組む段（convertRecBulletmlEx）が省略された軸を
+  /// { Absolute, "0" } で埋めていたので、そこから先は常に値が入っていた。
+  /// **いまは埋めない** —— `Action.Accel` が option をそのまま持ち回るので、
+  /// ここで None を処理する。その場合も旧と同じく
   /// "0" として扱い、catch-all の計算をする：
   /// 現状維持ではなく、既存の加速度を term フレームかけて 0 へ寄せる。
   /// getValue を通すこと自体にも意味がある（式の中身に関わらず乱数を進める）
@@ -127,7 +128,7 @@ module internal Step =
         return Continue, PAccel (true, left, dx, dy)
     }
 
-  /// changeDirection。現行の changeDirection を写す。
+  /// changeDirection。旧の changeDirection を写す。
   ///
   /// accel と終わり方が違う。term <= 0 で終わり、そのときも加算してから終わる。
   /// 終わるときは term を getValue initTerm に戻す。repeat の中で回り直すときに
@@ -175,7 +176,7 @@ module internal Step =
         return Continue, PChangeDir (true, false, left, delta)
     }
 
-  /// changeSpeed。現行の changeSpeed を写す。term <= 0 で終わり、そのときも
+  /// changeSpeed。旧の changeSpeed を写す。term <= 0 で終わり、そのときも
   /// 加算してから終わる。終わるときに term を戻すのも changeDirection と同じ
   let changeSpeed (spd: Speed) (Term term) (p: Progress) : Sim<RunState * Progress> =
     sim {
@@ -212,7 +213,7 @@ module internal Step =
 
   /// repeat が次の周へ進むときの、running 1 要素ぶんの t.Init(env) に当たる。
   ///
-  /// 現行の running |> Seq.iter Init は、1 つの並びを順番に辿りながら
+  /// 旧の running |> Seq.iter Init は、1 つの並びを順番に辿りながら
   /// 要素ごとに Init を呼ぶ。中身によって「引いた値をそのまま次の周の
   /// 値として使う」（wait）か「引くだけ引いて値は捨てる」（changeDirection /
   /// changeSpeed。term は本人の Ended 分岐で既に一度戻しており、これは
@@ -225,15 +226,15 @@ module internal Step =
   /// 見えないが、式に $rand が入ると別の弾道になる
   ///
   /// nested な Action / Repeat の loop は、ここで毎回 None に戻してよい
-  /// （現行の Init も pa.loop <- None を通ってから children を辿る。
+  /// （旧の Init も pa.loop <- None を通ってから children を辿る。
   /// これは repeat 直下の body だけ特別扱いする対象で、resetBody 側で
   /// 持ち越す。入れ子の loop はここで素直に消してよい）。
   /// fire は撃たれた弾の action へ潜って値を引くだけで、Progress に
-  /// 進行状態を持たない（現行はテンプレートの mutable な木へ書き戻すが、
+  /// 進行状態を持たない（旧はテンプレートの mutable な木へ書き戻すが、
   /// 新しい弾は fire のたびに新しい Progress で始まるので、ここでは
   /// 引いた分を捨ててよい）
   /// internal（private ではない）にしてあるのは、橋（TraceNew.fs）が
-  /// 全 top 終了時の引き直しにこれを使うため（現行の
+  /// 全 top 終了時の引き直しにこれを使うため（旧の
   /// task.Init(envOfGlobal o)。Original が None の task の Init は
   /// この歩き方と同じ。Domain 5.6 参照）。木を組む段の wait だけの
   /// 引きは別の歩き方が要るので rootProgress に分けてある
@@ -267,7 +268,8 @@ module internal Step =
         PAction (false, None, children |> List.map (resetChild env))
     | ActionElm.ActionRef _ -> PNoop
 
-  /// 木を組む段（現行の convertRecBulletmlEx）の wait だけの引き直し。
+  /// 木を組む段（`IntermediateParser.foldConstants`。旧の名前は
+  /// convertRecBulletmlEx）の wait だけの引き直し。
   ///
   /// IntermediateParser.fs の wait の腕は、撃つ弾ごとの Env が
   /// まだ無い木構築の段で、AimDir / EnemyAimDir を 0 に固定した Env で
@@ -288,7 +290,7 @@ module internal Step =
   /// 1 回も引かず加速度も一度も変えない「2 フレームの no-op」になる
   /// （旧 accelCommand を first = false のまま読んだときと同じ）。
   ///
-  /// resetChild（現行の Init の写し）とは別の歩き方が要る理由は Domain 5.6。
+  /// resetChild（旧の Init の写し）とは別の歩き方が要る理由は Domain 5.6。
   /// 撃たれた弾は Step.fire が resetChild（createTask の Init(env) の写し）を
   /// 通すのでここを通らない。根の BulletState を組むときにだけ使う
   let rec internal rootProgress (env: Env) (script: Action) : Progress =
@@ -313,11 +315,11 @@ module internal Step =
         PAction (false, None, children |> List.map (rootProgress env))
     | ActionElm.ActionRef _ -> PNoop
 
-  /// repeat 直下の body（現行の actionElm）だけの特別扱い。
+  /// repeat 直下の body（旧の actionElm）だけの特別扱い。
   ///
-  /// 現行の running = match pa.loop with Some t -> t | None -> tasks を
+  /// 旧の running = match pa.loop with Some t -> t | None -> tasks を
   /// この周ざかりの reset でも同じ並びに使い、かつ pa.loop 自身は
-  /// 触らずに持ち越す（現行の running |> Seq.iter Init は running の
+  /// 触らずに持ち越す（旧の running |> Seq.iter Init は running の
   /// 要素ごとに Init を呼ぶだけで、actionElm 自身の Init は呼ばない
   /// ので pa.loop は変わらない）。actionRef の輪が一度解ければ、
   /// その周から先はもう解き直さない
@@ -338,7 +340,7 @@ module internal Step =
     { Bullet : BulletLabel -> string list -> BulletElm option
       Action : ActionLabel -> string list -> ActionElm option }
 
-  /// Progress が「終わった」を持っているか。現行の getFinish。
+  /// Progress が「終わった」を持っているか。旧の getFinish。
   ///
   /// wait / accel は term が尽きたら二度と正に戻らないので left の符号だけで
   /// 判定できるが、changeDirection / changeSpeed は終わるフレームで term を
@@ -356,7 +358,7 @@ module internal Step =
     | PChangeSpeed (_, d, _, _) -> d
     | PNoop -> false
 
-  /// 終わりの印を立てる。現行の setFinish
+  /// 終わりの印を立てる。旧の setFinish
   let setDone (p: Progress) =
     match p with
     | PAction (_, loop, cs) -> PAction (true, loop, cs)
@@ -367,7 +369,7 @@ module internal Step =
     | PChangeSpeed (s, _, l, d) -> PChangeSpeed (s, true, l, d)
     | other -> other
 
-  /// 命令 1 つを振り分ける。現行の runCommand の match に当たる。
+  /// 命令 1 つを振り分ける。旧の runCommand の match に当たる。
   ///
   /// fire だけ FireContext を書き換えるので戻り値に含めてあるが、fire の腕は
   /// まだここには無い（fire を足す Task で足す）。他の 5 つは FireContext に
@@ -411,7 +413,7 @@ module internal Step =
     // 展開していない参照。走査は止めず、終わりにする（以前の `| _ ->` と同じ）
     | Action.ActionRef _ | Action.FireRef _ -> sim { return Ended, p, fc }
 
-  /// action。現行の actionCommand を写す。
+  /// action。旧の actionCommand を写す。
   ///
   /// Stopped は走査を止める。Continue は止めない（i は進む）が終わりにも
   /// しないので、次のフレームでも同じ命令が走る。
@@ -539,7 +541,7 @@ module internal Step =
       if done_ then
         return Ended, p, fc
       else
-        // loop が立っていれば、輪を解いた並びを走らせる。現行の
+        // loop が立っていれば、輪を解いた並びを走らせる。旧の
         // 「pa.loop があればそちらを running にする」と同じ
         let running = match loop with Some l -> l | None -> children
         let len = min (List.length progs) (List.length running)
@@ -565,7 +567,7 @@ module internal Step =
                         // 旧 expandActionRefOnce（= expandActionRefOnceRec を
                         // convertRecBulletmlEx へ通したもの）は、輪を 1 段
                         // 解いた瞬間に展開した中身の wait をまとめて引いていた
-                        // （IntermediateParser.fs の convertRecBulletmlEx。
+                        // （IntermediateParser.fs の foldConstants。
                         // Domain 5.3「木を組む段」と同じ、AimDir / EnemyAimDir
                         // を 0 に固定した Env）。ここが 5 つめの draw site
                         // （設計文書 5.3 参照）。bulletRef（Step.fire）と違い、
@@ -618,16 +620,16 @@ module internal Step =
             else return Ended, PAction (true, loop, ps), fcOut
     }
 
-  /// repeat。現行の repeatCommand を写す。
+  /// repeat。旧の repeatCommand を写す。
   ///
-  /// times は呼ばれるたびに評価し直す（現行も while の外、呼び出しのたびに
+  /// times は呼ばれるたびに評価し直す（旧も while の外、呼び出しのたびに
   /// 引き直している）。子（action）が End を返すたびに周を 1 つ数え、
   /// times に届いたら子に finish を立てて終わり、届いていなければ次の周へ。
   /// 子が Stop / Continue を返したら、その場でこの呼び出しを終える
-  /// （現行の while が continue' で止まるのと同じ）。
+  /// （旧の while が continue' で止まるのと同じ）。
   ///
   /// times = 0 は while に 1 度も入らず、そのまま自分に finish を立てて
-  /// 終わる。現行の癖をそのまま写した
+  /// 終わる。旧の癖をそのまま写した
   and repeat (rs: Resolvers) (Times timesStr) (body: ActionElm) (p: Progress) (fc: FireContext)
       : Sim<RunState * Progress * FireContext> =
     // 周を手続き的なループで回す。以前は [1..cycles] |> List.fold で
@@ -635,7 +637,7 @@ module internal Step =
     // 末尾再帰ではないので、積んだ層ぶんだけ呼び出しスタックを消費する。
     // times に 9999 のような値を書く実物の弾幕があり（例:
     // [G_DARIUS]_homing_laser.xml）、1 コマ目にその周ぶんが丸ごと
-    // 積まれて StackOverflow になる。現行の while は 1 周が定数の
+    // 積まれて StackOverflow になる。旧の while は 1 周が定数の
     // スタックで済むので、ここも mutable な状態を直接持ち回るループに
     // 書き換える —— はずだったが、この while を sim { } の中に書くと、
     // コンパイラが while キーワードを builder.While（= SimBuilder.While）
@@ -661,7 +663,7 @@ module internal Step =
       // 返すたびに 1 つ数え、それ以外（Stop / Continue）は go を落として
       // その場で抜ける
       let cycles = max 0 (times - num0)
-      // 現行の repeatCommand は while の中で actionElm を Action へ
+      // 旧の repeatCommand は while の中で actionElm を Action へ
       // パターンマッチし、それ以外なら failwith する。while が 1 度も
       // 回らなければ（times に届かない・num0 が既に times 以上）この
       // チェックへは到達しないので、cycles > 0 のときだけ見る。
@@ -674,7 +676,7 @@ module internal Step =
       // ない）actionRef は 1 段めで実体の Action へ展開し尽くされる。
       // 例: <action label="X">...<repeat><times>N</times>
       // <actionRef label="X"/></repeat></action>。この形は DTD 上 合法で、
-      // 現行はここへ実際に到達して落ちる（equivalence の橋は「片方だけ
+      // 旧はここへ実際に到達して落ちる（equivalence の橋は「片方だけ
       // 例外」を割れとして拾うので、ここを黙って通すと後で橋の側から
       // 誤診断される）
       if cycles > 0 then
@@ -696,9 +698,9 @@ module internal Step =
       while go && i < cycles do
         i <- i + 1
         if isDone child then
-          // 現行の「子が既に finish なら、走らせずに repeatNum だけ増やす」。
+          // 旧の「子が既に finish なら、走らせずに repeatNum だけ増やす」。
           // num が times に届くのと同時に子へも finish が立つので、
-          // この枝には実際には届かない。それでも現行の形のまま残す
+          // この枝には実際には届かない。それでも旧の形のまま残す
           let num' = num + 1
           num <- num'
           go <- num' < times
@@ -720,7 +722,7 @@ module internal Step =
             child <-
               if num' >= times then setDone child'
               else
-                // 次の周のために子の並びを作り直す。現行の
+                // 次の周のために子の並びを作り直す。旧の
                 // running |> Seq.iter Init に当たる（resetBody / resetChild 参照）
                 resetBody env body child'
             go <- num' < times
@@ -739,16 +741,16 @@ module internal Step =
         else ValueSome (fun rest -> (List.ofSeq effectsAcc) @ rest)
       { Value = value; State = st; Emit = emit }
 
-  /// fire。現行の fireCommand と createTask の両方を写す。
+  /// fire。旧の fireCommand と createTask の両方を写す。
   ///
   /// fireCommand が撃つ側の FireContext（SrcDir / SrcSpeed）を先に決め、
   /// createTask がそれを使って撃たれた弾の Dir / Speed を組む。この 2 つは
-  /// 現行では同じ値をそれぞれの場所で入れ直しており、順序（fire 側の
+  /// 旧では同じ値をそれぞれの場所で入れ直しており、順序（fire 側の
   /// direction/speed → bullet 側の direction/speed → 未指定なら fire 側の
   /// 値で埋める）に意味がある。
   ///
   /// 撃たれた弾の Tops は Progress.initial ではなく resetChild を通す。
-  /// 現行の createTask 冒頭 bulletElm.Init(env) が Wait / ChangeDirection /
+  /// 旧の createTask 冒頭 bulletElm.Init(env) が Wait / ChangeDirection /
   /// ChangeSpeed の値を Action / Repeat / Fire / Bullet を辿って先に引いて
   /// おり（Init の実装は Processable.fs 参照）、resetChild は repeat の
   /// 周ざかりで使っている、それと同じ辿り方をする既存の写し。ここを
@@ -776,7 +778,7 @@ module internal Step =
                 // 2 回めで上書きされて捨てられるが、消費そのものは残す）。
                 // リテラルで埋め込んだ bullet はこの 1 回めの引きを
                 // rootProgress の Fire の腕（根の弾を組むとき）または
-                // 文書読み込み時の convertRecBulletmlEx（撃たれた弾のテンプレ
+                // 文書読み込み時の foldConstants（撃たれた弾のテンプレ
                 // 自身が根の top* の中に literal で書いてある場合）で
                 // 既に済ませているので、ここへは bulletRef で解決したときだけ来る
                 actions |> List.iter (rootProgressActionElm { env with AimDir = 0.0f; EnemyAimDir = 0.0f } >> ignore)
@@ -793,7 +795,7 @@ module internal Step =
         | _ -> bulletSrc
       let revise = (float32 System.Math.PI) / 180.f
       let aim = if self.Kind = BulletType.Player then env.EnemyAimDir else env.AimDir
-      // fire 側の direction で SrcDir を決める。現行の fireCommand と同じ順
+      // fire 側の direction で SrcDir を決める。旧の fireCommand と同じ順
       let srcDir =
         match dirOpt with
         | Some (Direction (attrs, v)) ->
@@ -813,7 +815,7 @@ module internal Step =
         match bulletElm with
         | BulletElm.Bullet (_, d, s, acts) -> d, s, acts
         | _ -> None, None, []
-      // 撃たれた弾を組む。現行の createTask に当たる
+      // 撃たれた弾を組む。旧の createTask に当たる
       let mutable child =
         { Pos = self.Pos
           Speed = 0.0f
@@ -852,7 +854,7 @@ module internal Step =
                   child <- { child with Dir = calcDir (spawnAim + value) }
           | None -> ()
       | None -> ()
-      // bullet の speed。現行はこの式を 2 回 getValue で読む
+      // bullet の speed。旧はこの式を 2 回 getValue で読む
       // （createTask、続けて fireCommand）。
       // 1 回め（createTask 相当）は撃たれた弾自身のまだ 0 の Speed を
       // relative の基準にして書き込むが、この書き込みは直後の 2 回めで
@@ -860,7 +862,7 @@ module internal Step =
       // 式の中身に関わらず env.Rand() を無条件に呼ぶ（$rand の有無を
       // 問わない）ので、この 1 回ぶんの乱数消費だけは消してはいけない。
       // 2 回め（fireCommand 相当）が実際に使う値で、relative の基準は
-      // 撃った側 self.Speed になる（1 回めと基準が違う点も現行のまま）
+      // 撃った側 self.Speed になる（1 回めと基準が違う点も旧のまま）
       match bSpd with
       | Some (Speed (attrs, v)) ->
           getValue env v |> ignore
@@ -875,10 +877,10 @@ module internal Step =
             | None -> value
           child <- { child with Speed = s }
       | None -> ()
-      // 撃つ側の SrcSpeed / SpeedInit を決める（現行の fireCommand の対応する枝）。
+      // 撃つ側の SrcSpeed / SpeedInit を決める（旧の fireCommand の対応する枝）。
       //
       // fc.SpeedInit は「この top から一度でも bullet 側の speed を SrcSpeed に
-      // 採用したか」を覚える、撃つ側 1 つにつき一生ものの latch（現行は
+      // 採用したか」を覚える、撃つ側 1 つにつき一生ものの latch（旧は
       // ここを一度も false へ戻していない。一度 true になったら二度と
       // 立て直さない）。PFire の done_ や PChangeDir の done_ と違い、
       // 撃つたびに引き継がれる状態なので Progress ではなく FireContext 側に乗る。
@@ -887,11 +889,11 @@ module internal Step =
       // （bSpd.IsSome）、bullet 側の解決済みの速さ（child.Speed）をそのまま
       // SrcSpeed に採用して latch を立てる。このとき fire 側の speed
       // （pf.speed 相当の spdOpt）は getValue すら呼ばれない
-      // ——fire に speed を書いても、この分岐では丸ごと無視される（現行の
+      // ——fire に speed を書いても、この分岐では丸ごと無視される（旧の
       // fireCommand も if 全体を先に見る作りで、spdOpt の有無を後から
       // 見る作りではない点が、前回の版の間違いだった）。
       // それ以外（latch が既に true、または今回 bullet 側に speed が無い）は
-      // spdOpt をそのまま見る。ここでは latch には触れない（現行もここでは
+      // spdOpt をそのまま見る。ここでは latch には触れない（旧もここでは
       // SpeedInit へ書き込まない）
       let fc =
         if not fc.SpeedInit && bSpd.IsSome then

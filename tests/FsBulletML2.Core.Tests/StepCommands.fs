@@ -30,7 +30,7 @@ type StepCommands() =
 
   [<Test>]
   member _.``wait 3 は、3 フレーム 止めてから終わる``() =
-    // 現行の waitCommand: term >= 0 なら 1 減らし、その後まだ term >= 0 なら Stop。
+    // 旧の waitCommand: term >= 0 なら 1 減らし、その後まだ term >= 0 なら Stop。
     // Init が入れた term は getValue initTerm なので 3。
     //   1 回め  3 -> 2   Stop
     //   2 回め  2 -> 1   Stop
@@ -62,7 +62,7 @@ type StepCommands() =
 
   [<Test>]
   member _.``終わった wait をもう一度 呼んでも、止めない``() =
-    // 現行は getFinish で飛ばすので、この呼び方は起きない。
+    // 旧は getFinish で飛ばすので、この呼び方は起きない。
     // それでも Ended を返すことで、走査の側の作りに依存しない形にしておく
     let script = Action.Wait (numExpr "1")
     let mutable p = Progress.initial script
@@ -168,7 +168,7 @@ type StepCommands() =
   [<Test>]
   member _.``accel 省略軸は getValue を通す（乱数ストリーム）``() =
     // getValue は式の中身に関わらず env.Rand () を呼ぶ。
-    // 省略軸でも現行と同じ数だけ乱数を消費しないと、その後の値がずれる。
+    // 省略軸でも旧と同じ数だけ乱数を消費しないと、その後の値がずれる。
     // 初回フレームで term + horizontal + vertical = 3 回 getValue が呼ばれる。
     // Rand を呼ぶたびカウンタを増やす env を渡し、期待値と一致するか見る。
     let mutable randCount = 0
@@ -254,8 +254,8 @@ type StepCommands() =
     sd.Dir |> should not' (equal 0.0f)
 
   [<Test>]
-  member _.``changeDirection の getValue 回数は現行と同じ（初回 2 回、終わりでさらに 1 回）``() =
-    // 現行 changeDirection: first の枝に入ると term (initTerm) + directionValue で
+  member _.``changeDirection の getValue 回数は旧と同じ（初回 2 回、終わりでさらに 1 回）``() =
+    // 旧 changeDirection: first の枝に入ると term (initTerm) + directionValue で
     // 2 回。value は type で分岐する前に計算しているので、sequence でも absolute でも
     // 同じ 2 回になる（型で分岐が変わるのは fold の有無だけ）。
     // term <= 0 で終わるフレームは、term を戻すためにさらに 1 回 getValue を呼ぶ。
@@ -279,7 +279,7 @@ type StepCommands() =
     draws |> should equal 3
 
   [<Test>]
-  member _.``changeSpeed の getValue 回数は現行と同じ（初回 2 回、終わりでさらに 1 回）``() =
+  member _.``changeSpeed の getValue 回数は旧と同じ（初回 2 回、終わりでさらに 1 回）``() =
     // changeSpeed も changeDirection と同じ形。speedValue の getValue は
     // type ごとの分岐の中に 1 回ずつあるだけなので、枝によらず 1 回。
     // term 2 の script なら
@@ -301,7 +301,7 @@ type StepCommands() =
     draws |> should equal 3
 
   // ------------------------------------------------------------------
-  // action の走査。現行の actionCommand を写す
+  // action の走査。旧の actionCommand を写す
   // ------------------------------------------------------------------
 
   [<Test>]
@@ -570,7 +570,7 @@ type StepCommands() =
     r |> should equal Step.Stopped
 
   // ------------------------------------------------------------------
-  // repeat。現行の repeatCommand を写す
+  // repeat。旧の repeatCommand を写す
   // ------------------------------------------------------------------
 
   [<Test>]
@@ -620,7 +620,7 @@ type StepCommands() =
 
   [<Test>]
   member _.``times が 0 でも止まらない``() =
-    // 現行の癖。while に入らないだけで Ended は返る
+    // 旧の癖。while に入らないだけで Ended は返る
     let body = ActionElm.Action ({ actionLabel = None }, [ Action.Vanish ])
     let script = Action.Repeat (Times (numExpr "0"), body)
     let p = Progress.initial script
@@ -648,13 +648,13 @@ type StepCommands() =
     st.Speed |> should (equalWithin 0.0001) 5.0f
 
   [<Test>]
-  member _.``repeat の周ざかいは、現行の running の Init 二重引きと同じ回数だけ乱数を引く``() =
+  member _.``repeat の周ざかいは、旧の running の Init 二重引きと同じ回数だけ乱数を引く``() =
     // changeDirection だけの body、times 2、途中に止める wait は無い。
-    // 現行は times を呼ぶたびに引き直し、周ざかりでは changeDirection 自身の
+    // 旧は times を呼ぶたびに引き直し、周ざかりでは changeDirection 自身の
     // 終わり分岐（term を戻す）に加えて running |> Seq.iter Init がもう一度
     // term を引き直す（その値は次の周の first で上書きされて捨てられる）。
     // Progress.initial は乱数を引かないので、ここを肩代わりしないと
-    // 乱数列が現行より 1 回ぶん前へずれる。
+    // 乱数列が旧より 1 回ぶん前へずれる。
     //   1 回め  times(1) + changeDirection 開始(2)                     = 3   Continue
     //   2 回め  times(1) + 終わり(1) + 周ざかりの捨て引き(1)
     //           + 次の周の開始(2)                                      = 5   Continue（累計 8）
@@ -688,7 +688,7 @@ type StepCommands() =
   [<Test>]
   member _.``周ざかいの reset は wait を含めて 1 つの並びを順に引き、その値がそのまま次の周の wait に入る``() =
     // changeDirection（term 1 で固定、単発で終わる）の後ろに wait "$rand"。
-    // 現行の running |> Seq.iter Init は、この並びを順番に 1 回で辿って
+    // 旧の running |> Seq.iter Init は、この並びを順番に 1 回で辿って
     // 引く（changeDirection は捨てる引き、wait は使う引き）。
     // wait の引きだけ次の実際の開始まで遅延させると、同じ乱数列でも
     // wait が引く物理位置がずれ、2 周目の wait の初期値が変わる。
@@ -830,7 +830,7 @@ type StepCommands() =
 
   [<Test>]
   member _.``周ざかいの reset は fire の中の bullet の action にも潜って引く``() =
-    // fire の中の bullet が持つ action に wait を仕込む。現行の Init は
+    // fire の中の bullet が持つ action に wait を仕込む。旧の Init は
     // Fire(pf,children) -> children.Init(env) で bullet を、
     // Bullet(...,actions) -> actions |> Seq.iter Init でその action を
     // 辿るので、撃たれるかどうかに関わらず repeat の周ざかりのたびに
@@ -845,7 +845,7 @@ type StepCommands() =
     //   周ざかりの reset（撃ったかどうかに関わらず引く）    1 回
     //   2 周め: fire が実際に撃つ（wait の term）          1 回
     // 計 4 回。撃つたびの引きと周ざかりの引きは別の場所（前者は stepFire、
-    // 後者は resetChild）が別の理由で行っており、どちらも現行の Init 呼び出しに
+    // 後者は resetChild）が別の理由で行っており、どちらも旧の Init 呼び出しに
     // 対応するので、両方が乗って良い（二重に引いているわけではない）
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
@@ -861,7 +861,7 @@ type StepCommands() =
 
   [<Test>]
   member _.``周ざかいの reset は、解けた actionRef の並びを次の周へも持ち越す``() =
-    // 現行は running |> Seq.iter Init が running（pa.loop があればそちら）の
+    // 旧は running |> Seq.iter Init が running（pa.loop があればそちら）の
     // 要素ごとに Init を呼ぶだけで、actionElm 自身の pa.loop には触らない。
     // なので一度解けた並びはその後の周でも持ち越り、actionRef を解き直さない。
     // Progress.initial で毎周 loop を None に戻すと、静的な並び（まだ
@@ -898,7 +898,7 @@ type StepCommands() =
   // 展開せずに残す。repeat の直下が展開されずに actionRef のまま残るのは、
   // その actionRef が自分を直接包む action への自己参照であるとき
   // （例: action "top" の中に、times が届く repeat が直接 actionRef "top"
-  // を子に持つ）。現行の repeatCommand はこの形に実際に到達し、
+  // を子に持つ）。旧の repeatCommand はこの形に実際に到達し、
   // while の中の `match actionElm with Action(pa,tasks) -> ... | _ ->
   // failwith "repeatCommand: repeat の子が action ではない"` で落ちる。
   // 黙らせて何もしないと、equivalence の橋が「片方だけ例外」を割れとして
@@ -907,7 +907,7 @@ type StepCommands() =
   // ------------------------------------------------------------------
 
   [<Test>]
-  member _.``repeat の子が Action でないと、現行と同じ例外で落ちる``() =
+  member _.``repeat の子が Action でないと、旧と同じ例外で落ちる``() =
     // 自己参照で展開されずに残った actionRef を、repeat の直下にそのまま置く
     let script = Action.Repeat (Times (numExpr "2"), ActionElm.ActionRef ({ actionRefLabel = ActionLabel "top" }, []))
     let p = Progress.initial script
@@ -938,7 +938,7 @@ type StepCommands() =
 
   [<Test>]
   member _.``times が 0 なら、子が Action でなくても while に入らず落ちない``() =
-    // 現行は times を while の外で引くが、while の中でしか actionElm を
+    // 旧は times を while の外で引くが、while の中でしか actionElm を
     // 見ない。times に 1 度も届かなければ（times = 0、または num0 が
     // 既に times 以上）match そのものへ到達しないので落ちない
     let script = Action.Repeat (Times (numExpr "0"), ActionElm.ActionRef ({ actionRefLabel = ActionLabel "top" }, []))

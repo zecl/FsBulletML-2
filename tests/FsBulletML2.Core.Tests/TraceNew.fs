@@ -41,7 +41,7 @@ module TraceNew =
     let resolvers : Step.Resolvers =
       { Bullet = BulletmlOps.expandBulletRefOnceRec rec'
         Action = BulletmlOps.expandActionRefOnceRec rec' }
-    // top* の並びは現行の toProcessable と同じ選び方
+    // top* の並びは旧の toProcessable と同じ選び方
     let scripts =
       rec'
       |> BulletmlOps.getAction

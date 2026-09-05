@@ -46,15 +46,15 @@ module Domain =
 
   /// 実行位置。Script と同じ形の別の木。
   ///
-  /// started は現行の first、left は term に当たる。term をここで評価しないのは、
-  /// 現行が命令の初回に評価しており、タイミングを変えると $rand を読む回数が
+  /// started は旧の first、left は term に当たる。term をここで評価しないのは、
+  /// 旧が命令の初回に評価しており、タイミングを変えると $rand を読む回数が
   /// 変わって値が動くため。
   /// PChangeDir / PChangeSpeed だけ done_ を明示で持つ。wait と accel は
   /// 「term が尽きたら二度と正にならない」ので left の符号だけで終わりが
   /// 判定できるが、changeDirection / changeSpeed は終わるフレームで
   /// term を getValue initTerm へ**戻す**（repeat の次周のため）。
   /// 戻すと left がまた正になるので、left の符号だけでは「戻した直後」と
-  /// 「まだ途中」を区別できない。現行の pd.finish / ps.finish に当たる
+  /// 「まだ途中」を区別できない。旧の pd.finish / ps.finish に当たる
   /// 明示のフラグが要る
   type internal Progress =
     | PAction      of done_: bool * loop: Action list option * children: Progress list
@@ -118,7 +118,7 @@ module Domain =
       Kind : BulletType
       /// 撃たれた弾か。根の敵は false
       IsBullet : bool
-      /// 自分も子を撃ったか。現行の BulletRoot
+      /// 自分も子を撃ったか。旧の BulletRoot
       HasFired : bool
       /// top* は 1 本ずつ独立に回る。スクリプト・実行位置・fire の累積を
       /// 組で持つので、添字の対応が構造で保証される。
@@ -140,7 +140,7 @@ module Domain =
     { State : BulletState
       Effects : Effect list
       Delta : Vec2
-      /// 全 top が終わった。現行の RunResult.Processed
+      /// 全 top が終わった。旧の RunResult.Processed
       Finished : bool
-      /// タスク完了で回収される。現行の Used <- false
+      /// タスク完了で回収される。旧の Used <- false
       Retired : bool }

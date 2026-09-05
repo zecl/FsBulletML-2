@@ -8,7 +8,7 @@ open FsBulletML2
 open FsBulletML2.Domain
 open FsBulletML2.Processable
 
-/// 式を文字列でなく木で持つ `Expr` が、いまの `getValue` と同じ値を返すか。
+/// 式を文字列でなく木で持つ `Expr` が、`getValueByXPath` と同じ値を返すか。
 ///
 /// **これは新しい機能の試験ではなく、置き換えてよいかの門である。**
 /// 木にするのは走行時間の 27〜61% を占める XPath 評価を外すためだが、
@@ -16,7 +16,7 @@ open FsBulletML2.Processable
 /// 「速くなったか」ではなく「同じか」だけを見る。
 ///
 /// 当てる先は実物。samples の 227 本 から式を全部 抜いて、
-/// 現行と新しい木の両方に同じものを食わせて突き合わせる。
+/// 旧と新しい木の両方に同じものを食わせて突き合わせる。
 module internal ExprCorpus =
 
   /// 式が入る要素。DTD の #PCDATA がここに来る
@@ -80,14 +80,14 @@ module internal ExprCorpus =
       SpawnEnemyAimDir = 0.0f }
 
   /// float32 を 1 ビットも違わずに比べる。NaN は NaN と等しいとみなす
-  /// （現行も新しいほうも、読めない式で NaN を返すため）
+  /// （旧も新しいほうも、読めない式で NaN を返すため）
   let same (a: float32) (b: float32) =
     if Single.IsNaN a && Single.IsNaN b then true
     else BitConverter.SingleToInt32Bits a = BitConverter.SingleToInt32Bits b
 
   /// 振る値。
   ///
-  /// **1e-4 未満は入れない。** 現行の getValue はその値の ToString が
+  /// **1e-4 未満は入れない。** getValueByXPath はその値の ToString が
   /// "1E-07" のような指数表記になると XPathException で落ちるので、
   /// 値を突き合わせようがない。その穴は別の試験で名指しにしてある
   let cases =
@@ -98,7 +98,7 @@ module internal ExprCorpus =
       0.123456f, 0.987654f
       0.9999999f, 0.0001f ]
 
-  /// 現行の getValue は落ちうる。落ちたことも結果として扱う
+  /// getValueByXPath は落ちうる。落ちたことも結果として扱う
   type Outcome =
     | Value of float32
     | Threw of string
@@ -129,7 +129,7 @@ type ExprTests() =
 
   /// 本体。実物の式ぜんぶを、両方に食わせて突き合わせる
   [<Test>]
-  member _.``実物の式ぜんぶで getValue と同じ値になる``() =
+  member _.``実物の式ぜんぶで getValueByXPath と同じ値になる``() =
     let exprs = ExprCorpus.all.Value
     let mutable checkedCount = 0
     let diffs = ResizeArray<string>()
@@ -142,16 +142,16 @@ type ExprTests() =
         checkedCount <- checkedCount + 1
         match ExprCorpus.current env s with
         | ExprCorpus.Threw name ->
-            threw.Add(sprintf "  [%s]  rand=%g rank=%g  現行が %s" s randValue rank name)
+            threw.Add(sprintf "  [%s]  rand=%g rank=%g  旧が %s" s randValue rank name)
         | ExprCorpus.Value expected ->
             if not (ExprCorpus.same expected actual) then
-              diffs.Add(sprintf "  [%s]  rand=%g rank=%g  現行 %.9g / 木 %.9g"
+              diffs.Add(sprintf "  [%s]  rand=%g rank=%g  旧 %.9g / 木 %.9g"
                                 s randValue rank expected actual)
-    TestContext.WriteLine(sprintf "突き合わせ %d 通り（式 %d 種 x 振り %d 通り）／現行が落ちたのは %d 通り"
+    TestContext.WriteLine(sprintf "突き合わせ %d 通り（式 %d 種 x 振り %d 通り）／旧が落ちたのは %d 通り"
                             checkedCount (List.length exprs) (List.length ExprCorpus.cases) threw.Count)
     if threw.Count > 0 then
       let head = threw |> Seq.truncate 10 |> String.concat "\n"
-      Assert.Fail(sprintf "現行が %d 通りで落ちました。値を突き合わせられません（先頭 10 件）:\n%s" threw.Count head)
+      Assert.Fail(sprintf "旧が %d 通りで落ちました。値を突き合わせられません（先頭 10 件）:\n%s" threw.Count head)
     if diffs.Count > 0 then
       let head = diffs |> Seq.truncate 40 |> String.concat "\n"
       Assert.Fail(sprintf "%d 通りで値が違います（先頭 40 件）:\n%s" diffs.Count head)
@@ -162,7 +162,7 @@ type ExprTests() =
   /// もとの式のどれでもない形になる。そこを試さないと、実際に走る形の
   /// 半分しか見ていないことになる
   [<Test>]
-  member _.``実引数を差し込んだ形でも getValue と同じ値になる``() =
+  member _.``実引数を差し込んだ形でも getValueByXPath と同じ値になる``() =
     let users = ExprCorpus.paramUsers.Value
     let args = ExprCorpus.paramArgs.Value
     Assert.That(List.length users, Is.GreaterThan 0, "$N を使う式が 1 つも見つかりません")
@@ -202,7 +202,7 @@ type ExprTests() =
           let actual = Expr.evalWithValues randValue rank ast
           checkedCount <- checkedCount + 1
           if not (ExprCorpus.same expected actual) then
-            diffs.Add(sprintf "  仮[%s] 実[%s] -> [%s]  rand=%g rank=%g  現行 %.9g / 木 %.9g"
+            diffs.Add(sprintf "  仮[%s] 実[%s] -> [%s]  rand=%g rank=%g  旧 %.9g / 木 %.9g"
                               user arg substituted randValue rank expected actual)
     TestContext.WriteLine(sprintf "差し込んで突き合わせ %d 通り（仮 %d x 実 %d x 振り 2）"
                             checkedCount (List.length chosenUsers) (List.length chosenArgs))
@@ -253,17 +253,17 @@ type ExprTests() =
     Assert.That(caught, Is.GreaterThan 300,
                 sprintf "壊した評価器が %d 種 でしか赤くなりません。突き合わせが違いを拾えていない疑いがあります" caught)
 
-  /// **見つけた穴 1。** $rand / $rank が 1e-4 未満だと、現行は落ちる。
+  /// **見つけた穴 1。** $rand / $rank が 1e-4 未満だと、旧は落ちる。
   ///
   /// float32 の ToString が "1E-07" のような指数表記を吐き、xpathNumber の
   /// 「+ - * の前後に空白を入れる」置き換えがそれを "1E - 07" に割るため。
   /// $rand は [0,1) の一様乱数なので、実際の乱数を使うと 1 万 回 に 1 回 ほど
   /// 踏む。同梱の FixedManager は 0.5 しか返さないので控えでは出ない。
   ///
-  /// この試験は「現行が落ちること」を固定する。直したら赤くなるので、
+  /// この試験は「旧が落ちること」を固定する。直したら赤くなるので、
   /// そのとき控えと一緒に直すこと
   [<Test>]
-  member _.``小さい rand rank で現行の getValue は落ちる``() =
+  member _.``小さい rand rank で getValueByXPath は落ちる``() =
     let small = [ 0.0001f; 0.00001f; 0.0000001f; 1e-20f ]
     let s = "$rank*10"
     let crashed =
@@ -272,22 +272,22 @@ type ExprTests() =
         | ExprCorpus.Threw _ -> true
         | ExprCorpus.Value _ -> false)
     TestContext.WriteLine(
-      sprintf "現行が落ちた値: %s"
+      sprintf "旧が落ちた値: %s"
               (crashed |> List.map (fun v -> v.ToString(Globalization.CultureInfo.InvariantCulture)) |> String.concat ", "))
     Assert.That(List.length crashed, Is.GreaterThan 0,
-                "現行が 1 つも落ちません。この穴が塞がったなら、この試験を消してよい")
+                "旧が 1 つも落ちません。この穴が塞がったなら、この試験を消してよい")
     // 木のほうは同じ値で落ちず、素直に計算する
     for v in small do
       let got = Expr.evalWithValues 0.5f v (Expr.parse s)
       Assert.That(Single.IsNaN got, Is.False, sprintf "rank=%g で木が NaN になっています" v)
 
-  /// **見つけた穴 2。** 読めない式で現行は例外、木は NaN。
+  /// **見つけた穴 2。** 読めない式で旧は例外、木は NaN。
   ///
   /// number(abc) は XPath ではノード集合の検査になって落ちる。
   /// 木は Invalid にして NaN を返す。落とすほうへ寄せると、いま静かに
   /// 進んでいる台本が落ちる可能性があるので寄せない
   [<Test>]
-  member _.``読めない式は 現行が例外 木は NaN``() =
+  member _.``読めない式は 旧が例外 木は NaN``() =
     let env = ExprCorpus.envOf 0.5f 0.5f
     let odd = [ ""; "   "; "abc"; "1+"; "*3"; "("; "()"; "1)"; "$foo"; "1 2" ]
     let mutable currentThrew = 0
@@ -298,12 +298,12 @@ type ExprTests() =
       // 木は何を渡されても落ちない
       let got = Expr.evalWithValues 0.5f 0.5f (Expr.parse s)
       Assert.That(Single.IsNaN got, Is.True, sprintf "[%s] は NaN のはずが %.9g" s got)
-    TestContext.WriteLine(sprintf "読めない式 %d 個 のうち、現行が落ちたのは %d 個" (List.length odd) currentThrew)
+    TestContext.WriteLine(sprintf "読めない式 %d 個 のうち、旧が落ちたのは %d 個" (List.length odd) currentThrew)
     Assert.That(currentThrew, Is.GreaterThan 0,
-                "現行が 1 つも落ちません。この試験が前提にしている差が無くなっています")
+                "旧が 1 つも落ちません。この試験が前提にしている差が無くなっています")
 
   /// 上の差 2 が同梱の台本で踏めないことを、数で押さえる。
-  /// 読めない式が 1 つでもあれば、そこで現行と木の振る舞いが分かれる
+  /// 読めない式が 1 つでもあれば、そこで旧と木の振る舞いが分かれる
   [<Test>]
   member _.``同梱の台本に読めない式は無い``() =
     let bad =
@@ -353,7 +353,7 @@ type ExprTests() =
   /// 読む費用は 1 回きり。走行中は木を評価するだけ、という形になっているか。
   /// 数そのものは置かない（台で動く）。桁だけ見る
   [<Test>]
-  member _.``木の評価は現行の getValue より桁で速い``() =
+  member _.``木の評価は getValueByXPath より桁で速い``() =
     let s = "(0.8 + 1.1*$1*(180-$1)/(90*90)) * (0.5+0.5*$rand) * (0.5+0.5*$rank)"
     let env = ExprCorpus.envOf 0.5f 0.5f
     // 走行中に使う形（NumExpr）で測る。$rand / $rank を使うかは
@@ -377,7 +377,7 @@ type ExprTests() =
     let newNs = sw2.Elapsed.TotalMilliseconds * 1e6 / float n
     Assert.That(acc, Is.Not.EqualTo 0.0f)
 
-    TestContext.WriteLine(sprintf "getValue %.0f ns / 木の評価 %.0f ns（%.0f 倍）" oldNs newNs (oldNs / newNs))
+    TestContext.WriteLine(sprintf "getValueByXPath %.0f ns / 木の評価 %.0f ns（%.0f 倍）" oldNs newNs (oldNs / newNs))
     // 10 倍 は下限として置く。実測は 2 桁 出るが、締めると台で赤くなる
     Assert.That(oldNs / newNs, Is.GreaterThan 10.0,
-                sprintf "getValue %.0f ns に対して木の評価が %.0f ns。桁で速くなっていません" oldNs newNs)
+                sprintf "getValueByXPath %.0f ns に対して木の評価が %.0f ns。桁で速くなっていません" oldNs newNs)

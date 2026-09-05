@@ -7,14 +7,14 @@ open FsBulletML2.Domain
 
 /// 実行位置を木の外へ出したもの。Script と同じ形の別の木になる。
 ///
-/// 初期化の入口が 1 本しかないことが要点。現行は入口が 2 つ在って
+/// 初期化の入口が 1 本しかないことが要点。旧は入口が 2 つ在って
 /// 入れる値が違い、wait が 1 フレーム短くなる不具合になっていた。
 [<TestFixture>]
 type ProgressTests() =
 
   [<Test>]
   member _.``wait は、term を評価せずに置く``() =
-    // 現行も ProcessableWait を作る時点では評価していない。
+    // 旧も ProcessableWait を作る時点では評価していない。
     // ここで評価すると $rand を読む回数が変わって、控えが動く
     match Progress.initial (Action.Wait (numExpr "3")) with
     | PWait (started, left) ->

@@ -5,18 +5,20 @@ open System.Globalization
 
 /// BulletML の数値式を、文字列でなく木で持つ。
 ///
-/// いまは `<direction>` `<speed>` `<term>` `<times>` `<wait>` などの中身が
-/// `string` のまま DU に入っていて、値が要るたびに Processable.getValue が
+/// 旧は `<direction>` `<speed>` `<term>` `<times>` `<wait>` などの中身が
+/// `string` のまま DU に入っていて、値が要るたびに `getValueByXPath` が
 /// 文字を置き換え、Regex を new し、XPathDocument を組み立て、XPath を
-/// 評価している。1 回 2.49 us で、走行時間の 27〜61% がここに乗る
-/// （bench の BREAKDOWN.md）。
+/// 評価していた。1 回 2.49 us で、走行時間の 27〜61% がそこに乗っていた
+/// （bench の BREAKDOWN.md）。**いまは DU が `NumExpr` を持ち、走行は
+/// ここを通る。**
 ///
-/// ここは「同じ文字列を同じ意味で読む」木と評価器で、いまの getValue と
+/// ここは「同じ文字列を同じ意味で読む」木と評価器で、`getValueByXPath`
+/// （旧の評価器。走行はもう通らないが、突き合わせの相手として残してある）と
 /// 1 ビットも違わない値を返すことを目標にする。速さは、その次。
 ///
 /// ## 何に合わせるのか
 ///
-/// 現行の Util.TryParse.xpathNumber は
+/// `getValueByXPath` が通る `Util.TryParse.xpathNumber` は
 ///
 ///   1. + - * の前後に空白を入れる
 ///   2. "/" を " div " に、"%" を " mod " に置き換える
@@ -26,10 +28,10 @@ open System.Globalization
 /// をしている。つまり意味論は **XPath 1.0 の数値式**で、精度は double、
 /// 最後に float32 へ丸める。ここもそれに合わせる。
 ///
-/// ## 現行と違うところ（2 つ、どちらも現行が落ちる側）
+/// ## 旧と違うところ（2 つ、どちらも旧が落ちる側）
 ///
-/// **1. 小さい $rand / $rank で現行は例外になる。**
-/// getValue は木を作る前に $rand / $rank を「その値の文字列」へ置き換える。
+/// **1. 小さい $rand / $rank で旧は例外になる。**
+/// getValueByXPath は木を作る前に $rand / $rank を「その値の文字列」へ置き換える。
 /// float32 の ToString は 1e-4 未満で "1E-07" のような指数表記を吐き、
 /// xpathNumber がそれを " + - * " の空白入れで "1E - 07" に割ってしまう。
 /// XPath はこれを読めず **XPathException を投げる**（NaN ではない）。
@@ -37,14 +39,14 @@ open System.Globalization
 /// —— おおよそ 1 万 回 に 1 回。同梱の FixedManager は 0.5 しか返さないので
 /// 控え 227 本 では一度も踏まない。この木は数として評価するので落ちない。
 ///
-/// **2. 読めない式で現行は例外、ここは NaN。**
+/// **2. 読めない式で旧は例外、ここは NaN。**
 /// number(abc) は XPath ではノード集合の検査になり、
 /// "Expression must evaluate to a node-set." で落ちる。ここは Invalid にして
 /// NaN を返す。落とすほうへ寄せると、いま静かに進んでいる台本が落ちる
 /// —— ただし同梱の 227 本 に読めない式は 1 つも無い（ExprTests が数える）
 /// ので、この差で走行が変わる台本は無い。
 ///
-/// どちらも「現行が落ち、こちらは落ちない」向きの差。直っている側だが、
+/// どちらも「旧が落ち、こちらは落ちない」向きの差。直っている側だが、
 /// 差であることを書いておく。
 module Expr =
 
@@ -61,23 +63,23 @@ module Expr =
     | Mul of Node * Node
     | Div of Node * Node
     | Mod of Node * Node
-    /// 読めなかった式。現行は XPath の number() が NaN を返すので、それに合わせる。
+    /// 読めなかった式。旧は XPath の number() が NaN を返すので、それに合わせる。
     /// 例外にしない —— 例外にすると、いま静かに NaN で進んでいる台本が落ちる
     | Invalid
 
   // ---- 読む ----
 
-  /// 現行の getValue が置き換える順を写す。
+  /// getValueByXPath が置き換える順を写す。
   ///
   ///   "$rand" を先に、次に "$rank"、残った "$" + 数字 を 0 に。
   ///
   /// 順が要るのは、Replace が部分一致だから。"$random" は "$rand" が先に
-  /// 当たって "0.5om" になる（現行がそうなっている）。ここも同じ順で読む
+  /// 当たって "0.5om" になる（旧がそうなっている）。ここも同じ順で読む
   let private tryVar (s: string) (i: int) =
     if i + 5 <= s.Length && String.CompareOrdinal(s, i, "$rand", 0, 5) = 0 then Some (Rand, i + 5)
     elif i + 5 <= s.Length && String.CompareOrdinal(s, i, "$rank", 0, 5) = 0 then Some (Rank, i + 5)
     elif i < s.Length && s.[i] = '$' then
-      // 現行の Regex.Replace(s, "\$\d*", "0")。$ のあとの数字を食べて 0 にする。
+      // 旧の Regex.Replace(s, "\$\d*", "0")。$ のあとの数字を食べて 0 にする。
       // 数字が 0 個 でも当たる（"$" だけでも 0 になる）
       let mutable j = i + 1
       while j < s.Length && Char.IsDigit s.[j] do j <- j + 1
@@ -85,7 +87,7 @@ module Expr =
     else None
 
   /// 数値リテラル。XPath 1.0 の Number は  digits ('.' digits?)?  |  '.' digits
-  /// 指数表記は無い（現行が number() に投げているので、ここも受けない）
+  /// 指数表記は無い（旧が number() に投げているので、ここも受けない）
   let private tryNumber (s: string) (i: int) =
     let start = i
     let mutable j = i
@@ -118,7 +120,7 @@ module Expr =
   ///   unary   := '-' unary | primary
   ///   primary := number | '$rand' | '$rank' | '$' digits* | '(' expr ')'
   ///
-  /// / と % は現行が div / mod へ置き換えているので、XPath の
+  /// / と % は旧が div / mod へ置き換えているので、XPath の
   /// MultiplicativeExpr と同じ段。単項マイナスはその下
   let rec private parseExpr (s: string) (i: int) : (Node * int) option =
     match parseTerm s (skipWs s i) with
@@ -167,7 +169,7 @@ module Expr =
       | Some (n, next) -> Some (Neg n, next)
       | None -> None
     elif i < s.Length && s.[i] = '+' then
-      // XPath 1.0 に単項プラスは無い。現行は number() が NaN を返すので合わせる
+      // XPath 1.0 に単項プラスは無い。旧は number() が NaN を返すので合わせる
       None
     else parsePrimary s i
 
@@ -185,7 +187,7 @@ module Expr =
       | Some r -> Some r
       | None -> tryNumber s i
 
-  /// 文字列を木にする。読めなければ Invalid（現行の number() が NaN を返す形）
+  /// 文字列を木にする。読めなければ Invalid（旧の number() が NaN を返す形）
   let parse (s: string) : Node =
     if isNull s then Invalid
     else
@@ -195,19 +197,19 @@ module Expr =
 
   // ---- 評価する ----
 
-  /// float32 を、現行の getValue と同じ道筋で double にする。
+  /// float32 を、getValueByXPath と同じ道筋で double にする。
   ///
-  /// 現行は $rand / $rank を「その float32 の ToString」で式へ埋め、
+  /// 旧は $rand / $rank を「その float32 の ToString」で式へ埋め、
   /// XPath がその**文字列を double として**読む。だから
   ///
-  ///   0.987654f -> "0.987654" -> double の 0.987654       （現行）
+  ///   0.987654f -> "0.987654" -> double の 0.987654       （旧）
   ///   0.987654f -> double の 0.98765397071838379...        （そのまま widen）
   ///
   /// で 1e-9 ずれ、float32 に戻したときの最後の 1 ビットが違う。
   /// **同梱の FixedManager は 0.5 を返し、0.5 は両方で同じになるので、
   /// 控え 227 本 ではこの違いが一度も出ない。** 実際の rank を使うと出る。
   ///
-  /// NaN / 無限大 は、現行だと "NaN" "Infinity" という文字が式に埋まって
+  /// NaN / 無限大 は、旧だと "NaN" "Infinity" という文字が式に埋まって
   /// XPath の number() が NaN を返すので、ここも NaN にする
   let private widen (v: float32) : double =
     if Single.IsNaN v || Single.IsInfinity v then Double.NaN
@@ -248,10 +250,10 @@ module Expr =
     | Mod (a, b) -> evalWith randValue rank a % evalWith randValue rank b
     | Invalid -> Double.NaN
 
-  /// 現行の getValue と同じ型で返す。
+  /// getValueByXPath と同じ型で返す。
   ///
   /// **乱数は 1 回 の評価につき 1 回 だけ引く。$rand が何個 あっても、
-  /// 1 個 も無くても、必ず 1 回。** 現行の getValue が
+  /// 1 個 も無くても、必ず 1 回。** getValueByXPath が
   ///
   ///   let rand = env.Rand ()
   ///   s.Replace("$rand", rand.ToString(...))
@@ -260,7 +262,7 @@ module Expr =
   /// 同じ式の中の $rand は全部 同じ値になる。引く回数は乱数の並びを
   /// 進めるので、ここを写し違えると 227 本 の軌跡が丸ごとずれる。
   ///
-  /// 現行は double を Convert.ToString して Single.Parse している。
+  /// 旧は double を Convert.ToString して Single.Parse している。
   /// .NET の double -> string は往復できる最短表記なので、読み直すと
   /// 「その double にいちばん近い float32」になる。float32 への直接の
   /// 変換と同じはずだが、同じであることは ExprTests が実物で確かめる
