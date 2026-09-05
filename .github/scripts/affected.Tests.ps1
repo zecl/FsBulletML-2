@@ -116,10 +116,14 @@ Check 'MonoGame だけなら MonoGame.Tests と、それが build しないサ�
   @('FsBulletML2.MonoGame.Tests') `
   @('FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp')
 
-# **ここが本体。** Parser を触っても Dsl.Tests と MonoGame.Tests は走らない
-Check 'Parser だけなら Dsl.Tests と MonoGame.Tests は走らない' `
+#
+# **MonoGame.Tests は Parser を引くようになった。** フロントを実際に回す門
+# （FrontRun.fs）が弾幕を XML から読むため —— 本番のサンプルと同じ口。
+# 以前はここも「走らない」側だった。**この 1 行 が赤くなって気づいた。**
+# **ここが本体。** Parser を触っても Dsl.Tests は走らない。
+Check 'Parser だけなら Dsl.Tests は走らない' `
   @('src/FsBulletML2.Parser/Sxml.fs') `
-  @('FsBulletML2.Core.Tests', 'FsBulletML2.Front.Tests', 'FsBulletML2.Parser.Tests', 'FsBulletML2.TypeProviders.Tests') `
+  @('FsBulletML2.Core.Tests', 'FsBulletML2.Front.Tests', 'FsBulletML2.MonoGame.Tests', 'FsBulletML2.Parser.Tests', 'FsBulletML2.TypeProviders.Tests') `
   @('FsBulletML2.Benchmarks', 'FsBulletML2.Sample.MonoGame.CSharp',
     'FsBulletML2.Sample.MonoGame.FSharp', 'FsBulletML2.Sample.TypeProviders.Debug')
 
@@ -224,7 +228,7 @@ function CheckShape {
 
 CheckShape '0 件 でも空配列' @('README.md') 0 0
 CheckShape '1 件 が配列のまま出る' @('tests/FsBulletML2.Parser.Tests/ReadEntryPoints.fs') 1 0
-CheckShape '複数' @('src/FsBulletML2.Parser/Sxml.fs') 4 4
+CheckShape '複数' @('src/FsBulletML2.Parser/Sxml.fs') 5 4
 
 Write-Host ''
 if ($fails -gt 0) {
