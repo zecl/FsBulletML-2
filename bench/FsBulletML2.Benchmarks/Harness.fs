@@ -97,8 +97,12 @@ module Harness =
   /// Env を 1 回 組む費用を測るための口。中身は envAt と同じ。
   ///
   /// **Env の遅延化に伸びしろが在るかを、見積もりでなく掛け算で出すため。**
-  /// 天井 = これ × 1 走行で組む回数（countEnvBuilds）。
+  /// 天井 = これ × `--counts` の「aim を組む」（＝生の回数）。
   /// aim を遅延にしても、実際に読まれるぶんは残るので、これは上界。
+  ///
+  /// **`countEnvBuilds` の数を掛けてはいけない。** あちらは `HasNoScript` を
+  /// 通さずに数えるが、計時している `runPreparedApi` は通す。掛けると
+  /// 5way で 60 倍 の見積もりになる
   let envCost (x: float32) (y: float32) : Domain.Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
@@ -193,8 +197,13 @@ module Harness =
   /// runPreparedApi と同じ形で回して、envAt を呼ぶ場所を数えるだけ。
   /// step の中身は本物を通す（通さないと弾が増えず、回数が実物と変わる）。
   ///
-  /// **Env 遅延化の天井 = envCost × この数。** 掛け算で出せる形にしてあるのは、
-  /// 「たぶん小さい」で判断しないため。
+  /// **この数を遅延化の天井に掛けてはいけない。** ここは `HasNoScript` を
+  /// 通さず毎回 `envAt` を呼ぶが、計時している `runPreparedApi` は通す。
+  /// Atan2 を実際に回すのは「生」のぶんだけなので、天井はそちらに掛ける
+  /// （`--counts` の「aim を組む」列）。
+  ///
+  /// この数そのものは「1 走行で Env の箱を何回 作るか」——
+  /// 箱の確保を減らす手を測るときの物差しとして残してある。
   let countEnvBuilds (doc: Bulletml) (frames: int) : int =
     let mutable builds = 0
     let script = Runner.load (loadEnv ()) doc

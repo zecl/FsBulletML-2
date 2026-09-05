@@ -60,7 +60,7 @@ let private onBdn = 4
 let private counts () =
   fixManager ()
   printfn "台本ごとの step 呼び出し。60 コマ。"
-  printfn "%-8s %10s %10s %10s %10s   %s" "台本" "生" "死" "死の割合" "Env 構築" "この台本が使えるもの"
+  printfn "%-8s %10s %10s %10s %10s %10s   %s" "台本" "生" "死" "死の割合" "Env 構築" "aim を組む" "この台本が使えるもの"
   for name, suffix in scenarios do
     match Corpus.findBySuffix suffix with
     | None -> printfn "%-8s %s が見つかりません" name suffix
@@ -70,14 +70,20 @@ let private counts () =
       let envs = countEnvBuilds doc 60
       let total = live + dead
       let ratio = if total = 0 then 0.0 else float dead / float total * 100.0
-      printfn "%-8s %10d %10d %9.1f%% %10d   %s"
-              name live dead ratio envs
+      printfn "%-8s %10d %10d %9.1f%% %10d %10d   %s"
+              name live dead ratio envs live
               (if dead = 0 then "対照（死んだコマの変更は届かない）" else "対象")
   printfn ""
-  printfn "「Env 構築」は新経路が 1 走行で Env を組む回数（step の前と、走らせ直しの前）。"
-  printfn "**Env を遅延にしたときの天井 = SetupBenchmarks の「Env を 1 回 組む」× この数。**"
-  printfn "掛け算で出せる形にしてあるのは、伸びしろを「たぶん小さい」で判断しないため。"
+  printfn "「Env 構築」は Env を組む回数（step の前と、走らせ直しの前）。**掛けてはいけない。**"
+  printfn "この列は HasNoScript を通さずに数えている。実際に計時している経路は"
+  printfn "HasNoScript で aim 4 本 を 0 に置き換えるので、Atan2 を回すのは「aim を組む」の側だけ。"
+  printfn ""
+  printfn "**Env を遅延にしたときの天井 = SetupBenchmarks の「Env を 1 回 組む」×「aim を組む」。**"
   printfn "遅延にしても実際に読まれるぶんは残るので、その積は上界。"
+  printfn ""
+  printfn "以前ここは「Env 構築」を掛けろと書いてあり、5way で 60 倍 の見積もりを出していた。"
+  printfn "死んだコマが 0 の台本（move / homing）では 2 つの列が一致するので、"
+  printfn "**対照の側だけが合っていて、対象の側だけが外れる**という形で隠れていた。"
 
 /// **記録した確保。旧 API の列が消えたあとの物差し。**
 ///

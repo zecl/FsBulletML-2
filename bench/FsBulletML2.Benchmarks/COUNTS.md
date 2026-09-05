@@ -95,6 +95,11 @@ if result.Processed then task.Init(BulletRunner.envOfGlobal bo)
 1 回 する。5way は `envOfGlobal` 17,820 回 = **atan2 71,280 回**。その半分は
 組んだ先で読まれずに捨てられる。
 
+**この 17,820 は、いまの走行の数ではない。** ここは `BulletRun.HasNoScript`
+より前の記録で、当時は全部の Env が aim を組んでいた。いまは 96.7% が
+skip されるので、Atan2 を回すのは「生」の 296 回 のぶんだけ。
+**遅延化の上界をここから掛けないこと**（`--counts` の末尾の但し書き）。
+
 旧実装の同じ場所は `task.Init()` で引数を取らないので、この分は新にしかない。
 
 ## ここから先
