@@ -132,7 +132,7 @@ type Culture() =
     |> String.concat "\n"
     |> Golden.check "culture-which-value"
 
-  /// $rand / $rank の経路（Processable.getValue の Replace）もカルチャ依存か。
+  /// $rand / $rank を式へ埋める経路もカルチャ依存か。
   /// rand.ToString() にカルチャを渡していないので de-DE では 0,5 が式に入るはず、
   /// というのが読み（未実測の読みとして立てたもの）。
   ///

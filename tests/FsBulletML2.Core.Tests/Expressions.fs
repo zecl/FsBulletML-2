@@ -2,7 +2,7 @@
 
 open System.Text.RegularExpressions
 open NUnit.Framework
-open FsBulletML2.Processable
+open FsBulletML2.Eval
 
 /// 参照にパラメータを足りなく渡す形。上の式を直に書く経路と違って、
 /// **本番で踏める経路**かどうかをこちらで見る。

@@ -17,7 +17,7 @@
     <Compile Include="DTD.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="Sim.fs" />
-    <Compile Include="Processable.fs" />
+    <Compile Include="Eval.fs" />
     <Compile Include="BulletmlRead.fs" />
     <Compile Include="BulletmlOps.fs" />
     <Compile Include="Step.fs" />

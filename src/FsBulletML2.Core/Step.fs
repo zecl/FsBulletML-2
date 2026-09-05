@@ -1,7 +1,7 @@
 namespace FsBulletML2
 
 open FsBulletML2.Domain
-open FsBulletML2.Processable
+open FsBulletML2.Eval
 
 /// 命令を 1 つずつ進める。**落とした `BulletRunner.runCommand` を写したもの。**
 ///
@@ -751,7 +751,7 @@ module internal Step =
   /// 撃たれた弾の Tops は Progress.initial ではなく resetChild を通す。
   /// 旧の createTask 冒頭 bulletElm.Init(env) が Wait / ChangeDirection /
   /// ChangeSpeed の値を Action / Repeat / Fire / Bullet を辿って先に引いて
-  /// おり（Init の実装は Processable.fs 参照）、resetChild は repeat の
+  /// おり、resetChild は repeat の
   /// 周ざかりで使っている、それと同じ辿り方をする既存の写し。ここを
   /// Progress.initial に戻すと、その分の乱数消費が丸ごと消えて弾が
   /// 撃たれた瞬間から乱数列がずれる

@@ -201,7 +201,7 @@ type StepFire() =
   member _.``fire は、撃たれた弾の action の中身の getValue も先に引く``() =
     // 旧の createTask は bulletElm.Init(env) を先頭で呼び、Wait /
     // ChangeDirection / ChangeSpeed を Action / Repeat / Fire / Bullet を
-    // 辿って先に引く（Processable.fs の Init 参照）。ここを Progress.initial で
+    // 辿って先に引く。ここを Progress.initial で
     // 組むと、この分の乱数消費が丸ごと消えて、fire の直後から乱数列が
     // ずれてしまう。
     //

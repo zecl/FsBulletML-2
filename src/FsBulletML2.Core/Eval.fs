@@ -6,16 +6,12 @@ open System.Globalization
 
 /// 式の値を出すところ。
 ///
-/// **名前が中身と合っていない。** もとは旧 API のシム（`IBulletmlObject` /
-/// `BulletmlTask`、走らせる木に mutable を埋めた `Processable*` の一族）が
-/// ここに同居していて、それが名前の由来だった。旧面を落としたので、
-/// いま残っているのは式の評価 2 本 だけ。
-///
-/// **置き場所を決め直すのは別の手**（`BulletMLManager` を `Manager.fs` へ
-/// 出したのと同じ形の判断）。`getValue` はホットパスで `Step.fs` が呼ぶので、
-/// 動かすときは確保を測ってから。
+/// 以前は `Processable.fs` という名前で、旧 API のシムが同居していた。
+/// **compile の順は動かしていない**（`Domain` のあと、`BulletmlRead` の前）
+/// —— `getValue` はホットパスで `Step.fs` が呼ぶので、位置を変えると
+/// inline の条件が変わりうる。
 [<AutoOpen>]
-module Processable =
+module Eval =
 
   /// 式の値。走行中はここを通る。
   ///

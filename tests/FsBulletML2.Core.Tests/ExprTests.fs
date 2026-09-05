@@ -6,7 +6,7 @@ open System.Xml
 open NUnit.Framework
 open FsBulletML2
 open FsBulletML2.Domain
-open FsBulletML2.Processable
+open FsBulletML2.Eval
 
 /// 式を文字列でなく木で持つ `Expr` が、`getValueByXPath` と同じ値を返すか。
 ///

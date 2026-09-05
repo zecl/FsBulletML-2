@@ -4,14 +4,10 @@ open NUnit.Framework
 
 /// 同じ定義から作られた弾どうしが、可変状態を共有していないか。
 ///
-/// Processable.fs には cloneProcessable が在って、コメントにこうある。
-///
-///   Deep-copy a processable tree so child bullets get independent mutable state
-///   (finish/term/first/...). Replaces BinaryFormatter deepCopyClone.
-///
-/// **共有していると、片方の弾が進めた term や finish がもう片方に効く。**
-/// リファクタリングで clone を外したり浅くしたりすると静かに壊れる場所なので、
-/// 振る舞いの側から固めておく。
+/// 旧は走らせる木に mutable を埋めていて、撃たれた弾ごとに deep-copy して
+/// 独立させていた。**共有していると、片方の弾が進めた term や finish が
+/// もう片方に効く。** いまは Progress が弾ごとの値なので構造で分かれるが、
+/// 振る舞いの側からも固めておく。
 [<TestFixture>]
 type StateIsolation() =
 
