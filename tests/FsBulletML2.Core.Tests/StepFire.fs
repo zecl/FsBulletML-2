@@ -154,7 +154,7 @@ type StepFire() =
 
   /// final review 5: 5 つめの draw site（設計文書 5.3 参照）。
   ///
-  /// 旧 expandBulletRefOnce は convertRecBulletmlEx を通しており、解決した
+  /// 旧 expandBulletRefOnce は、解決した
   /// 瞬間に bullet 本体の中の wait をまとめて引いていた。この直後、
   /// createTask の bulletElm.Init(env) に当たる resetChild がもう一度
   /// 同じ wait を引き直す（1 回めの値は上書きされて捨てられるが、消費は

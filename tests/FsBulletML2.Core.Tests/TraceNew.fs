@@ -35,12 +35,9 @@ module TraceNew =
           (xml: string) (frames: int) : string =
     let bulletml = readXmlString xml
     let rec' = IntermediateParser.foldConstants bulletml
-    // 新経路の Resolvers は Bulletml を返す側（*Bulletml.expand*RefOnceRec）を使う。
-    // 旧 API の expand*RefOnce は convertRecBulletmlEx まで進めて
-    // ProcessableBulletml を返すので、そのままでは Step.Resolvers の型に合わない
     let resolvers : Step.Resolvers =
-      { Bullet = BulletmlOps.expandBulletRefOnceRec rec'
-        Action = BulletmlOps.expandActionRefOnceRec rec' }
+      { Bullet = BulletmlOps.expandBulletRefOnce rec'
+        Action = BulletmlOps.expandActionRefOnce rec' }
     // top* の並びは旧の toProcessable と同じ選び方
     let scripts =
       rec'

@@ -564,8 +564,7 @@ module internal Step =
                     match rs.Action attrs.actionRefLabel prams with
                     | Some (ActionElm.Action (_, expanded)) ->
                         let newRunning = expanded @ (running |> List.skip (idx + 1))
-                        // 旧 expandActionRefOnce（= expandActionRefOnceRec を
-                        // convertRecBulletmlEx へ通したもの）は、輪を 1 段
+                        // 旧 expandActionRefOnce は、輪を 1 段
                         // 解いた瞬間に展開した中身の wait をまとめて引いていた
                         // （IntermediateParser.fs の foldConstants。
                         // Domain 5.3「木を組む段」と同じ、AimDir / EnemyAimDir
@@ -768,8 +767,7 @@ module internal Step =
         | BulletElm.BulletRef (attrs, prams) ->
             match rs.Bullet attrs.bulletRefLabel prams with
             | Some (BulletElm.Bullet (_, _, _, actions) as x) ->
-                // 旧 expandBulletRefOnce（= expandBulletRefOnceRec を
-                // convertRecBulletmlEx へ通したもの）は、解決した瞬間に
+                // 旧 expandBulletRefOnce は、解決した瞬間に
                 // bullet 本体の中の wait をまとめて引いていた（設計文書 5.3
                 // 「木を組む段」と同じ、AimDir / EnemyAimDir を 0 に固定した
                 // Env）。この直後、下の resetChild が createTask の

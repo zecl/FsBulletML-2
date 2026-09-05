@@ -14,7 +14,7 @@ open FsBulletML2.DTD
 ///     ----------------------- --------------------------------------------
 ///     1. XML を読んで木にする   existsAttribute 〜 tryBulletmlFromXmlNode
 ///     2. 定数を畳む             foldConstants' 〜 foldConstantsForTest
-///     （BulletmlOps.fs）木の上の操作 convertDirectionOption 〜 expandActionRefOnceRec
+///     （BulletmlOps.fs）木の上の操作 convertDirectionOption 〜 expandActionRefOnce
 ///
 /// ## 二重木は畳んだ
 ///
@@ -41,7 +41,7 @@ open FsBulletML2.DTD
 ///
 ///     ロード時（Runner.load で 1 回）
 ///       XML → 木 → 定数を畳む（foldConstants）
-///       Resolvers を組む（expandBulletRefOnceRec / expandActionRefOnceRec を
+///       Resolvers を組む（expandBulletRefOnce / expandActionRefOnce を
 ///       部分適用しただけの、まだ何も解いていない関数 2 本）
 ///
 ///     実行時（Step.action / Step.fire が踏むたび）

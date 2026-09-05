@@ -217,8 +217,8 @@ module Runner =
   let load (rootEnv: Env) (bulletml: Bulletml) : BulletmlScript =
     let rec' = IntermediateParser.foldConstants bulletml
     let resolvers : Step.Resolvers =
-      { Bullet = BulletmlOps.expandBulletRefOnceRec rec'
-        Action = BulletmlOps.expandActionRefOnceRec rec' }
+      { Bullet = BulletmlOps.expandBulletRefOnce rec'
+        Action = BulletmlOps.expandActionRefOnce rec' }
     // 根は bulletml しかない（Bulletml の腕が 1 つ）
     let shootingDirection =
       match rec' with

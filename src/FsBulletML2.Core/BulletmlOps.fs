@@ -10,16 +10,6 @@
 ///
 /// **二重木を畳んでも、ここは丸ごと残った。** 木が 1 つ になっても
 /// 「名前で引く」「実引数を入れる」「輪を 1 段 だけ解く」は要る。
-///
-/// ## expand*RefOnceRec の Rec は消していない
-///
-/// 型の Rec* は畳んで消したが、**この 2 本 の接尾辞は残してある。**
-/// 落とすと expandBulletRefOnce / expandActionRefOnce になり、
-/// **旧実装の同名の関数とぶつかる** —— 試験のコメントが
-/// 「旧 expandBulletRefOnce は convertRecBulletmlEx を通しており…」と
-/// 新旧を比べているので、同じ言葉が 2 つ を指すことになる。
-///
-/// **接尾辞は型の名残ではなく、新旧を分ける仕事をしている。**
 module internal BulletmlOps =
 
   let internal convertDirectionOption  = fun prams -> function
@@ -329,7 +319,7 @@ module internal BulletmlOps =
   /// 解く前から自分の key を visiting に入れておくこと。空から始めると
   /// 解いた中身の同じ参照がもう 1 段 展開され、1 段のつもりが 2 段になる。
   /// 新経路（Step.Resolvers）は木を組まないのでこちらを直に使う
-  let internal expandBulletRefOnceRec top (label: BulletLabel) prams : BulletElm option =
+  let internal expandBulletRefOnce top (label: BulletLabel) prams : BulletElm option =
     match tryFindBullet top label with
     | Some bullet ->
       // param は文字のまま渡す（Params は string list で、Param.replace も
@@ -344,7 +334,7 @@ module internal BulletmlOps =
   ///
   /// bulletRef と違って fire を挟まないので、2 段 解くと走らせる側の
   /// 呼び出しが 1 フレームごとに深くなり、スタックを使い切る
-  let internal expandActionRefOnceRec top (label: ActionLabel) prams : ActionElm option =
+  let internal expandActionRefOnce top (label: ActionLabel) prams : ActionElm option =
     match tryFindAction top label with
     | Some action ->
       refAction action label prams

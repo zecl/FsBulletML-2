@@ -142,7 +142,7 @@ type StepCommands() =
 
   [<Test>]
   member _.``accel 省略軸は、既存の加速度を term で減衰させる``() =
-    // 省略された軸は convertRecBulletmlEx が { Absolute, "0" } で埋めるので、
+    // 省略された軸は None のまま届き、Step.accel が "0" として扱うので、
     // catch-all の計算が働く：(0 - currentAccel) / term。
     // これは現状維持ではなく減衰である。
     // 初回フレームで dx = (0 - 10) / 5 = -2 を計算。以降キャッシュを再利用する。
@@ -402,7 +402,7 @@ type StepCommands() =
 
   /// final review 5: 5 つめの draw site（設計文書 5.3 参照）。
   ///
-  /// 旧 expandActionRefOnce は convertRecBulletmlEx を通しており、輪を
+  /// 旧 expandActionRefOnce は、輪を
   /// 1 段 解いた瞬間に展開した中身の wait をまとめて引いていた。actionRef は
   /// このあと Init 相当を挟まないので、ここで引いた値がそのまま最終値になる。
   /// Progress.initial のまま組むと、この 1 回ぶんの乱数消費が丸ごと欠け、
