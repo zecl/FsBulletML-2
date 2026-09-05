@@ -47,6 +47,7 @@ nuget/*.nupkg
 **/.vsconfig
 samples/**/Assembly-CSharp*.csproj
 samples/**/*.slnx
+!samples/FsBulletML2.Sample.TypeProviders.Debug/FsBulletML2.Sample.TypeProviders.Debug.slnx
 samples/**/*.csproj.user
 
 # leftover from Unity IAP default package

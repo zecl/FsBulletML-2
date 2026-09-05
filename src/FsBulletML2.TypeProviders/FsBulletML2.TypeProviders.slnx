@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../FsBulletML2.Core/FsBulletML2.Core.fsproj" />
+  <Project Path="../FsBulletML2.Parser/FsBulletML2.Parser.fsproj" />
+  <Project Path="FsBulletML2.TypeProviders.fsproj" />
+</Solution>
