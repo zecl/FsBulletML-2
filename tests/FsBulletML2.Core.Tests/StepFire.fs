@@ -12,7 +12,7 @@ type StepFire() =
 
   // 4 つとも別の値にしてある。同じ値にすると、fire 側と bullet 側で
   // 基準を取り違えていても門が緑のまま通る
-  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimDir = 1.0f; EnemyAimDir = 2.0f; SpawnAimDir = 3.0f; SpawnEnemyAimDir = 4.0f }
+  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; Aim = { ToPlayer = 1.0f; ToEnemy = 2.0f }; Spawn = { ToPlayer = 3.0f; ToEnemy = 4.0f } }
 
   let state =
     { Pos = { X = 5.f; Y = 7.f }
@@ -84,19 +84,19 @@ type StepFire() =
     let script = Action.Fire ({ fireLabel = None }, None, None, bullet None None)
     let _, _, w = Sim.run env state (stepFire noResolvers script (PFire false) FireContext.zero)
     match w with
-    | [ Spawn b ] -> b.Dir |> should (equalWithin 0.0001) env.AimDir
+    | [ Spawn b ] -> b.Dir |> should (equalWithin 0.0001) env.Aim.ToPlayer
     | _ -> Assert.Fail (sprintf "Spawn 1 つのはずが %A" w)
 
   /// final review 3: <bullet><direction type="aim"> は、fire 側の aim
-  /// （撃った側の位置に依る env.AimDir）とは別の値になるはずなので、
+  /// （撃った側の位置に依る env.Aim.ToPlayer）とは別の値になるはずなので、
   /// この時点（stepFire の中）では解決できない。旧 createTask は
   /// GetNewBullet() が返す、まだ位置を持たない新しい弾オブジェクトの
   /// GetAimDir() を読んでいたが、stepFire の時点では撃たれた弾の
   /// 実オブジェクトがまだ存在しない（Spawn は値で、実体は旧なら
   /// `BulletRunner.applySpawn` が newBullet として後で作っていた。
   /// いまはフロントが `Frame.Spawned` を受け取って自分で作る）。
-  /// ここでは env.SpawnAimDir（産まれる弾の位置から見た向き）が使われ、
-  /// 撃った側の env.AimDir は使われないことを見る。
+  /// ここでは env.Spawn.ToPlayer（産まれる弾の位置から見た向き）が使われ、
+  /// 撃った側の env.Aim.ToPlayer は使われないことを見る。
   /// 実際に走らせたときの最終値は BulletAim.fs が Trace 経由で確かめる
   [<Test>]
   member _.``bullet 側の aim は、産まれる弾の位置から見た向きで解決する``() =
@@ -106,13 +106,13 @@ type StepFire() =
     let _, _, w = Sim.run env state (stepFire noResolvers script (PFire false) FireContext.zero)
     match w with
     | [ Spawn b ] ->
-        // 30 度 = π/6 に env.SpawnAimDir（3.0）が足された値。
-        // 撃った側の env.AimDir（1.0）を混ぜていれば約 1.524 になるので、
+        // 30 度 = π/6 に env.Spawn.ToPlayer（3.0）が足された値。
+        // 撃った側の env.Aim.ToPlayer（1.0）を混ぜていれば約 1.524 になるので、
         // 取り違えるとここで割れる
-        b.Dir |> should (equalWithin 0.0001) (Step.calcDir (env.SpawnAimDir + float32 (System.Math.PI / 6.0)))
+        b.Dir |> should (equalWithin 0.0001) (Step.calcDir (env.Spawn.ToPlayer + float32 (System.Math.PI / 6.0)))
     | _ -> Assert.Fail (sprintf "Spawn 1 つのはずが %A" w)
 
-  /// 対照: fire 側の aim（bullet 側は無指定）は撃った側の env.AimDir を使う。
+  /// 対照: fire 側の aim（bullet 側は無指定）は撃った側の env.Aim.ToPlayer を使う。
   /// bullet 側と基準が違うことを、値が違うことで示す
   [<Test>]
   member _.``fire 側の aim は、撃った側の位置から見た向きで解決する``() =
@@ -120,10 +120,10 @@ type StepFire() =
     let _, _, w = Sim.run env state (stepFire noResolvers script (PFire false) FireContext.zero)
     match w with
     | [ Spawn b ] ->
-        b.Dir |> should (equalWithin 0.0001) env.AimDir
+        b.Dir |> should (equalWithin 0.0001) env.Aim.ToPlayer
         // 産まれる弾の側の値（3.0）ではないこと。両者が同じ値だと
         // 取り違えても緑になるので、違うことを明示で見る
-        b.Dir |> should not' (equalWithin 0.0001 env.SpawnAimDir)
+        b.Dir |> should not' (equalWithin 0.0001 env.Spawn.ToPlayer)
     | _ -> Assert.Fail (sprintf "Spawn 1 つのはずが %A" w)
 
   [<Test>]
@@ -185,16 +185,16 @@ type StepFire() =
     | _ -> Assert.Fail (sprintf "Spawn 1 つのはずが %A" w)
 
   [<Test>]
-  member _.``撃つ側が Player なら、direction を省くと EnemyAimDir になる``() =
-    // aim = if self.Kind = Player then EnemyAimDir else AimDir。
-    // 与えられたテストは Kind = Enemy 固定で AimDir 側しか通らないので、
-    // 逆の枝（Player 側）もここで踏む。踏まないと AimDir と EnemyAimDir を
+  member _.``撃つ側が Player なら、direction を省くと Aim.ToEnemy になる``() =
+    // aim = if self.Kind = Player then Aim.ToEnemy else Aim.ToPlayer。
+    // 与えられたテストは Kind = Enemy 固定で ToPlayer 側しか通らないので、
+    // 逆の枝（Player 側）もここで踏む。踏まないと ToPlayer と ToEnemy を
     // 取り違えても気づけない
     let playerState = { state with Kind = BulletType.Player }
     let script = Action.Fire ({ fireLabel = None }, None, None, bullet None None)
     let _, _, w = Sim.run env playerState (stepFire noResolvers script (PFire false) FireContext.zero)
     match w with
-    | [ Spawn b ] -> b.Dir |> should (equalWithin 0.0001) env.EnemyAimDir
+    | [ Spawn b ] -> b.Dir |> should (equalWithin 0.0001) env.Aim.ToEnemy
     | _ -> Assert.Fail (sprintf "Spawn 1 つのはずが %A" w)
 
   [<Test>]

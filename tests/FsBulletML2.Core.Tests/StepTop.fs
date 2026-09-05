@@ -9,7 +9,7 @@ open FsBulletML2.Domain
 [<TestFixture>]
 type StepTop() =
 
-  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimDir = 0.f; EnemyAimDir = 0.f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
+  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; Aim = { ToPlayer = 0.f; ToEnemy = 0.f }; Spawn = { ToPlayer = 0.f; ToEnemy = 0.f } }
 
   let noResolvers : Step.Resolvers =
     { Bullet = (fun _ _ -> None); Action = fun _ _ -> None }
@@ -163,17 +163,15 @@ type StepTop() =
   /// ループの外で env を読むようになったら、毒入りの env の側だけ答えが
   /// ずれて赤くなる。
   ///
-  /// 較正: step の差分に env.AimDir を足す変異を入れるとこの門は赤くなり、
+  /// 較正: step の差分に env.Aim.ToPlayer を足す変異を入れるとこの門は赤くなり、
   /// 同じファイルの他の門は緑のままだった（top が生きているコマを見ている
   /// ので、そちらは両方の env で同じだけずれる）。
   [<Test>]
   member _.``終わった top しか無いコマは、aim を読まない``() =
     let poisoned =
       { env with
-          AimDir = 1.25f
-          EnemyAimDir = -2.5f
-          SpawnAimDir = 3.0f
-          SpawnEnemyAimDir = -0.75f }
+          Aim = { ToPlayer = 1.25f; ToEnemy = -2.5f }
+          Spawn = { ToPlayer = 3.0f; ToEnemy = -0.75f } }
     // vanish は 1 コマで終わる。2 コマめが「生きている top が無い」コマ
     let t = top [ Action.Vanish ]
     let first = Step.step noResolvers env (stateWith [ t ])

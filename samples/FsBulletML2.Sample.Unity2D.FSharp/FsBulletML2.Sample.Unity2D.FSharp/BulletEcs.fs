@@ -49,9 +49,9 @@ type BulletEcsRuntime private () =
 /// **式は Unity2D のフロント固有。** MonoGame とは 2 つ 違う。
 ///
 ///   Y の符号     こちらは反転しない（Unity は上が正）
-///   Spawn の元   こちらは撃った側と同じ場所に作るので AimDir と同値
+///   Spawn の元   こちらは撃った側と同じ場所に作るので Aim と同値
 ///
-/// 散らすと `AimDir` に `SpawnAimDir` を入れるような取り違えを門で当てられない
+/// 散らすと `Aim` に `Spawn` を入れるような取り違えを門で当てられない
 /// （型はどれも float32 なので通ってしまう）。
 [<AbstractClass; Sealed>]
 type FrontEnv private () =
@@ -74,11 +74,9 @@ type FrontEnv private () =
     let aim = FrontEnv.AimAtPlayer x y
     { Rand = randFunc
       Rank = BulletMLManager.GetRank ()
-      AimDir = aim
-      EnemyAimDir = enemyAim
+      Aim = { ToPlayer = aim; ToEnemy = enemyAim }
       // 産まれた弾は撃った側と同じ場所に作る（SpawnChild が親の位置を渡す）
-      SpawnAimDir = aim
-      SpawnEnemyAimDir = enemyAim }
+      Spawn = { ToPlayer = aim; ToEnemy = enemyAim } }
 
   /// aim を読まないと分かっているコマの Env。aim 4 本 を 0 に。
   /// 使ってよい条件は `BulletRun.HasNoScript` の但し書き。
@@ -86,10 +84,8 @@ type FrontEnv private () =
   static member NoAim () : Env =
     { Rand = randFunc
       Rank = BulletMLManager.GetRank ()
-      AimDir = 0.0f
-      EnemyAimDir = 0.0f
-      SpawnAimDir = 0.0f
-      SpawnEnemyAimDir = 0.0f }
+      Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
+      Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
 
   /// 弾幕を読む段の Env。中身は NoAim と同じだが**意味が違うので名前を分ける**。
   /// 木を組む段は撃つ弾ごとの位置がまだ無いので aim を読まない

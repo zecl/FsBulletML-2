@@ -11,9 +11,38 @@ module Domain =
   [<Struct>]
   type Vec2 = { X : float32; Y : float32 }
 
+  /// 撃つ側の位置から見た狙いの向き。**2 本 とも、その弾自身の位置が基準。**
+  ///
+  /// 弾が自機のものなら `ToEnemy`、敵のものなら `ToPlayer` が使われる
+  /// （`Step.fs` の `if self.Kind = BulletType.Player then ...`）。
+  /// どちらを使うかはエンジンが決めるので、フロントは両方 入れて渡す。
+  ///
+  /// **`SpawnAim` とは別の型にしてある。** 値はどちらも float32 2 本 で、
+  /// 混ぜても計算は通ってしまうが、基準にしている位置が違う。
+  /// 取り違えると軌跡でしか見えないので、型で止める。
+  ///
+  /// **潰せたのは `Aim` と `SpawnAim` の軸だけ。** `ToPlayer` と `ToEnemy` は
+  /// まだ入れ替えられる。4 つ 全部 別の型にもできるが、組む側がうるさく
+  /// なるので 2 型 で止めた。
+  ///
+  /// **単位（units of measure）では止まらない。** erase されるので
+  /// C# 側に保護が届かない。struct の包みなら届く。
+  [<Struct>]
+  type Aim = { ToPlayer : float32; ToEnemy : float32 }
+
+  /// これから産まれる弾の位置から見た狙いの向き。**`Aim` とは基準が違う。**
+  ///
+  /// `<bullet><direction type="aim">` は撃たれた弾を基準にするので、
+  /// 撃つ側の `Aim` では答えが違う。産まれる弾がどこに出るかは
+  /// フロントエンドが決めていて（MonoGame は原点、Unity2D は撃った側）
+  /// Core からは分からないので、**フロントがこの欄に入れて渡す**
+  /// （旧はエンジンが `IBulletmlObject.GetSpawnAimDir` を呼び返していた）。
+  [<Struct>]
+  type SpawnAim = { ToPlayer : float32; ToEnemy : float32 }
+
   /// そのフレーム・その弾ぶんの環境。フレーム共通ではない。
   ///
-  /// AimDir は自機の位置だけでなくその弾自身の位置から決まるが、
+  /// Aim は自機の位置だけでなくその弾自身の位置から決まるが、
   /// 1 コマの中では撃つ側の位置が動かないので、値で持てる。
   /// 最寄りの敵を探すのは呼ぶ側の仕事で、ここには結果だけ来る。
   ///
@@ -32,17 +61,8 @@ module Domain =
   type Env =
     { Rand : unit -> float32
       Rank : float32
-      AimDir : float32
-      EnemyAimDir : float32
-      /// これから産まれる弾の位置から見た向き。AimDir とは基準が違う。
-      ///
-      /// <bullet><direction type="aim"> は撃たれた弾を基準にするので、
-      /// 撃つ側の AimDir では答えが違う。産まれる弾がどこに出るかは
-      /// フロントエンドが決めていて（MonoGame は原点、Unity2D は撃った側）
-      /// Core からは分からないので、**フロントがこの欄に入れて渡す**
-      /// （旧はエンジンが `IBulletmlObject.GetSpawnAimDir` を呼び返していた）。
-      SpawnAimDir : float32
-      SpawnEnemyAimDir : float32 }
+      Aim : Aim
+      Spawn : SpawnAim }
 
   /// 実行位置。Script と同じ形の別の木。
   ///

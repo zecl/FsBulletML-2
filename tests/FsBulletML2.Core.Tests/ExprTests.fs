@@ -74,10 +74,8 @@ module internal ExprCorpus =
   let envOf (randValue: float32) (rank: float32) : Env =
     { Rand = (fun () -> randValue)
       Rank = rank
-      AimDir = 0.0f
-      EnemyAimDir = 0.0f
-      SpawnAimDir = 0.0f
-      SpawnEnemyAimDir = 0.0f }
+      Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
+      Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
 
   /// float32 を 1 ビットも違わずに比べる。NaN は NaN と等しいとみなす
   /// （旧も新しいほうも、読めない式で NaN を返すため）

@@ -56,7 +56,5 @@ module BulletmlLoad =
   let noAimEnv () : FsBulletML2.Domain.Env =
     { Rand = loadRand
       Rank = loadRank ()
-      AimDir = 0.0f
-      EnemyAimDir = 0.0f
-      SpawnAimDir = 0.0f
-      SpawnEnemyAimDir = 0.0f }
+      Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
+      Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }

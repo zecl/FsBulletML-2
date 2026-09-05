@@ -12,14 +12,14 @@ using Env = FsBulletML2.Domain.Env;
 /// GetEnemyAimDir / GetSpawnEnemyAimDir が生えていて、エンジンが呼び返していた。
 /// 新 API はフロントが Env を組んで渡すので、呼び返しは無い。
 ///
-/// 散らしておくと <c>AimDir</c> に <c>SpawnAimDir</c> を入れるような取り違えを
+/// 散らしておくと <c>Aim</c> に <c>Spawn</c> を入れるような取り違えを
 /// 門で当てられない（型はどれも float なので通ってしまう）。
 /// 同梱の FsBulletML2.MonoGame.FrontEnv と同じ理由でここに集めてある。
 ///
 /// <b>式はこのフロント固有。</b> MonoGame 版とは 2 つ 違う。
 /// <list type="bullet">
 /// <item>Y の符号   こちらは反転しない（Unity は上が正）。MonoGame は -(py - y)</item>
-/// <item>Spawn の元 こちらは撃った側と同じ場所に作るので AimDir と同値。
+/// <item>Spawn の元 こちらは撃った側と同じ場所に作るので Aim と同値。
 ///                  MonoGame は原点に作るので別式</item>
 /// </list>
 /// </summary>
@@ -71,13 +71,13 @@ public static class FrontEnv
     public static Env At(float x, float y, float enemyAim)
     {
         var aim = AimAtPlayer(x, y);
+        // Aim と SpawnAim は別の型。値は同じでも、入れ替えるとコンパイルで落ちる
+        // （3 番目 と 4 番目 を入れ替えて CS1503 になることを確かめてある）
         return new Env(
             RandFunc,
             BulletMLManager.GetRank(),
-            aim,
-            enemyAim,
-            aim,
-            enemyAim);
+            new FsBulletML2.Domain.Aim(toPlayer: aim, toEnemy: enemyAim),
+            new FsBulletML2.Domain.SpawnAim(toPlayer: aim, toEnemy: enemyAim));
     }
 
     /// <summary>
@@ -88,7 +88,11 @@ public static class FrontEnv
     /// </summary>
     public static Env NoAim()
     {
-        return new Env(RandFunc, BulletMLManager.GetRank(), 0f, 0f, 0f, 0f);
+        return new Env(
+            RandFunc,
+            BulletMLManager.GetRank(),
+            new FsBulletML2.Domain.Aim(toPlayer: 0f, toEnemy: 0f),
+            new FsBulletML2.Domain.SpawnAim(toPlayer: 0f, toEnemy: 0f));
     }
 
 }

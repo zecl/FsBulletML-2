@@ -53,7 +53,7 @@ module TraceNew =
     // 根の Tops は Progress.initial では組めない。旧の toProcessable は
     // 木を組む段で wait の term だけをその場で引く（BulletmlRead.fs の
     // Action.Wait の腕、convertRecBulletmlEx から）。この段の Env は
-    // 撃つ弾ごとの位置がまだ無いので AimDir / EnemyAimDir を 0 に固定し、
+    // 撃つ弾ごとの位置がまだ無いので Aim を 0 に固定し、
     // Rand / Rank はグローバルと同じ値を渡す（設計文書 5.6）。
     // accel / changeDirection / changeSpeed はこの段では引かないので、
     // resetChild ではなく rootProgress を通す
@@ -65,8 +65,7 @@ module TraceNew =
     let spawnAim = aimDir px py origin
     let spawnEnemyAim = enemyAimDir origin
     let rootEnv : Env =
-      { Rand = rand; Rank = rank; AimDir = 0.f; EnemyAimDir = 0.f
-        SpawnAimDir = spawnAim; SpawnEnemyAimDir = spawnEnemyAim }
+      { Rand = rand; Rank = rank; Aim = { ToPlayer = 0.f; ToEnemy = 0.f }; Spawn = { ToPlayer = spawnAim; ToEnemy = spawnEnemyAim } }
     let initial =
       { Pos = { X = 0.f; Y = 0.f }
         Speed = 0.f
@@ -91,10 +90,8 @@ module TraceNew =
           let env =
             { Rand = rand
               Rank = rank
-              AimDir = aimDir px py b.St.Pos
-              EnemyAimDir = enemyAimDir b.St.Pos
-              SpawnAimDir = spawnAim
-              SpawnEnemyAimDir = spawnEnemyAim }
+              Aim = { ToPlayer = aimDir px py b.St.Pos; ToEnemy = enemyAimDir b.St.Pos }
+              Spawn = { ToPlayer = spawnAim; ToEnemy = spawnEnemyAim } }
           let r = Step.step resolvers env b.St
           let vanishedNow = r.Effects |> List.exists (fun e -> e = Vanished)
           let st = { r.State with Pos = { X = r.State.Pos.X + r.Delta.X
@@ -110,10 +107,8 @@ module TraceNew =
               let reinitEnv =
                 { Rand = rand
                   Rank = rank
-                  AimDir = aimDir px py st.Pos
-                  EnemyAimDir = enemyAimDir st.Pos
-                  SpawnAimDir = spawnAim
-                  SpawnEnemyAimDir = spawnEnemyAim }
+                  Aim = { ToPlayer = aimDir px py st.Pos; ToEnemy = enemyAimDir st.Pos }
+                  Spawn = { ToPlayer = spawnAim; ToEnemy = spawnEnemyAim } }
               { st with
                   Tops =
                     st.Tops
@@ -131,7 +126,7 @@ module TraceNew =
           sb.AppendLine() |> ignore
           // 撃たれた弾を並びへ足す。
           //
-          // bullet 側の direction が aim 系のときも、stepFire が env.SpawnAimDir
+          // bullet 側の direction が aim 系のときも、stepFire が env.Spawn.ToPlayer
           // で解決し終えている。ここで実体を見て仕上げる後処理は要らない
           for e in r.Effects do
             match e with

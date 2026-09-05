@@ -19,11 +19,17 @@ open FsBulletML2.MonoGame
 ///
 /// ## 何を守るのか
 ///
-/// `Env` の 6 欄 は**どれも float32 か関数**なので、入れる場所を取り違えても
-/// 型が止めない。**`AimDir` に `SpawnAimDir` を入れても通る。**
+/// `Env` の欄は**どれも float32 か関数**なので、入れる場所を取り違えても
+/// 型が止めなかった。**`AimDir` に `SpawnAimDir` を入れても通っていた。**
+/// いまは `Aim` と `SpawnAim` が別の型なので、その軸の取り違えは
+/// コンパイルで落ちる（C# の `new Env(...)` で 3 番目 と 4 番目 を
+/// 入れ替えて CS1503 になることを確かめてある）。
+///
+/// **残っているのは `ToPlayer` と `ToEnemy` の軸。** 同じ型の中の
+/// float32 2 本 なので、いまも入れ替えられる。**この門が守るのはそこ。**
 /// 元は Core.Tests の `EnvTests` 2 本 が旧 `BulletRunner.envOfGlobal` に
 /// 対して見ていたが、あれは**このフロントの規約**を測っていた
-/// （Unity2D は Spawn 側と `AimDir` が同値なのが正しい。座標系も Y が逆）。
+/// （Unity2D は Spawn 側と `Aim` が同値なのが正しい。座標系も Y が逆）。
 /// 式の在る場所へ門を移した。
 
 /// 位置だけを持つ IBullet。**Manager.enemies へ置くためだけのもの。**
@@ -107,13 +113,13 @@ type EnvGate() =
     env.Rank |> should equal 0.25f
     env.Rand () |> should equal 0.5f
     // 撃った側の位置から
-    env.AimDir |> should (equalWithin 0.0001) (float32 (Math.Atan2(20.0, -80.0)))
+    env.Aim.ToPlayer |> should (equalWithin 0.0001) (float32 (Math.Atan2(20.0, -80.0)))
     // 差し込んだ stub から。**AimDir と入れ替わっていたらここで割れる**
-    env.EnemyAimDir |> should (equalWithin 0.0001) 10000.0f
+    env.Aim.ToEnemy |> should (equalWithin 0.0001) 10000.0f
     // 原点から
-    env.SpawnAimDir |> should (equalWithin 0.0001) (float32 (Math.Atan2(30.0, -100.0)))
+    env.Spawn.ToPlayer |> should (equalWithin 0.0001) (float32 (Math.Atan2(30.0, -100.0)))
     // 原点から、いちばん近い敵 (-40, -60) へ: Atan2(-40, 60)
-    env.SpawnEnemyAimDir |> should (equalWithin 0.0001) (float32 (Math.Atan2(-40.0, 60.0)))
+    env.Spawn.ToEnemy |> should (equalWithin 0.0001) (float32 (Math.Atan2(-40.0, 60.0)))
 
   /// aim を読まないコマの Env。**2 か所 に同じ形が居るので、値が揃うことを見る**
   /// （`FrontEnv.noAim` / `BulletmlLoad.noAimEnv`）
@@ -128,10 +134,10 @@ type EnvGate() =
     for e in [ a; c ] do
       e.Rank |> should equal 0.25f
       e.Rand () |> should equal 0.5f
-      e.AimDir |> should equal 0.0f
-      e.EnemyAimDir |> should equal 0.0f
-      e.SpawnAimDir |> should equal 0.0f
-      e.SpawnEnemyAimDir |> should equal 0.0f
+      e.Aim.ToPlayer |> should equal 0.0f
+      e.Aim.ToEnemy |> should equal 0.0f
+      e.Spawn.ToPlayer |> should equal 0.0f
+      e.Spawn.ToEnemy |> should equal 0.0f
 
   /// 対照 —— **敵が居ないときは enemy 側が 0。**
   /// 上の門は敵を置いてから測っている。置き忘れると 0 どうしの一致になり、

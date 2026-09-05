@@ -9,14 +9,14 @@ open FsBulletML2.Domain
 /// このフロントが `Env` を組むところ。**4 本 の aim を入れる場所はここだけ。**
 ///
 /// 以前は `BaseBullet` の中の private な `let` と `member private` に散って
-/// いた。散っていると、`AimDir` に `SpawnAimDir` を入れるような取り違えを
+/// いた。散っていると、`Aim` に `Spawn` を入れるような取り違えを
 /// 門で当てられない（型はどれも float32 なので通ってしまう）。
 ///
 /// **式はこのフロント固有。** Unity2D の同じ関数とは 2 つ 違う。
 ///
 ///     Y の符号     こちらは -(py - y)。Unity2D は反転しない（座標系が逆）
 ///     Spawn の元    こちらは原点（撃った弾を原点に作る）。
-///                  Unity2D は撃った側と同じ場所に作るので AimDir と同値
+///                  Unity2D は撃った側と同じ場所に作るので Aim と同値
 ///
 /// **だから Core へは畳めない。** 畳むと片方の座標系を強制することになる。
 ///
@@ -68,10 +68,8 @@ module FrontEnv =
   let at (enemyAimAt: float32 -> float32 -> float32) (x: float32) (y: float32) : Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimDir = aimAtPlayer x y
-      EnemyAimDir = enemyAimAt x y
-      SpawnAimDir = spawnAimAtPlayer ()
-      SpawnEnemyAimDir = spawnAimAtEnemy () }
+      Aim = { ToPlayer = aimAtPlayer x y; ToEnemy = enemyAimAt x y }
+      Spawn = { ToPlayer = spawnAimAtPlayer (); ToEnemy = spawnAimAtEnemy () } }
 
   /// aim を読まないと分かっているコマの Env。aim 4 本 を 0 に。
   ///
@@ -80,7 +78,5 @@ module FrontEnv =
   let noAim () : Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimDir = 0.0f
-      EnemyAimDir = 0.0f
-      SpawnAimDir = 0.0f
-      SpawnEnemyAimDir = 0.0f }
+      Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
+      Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }

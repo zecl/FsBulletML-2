@@ -80,8 +80,8 @@ public static class BulletEntityFactory
     /// bulletRef / actionRef を誰も解けない。実行位置はエンジンが
     /// <c>Frame.Spawned</c> で渡してきたものをそのまま使う。
     ///
-    /// <b>産まれる位置は撃った側と同じ。</b> FrontEnv が SpawnAimDir に
-    /// AimDir と同じ値を入れているのはこのため。<b>片方だけ直すと軌跡が割れる。</b>
+    /// <b>産まれる位置は撃った側と同じ。</b> FrontEnv が Spawn に
+    /// Aim と同じ値を入れているのはこのため。<b>片方だけ直すと軌跡が割れる。</b>
     /// </summary>
     public static BulletSim SpawnChild(BulletSim parent, BulletRun child)
     {

@@ -106,20 +106,16 @@ module Harness =
   let envCost (x: float32) (y: float32) : Domain.Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimDir = aimDirAt x y
-      EnemyAimDir = enemyAimDirAt x y
-      SpawnAimDir = aimDirAt 0.0f 0.0f
-      SpawnEnemyAimDir = enemyAimDirAt 0.0f 0.0f }
+      Aim = { ToPlayer = aimDirAt x y; ToEnemy = enemyAimDirAt x y }
+      Spawn = { ToPlayer = aimDirAt 0.0f 0.0f; ToEnemy = enemyAimDirAt 0.0f 0.0f } }
 
   let private envAt (x: float32) (y: float32) : Domain.Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimDir = aimDirAt x y
-      EnemyAimDir = enemyAimDirAt x y
+      Aim = { ToPlayer = aimDirAt x y; ToEnemy = enemyAimDirAt x y }
       // 産まれた弾は原点に出る（下で FakeBullet を位置を入れずに作る）。
       // TraceApi の spawnAim と同じ値になるようにしてある
-      SpawnAimDir = aimDirAt 0.0f 0.0f
-      SpawnEnemyAimDir = enemyAimDirAt 0.0f 0.0f }
+      Spawn = { ToPlayer = aimDirAt 0.0f 0.0f; ToEnemy = enemyAimDirAt 0.0f 0.0f } }
 
   /// 木を組む段に渡すもの。**Env ではない** —— `Runner.load` が読むのは
   /// 乱数とランクだけで、aim はこの段では読まれない
@@ -130,10 +126,8 @@ module Harness =
   let noAimEnv () : Domain.Env =
     { Rand = loadRand
       Rank = loadRank ()
-      AimDir = 0.0f
-      EnemyAimDir = 0.0f
-      SpawnAimDir = 0.0f
-      SpawnEnemyAimDir = 0.0f }
+      Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
+      Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
 
   let prepareApi (doc: Bulletml) : PreparedApi =
     let script = Runner.load loadRand (loadRank ()) doc

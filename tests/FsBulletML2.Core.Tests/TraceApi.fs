@@ -68,21 +68,17 @@ module TraceApi =
     let envAt (x: float32) (y: float32) : Env =
       { Rand = rand
         Rank = rank ()
-        AimDir = aimDir (px ()) (py ()) x y
-        EnemyAimDir = enemyAimDir x y
-        SpawnAimDir = spawnAim ()
-        SpawnEnemyAimDir = spawnEnemyAim () }
+        Aim = { ToPlayer = aimDir (px ()) (py ()) x y; ToEnemy = enemyAimDir x y }
+        Spawn = { ToPlayer = spawnAim (); ToEnemy = spawnEnemyAim () } }
 
     // 木を組む段。撃つ弾ごとの位置がまだ無いので aim は 0 で組む
     let rootEnv : Env =
-      { Rand = rand; Rank = rank (); AimDir = 0.0f; EnemyAimDir = 0.0f
-        SpawnAimDir = spawnAim (); SpawnEnemyAimDir = spawnEnemyAim () }
+      { Rand = rand; Rank = rank (); Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }; Spawn = { ToPlayer = spawnAim (); ToEnemy = spawnEnemyAim () } }
 
     /// aim を読まないと分かっているコマの Env。同梱フロントの noAimEnv と
     /// 同じ形（aim 4 本 を 0 に、Rand / Rank はそのまま）
     let noAimEnv () : Env =
-      { Rand = rand; Rank = rank (); AimDir = 0.0f; EnemyAimDir = 0.0f
-        SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
+      { Rand = rand; Rank = rank (); Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }; Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
     let script = Runner.load rand (rank ()) (readXmlString xml)
 
     let all = List<Live>()

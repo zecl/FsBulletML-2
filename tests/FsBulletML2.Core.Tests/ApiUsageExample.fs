@@ -54,8 +54,8 @@ type ApiUsageExample() =
     for _ in 1 .. 3 do
       let env =
         { Rand = rand; Rank = rank
-          AimDir = 0.0f; EnemyAimDir = 0.0f
-          SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
+          Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
+          Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
       let f = Runner.stepWith script env run { run.Motion with Pos = myPos }
       myPos <- { X = myPos.X + f.Delta.X; Y = myPos.Y + f.Delta.Y }
       run <- f.Run
@@ -78,8 +78,8 @@ type ApiUsageExample() =
     // aim を読まないと分かっているコマの Env
     let noAim =
       { Rand = rand; Rank = rank
-        AimDir = 0.0f; EnemyAimDir = 0.0f
-        SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
+        Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
+        Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
 
     let f = Runner.stepWith script noAim root root.Motion
     f.Spawned |> should not' (be Empty)

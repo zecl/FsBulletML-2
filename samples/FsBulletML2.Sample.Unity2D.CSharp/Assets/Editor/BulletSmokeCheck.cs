@@ -183,7 +183,7 @@ public static class BulletSmokeCheck
                 2.4f, -0.5f);
 
             // 自機の弾。**Player.Awake と同じ通り道**（Bulletml から Runner.Load）。
-            // 敵の弾とは通る枝が違う（BulletType.Player の分岐、SpawnEnemyAimDir）
+            // 敵の弾とは通る枝が違う（BulletType.Player の分岐、Spawn.ToEnemy）
             failures += Fire(
                 "自機の 2way（左）",
                 Runner.Load(FrontEnv.RandFunc, FrontEnv.Rank, FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.b2wayLeftBullet),

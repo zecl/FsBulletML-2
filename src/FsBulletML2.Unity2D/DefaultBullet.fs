@@ -123,17 +123,15 @@ type DefaultBullet (transform:Transform) as this =
   ///
   /// **産まれる弾の向きが MonoGame と違う。** このフロントの
   /// GetBulletPrefubInstance は撃った側と同じ場所に作るので、
-  /// SpawnAimDir は AimDir と同じ値になる（MonoGame は原点に作るので別式）。
+  /// Spawn は Aim と同じ値になる（MonoGame は原点に作るので別式）。
   /// 旧 GetSpawnAimDir / GetSpawnEnemyAimDir の但し書きをそのまま写した
   member private this.EnvNow () : Env =
     let aim = this.AimDir ()
     let enemyAim = this.EnemyAimDir ()
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimDir = aim
-      EnemyAimDir = enemyAim
-      SpawnAimDir = aim
-      SpawnEnemyAimDir = enemyAim }
+      Aim = { ToPlayer = aim; ToEnemy = enemyAim }
+      Spawn = { ToPlayer = aim; ToEnemy = enemyAim } }
 
   /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ
   ///

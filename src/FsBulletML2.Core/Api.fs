@@ -66,8 +66,8 @@ type BulletRun internal (state: BulletState) =
   ///
   ///   let env =
   ///     if run.HasNoScript then { Rand = r; Rank = k
-  ///                               AimDir = 0.0f; EnemyAimDir = 0.0f
-  ///                               SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
+  ///                               Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
+  ///                               Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
   ///     else 本物の aim を組む
   ///
   /// **なぜ「生きている top が無い」ではなく「台本が無い」なのか。**
@@ -105,7 +105,7 @@ type BulletRun internal (state: BulletState) =
   ///
   /// **エンジンが持っていて、あとから差し替える口は無い。** aim をどちらへ
   /// 向けるかがこれで決まる（`Step.fs` の
-  /// `if self.Kind = BulletType.Player then env.EnemyAimDir else env.AimDir`）。
+  /// `if self.Kind = BulletType.Player then env.Aim.ToEnemy else env.Aim.ToPlayer`）。
   /// フロントが毎コマ渡す形だったころは、**フロントの持つ値が
   /// エンジンの値を毎コマ上書きしていた。**
   member _.Kind : BulletType = state.Kind
@@ -191,8 +191,8 @@ type Frame =
 ///   // 毎コマ
 ///   let env =
 ///     { Rand = rand; Rank = rank
-///       AimDir = ...; EnemyAimDir = ...
-///       SpawnAimDir = ...; SpawnEnemyAimDir = ... }
+///       Aim = { ToPlayer = ...; ToEnemy = ... }
+///       Spawn = { ToPlayer = ...; ToEnemy = ... } }
 ///   let f = Runner.stepWith script env run { run.Motion with Pos = myPos }
 ///   myPos <- myPos + f.Delta
 ///   run <- f.Run
@@ -221,8 +221,8 @@ module Runner =
     // 木を組む段のための Env。aim は読まれないので 0 でよい
     let rootEnv : Env =
       { Rand = rand; Rank = rank
-        AimDir = 0.0f; EnemyAimDir = 0.0f
-        SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
+        Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
+        Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
     let rec' = BulletmlRead.foldConstants bulletml
     let resolvers : Step.Resolvers =
       { Bullet = BulletmlOps.expandBulletRefOnce rec'
@@ -261,8 +261,8 @@ module Runner =
   /// 根の実行状態。**撃たれた弾ではないもの**（敵そのもの、自機そのもの）。
   ///
   /// `kind` は狙う先を決める —— `Player` なら敵を、`Enemy` なら自機を狙う
-  /// （`Step.fs` の `if self.Kind = BulletType.Player then env.EnemyAimDir
-  /// else env.AimDir`）。**ここで 1 回 だけ決まる。** 撃たれた弾は親から
+  /// （`Step.fs` の `if self.Kind = BulletType.Player then env.Aim.ToEnemy
+  /// else env.Aim.ToPlayer`）。**ここで 1 回 だけ決まる。** 撃たれた弾は親から
   /// 継ぐので、フロントが毎コマ渡し直す口はどこにも無い。
   [<CompiledName "NewRoot">]
   let newRoot (kind: BulletType) (script: BulletmlScript) : BulletRun =

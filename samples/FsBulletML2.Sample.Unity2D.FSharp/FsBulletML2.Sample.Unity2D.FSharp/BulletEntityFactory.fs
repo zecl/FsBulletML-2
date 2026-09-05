@@ -182,7 +182,7 @@ type BulletEntityFactory private () =
   /// bulletRef / actionRef を誰も解けない。実行位置はエンジンが
   /// `Frame.Spawned` で渡してきたものをそのまま使う。
   ///
-  /// **産まれる位置は撃った側と同じ。** FrontEnv が SpawnAimDir に AimDir と
+  /// **産まれる位置は撃った側と同じ。** FrontEnv が Spawn に Aim と
   /// 同じ値を入れているのはこのため。**片方だけ直すと軌跡が割れる。**
   static member SpawnChild (parent: BulletSim, child: BulletRun) =
     let sim = BulletEntityFactory.Spawn(parent.Kind, parent.X, parent.Y, false)

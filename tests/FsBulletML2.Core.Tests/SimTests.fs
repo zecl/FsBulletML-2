@@ -11,7 +11,7 @@ open FsBulletML2.Domain
 [<TestFixture>]
 type SimTests() =
 
-  let env = { Rand = (fun () -> 0.5f); Rank = 0.25f; AimDir = 0.f; EnemyAimDir = 0.f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
+  let env = { Rand = (fun () -> 0.5f); Rank = 0.25f; Aim = { ToPlayer = 0.f; ToEnemy = 0.f }; Spawn = { ToPlayer = 0.f; ToEnemy = 0.f } }
 
   let st0 =
     { Pos = { X = 0.f; Y = 0.f }
@@ -34,10 +34,10 @@ type SimTests() =
     // F# の関数は比較できず実行時に落ちる。関数だけ参照で、残りは値で見る。
     obj.ReferenceEquals(a.Rand, env.Rand) |> should equal true
     a.Rank |> should equal env.Rank
-    a.AimDir |> should equal env.AimDir
-    a.EnemyAimDir |> should equal env.EnemyAimDir
-    a.SpawnAimDir |> should equal env.SpawnAimDir
-    a.SpawnEnemyAimDir |> should equal env.SpawnEnemyAimDir
+    a.Aim.ToPlayer |> should equal env.Aim.ToPlayer
+    a.Aim.ToEnemy |> should equal env.Aim.ToEnemy
+    a.Spawn.ToPlayer |> should equal env.Spawn.ToPlayer
+    a.Spawn.ToEnemy |> should equal env.Spawn.ToEnemy
     st |> should equal st0
     w |> should be Empty
 

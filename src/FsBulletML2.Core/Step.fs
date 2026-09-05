@@ -160,10 +160,10 @@ module internal Step =
                 | DirectionType.Absolute -> fold (value - self.Dir)
                 | DirectionType.Relative -> fold value
                 | _ ->
-                    let aim = if self.Kind = BulletType.Player then env.EnemyAimDir else env.AimDir
+                    let aim = if self.Kind = BulletType.Player then env.Aim.ToEnemy else env.Aim.ToPlayer
                     fold (aim + value - self.Dir)
             | None ->
-                let aim = if self.Kind = BulletType.Player then env.EnemyAimDir else env.AimDir
+                let aim = if self.Kind = BulletType.Player then env.Aim.ToEnemy else env.Aim.ToPlayer
                 fold (aim + value - self.Dir)
           t, delta
       let left = left - 1.0f
@@ -272,7 +272,7 @@ module internal Step =
   /// convertRecBulletmlEx）の wait だけの引き直し。
   ///
   /// BulletmlRead.fs の wait の腕は、撃つ弾ごとの Env が
-  /// まだ無い木構築の段で、AimDir / EnemyAimDir を 0 に固定した Env で
+  /// まだ無い木構築の段で、Aim を 0 に固定した Env で
   /// getValue を呼ぶ。兄弟の changeDirection / changeSpeed は placeholder
   /// （term = 1.f、first = true）を置くだけで、この段では getValue を
   /// 呼ばない。降りる腕（Action / Repeat / Fire / Bullet）は resetChild と同じ。
@@ -567,7 +567,7 @@ module internal Step =
                         // 旧 expandActionRefOnce は、輪を 1 段
                         // 解いた瞬間に展開した中身の wait をまとめて引いていた
                         // （BulletmlRead.fs の foldConstants。
-                        // Domain 5.3「木を組む段」と同じ、AimDir / EnemyAimDir
+                        // Domain 5.3「木を組む段」と同じ、Aim
                         // を 0 に固定した Env）。ここが 5 つめの draw site
                         // （設計文書 5.3 参照）。bulletRef（Step.fire）と違い、
                         // actionRef はこのあと Init 相当を挟まないので、
@@ -772,7 +772,7 @@ module internal Step =
             | Some (BulletElm.Bullet (_, _, _, actions) as x) ->
                 // 旧 expandBulletRefOnce は、解決した瞬間に
                 // bullet 本体の中の wait をまとめて引いていた（設計文書 5.3
-                // 「木を組む段」と同じ、AimDir / EnemyAimDir を 0 に固定した
+                // 「木を組む段」と同じ、Aim を 0 に固定した
                 // Env）。この直後、下の resetChild が createTask の
                 // bulletElm.Init(env) に当たる引き直しをもう一度するので、
                 // wait 1 個につき乱数を 2 回 引くのが正しい（1 回めの値は
@@ -795,7 +795,7 @@ module internal Step =
             | None -> bulletSrc
         | _ -> bulletSrc
       let revise = (float32 System.Math.PI) / 180.f
-      let aim = if self.Kind = BulletType.Player then env.EnemyAimDir else env.AimDir
+      let aim = if self.Kind = BulletType.Player then env.Aim.ToEnemy else env.Aim.ToPlayer
       // fire 側の direction で SrcDir を決める。旧の fireCommand と同じ順
       let srcDir =
         match dirOpt with
@@ -845,13 +845,13 @@ module internal Step =
               | DirectionType.Relative -> child <- { child with Dir = calcDir (child.Dir + value) }
               | _ ->
                   // 撃たれた弾の実体はこの時点では無いが、その弾がどこに出るかは
-                  // フロントエンドが知っているので env.SpawnAimDir で受け取っている
+                  // フロントエンドが知っているので env.Spawn で受け取っている
                   // （旧の BulletRunner.envOfGlobal が GetSpawnAimDir を読んでいた）。
                   // これで Spawn は値として完結し、実体を見て仕上げる必要が無い。
                   // Player / Enemy の振り分けは撃った側の種別で行う——撃たれた弾の
                   // 種別は例外なく撃った側からその場で複写されるので同じになる
                   let spawnAim =
-                    if child.Kind = BulletType.Player then env.SpawnEnemyAimDir else env.SpawnAimDir
+                    if child.Kind = BulletType.Player then env.Spawn.ToEnemy else env.Spawn.ToPlayer
                   child <- { child with Dir = calcDir (spawnAim + value) }
           | None -> ()
       | None -> ()

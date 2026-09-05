@@ -30,10 +30,8 @@ type StepWithEquiv() =
   let envWith (rand: unit -> float32) : Env =
     { Rand = rand
       Rank = 0.5f
-      AimDir = 0.3f
-      EnemyAimDir = -0.7f
-      SpawnAimDir = 1.1f
-      SpawnEnemyAimDir = -1.3f }
+      Aim = { ToPlayer = 0.3f; ToEnemy = -0.7f }
+      Spawn = { ToPlayer = 1.1f; ToEnemy = -1.3f } }
 
   let motion : Motion =
     { Pos = { X = 3.0f; Y = -4.0f }
