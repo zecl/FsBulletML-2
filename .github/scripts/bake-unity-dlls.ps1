@@ -21,6 +21,15 @@
   `CopyLocalLockFileAssemblies` を立てるのは、`FSharp.Core` と
   `FSharp.Control.R3` が PackageReference なので、それが無いと library の
   出力に落ちてこないため。
+
+  **`dotnet build <slnx>` を挟むと、次の焼き直しは必ず差を出す。**
+  ソースが 1 行 も変わっていなくても 10 本 が「変わった」になる ——
+  こちらは `CopyLocalLockFileAssemblies` を立てて建てるので、
+  solution の build とは obj が別になり、出る binary のバイトが違う。
+  **中身が古いのではない。** 続けてもう一度 走らせると 0 本 になる。
+  見分け方は「同梱 dll で compile が通るか」（`-p:UseShippedDlls=true`）で、
+  そちらが緑ならバイトの揺れ。差分を commit しても害は無いが、
+  **意味の無い binary の差分が積むので、揺れだけなら戻すこと。**
 #>
 [CmdletBinding()]
 param(
