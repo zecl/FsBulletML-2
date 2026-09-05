@@ -125,8 +125,7 @@ type BaseBullet () as this =
         // **呼ぶ / 呼ばないはこのフロントの決めごと** —— Driver は既定を作らない
         run <-
           if f.Finished then
-            Some (Driver.restart world MonoGameFront.space MonoGameFront.origin
-                    f.Run this.self.X this.self.Y)
+            Some (Driver.restart world f.Run)
           else Some f.Run
     | _ -> ()
 

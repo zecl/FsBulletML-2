@@ -94,7 +94,7 @@ type DefaultBullet (transform:Transform) as this =
       // 組むところも旧のまま
       run <-
         run |> Option.map (fun r ->
-          Driver.restart world Unity2DFront.space Unity2DFront.origin r me.X me.Y)
+          Driver.restart world r)
 
     member this.Update () =
       let me = this :> IDefaultBullet
@@ -161,7 +161,6 @@ type DefaultBullet (transform:Transform) as this =
         // （旧 DefaultBullet が apply のあとで envOfGlobal を呼ぶのと同じ順）
         run <-
           if f.Finished then
-            Some (Driver.restart world Unity2DFront.space Unity2DFront.origin
-                    f.Run me.X me.Y)
+            Some (Driver.restart world f.Run)
           else Some f.Run
     | _ -> ()

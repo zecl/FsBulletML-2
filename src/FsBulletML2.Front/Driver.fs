@@ -67,13 +67,19 @@ module Driver =
     let env = FrontEnv.forRun world space origin run motion.Pos.X motion.Pos.Y
     Runner.stepWith env run motion
 
-  /// 全 top が終わった弾を走らせ直す。**差分を足したあとの位置**を渡すこと。
+  /// 全 top が終わった弾を走らせ直す。
   ///
-  /// **走らせ直すかどうかはフロントの決めごと。** 同梱の 2 つ は
-  /// `Finished` のコマで呼んでいるが、`restart` は wait / changeDirection /
-  /// changeSpeed の term を引き直すので、呼ぶか呼ばないかで乱数の並びが変わる。
+  /// **位置を取らない。`aim` が結果に出ないから。** 引き直すのは
+  /// wait / changeDirection / changeSpeed の `<term>`（数式）で、
+  /// `getValue` が触るのは `Rand` と `Rank` だけ（`Eval.fs`）。
+  /// 以前はここで `at` を通していたが、**Atan2 4 本 と、ゲームへの
+  /// 問い合わせ 2 回 を組んで捨てていた。**
+  /// 凍結は `tests/FsBulletML2.Core.Tests/RestartReadsNoAim.fs`
+  /// （227 本 の実物で、aim を変えても答えが動かないことを見ている）。
+  ///
+  /// **走らせ直すかどうかはフロントの決めごと。** 同梱の 4 つ は
+  /// `Finished` のコマで呼んでいるが、呼ぶか呼ばないかで乱数の並びが変わる。
   /// ここが既定を作ると、その決めごとを黙って奪うことになる
   [<CompiledName "Restart">]
-  let restart (world: IWorld) (space: Space) (origin: SpawnOrigin)
-              (run: BulletRun) (x: float32) (y: float32) : BulletRun =
-    Runner.restart (FrontEnv.forRun world space origin run x y) run
+  let restart (world: IWorld) (run: BulletRun) : BulletRun =
+    Runner.restart (FrontEnv.noAim world) run

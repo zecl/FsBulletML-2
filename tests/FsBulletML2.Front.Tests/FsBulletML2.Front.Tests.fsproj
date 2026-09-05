@@ -11,6 +11,7 @@
     <Compile Include="Corpus.fs" />
     <Compile Include="AimingFreeze.fs" />
     <Compile Include="PublicSurface.fs" />
+    <Compile Include="NoAimSkip.fs" />
     <Compile Include="DriverEquiv.fs" />
   </ItemGroup>
   <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに

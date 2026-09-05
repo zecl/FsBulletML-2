@@ -98,10 +98,15 @@ type BulletRun internal (script: BulletmlScript, state: BulletState) =
   ///     else 本物の aim を組む
   ///
   /// **なぜ「生きている top が無い」ではなく「台本が無い」なのか。**
-  /// step だけなら前者でよい（StepTop の門がその前提を留めている）が、
-  /// フロントは Finished のコマで restart も呼ぶ。restart は
-  /// changeDirection type="aim" の term を引き直すので **aim を読みうる**。
-  /// 台本が空なら restart は空を歩くだけなので、両方 まとめて安全。
+  /// step だけなら前者でよい（StepTop の門がその前提を留めている）。
+  /// 台本が空なら restart も空を歩くだけなので、両方 まとめて安全。
+  ///
+  /// **以前ここに「restart は changeDirection type="aim" の term を
+  /// 引き直すので aim を読みうる」と書いてあった。嘘だった。**
+  /// 引き直すのは `<term>`（数式）で、`getValue` が触るのは `Rand` と
+  /// `Rank` だけ。227 本 の実物で aim を変えても答えが動かないことを
+  /// 見てある（`tests/FsBulletML2.Core.Tests/RestartReadsNoAim.fs`）。
+  /// **結論は当たっていて理由が嘘**だったので、理由だけ差し替えた。
   ///
   /// 効きの大きさ（実測・5way 60 コマ）: Env を 1 回 組むのが 23.02 ns。
   /// 1 走行の Env 構築が 17,820 回 で、うち 96.7% がこれに当たるので、

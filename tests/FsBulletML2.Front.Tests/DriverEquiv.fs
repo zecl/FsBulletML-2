@@ -136,7 +136,7 @@ type DriverEquiv() =
           let mutable nb = b
           nb.X <- f.Run.Motion.Pos.X + f.Delta.X
           nb.Y <- f.Run.Motion.Pos.Y + f.Delta.Y
-          nb.Run <- if f.Finished then Driver.restart w space origin f.Run nb.X nb.Y else f.Run
+          nb.Run <- if f.Finished then Driver.restart w f.Run else f.Run
           if f.Vanished || f.Retired then nb.Alive <- false
           all.[j] <- nb
           sb.AppendLine(sprintf "  b%d x=%.6f y=%.6f d=%.6f s=%.6f%s"

@@ -39,6 +39,8 @@
     <Compile Include="Corpus.fs" />
     <Compile Include="ExprTests.fs" />
     <Compile Include="StepWithEquiv.fs" />
+    <Compile Include="RootAndShot.fs" />
+    <Compile Include="RestartReadsNoAim.fs" />
     <Compile Include="Equivalence.fs" />
     <Compile Include="SelfReference.fs" />
     <Compile Include="ApiUsageExample.fs" />

@@ -175,7 +175,7 @@ public abstract class BaseBullet : MonoBehaviour
         // 走らせ直しの Env は、位置を更新したあとの自分から組む
         // （旧 BaseBullet が座標を足したあとで envOfGlobal を呼ぶのと同じ順）
         Run = f.Finished
-            ? Driver.Restart(world, CSharpWorld.Space, CSharpWorld.Origin, f.Run, X, Y)
+            ? Driver.Restart(world, f.Run)
             : f.Run;
     }
 
@@ -214,7 +214,7 @@ public abstract class BaseBullet : MonoBehaviour
         // 旧はここで task.Init(envOfGlobal this) を呼んで木を歩き直していた
         if (Run.HasValue)
         {
-            Run = Driver.Restart(world, CSharpWorld.Space, CSharpWorld.Origin, Run.Value, X, Y);
+            Run = Driver.Restart(world, Run.Value);
         }
     }
 

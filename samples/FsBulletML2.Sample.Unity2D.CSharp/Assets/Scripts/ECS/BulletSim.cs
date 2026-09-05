@@ -112,7 +112,7 @@ public class BulletSim : IComponentData
         // この時点の位置（撃たれた直後は、まだ親の位置へ移す前）で組むところも旧のまま
         if (Run.HasValue)
         {
-            Run = Driver.Restart(world, CSharpWorld.Space, CSharpWorld.Origin, Run.Value, X, Y);
+            Run = Driver.Restart(world, Run.Value);
         }
     }
 
@@ -181,7 +181,7 @@ public class BulletSim : IComponentData
         // 走らせ直しの Env は、位置を更新したあとの自分から組む
         // （旧 BulletSim が座標を足したあとで envOfGlobal を呼ぶのと同じ順）
         Run = f.Finished
-            ? Driver.Restart(world, CSharpWorld.Space, CSharpWorld.Origin, f.Run, X, Y)
+            ? Driver.Restart(world, f.Run)
             : f.Run;
     }
 }

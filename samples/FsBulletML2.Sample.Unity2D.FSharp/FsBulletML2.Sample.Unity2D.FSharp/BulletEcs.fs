@@ -186,7 +186,7 @@ type BulletSim () =
     // 旧はここで task.Init(envOfGlobal this) を呼んで木を歩き直していた
     this.Run <-
       this.Run |> Option.map (fun r ->
-        Driver.restart world EcsFront.space EcsFront.origin r this.X this.Y)
+        Driver.restart world r)
 
   member this.Vanish () = this.Used <- false
 
@@ -234,5 +234,5 @@ type BulletSim () =
       // （旧 DefaultBullet が apply のあとで envOfGlobal を呼ぶのと同じ順）
       this.Run <-
         if f.Finished then
-          Some (Driver.restart world EcsFront.space EcsFront.origin f.Run this.X this.Y)
+          Some (Driver.restart world f.Run)
         else Some f.Run

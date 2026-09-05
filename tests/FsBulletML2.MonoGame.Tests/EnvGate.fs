@@ -152,6 +152,27 @@ type EnvGate() =
     env.Aim.ToEnemy |> should equal 0.0f
     env.Spawn.ToEnemy |> should equal 0.0f
 
+  /// **産まれる弾の相手は覚えない。** このフロントは弾を原点に作るので、
+  /// 産まれる弾から見た相手は「原点にいちばん近い敵」で、**撃った側が
+  /// 覚えている相手とは別になりうる。**
+  ///
+  /// **変異で穴が見つかって足した。** `TrySpawnTargetFrom` を
+  /// 覚えるほう（`TryFrom`）に差し替える変異を入れても、598 本 が緑のまま
+  /// 通った —— 門の敵の並びが「どちらから見ても同じ相手」だったため。
+  /// ここは**撃った側に近い敵と、原点に近い敵を別に置く。**
+  [<Test>]
+  member _.``産まれる弾の相手は、撃った側が覚えている相手とは別になりうる``() =
+    // 弾は (10, 20)。E1 はそこに近く、E2 は原点に近い
+    Manager.addEnemy (StubBullet(12.0f, 22.0f))
+    Manager.addEnemy (StubBullet(1.0f, -1.0f))
+    let env = envAt 10.0f 20.0f
+    // 撃った側 (10, 20) から E1 (12, 22) へ: Atan2(2, -2)
+    env.Aim.ToEnemy |> should (equalWithin 0.0001) (float32 (Math.Atan2(2.0, -2.0)))
+    // 原点 (0, 0) から E2 (1, -1) へ: Atan2(1, 1)
+    env.Spawn.ToEnemy |> should (equalWithin 0.0001) (float32 (Math.Atan2(1.0, 1.0)))
+    // **2 つ は別の値。** 同じだと、覚えるほうに差し替えても気づけない
+    env.Spawn.ToEnemy |> should not' (equalWithin 0.0001 env.Aim.ToEnemy)
+
   /// **選んだ相手を覚えること。** 覚えないと毎コマ 選び直して相手が
   /// 入れ替わり、軌跡が変わる。1 体 目 を置いて聞いたあと、より近い
   /// 2 体 目 を置いても答えが動かないことで見る
