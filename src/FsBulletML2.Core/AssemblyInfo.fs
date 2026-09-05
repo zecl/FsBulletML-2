@@ -27,7 +27,7 @@ open System.Runtime.InteropServices
 [<assembly: InternalsVisibleTo("FsBulletML2.Core.Tests")>]
 [<assembly: InternalsVisibleTo("CreateBullets")>]
 
-#if Debug
+#if DEBUG
 [<assembly: AssemblyConfiguration("Debug")>]
 #else
 [<assembly: AssemblyConfiguration("Release")>]

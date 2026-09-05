@@ -27,7 +27,7 @@ open System.Runtime.InteropServices
 [<assembly: InternalsVisibleTo("CreateBullets")>]
 #endif
 
-#if Debug
+#if DEBUG
 [<assembly: AssemblyConfiguration("Debug")>]
 #else
 [<assembly: AssemblyConfiguration("Release")>]
