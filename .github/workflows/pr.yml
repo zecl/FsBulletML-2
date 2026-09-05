@@ -38,6 +38,12 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-slnx.ps1
 
+      # NUL が 1 個 入るとそのファイルは git から binary に見えて差分が読めなくなる。
+      # 走りはするので、目でも試験でも出ない
+      - name: 生の制御文字が入っていないか
+        shell: pwsh
+        run: ./.github/scripts/guard-text.ps1
+
       # 判断する側そのものの校正。**これが赤いときは、下の緑を信じてはいけない**
       - name: 選ぶ道具の校正
         shell: pwsh
@@ -46,6 +52,10 @@ jobs:
       - name: 締めの校正
         shell: pwsh
         run: ./.github/scripts/gate.Tests.ps1
+
+      - name: 制御文字の門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-text.Tests.ps1
 
       - name: 変更から選ぶ
         id: pick
