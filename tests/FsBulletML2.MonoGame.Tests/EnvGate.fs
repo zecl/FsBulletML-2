@@ -4,6 +4,7 @@ open System
 open NUnit.Framework
 open FsUnit
 open FsBulletML2
+open FsBulletML2.Domain
 open FsBulletML2.MonoGame
 
 /// このフロントが `Env` を組むところの門。
@@ -72,25 +73,22 @@ type EnvGate() =
 
   [<Test>]
   member _.``自機を狙う向きは、弾の位置から引く。Y は反転する``() =
-    // 弾 (10, 20) から自機 (30, 100) へ: Atan2(30-10, -(100-20)) = Atan2(20, -80)
-    let expected = float32 (Math.Atan2(20.0, -80.0))
-    FrontEnv.aimAtPlayer 10.0f 20.0f |> should (equalWithin 0.0001) expected
+    // 弾 (10, 20) から自機 (30, 100) へ: (30-10, -(100-20)) = (20, -80)
+    FrontEnv.aimAtPlayer 10.0f 20.0f |> should equal { X = 20.0f; Y = -80.0f }
 
   /// **Unity2D は反転しない。** 同じ式に見えて座標系が逆なので、
   /// 片方をもう片方へ寄せると全弾幕の軌跡が割れる。ここで符号を固定する
   [<Test>]
   member _.``Y を反転しない式とは別の値になる``() =
-    let notFlipped = float32 (Math.Atan2(20.0, 80.0))
-    FrontEnv.aimAtPlayer 10.0f 20.0f |> should not' (equalWithin 0.0001 notFlipped)
+    FrontEnv.aimAtPlayer 10.0f 20.0f |> should not' (equal { X = 20.0f; Y = 80.0f })
 
   /// **これが (b) の本体。** 産まれる弾は原点に作るので、Spawn 側は
   /// 撃った側と別の値になる。同じ値だと、入れ替えても誰も気づかない
   [<Test>]
   member _.``Spawn 側の aim は原点から。撃った側とは別の値``() =
-    let atOrigin = float32 (Math.Atan2(30.0, -100.0))
-    FrontEnv.spawnAimAtPlayer () |> should (equalWithin 0.0001) atOrigin
+    FrontEnv.spawnAimAtPlayer () |> should equal { X = 30.0f; Y = -100.0f }
     FrontEnv.spawnAimAtPlayer ()
-    |> should not' (equalWithin 0.0001 (FrontEnv.aimAtPlayer 10.0f 20.0f))
+    |> should not' (equal (FrontEnv.aimAtPlayer 10.0f 20.0f))
 
   /// 組み立ての 4 欄 が入れ替わっていないか。**enemyAimAt は差し込めるので、
   /// 弾の位置がそのまま出る stub を渡して、どの欄へ入ったかを見る**
@@ -100,16 +98,16 @@ type EnvGate() =
     // 入れ替えても気づけない（下の対照がその条件を固定している）
     Manager.addEnemy (StubBullet(-40.0f, -60.0f))
 
-    // 弾の位置を「そのまま」返す stub。EnemyAimDir の欄にだけ出るはず
-    let enemyAimStub (x: float32) (_y: float32) = x * 1000.0f
+    // 弾の位置を「そのまま」返す stub。EnemyAimVec の欄にだけ出るはず
+    let enemyAimStub (x: float32) (_y: float32) : Vec2 = { X = x * 1000.0f; Y = 1.0f }
     let env = FrontEnv.at enemyAimStub 10.0f 20.0f
 
     env.Rank |> should equal 0.25f
     env.Rand () |> should equal 0.5f
     // 撃った側の位置から
     env.AimDir |> should (equalWithin 0.0001) (float32 (Math.Atan2(20.0, -80.0)))
-    // 差し込んだ stub から。**AimDir と入れ替わっていたらここで割れる**
-    env.EnemyAimDir |> should (equalWithin 0.0001) 10000.0f
+    // 差し込んだ stub から。**AimVec と入れ替わっていたらここで割れる**
+    env.EnemyAimVec |> should equal { X = 10000.0f; Y = 1.0f }
     // 原点から
     env.SpawnAimDir |> should (equalWithin 0.0001) (float32 (Math.Atan2(30.0, -100.0)))
     // 原点から、いちばん近い敵 (-40, -60) へ: Atan2(-40, 60)
@@ -135,4 +133,4 @@ type EnvGate() =
   /// 入れ替えを当てられなくなるので、0 になる条件を字で固定しておく
   [<Test>]
   member _.``敵が 1 体 も居なければ、敵向きの aim は 0``() =
-    FrontEnv.spawnAimAtEnemy () |> should equal 0.0f
+    FrontEnv.spawnAimAtEnemy () |> should equal { X = 0.0f; Y = 0.0f }

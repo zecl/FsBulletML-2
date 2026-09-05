@@ -9,7 +9,7 @@ open FsBulletML2.Domain
 [<TestFixture>]
 type StepTop() =
 
-  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimDir = 0.f; EnemyAimDir = 0.f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
+  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }; SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
 
   let noResolvers : Step.Resolvers =
     { Bullet = (fun _ _ -> None); Action = fun _ _ -> None }
@@ -170,10 +170,10 @@ type StepTop() =
   member _.``終わった top しか無いコマは、aim を読まない``() =
     let poisoned =
       { env with
-          AimDir = 1.25f
-          EnemyAimDir = -2.5f
-          SpawnAimDir = 3.0f
-          SpawnEnemyAimDir = -0.75f }
+          AimVec = { X = 1.25f; Y = 0.5f }
+          EnemyAimVec = { X = -2.5f; Y = 0.5f }
+          SpawnAimVec = { X = 3.0f; Y = 0.5f }
+          SpawnEnemyAimVec = { X = -0.75f; Y = 0.5f } }
     // vanish は 1 コマで終わる。2 コマめが「生きている top が無い」コマ
     let t = top [ Action.Vanish ]
     let first = Step.step noResolvers env (stateWith [ t ])

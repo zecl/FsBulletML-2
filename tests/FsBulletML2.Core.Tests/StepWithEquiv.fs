@@ -30,10 +30,10 @@ type StepWithEquiv() =
   let envWith (rand: unit -> float32) : Env =
     { Rand = rand
       Rank = 0.5f
-      AimDir = 0.3f
-      EnemyAimDir = -0.7f
-      SpawnAimDir = 1.1f
-      SpawnEnemyAimDir = -1.3f }
+      AimVec = { X = 0.3f; Y = 1.0f }
+      EnemyAimVec = { X = -0.7f; Y = 1.0f }
+      SpawnAimVec = { X = 1.1f; Y = 1.0f }
+      SpawnEnemyAimVec = { X = -1.3f; Y = 1.0f } }
 
   let body =
     { Pos = { X = 3.0f; Y = -4.0f }

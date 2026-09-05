@@ -11,11 +11,21 @@ module Domain =
   [<Struct>]
   type Vec2 = { X : float32; Y : float32 }
 
+  /// 差分を向きにする。`Atan2(X, Y)` —— **Y の符号はフロントが差分に入れる**
+  /// ので、ここは座標系を知らない。
+  let private angleOf (v: Vec2) =
+    float32 (System.Math.Atan2(float v.X, float v.Y))
+
   /// そのフレーム・その弾ぶんの環境。フレーム共通ではない。
   ///
-  /// AimDir は自機の位置だけでなくその弾自身の位置から決まるが、
-  /// 1 コマの中では撃つ側の位置が動かないので、値で持てる。
-  /// 最寄りの敵を探すのは呼ぶ側の仕事で、ここには結果だけ来る。
+  /// **持つのは向きではなく差分。** 向き（`AimDir` など）は読まれたときに
+  /// `Atan2` を回す。組む側は引き算だけで済み、読まれない aim の分は
+  /// 計算そのものが起きない —— `direction type="aim"` を評価する瞬間まで、
+  /// 誰も角度を必要としない。
+  ///
+  /// **座標系は Core に無い。** `Atan2(X, Y)` に渡す形へフロントが差分を
+  /// 詰める（MonoGame は Y を反転して `-(py - y)`、Unity2D はそのまま）。
+  /// 角度で受けていたころと同じ式・同じ順なので、値はビットまで変わらない。
   ///
   /// **[<Struct>] にしてある。** 1 走行（5way / 60 コマ）でフロントがこれを
   /// 17,820 回 組む —— step の前と走らせ直しの前で、生きている弾も死んだ弾も
@@ -24,25 +34,25 @@ module Domain =
   /// **中に関数（Rand）が居ても struct にできる。** 関数参照そのものは
   /// ヒープに在るままだが、それを持つ**包み**を値にできる。
   /// 「関数を持つから参照型でなければならない」ではない。
-  ///
-  /// BulletRun.HasNoScript で aim の計算は止めたが、あれは Atan2 を
-  /// 止めただけで箱は毎コマ 作っていた（時間は 24% 減ったのに確保が
-  /// 1 バイト も動かなかったのがその証拠）。箱を消すのはこちら。
   [<Struct>]
   type Env =
     { Rand : unit -> float32
       Rank : float32
-      AimDir : float32
-      EnemyAimDir : float32
-      /// これから産まれる弾の位置から見た向き。AimDir とは基準が違う。
+      AimVec : Vec2
+      EnemyAimVec : Vec2
+      /// これから産まれる弾の位置から見た差分。AimVec とは基準が違う。
       ///
       /// <bullet><direction type="aim"> は撃たれた弾を基準にするので、
-      /// 撃つ側の AimDir では答えが違う。産まれる弾がどこに出るかは
+      /// 撃つ側の AimVec では答えが違う。産まれる弾がどこに出るかは
       /// フロントエンドが決めていて（MonoGame は原点、Unity2D は撃った側）
-      /// Core からは分からないので、**フロントがこの欄に入れて渡す**
-      /// （旧はエンジンが `IBulletmlObject.GetSpawnAimDir` を呼び返していた）。
-      SpawnAimDir : float32
-      SpawnEnemyAimDir : float32 }
+      /// Core からは分からないので、**フロントがこの欄に入れて渡す**。
+      SpawnAimVec : Vec2
+      SpawnEnemyAimVec : Vec2 }
+
+    member this.AimDir = angleOf this.AimVec
+    member this.EnemyAimDir = angleOf this.EnemyAimVec
+    member this.SpawnAimDir = angleOf this.SpawnAimVec
+    member this.SpawnEnemyAimDir = angleOf this.SpawnEnemyAimVec
 
   /// 実行位置。Script と同じ形の別の木。
   ///

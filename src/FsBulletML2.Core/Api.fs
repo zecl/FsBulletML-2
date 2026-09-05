@@ -70,8 +70,8 @@ type BulletRun internal (state: BulletState) =
   ///
   ///   let env =
   ///     if run.HasNoScript then { Rand = r; Rank = k
-  ///                               AimDir = 0.0f; EnemyAimDir = 0.0f
-  ///                               SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
+  ///                               AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }
+  ///                               SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
   ///     else 本物の aim を組む
   ///
   /// **なぜ「生きている top が無い」ではなく「台本が無い」なのか。**
@@ -188,8 +188,8 @@ type Frame =
 ///   // 読む段（弾幕 1 本 につき 1 回）。この段では aim は読まれない
 ///   let loadEnv =
 ///     { Rand = rand; Rank = rank
-///       AimDir = 0.0f; EnemyAimDir = 0.0f
-///       SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
+///       AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }
+///       SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
 ///   let script = Runner.load loadEnv (readXmlString xml)
 ///   let mutable run = Runner.newRoot script
 ///

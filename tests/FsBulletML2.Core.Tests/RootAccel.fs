@@ -19,7 +19,7 @@ open FsBulletML2.Domain
 [<TestFixture>]
 type RootAccel() =
 
-  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimDir = 0.f; EnemyAimDir = 0.f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
+  let env = { Rand = (fun () -> 0.5f); Rank = 0.5f; AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }; SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
 
   let noResolvers : Step.Resolvers =
     { Bullet = (fun _ _ -> None); Action = fun _ _ -> None }

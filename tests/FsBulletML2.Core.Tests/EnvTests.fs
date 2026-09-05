@@ -22,13 +22,13 @@ type EnvTests() =
 
   [<Test>]
   member _.``Env はレコードリテラルで作れる``() =
-    let env = { Rand = (fun () -> 0.5f); Rank = 0.25f; AimDir = 1.0f; EnemyAimDir = 2.0f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
+    let env = { Rand = (fun () -> 0.5f); Rank = 0.25f; AimVec = { X = 1.0f; Y = 0.0f }; EnemyAimVec = { X = 2.0f; Y = 0.0f }; SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
     env.Rank |> should equal 0.25f
     env.Rand () |> should equal 0.5f
 
   [<Test>]
   member _.``Rand は呼ぶたびに読み直される``() =
     let mutable n = 0
-    let env = { Rand = (fun () -> n <- n + 1; float32 n); Rank = 0.f; AimDir = 0.f; EnemyAimDir = 0.f; SpawnAimDir = 0.f; SpawnEnemyAimDir = 0.f }
+    let env = { Rand = (fun () -> n <- n + 1; float32 n); Rank = 0.f; AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }; SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
     env.Rand () |> should equal 1.0f
     env.Rand () |> should equal 2.0f

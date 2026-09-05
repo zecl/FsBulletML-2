@@ -33,6 +33,9 @@ module internal Step =
   /// 全弾幕の軌跡がずれる
   let private zeroExpr = numExpr "0"
 
+  /// 木を組む段の Env で aim を潰すのに使う。Atan2(0, 0) は 0
+  let private zeroVec : Vec2 = { X = 0.0f; Y = 0.0f }
+
   /// wait。旧の waitCommand を写す。
   ///
   ///   term >= 0 なら 1 減らす
@@ -591,7 +594,7 @@ module internal Step =
                         // 到達しない枝の状態が保たれるかどうかは観測できない
                         // ので、直さずに歩き方だけ記録しておく
 
-                        let refEnv = { env with AimDir = 0.0f; EnemyAimDir = 0.0f }
+                        let refEnv = { env with AimVec = zeroVec; EnemyAimVec = zeroVec }
                         let expandedProgs = expanded |> List.map (rootProgress refEnv)
                         let remainingProgs =
                           running |> List.skip (idx + 1) |> List.map Progress.initial
@@ -779,7 +782,7 @@ module internal Step =
                 // 文書読み込み時の foldConstants（撃たれた弾のテンプレ
                 // 自身が根の top* の中に literal で書いてある場合）で
                 // 既に済ませているので、ここへは bulletRef で解決したときだけ来る
-                actions |> List.iter (rootProgressActionElm { env with AimDir = 0.0f; EnemyAimDir = 0.0f } >> ignore)
+                actions |> List.iter (rootProgressActionElm { env with AimVec = zeroVec; EnemyAimVec = zeroVec } >> ignore)
                 x
             | Some x -> x
             // ここへは実際には来ない。ラベルが存在しない bulletRef は

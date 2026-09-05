@@ -87,12 +87,15 @@ module Harness =
       Live : List<LiveApi>
       Born : List<FakeBullet> }
 
-  let private aimDirAt (x: float32) (y: float32) =
-    float32 (System.Math.Atan2(float (BulletMLManager.GetPlayerPosX() - x),
-                               float -(BulletMLManager.GetPlayerPosY() - y)))
+  /// 自機への差分。角度にするのは Core（Env.AimDir が Atan2(X, Y) を回す）。
+  /// **Y の符号はここで入れる** —— TraceApi の aim と同じ式
+  let private aimVecAt (x: float32) (y: float32) : Domain.Vec2 =
+    { X = BulletMLManager.GetPlayerPosX() - x
+      Y = -(BulletMLManager.GetPlayerPosY() - y) }
 
-  let private enemyAimDirAt (x: float32) (y: float32) =
-    float32 (System.Math.Atan2(float (FakeEnemy.X - x), -1.0 * float (FakeEnemy.Y - y)))
+  let private enemyAimVecAt (x: float32) (y: float32) : Domain.Vec2 =
+    { X = FakeEnemy.X - x
+      Y = -(FakeEnemy.Y - y) }
 
   /// Env を 1 回 組む費用を測るための口。中身は envAt と同じ。
   ///
@@ -106,29 +109,29 @@ module Harness =
   let envCost (x: float32) (y: float32) : Domain.Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimDir = aimDirAt x y
-      EnemyAimDir = enemyAimDirAt x y
-      SpawnAimDir = aimDirAt 0.0f 0.0f
-      SpawnEnemyAimDir = enemyAimDirAt 0.0f 0.0f }
+      AimVec = aimVecAt x y
+      EnemyAimVec = enemyAimVecAt x y
+      SpawnAimVec = aimVecAt 0.0f 0.0f
+      SpawnEnemyAimVec = enemyAimVecAt 0.0f 0.0f }
 
   let private envAt (x: float32) (y: float32) : Domain.Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimDir = aimDirAt x y
-      EnemyAimDir = enemyAimDirAt x y
+      AimVec = aimVecAt x y
+      EnemyAimVec = enemyAimVecAt x y
       // 産まれた弾は原点に出る（下で FakeBullet を位置を入れずに作る）。
       // TraceApi の spawnAim と同じ値になるようにしてある
-      SpawnAimDir = aimDirAt 0.0f 0.0f
-      SpawnEnemyAimDir = enemyAimDirAt 0.0f 0.0f }
+      SpawnAimVec = aimVecAt 0.0f 0.0f
+      SpawnEnemyAimVec = enemyAimVecAt 0.0f 0.0f }
 
   /// 木を組む段の Env。aim はこの段では読まれない
   let loadEnv () : Domain.Env =
     { Rand = BulletMLManager.GetRandom
       Rank = BulletMLManager.GetRank ()
-      AimDir = 0.0f
-      EnemyAimDir = 0.0f
-      SpawnAimDir = 0.0f
-      SpawnEnemyAimDir = 0.0f }
+      AimVec = { X = 0.0f; Y = 0.0f }
+      EnemyAimVec = { X = 0.0f; Y = 0.0f }
+      SpawnAimVec = { X = 0.0f; Y = 0.0f }
+      SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
 
   let prepareApi (doc: Bulletml) : PreparedApi =
     let script = Runner.load (loadEnv ()) doc

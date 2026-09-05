@@ -33,11 +33,11 @@ module TraceApi =
     r.ToString("F" + string TraceFormat.digits, CultureInfo.InvariantCulture)
 
   /// FakeBullet.GetAimDir と同じ式。ずれると全弾幕が割れる
-  let private aimDir (px: float32) (py: float32) (x: float32) (y: float32) =
-    float32 (Math.Atan2(float (px - x), float -(py - y)))
+  let private aimDir (px: float32) (py: float32) (x: float32) (y: float32) : Vec2 =
+    { X = px - x; Y = -(py - y) }
 
-  let private enemyAimDir (x: float32) (y: float32) =
-    float32 (Math.Atan2(float (FakeEnemy.X - x), -1.0 * float (FakeEnemy.Y - y)))
+  let private enemyAimDir (x: float32) (y: float32) : Vec2 =
+    { X = FakeEnemy.X - x; Y = -(FakeEnemy.Y - y) }
 
   type private Live =
     { mutable Run : BulletRun
@@ -68,21 +68,21 @@ module TraceApi =
     let envAt (x: float32) (y: float32) : Env =
       { Rand = rand
         Rank = rank ()
-        AimDir = aimDir (px ()) (py ()) x y
-        EnemyAimDir = enemyAimDir x y
-        SpawnAimDir = spawnAim ()
-        SpawnEnemyAimDir = spawnEnemyAim () }
+        AimVec = aimDir (px ()) (py ()) x y
+        EnemyAimVec = enemyAimDir x y
+        SpawnAimVec = spawnAim ()
+        SpawnEnemyAimVec = spawnEnemyAim () }
 
     // 木を組む段。撃つ弾ごとの位置がまだ無いので aim は 0 で組む
     let rootEnv : Env =
-      { Rand = rand; Rank = rank (); AimDir = 0.0f; EnemyAimDir = 0.0f
-        SpawnAimDir = spawnAim (); SpawnEnemyAimDir = spawnEnemyAim () }
+      { Rand = rand; Rank = rank (); AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }
+        SpawnAimVec = spawnAim (); SpawnEnemyAimVec = spawnEnemyAim () }
 
     /// aim を読まないと分かっているコマの Env。同梱フロントの noAimEnv と
     /// 同じ形（aim 4 本 を 0 に、Rand / Rank はそのまま）
     let noAimEnv () : Env =
-      { Rand = rand; Rank = rank (); AimDir = 0.0f; EnemyAimDir = 0.0f
-        SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
+      { Rand = rand; Rank = rank (); AimVec = { X = 0.0f; Y = 0.0f }; EnemyAimVec = { X = 0.0f; Y = 0.0f }
+        SpawnAimVec = { X = 0.0f; Y = 0.0f }; SpawnEnemyAimVec = { X = 0.0f; Y = 0.0f } }
     let script = Runner.load rootEnv (readXmlString xml)
 
     let all = List<Live>()
