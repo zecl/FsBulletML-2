@@ -43,34 +43,37 @@ type IBullet =
   /// サンプルの敵が「弾幕が終わったから撃ち直す」を判定するのに読む
   abstract Finished : bool with get
 
-/// 弾幕を読む段の Env。
+/// 弾幕を読む段に渡すもの。**Env ではない。**
 ///
-/// Runner.load が Env を要るのは、木を組む段が wait の term をその場で
-/// 引くため。**何を渡すかはフロントの決めごと**なので Core には置かない
-/// —— 置くとまたグローバルから引く形に戻る。
+/// `Runner.load` が要るのは乱数とランクの 2 つ だけ（木を組む段が wait の
+/// term をその場で引く）。**何を渡すかはフロントの決めごと**なので Core には
+/// 置かない —— 置くとまたグローバルから引く形に戻る。
 ///
-/// この同梱フロントは旧と同じく BulletMLManager から取る。aim は
-/// この段では読まれない（撃つ弾ごとの位置がまだ無い）ので 0 でよい。
+/// この同梱フロントは旧と同じく BulletMLManager から取る。
 [<AutoOpen>]
 module BulletmlLoad =
 
-  let loadEnv () : FsBulletML2.Domain.Env =
-    { Rand = BulletMLManager.GetRandom
-      Rank = BulletMLManager.GetRank ()
+  /// **1 個 だけ作って使い回す。** C# から渡すときに毎回 FuncConvert すると
+  /// 弾数 × コマ数 だけヒープを踏む（同じ罠を Unity C# サンプルが踏んで
+  /// いて、あちらは自前で static readonly に置いている）
+  let loadRand : unit -> float32 = BulletMLManager.GetRandom
+
+  let loadRank () : float32 = BulletMLManager.GetRank ()
+
+  /// aim を読まないと分かっているコマの Env。
+  ///
+  /// 使ってよい条件は BulletRun.HasNoScript の但し書きにある。
+  /// 旧 BulletRunner.envWithoutAim と同じ狙いで、段階 4 で Env を組む責任が
+  /// フロントへ移ったぶん、判断もフロントに来た
+  let noAimEnv () : FsBulletML2.Domain.Env =
+    { Rand = loadRand
+      Rank = loadRank ()
       AimDir = 0.0f
       EnemyAimDir = 0.0f
       SpawnAimDir = 0.0f
       SpawnEnemyAimDir = 0.0f }
 
-  /// aim を読まないと分かっているコマの Env。中身は loadEnv と同じだが、
-  /// **意味が違うので名前を分けてある** —— あちらは「木を組む段はまだ
-  /// 弾の位置が無いので 0」、こちらは「この弾はこのコマ aim を読まないので
-  /// 計算しない」。片方の理由が消えたときに、もう片方まで一緒に消さないため。
-  ///
-  /// 使ってよい条件は BulletRun.HasNoScript の但し書きにある。
-  /// 旧 BulletRunner.envWithoutAim と同じ狙いで、段階 4 で Env を組む責任が
-  /// フロントへ移ったぶん、判断もフロントに来た
-  let noAimEnv () : FsBulletML2.Domain.Env = loadEnv ()
-
-  // FrontEnv.noAim も同じ形。**3 つ に増えたので、門で 3 つ が一致することを
-  // 見ている**（MonoGameEnvGate）。名前を分けたまま値のずれだけ止める
+  // FrontEnv.noAim も同じ形。**2 つ が一致することを門が見ている**
+  // （tests/FsBulletML2.MonoGame.Tests/EnvGate.fs）。
+  // 以前は「読む段の Env」も同じ形で 3 つ 在ったが、Runner.load が Env を
+  // 取らなくなったので消えた

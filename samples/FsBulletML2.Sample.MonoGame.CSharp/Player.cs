@@ -76,7 +76,7 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
 
         private void Shoot2WayLeftBullet () 
         {
-            var script = Runner.Load(BulletmlLoad.loadEnv(), Player.b2wayLeftBullet);
+            var script = Runner.Load(FrontLoad.Rand, FrontLoad.Rank(), Player.b2wayLeftBullet);
 
             if (this.Timer > 0)
             {
@@ -88,7 +88,7 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
 
         private void Shoot2WayRightBullet()
         {
-            var script = Runner.Load(BulletmlLoad.loadEnv(), Player.b2wayRightBullet);
+            var script = Runner.Load(FrontLoad.Rand, FrontLoad.Rank(), Player.b2wayRightBullet);
 
             if (this.Timer > 0)
             {
@@ -100,7 +100,7 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
 
         private void ShootHomingBullet()
         {
-            var script = Runner.Load(BulletmlLoad.loadEnv(), Player.homing);
+            var script = Runner.Load(FrontLoad.Rand, FrontLoad.Rank(), Player.homing);
 
             if (this.Timer > 60)
             {

@@ -75,10 +75,10 @@ type FsBulletML2SampleGame () as this =
         // 木を組んで、wait の term をここで引いておく下ごしらえ。
         // 旧は BulletmlTask().Init(env) が同じ仕事をしていた。
         //
-        // 木を組む段が読むのは Rand と Rank だけなので、狙いの向きは 0 でよい
-        // （loadEnv がその形）。ここは敵の実体を作る前で、向きを問い合わせる
-        // 相手がまだ居ない
-        bullet.Script (loadEnv ()) |> ignore
+        // 木を組む段が読むのは Rand と Rank だけ。**だから Env を渡さない**
+        // —— 渡す欄が無いので、狙いの向きを何にするか迷う余地も無い。
+        // ここは敵の実体を作る前で、向きを問い合わせる相手がまだ居ない
+        bullet.Script (loadRand, loadRank ()) |> ignore
         enemyDefaultPos, (bullet.Name, bullet)
 
   do 

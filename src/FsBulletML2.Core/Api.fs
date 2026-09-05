@@ -185,16 +185,15 @@ type Frame =
 /// 知らないと書けなかった。ここはフロントが値を渡して値を受け取るだけで、
 /// 呼び返しが無い。
 ///
-///   // 読む段（弾幕 1 本 につき 1 回）。この段では aim は読まれない
-///   let loadEnv =
-///     { Rand = rand; Rank = rank
-///       AimDir = 0.0f; EnemyAimDir = 0.0f
-///       SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
-///   let script = Runner.load loadEnv (readXmlString xml)
+///   // 読む段（弾幕 1 本 につき 1 回）。**Env は取らない**
+///   let script = Runner.load rand rank (readXmlString xml)
 ///   let mutable run = Runner.newRoot script
 ///
 ///   // 毎コマ
-///   let env = { loadEnv with AimDir = ...; EnemyAimDir = ... }
+///   let env =
+///     { Rand = rand; Rank = rank
+///       AimDir = ...; EnemyAimDir = ...
+///       SpawnAimDir = ...; SpawnEnemyAimDir = ... }
 ///   let f = Runner.stepWith script env run { run.Body with Pos = myPos }
 ///   myPos <- myPos + f.Delta
 ///   run <- f.Run
@@ -208,13 +207,23 @@ module Runner =
 
   /// 弾幕を読む。1 本 につき 1 回。
   ///
-  /// **Env を受け取るのは、木を組む段が wait の term をその場で引くため。**
-  /// 引く回数と順が乱数の並びを決めるので、ここを省くとグローバルから
-  /// こっそり引くことになる（旧 BulletRunner.buildRootTops がそうだった）。
-  /// この段では撃つ弾ごとの位置がまだ無いので、AimDir / EnemyAimDir は
-  /// 読まれない —— 引かれるのは wait だけ（設計文書 5.6）。
+  /// **乱数とランクを受け取るのは、木を組む段が wait の term をその場で
+  /// 引くため。** 引く回数と順が乱数の並びを決めるので、ここを省くと
+  /// グローバルからこっそり引くことになる（旧 BulletRunner.buildRootTops が
+  /// そうだった）。
+  ///
+  /// **`Env` は取らない。** この段が読むのは `Rand` と `Rank` だけで
+  /// （`getValue` がそこしか触らない。`Eval.fs`）、aim 4 本 は撃つ弾ごとの
+  /// 位置がまだ無いので読まれない。`Env` を取っていたころは、呼ぶ側が
+  /// aim に 0 を並べた `Env` を組んでいて、**それが「aim を読まないコマ」の
+  /// `Env` と値で区別できなかった。** 欄が無ければ取り違えようがない。
   [<CompiledName "Load">]
-  let load (rootEnv: Env) (bulletml: Bulletml) : BulletmlScript =
+  let load (rand: unit -> float32) (rank: float32) (bulletml: Bulletml) : BulletmlScript =
+    // 木を組む段のための Env。aim は読まれないので 0 でよい
+    let rootEnv : Env =
+      { Rand = rand; Rank = rank
+        AimDir = 0.0f; EnemyAimDir = 0.0f
+        SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
     let rec' = BulletmlRead.foldConstants bulletml
     let resolvers : Step.Resolvers =
       { Bullet = BulletmlOps.expandBulletRefOnce rec'

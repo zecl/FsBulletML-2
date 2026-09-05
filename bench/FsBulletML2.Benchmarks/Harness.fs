@@ -121,17 +121,22 @@ module Harness =
       SpawnAimDir = aimDirAt 0.0f 0.0f
       SpawnEnemyAimDir = enemyAimDirAt 0.0f 0.0f }
 
-  /// 木を組む段の Env。aim はこの段では読まれない
-  let loadEnv () : Domain.Env =
-    { Rand = BulletMLManager.GetRandom
-      Rank = BulletMLManager.GetRank ()
+  /// 木を組む段に渡すもの。**Env ではない** —— `Runner.load` が読むのは
+  /// 乱数とランクだけで、aim はこの段では読まれない
+  let loadRand : unit -> float32 = BulletMLManager.GetRandom
+  let loadRank () : float32 = BulletMLManager.GetRank ()
+
+  /// aim を読まないと分かっているコマの Env（`BulletRun.HasNoScript`）
+  let noAimEnv () : Domain.Env =
+    { Rand = loadRand
+      Rank = loadRank ()
       AimDir = 0.0f
       EnemyAimDir = 0.0f
       SpawnAimDir = 0.0f
       SpawnEnemyAimDir = 0.0f }
 
   let prepareApi (doc: Bulletml) : PreparedApi =
-    let script = Runner.load (loadEnv ()) doc
+    let script = Runner.load loadRand (loadRank ()) doc
     let born = List<FakeBullet>()
     let root = FakeBullet(0, born)
     root.Init()
@@ -149,7 +154,7 @@ module Harness =
         if bo.Used then
           let body = { it.Run.Body with Pos = { X = bo.X; Y = bo.Y } }
           // 台本が無い弾は aim を読まない（BulletRun.HasNoScript の但し書き）
-          let env = if it.Run.HasNoScript then loadEnv () else envAt bo.X bo.Y
+          let env = if it.Run.HasNoScript then noAimEnv () else envAt bo.X bo.Y
           let f = Runner.stepWith p.Script env it.Run body
           bo.X <- bo.X + f.Delta.X
           bo.Y <- bo.Y + f.Delta.Y
@@ -159,7 +164,7 @@ module Harness =
           if f.Vanished || f.Retired then bo.Used <- false
           it.Run <-
             if f.Finished then
-              let renv = if f.Run.HasNoScript then loadEnv () else envAt bo.X bo.Y
+              let renv = if f.Run.HasNoScript then noAimEnv () else envAt bo.X bo.Y
               Runner.restart renv f.Run
             else f.Run
           for child in f.Spawned do
@@ -206,7 +211,7 @@ module Harness =
   /// 箱の確保を減らす手を測るときの物差しとして残してある。
   let countEnvBuilds (doc: Bulletml) (frames: int) : int =
     let mutable builds = 0
-    let script = Runner.load (loadEnv ()) doc
+    let script = Runner.load loadRand (loadRank ()) doc
     let born = List<FakeBullet>()
     let root = FakeBullet(0, born)
     root.Init()
@@ -275,7 +280,7 @@ module Harness =
           if finished.Contains it.Bullet then deadCalls <- deadCalls + 1
           else liveCalls <- liveCalls + 1
           let body = { it.Run.Body with Pos = { X = bo.X; Y = bo.Y } }
-          let env = if it.Run.HasNoScript then loadEnv () else envAt bo.X bo.Y
+          let env = if it.Run.HasNoScript then noAimEnv () else envAt bo.X bo.Y
           let f = Runner.stepWith p.Script env it.Run body
           if f.Finished then finished.Add it.Bullet |> ignore
           bo.X <- bo.X + f.Delta.X
@@ -286,7 +291,7 @@ module Harness =
           if f.Vanished || f.Retired then bo.Used <- false
           it.Run <-
             if f.Finished then
-              let renv = if f.Run.HasNoScript then loadEnv () else envAt bo.X bo.Y
+              let renv = if f.Run.HasNoScript then noAimEnv () else envAt bo.X bo.Y
               Runner.restart renv f.Run
             else f.Run
           for child in f.Spawned do

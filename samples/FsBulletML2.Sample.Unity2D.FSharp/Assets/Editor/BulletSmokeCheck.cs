@@ -144,7 +144,7 @@ public static class BulletSmokeCheck
             var info = FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA;
             failures += Fire(
                 info.Name + "（BulletType は既定値のまま）",
-                Runner.Load(FrontEnv.Load(), info.Bulletml),
+                Runner.Load(FrontEnv.RandFunc, FrontEnv.Rank, info.Bulletml),
                 BulletKind.Enemy,
                 null,
                 2.4f, -0.5f);
@@ -153,14 +153,14 @@ public static class BulletSmokeCheck
             // 敵の弾とは通る枝が違う（BulletType.Player の分岐）
             failures += Fire(
                 "自機の 2way（左）",
-                Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.b2wayLeftBullet),
+                Runner.Load(FrontEnv.RandFunc, FrontEnv.Rank, FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.b2wayLeftBullet),
                 BulletKind.Player,
                 FsBulletML2.DTD.BulletType.Player,
                 2.4f, -5.0f);
 
             failures += Fire(
                 "自機のホーミング",
-                Runner.Load(FrontEnv.Load(), FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.homing),
+                Runner.Load(FrontEnv.RandFunc, FrontEnv.Rank, FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.homing),
                 BulletKind.Player,
                 FsBulletML2.DTD.BulletType.Player,
                 2.4f, -5.0f);

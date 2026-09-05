@@ -40,7 +40,7 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
             this.Bullet = new EnemyBullet();
             ((IBullet)this.Bullet).IsBullet = true;
             Manager.AddEnemyBulletPos(this.Bullet, new Vector2(self.X, self.Y));
-            this.Bullet.SetScript(this.BulletmlInfo.Script(BulletmlLoad.loadEnv()));
+            this.Bullet.SetScript(this.BulletmlInfo.Script(FrontLoad.Rand, FrontLoad.Rank()));
           }
         }
 
@@ -74,7 +74,7 @@ namespace FsBulletML2.Sample.MonoGame.CSharp
 
         public void SetMoveBulletmlInfo(BulletmlInfo bulletmlInfo) 
         {
-            ((IEnemy)this).SetScript(bulletmlInfo.Script(BulletmlLoad.loadEnv()), null);
+            ((IEnemy)this).SetScript(bulletmlInfo.Script(FrontLoad.Rand, FrontLoad.Rank()), null);
         }
 
         public void SetBulletmlInfo(string bulletName, BulletmlInfo bulletmlInfo) 

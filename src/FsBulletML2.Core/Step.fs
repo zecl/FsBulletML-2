@@ -591,8 +591,11 @@ module internal Step =
                         // 到達しない枝の状態が保たれるかどうかは観測できない
                         // ので、直さずに歩き方だけ記録しておく
 
-                        let refEnv = { env with AimDir = 0.0f; EnemyAimDir = 0.0f }
-                        let expandedProgs = expanded |> List.map (rootProgress refEnv)
+                        // **aim を 0 に潰した Env を作って渡していたが、外した。**
+                        // rootProgress が Env から読むのは getValue 経由の
+                        // Rand と Rank だけ（Eval.fs）で、aim へ届く腕が無い。
+                        // 潰しても潰さなくても同じ値になる
+                        let expandedProgs = expanded |> List.map (rootProgress env)
                         let remainingProgs =
                           running |> List.skip (idx + 1) |> List.map Progress.initial
                         return ps, true, cont, curFc, Some (newRunning, expandedProgs @ remainingProgs)
@@ -779,7 +782,7 @@ module internal Step =
                 // 文書読み込み時の foldConstants（撃たれた弾のテンプレ
                 // 自身が根の top* の中に literal で書いてある場合）で
                 // 既に済ませているので、ここへは bulletRef で解決したときだけ来る
-                actions |> List.iter (rootProgressActionElm { env with AimDir = 0.0f; EnemyAimDir = 0.0f } >> ignore)
+                actions |> List.iter (rootProgressActionElm env >> ignore)
                 x
             | Some x -> x
             // ここへは実際には来ない。ラベルが存在しない bulletRef は

@@ -115,14 +115,17 @@ type EnvGate() =
     // 原点から、いちばん近い敵 (-40, -60) へ: Atan2(-40, 60)
     env.SpawnEnemyAimDir |> should (equalWithin 0.0001) (float32 (Math.Atan2(-40.0, 60.0)))
 
-  /// aim を読まないコマの Env。**3 か所 に同じ形が居るので、値が揃うことを見る**
-  /// （`FrontEnv.noAim` / `BulletmlLoad.loadEnv` / `BulletmlLoad.noAimEnv`）
+  /// aim を読まないコマの Env。**2 か所 に同じ形が居るので、値が揃うことを見る**
+  /// （`FrontEnv.noAim` / `BulletmlLoad.noAimEnv`）
+  ///
+  /// **以前は 3 か所 だった。** 「弾幕を読む段の Env」も同じ形で在ったが、
+  /// `Runner.load` が `Env` を取らなくなったので消えた。
+  /// **検証をどこかへ移したのではなく、見張る対象が 1 つ 消えた。**
   [<Test>]
-  member _.``aim を読まない Env は 3 か所 とも同じ``() =
+  member _.``aim を読まない Env は 2 か所 とも同じ``() =
     let a = FrontEnv.noAim ()
-    let b = BulletmlLoad.loadEnv ()
     let c = BulletmlLoad.noAimEnv ()
-    for e in [ a; b; c ] do
+    for e in [ a; c ] do
       e.Rank |> should equal 0.25f
       e.Rand () |> should equal 0.5f
       e.AimDir |> should equal 0.0f

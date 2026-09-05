@@ -41,20 +41,22 @@ type IDefaultBullet =
   /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish
   abstract Finished : bool with get
 
-/// 弾幕を読む段の Env。MonoGame 側の BulletmlLoad と同じ理由でここに置く
+/// 弾幕を読む段に渡すもの。MonoGame 側の BulletmlLoad と同じ理由でここに置く
 /// —— **何を渡すかはフロントの決めごと**なので Core には置かない。
 [<AutoOpen>]
 module BulletmlLoad =
 
-  let loadEnv () : FsBulletML2.Domain.Env =
-    { Rand = BulletMLManager.GetRandom
-      Rank = BulletMLManager.GetRank ()
+  /// **1 個 だけ作って使い回す**（MonoGame 側の同名と同じ理由）
+  let loadRand : unit -> float32 = BulletMLManager.GetRandom
+
+  let loadRank () : float32 = BulletMLManager.GetRank ()
+
+  /// aim を読まないと分かっているコマの Env。
+  /// 使ってよい条件は BulletRun.HasNoScript の但し書き
+  let noAimEnv () : FsBulletML2.Domain.Env =
+    { Rand = loadRand
+      Rank = loadRank ()
       AimDir = 0.0f
       EnemyAimDir = 0.0f
       SpawnAimDir = 0.0f
       SpawnEnemyAimDir = 0.0f }
-
-  /// aim を読まないと分かっているコマの Env。中身は loadEnv と同じだが
-  /// **意味が違うので名前を分けてある**（MonoGame 側の同名と同じ理由）。
-  /// 使ってよい条件は BulletRun.HasNoScript の但し書き
-  let noAimEnv () : FsBulletML2.Domain.Env = loadEnv ()

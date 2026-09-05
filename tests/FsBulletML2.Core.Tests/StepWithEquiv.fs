@@ -55,8 +55,8 @@ type StepWithEquiv() =
       try
         let a = stream ()
         let b = stream ()
-        let scriptA = Runner.load (envWith a) (readXmlString xml)
-        let scriptB = Runner.load (envWith b) (readXmlString xml)
+        let scriptA = Runner.load a 0.5f (readXmlString xml)
+        let scriptB = Runner.load b 0.5f (readXmlString xml)
         let runA = Runner.newRoot scriptA
         let runB = Runner.newRoot scriptB
         let fa = Runner.stepWith scriptA (envWith a) runA body

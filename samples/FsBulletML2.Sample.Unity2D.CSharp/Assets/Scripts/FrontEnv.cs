@@ -31,8 +31,16 @@ public static class FrontEnv
     /// 中身はグローバル（BulletMLManager）を読むだけなので、いつ作っても同じ
     /// ものになる。毎コマ FuncConvert すると弾数 × コマ数 だけヒープを踏む。
     /// </summary>
-    static readonly FSharpFunc<Unit, float> RandFunc =
+    public static readonly FSharpFunc<Unit, float> RandFunc =
         FuncConvert.FromFunc<float>(() => BulletMLManager.GetRandom());
+
+    /// <summary>
+    /// 読む段（<c>Runner.Load</c>）に渡すランク。
+    /// <b>読む段は <c>Env</c> を取らない</b> —— 木を組むときに読むのは
+    /// 乱数とランクだけで、aim 4 本 は撃つ弾ごとの位置がまだ無いので
+    /// 読まれない。欄が無ければ取り違えようがない。
+    /// </summary>
+    public static float Rank => BulletMLManager.GetRank();
 
     /// <summary>
     /// 自機を狙う向き。旧 GetAimDir の式そのまま。
@@ -83,13 +91,4 @@ public static class FrontEnv
         return new Env(RandFunc, BulletMLManager.GetRank(), 0f, 0f, 0f, 0f);
     }
 
-    /// <summary>
-    /// 弾幕を読む段の <c>Env</c>。中身は <c>NoAim</c> と同じだが
-    /// <b>意味が違うので名前を分けてある</b>（同梱フロント 2 つ と同じ理由）。
-    /// 木を組む段は撃つ弾ごとの位置がまだ無いので aim を読まない。
-    /// </summary>
-    public static Env Load()
-    {
-        return NoAim();
-    }
 }

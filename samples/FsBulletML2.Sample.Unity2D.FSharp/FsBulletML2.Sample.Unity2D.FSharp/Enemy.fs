@@ -156,7 +156,7 @@ type Enemy () =
     if (self.Used) then
       // 弾幕は撃つたびに読み直す。読む段の Env は aim を読まない
       // （撃つ弾ごとの位置がまだ無い）
-      let script = FsBulletML2.Runner.load (FrontEnv.Load()) this.BulletmlInfo.Bulletml
+      let script = FsBulletML2.Runner.load loadRand (loadRank ()) this.BulletmlInfo.Bulletml
       this.RootSim <- BulletEntityFactory.SpawnEnemy(this.transform.position, script, true)
 
   /// 次の弾幕へ。**番号を動かすだけ** —— 実際の入れ替えは購読（`Start` の 1 番）

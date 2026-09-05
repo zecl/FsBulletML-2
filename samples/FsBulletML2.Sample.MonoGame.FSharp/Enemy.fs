@@ -36,7 +36,7 @@ type Enemy (life) as this =
         this.bullet <- new EnemyBullet()
         (this.bullet :> IBullet).IsBullet <- true
         Manager.addEnemyBulletPos(this.bullet, Vector2(self.X, self.Y))
-        this.bullet.SetScript(Some (this.bulletBulletmlInfo.Script (loadEnv ())))
+        this.bullet.SetScript(Some (this.bulletBulletmlInfo.Script (loadRand, loadRank ())))
 
     member this.Update () = 
       this.timer <- this.timer + 1       
@@ -54,7 +54,7 @@ type Enemy (life) as this =
       base.RunTask(System.Action<_,_>(apply))
 
   member this.SetMoveBulletmlInfo(bulletmlInfo:BulletmlInfo) =
-    (this :> IEnemy).SetScript(Some (bulletmlInfo.Script (loadEnv ())), None)
+    (this :> IEnemy).SetScript(Some (bulletmlInfo.Script (loadRand, loadRank ())), None)
 
   member this.SetBulletTask(bulletName, bulletmlInfo) = 
     this.bulletName <- bulletName

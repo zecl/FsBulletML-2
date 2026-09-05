@@ -14,6 +14,7 @@
     <Compile Include="BulletFunctions.cs" />
     <Compile Include="Enemy.cs" />
     <Compile Include="EnemyControl.cs" />
+    <Compile Include="FrontLoad.cs" />
     <Compile Include="Fps.cs" />
     <Compile Include="FsBulletML2SampleGame.cs" />
     <Compile Include="IEnemy.cs" />

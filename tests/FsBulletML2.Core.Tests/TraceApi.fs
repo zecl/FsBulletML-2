@@ -83,7 +83,7 @@ module TraceApi =
     let noAimEnv () : Env =
       { Rand = rand; Rank = rank (); AimDir = 0.0f; EnemyAimDir = 0.0f
         SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
-    let script = Runner.load rootEnv (readXmlString xml)
+    let script = Runner.load rand (rank ()) (readXmlString xml)
 
     let all = List<Live>()
     all.Add { Run = Runner.newRoot script; X = 0.0f; Y = 0.0f; Alive = true; Id = 0 }

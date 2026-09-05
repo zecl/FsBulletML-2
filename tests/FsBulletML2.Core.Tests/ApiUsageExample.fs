@@ -40,12 +40,10 @@ type ApiUsageExample() =
     let rand () = 0.5f
     let rank = 0.5f
 
-    // 読む段（弾幕 1 本 につき 1 回）。この段では aim は読まれない
-    let loadEnv =
-      { Rand = rand; Rank = rank
-        AimDir = 0.0f; EnemyAimDir = 0.0f
-        SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
-    let script = Runner.load loadEnv (readXmlString Xml)
+    // 読む段（弾幕 1 本 につき 1 回）。**Env は取らない** ——
+    // この段が読むのは乱数とランクだけで、aim は撃つ弾ごとの位置が
+    // まだ無いので読まれない
+    let script = Runner.load rand rank (readXmlString Xml)
     let mutable run = Runner.newRoot script
 
     let mutable myPos = { X = 0.0f; Y = 0.0f }
@@ -54,7 +52,10 @@ type ApiUsageExample() =
 
     // 毎コマ
     for _ in 1 .. 3 do
-      let env = { loadEnv with AimDir = 0.0f; EnemyAimDir = 0.0f }
+      let env =
+        { Rand = rand; Rank = rank
+          AimDir = 0.0f; EnemyAimDir = 0.0f
+          SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
       let f = Runner.stepWith script env run { run.Body with Pos = myPos }
       myPos <- { X = myPos.X + f.Delta.X; Y = myPos.Y + f.Delta.Y }
       run <- f.Run
@@ -69,19 +70,23 @@ type ApiUsageExample() =
   /// 撃たれた弾も同じ script で回せる（親から引き継ぐ形）
   [<Test>]
   member _.``撃たれた弾は、親と同じ script で次のコマから回せる``() =
-    let loadEnv =
-      { Rand = (fun () -> 0.5f); Rank = 0.5f
-        AimDir = 0.0f; EnemyAimDir = 0.0f
-        SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
-    let script = Runner.load loadEnv (readXmlString Xml)
+    let rand () = 0.5f
+    let rank = 0.5f
+    let script = Runner.load rand rank (readXmlString Xml)
     let root = Runner.newRoot script
 
-    let f = Runner.stepWith script loadEnv root root.Body
+    // aim を読まないと分かっているコマの Env
+    let noAim =
+      { Rand = rand; Rank = rank
+        AimDir = 0.0f; EnemyAimDir = 0.0f
+        SpawnAimDir = 0.0f; SpawnEnemyAimDir = 0.0f }
+
+    let f = Runner.stepWith script noAim root root.Body
     f.Spawned |> should not' (be Empty)
 
     // 撃たれた弾を 1 コマ 回す。**同じ script を渡す** —— 弾の中に残った
     // bulletRef / actionRef は、その script の入口でしか解けない
     let child = f.Spawned |> List.head
-    let cf = Runner.stepWith script loadEnv child child.Body
+    let cf = Runner.stepWith script noAim child child.Body
     // 素の bullet なので台本を持たない。HasNoScript が立つ
     cf.Run.HasNoScript |> should equal true
