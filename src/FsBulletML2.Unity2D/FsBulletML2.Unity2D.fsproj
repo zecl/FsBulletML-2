@@ -15,10 +15,12 @@
     <Compile Include="IDefaultBullet.fs" />
     <Compile Include="Manager.fs" />
     <Compile Include="InstanceManager.fs" />
+    <Compile Include="Unity2DWorld.fs" />
     <Compile Include="DefaultBullet.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Front\FsBulletML2.Front.fsproj" />
     <!-- COMPILE-ONLY UnityEngine stub (no Editor on this Linux box). Replace with real UnityEngine in the Editor. -->
     <ProjectReference Include="..\UnityEngine.Stub\UnityEngine.Stub.csproj" Condition="'$(UseRealUnity)' != 'true'" />
   </ItemGroup>

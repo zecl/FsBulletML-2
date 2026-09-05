@@ -1,4 +1,4 @@
-<Solution>
+﻿<Solution>
   <Folder Name="/.nuget/">
     <File Path=".nuget/NuGet.Config" />
     <File Path=".nuget/NuGet.exe" />
@@ -20,6 +20,7 @@
   <Folder Name="/src/">
     <Project Path="src/FsBulletML2.Core/FsBulletML2.Core.fsproj" />
     <Project Path="src/FsBulletML2.Dsl/FsBulletML2.Dsl.fsproj" />
+    <Project Path="src/FsBulletML2.Front/FsBulletML2.Front.fsproj" />
     <Project Path="src/FsBulletML2.MonoGame/FsBulletML2.MonoGame.fsproj" />
     <Project Path="src/FsBulletML2.Parser/FsBulletML2.Parser.fsproj" />
     <Project Path="src/FsBulletML2.TypeProviders/FsBulletML2.TypeProviders.fsproj" />
@@ -29,6 +30,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/FsBulletML2.Core.Tests/FsBulletML2.Core.Tests.fsproj" />
     <Project Path="tests/FsBulletML2.Dsl.Tests/FsBulletML2.Dsl.Tests.fsproj" />
+    <Project Path="tests/FsBulletML2.Front.Tests/FsBulletML2.Front.Tests.fsproj" />
     <Project Path="tests/FsBulletML2.MonoGame.Tests/FsBulletML2.MonoGame.Tests.fsproj" />
     <Project Path="tests/FsBulletML2.Parser.Tests/FsBulletML2.Parser.Tests.fsproj" />
     <Project Path="tests/FsBulletML2.TypeProviders.Tests/FsBulletML2.TypeProviders.Tests.fsproj" />

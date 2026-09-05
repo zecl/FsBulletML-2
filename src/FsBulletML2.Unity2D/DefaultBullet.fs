@@ -5,6 +5,7 @@ open System
 open Microsoft.FSharp.Core.Operators.Unchecked
 open FsBulletML2
 open FsBulletML2.Domain
+open FsBulletML2.Front
 
 type DefaultBullet (transform:Transform) as this =
 
@@ -15,6 +16,10 @@ type DefaultBullet (transform:Transform) as this =
   let mutable finished = false
 
   let self () = this :> IDefaultBullet
+
+  /// この弾から見た世界。**弾 1 個 につき 1 個。**
+  /// 狙う相手を覚えるのが弾ごとなので使い回せない
+  let world = Unity2DWorld () :> IWorld
 
   /// 撃たれた弾の実体を作る。旧 GetNewBullet が呼んでいたもの。
   ///
@@ -47,7 +52,6 @@ type DefaultBullet (transform:Transform) as this =
     // script.ShootingDirection で上書きされるので、この値が出るのは
     // まだ 1 度も走らせていない弾だけ
     member val ShootingDirection = ShootingDirection.BulletVertical with get, set
-    member val TargetEnemy = defaultof<IDefaultBullet> with get, set
     member val Radius = 0.1f with get, set
 
     member _.Script = script
@@ -85,7 +89,9 @@ type DefaultBullet (transform:Transform) as this =
       // 旧はここで task.Init(envOfGlobal self) を呼んで木を歩き直していた。
       // この時点の位置（fire からの呼び出しでは、まだ親の位置へ移す前）で
       // 組むところも旧のまま
-      run <- run |> Option.map (fun r -> Runner.restart (this.EnvNow ()) r)
+      run <-
+        run |> Option.map (fun r ->
+          Driver.restart world Unity2DFront.space Unity2DFront.origin r me.X me.Y)
 
     member this.Update () =
       let me = this :> IDefaultBullet
@@ -97,41 +103,6 @@ type DefaultBullet (transform:Transform) as this =
 
       this.RunTask(FSharpFunc.ToAction2 apply)
 
-  /// 自機を狙う向き。旧 GetAimDir の式そのまま
-  member private this.AimDir () =
-    let me = self ()
-    float32 (Math.Atan2(float (BulletMLManager.GetPlayerPosX() - me.X),
-                        float (BulletMLManager.GetPlayerPosY() - me.Y)))
-
-  /// いちばん近い敵を狙う向き。旧 GetEnemyAimDir の式そのまま。
-  /// 選んだ相手を TargetEnemy に覚えるところも旧と同じ
-  member private this.EnemyAimDir () =
-    let me = self ()
-    if me.TargetEnemy :> obj <> null then
-      Mathf.Atan2((me.TargetEnemy.X - me.X), 1.f * (me.TargetEnemy.Y - me.Y))
-    elif ((Manager.enemies) :> seq<_>) |> Seq.length <= 0 then 0.f
-    else
-      let mutable md = Single.MaxValue
-      for enemy in Manager.enemies do
-        let d = Vector3.Distance (me.Pos, Vector3(enemy.X, enemy.Y))
-        if md > d then
-          me.TargetEnemy <- enemy
-          md <- d
-      Mathf.Atan2((me.TargetEnemy.X - me.X), 1.f * (me.TargetEnemy.Y - me.Y))
-
-  /// このコマの Env。旧 BulletRunner.envOfGlobal の写し。
-  ///
-  /// **産まれる弾の向きが MonoGame と違う。** このフロントの
-  /// GetBulletPrefubInstance は撃った側と同じ場所に作るので、
-  /// Spawn は Aim と同じ値になる（MonoGame は原点に作るので別式）。
-  /// 旧 GetSpawnAimDir / GetSpawnEnemyAimDir の但し書きをそのまま写した
-  member private this.EnvNow () : Env =
-    let aim = this.AimDir ()
-    let enemyAim = this.EnemyAimDir ()
-    { Rand = BulletMLManager.GetRandom
-      Rank = BulletMLManager.GetRank ()
-      Aim = { ToPlayer = aim; ToEnemy = enemyAim }
-      Spawn = { ToPlayer = aim; ToEnemy = enemyAim } }
 
   /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ
   ///
@@ -171,8 +142,8 @@ type DefaultBullet (transform:Transform) as this =
             Dir = me.Dir
             Accel = { X = me.AccelerationX; Y = me.AccelerationY } }
         // 台本が無い弾は aim を読まない（BulletRun.HasNoScript の但し書き）
-        let env = if rn.HasNoScript then noAimEnv () else this.EnvNow ()
-        let f = Runner.stepWith sc env rn motion
+        // Env を組む位置も、台本が無い弾の枝も Driver が持っている
+        let f = Driver.step sc world Unity2DFront.space Unity2DFront.origin rn motion
         let after = f.Run.Motion
         me.Speed <- after.Speed
         me.Dir <- after.Dir
@@ -187,7 +158,7 @@ type DefaultBullet (transform:Transform) as this =
         // （旧 DefaultBullet が apply のあとで envOfGlobal を呼ぶのと同じ順）
         run <-
           if f.Finished then
-            let renv = if f.Run.HasNoScript then noAimEnv () else this.EnvNow ()
-            Some (Runner.restart renv f.Run)
+            Some (Driver.restart world Unity2DFront.space Unity2DFront.origin
+                    f.Run me.X me.Y)
           else Some f.Run
     | _ -> ()

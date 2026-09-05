@@ -12,7 +12,6 @@ open UnityEngine
 /// 2 通り に書いた状態になって、あとから読む人がどちらが正かを判断できない。**
 type IDefaultBullet =
   abstract Update : unit -> unit
-  abstract TargetEnemy : IDefaultBullet with get,set
   abstract Pos : Vector3 with get,set
   abstract X : float32 with get,set
   abstract Y : float32 with get,set
@@ -51,10 +50,4 @@ module BulletmlLoad =
 
   let loadRank () : float32 = BulletMLManager.GetRank ()
 
-  /// aim を読まないと分かっているコマの Env。
-  /// 使ってよい条件は BulletRun.HasNoScript の但し書き
-  let noAimEnv () : FsBulletML2.Domain.Env =
-    { Rand = loadRand
-      Rank = loadRank ()
-      Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
-      Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
+  // aim を読まないコマの Env は FsBulletML2.Front の FrontEnv.noAim に移した

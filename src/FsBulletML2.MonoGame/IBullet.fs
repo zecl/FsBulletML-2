@@ -18,7 +18,6 @@ open Microsoft.Xna.Framework
 /// BulletmlScript（弾幕）と BulletRun（実行状態）に割れたため。
 type IBullet =
   abstract Update : unit -> unit
-  abstract TargetEnemy : IBullet with get,set
   abstract Pos : Vector2 with get,set
   abstract X : float32 with get,set
   abstract Y : float32 with get,set
@@ -60,18 +59,6 @@ module BulletmlLoad =
 
   let loadRank () : float32 = BulletMLManager.GetRank ()
 
-  /// aim を読まないと分かっているコマの Env。
-  ///
-  /// 使ってよい条件は BulletRun.HasNoScript の但し書きにある。
-  /// 旧 BulletRunner.envWithoutAim と同じ狙いで、段階 4 で Env を組む責任が
-  /// フロントへ移ったぶん、判断もフロントに来た
-  let noAimEnv () : FsBulletML2.Domain.Env =
-    { Rand = loadRand
-      Rank = loadRank ()
-      Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
-      Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
-
-  // FrontEnv.noAim も同じ形。**2 つ が一致することを門が見ている**
-  // （tests/FsBulletML2.MonoGame.Tests/EnvGate.fs）。
-  // 以前は「読む段の Env」も同じ形で 3 つ 在ったが、Runner.load が Env を
-  // 取らなくなったので消えた
+  // aim を読まないコマの Env は FsBulletML2.Front の FrontEnv.noAim に移した。
+  // **写しを 2 つ 置いて突き合わせる門を建てていたが、写しが 1 つ になった** ——
+  // 検証を別の層へ移したのではなく、守る対象が消えた

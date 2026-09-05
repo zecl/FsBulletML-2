@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML2.Front</RootNamespace>
+    <AssemblyName>FsBulletML2.Front</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Aiming.fs" />
+    <Compile Include="World.fs" />
+    <Compile Include="Driver.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+  </ItemGroup>
+</Project>

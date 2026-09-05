@@ -18,23 +18,23 @@ samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/ECS/BulletSim.cs
     Y = Y - (f.Delta.Y / 100f);
 
 samples/FsBulletML2.Sample.Unity2D.FSharp/FsBulletML2.Sample.Unity2D.FSharp/BulletEcs.fs
-    let f = Runner.stepWith this.Script (this.EnvNow rn) rn motion
     this.X <- this.X + (f.Delta.X / Settings.Display.PixcelsToUnits)
     this.Y <- this.Y - (f.Delta.Y / Settings.Display.PixcelsToUnits)
 
+src/FsBulletML2.Front/Driver.fs
+    Runner.stepWith script env run motion
+
 src/FsBulletML2.MonoGame/BaseBullet.fs
     let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
-    let f = Runner.stepWith sc env rn motion
     apply f.Delta.X f.Delta.Y
 
 src/FsBulletML2.Unity2D/DefaultBullet.fs
     me.X <- me.X + (x / Settings.Display.PixcelsToUnits)
     me.Y <- me.Y - (y / Settings.Display.PixcelsToUnits)
-    let f = Runner.stepWith sc env rn motion
     apply f.Delta.X f.Delta.Y
 
 run の経路に居ないが、座標を足している所（件数だけ）:
   samples/FsBulletML2.Sample.MonoGame.FSharp/Background.fs         1 行
   samples/FsBulletML2.Sample.MonoGame.FSharp/Player.fs             4 行
 
-―― 本体 7 ファイル / 18 行（0 なら走査か網が壊れている）
+―― 本体 8 ファイル / 16 行（0 なら走査か網が壊れている）

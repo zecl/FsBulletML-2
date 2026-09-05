@@ -5,6 +5,7 @@ open Unity.Entities
 open UnityEngine
 open FsBulletML2
 open FsBulletML2.Domain
+open FsBulletML2.Front
 // Settings.Display.PixcelsToUnits（座標の係数）はこちら
 open FsBulletML2.Unity2D
 
@@ -39,57 +40,57 @@ type BulletEcsRuntime private () =
   static member val PlayerRadius = 0.15f with get, set
   static member val EnemyRadius = 0.25f with get, set
 
-/// このサンプルが `Env` を組むところ。**4 本 の aim を入れる場所はここだけ。**
+/// この ECS の弾が `FsBulletML2.Front` の口に答えるところ。
 ///
 /// 旧は `FsBulletML2.Unity2D.DefaultBullet` が組んでいたが、あれは
 /// `Transform` を持つ GameObject 前提。ECS の弾は Transform を持たない
 /// （位置は float で持ち、描画のときだけ `LocalTransform` へ写す）ので、
-/// ここで組み直す。
+/// ここで答え直す。
 ///
-/// **式は Unity2D のフロント固有。** MonoGame とは 2 つ 違う。
+/// **式そのものはここに無い。** `Aiming.toward` の `Space` 違いで、
+/// MonoGame の同じ関数と 1 ビット しか違わなかった。
 ///
-///   Y の符号     こちらは反転しない（Unity は上が正）
-///   Spawn の元   こちらは撃った側と同じ場所に作るので Aim と同値
-///
-/// 散らすと `Aim` に `Spawn` を入れるような取り違えを門で当てられない
-/// （型はどれも float32 なので通ってしまう）。
-[<AbstractClass; Sealed>]
-type FrontEnv private () =
+/// **敵は 1 体 しか居ない。** だから `NearestEnemy` は使わず、
+/// `BulletEcsRuntime.EnemyTransform` をそのまま答える ——
+/// **一覧を要求しない口にしてあるのはこのため**（一覧を要求すると、
+/// この側が 1 要素 の一覧を毎コマ 用意することになる）。
+[<Sealed>]
+type EcsWorld() =
 
   /// `Env.Rand` に入れる関数値。**1 個 だけ作って使い回す。**
   /// 中身はグローバル（BulletMLManager）を読むだけなので、いつ作っても同じ。
   /// 毎コマ 作ると弾数 × コマ数 だけヒープを踏む
   static let randFunc : unit -> float32 = fun () -> BulletMLManager.GetRandom()
 
-  /// 自機を狙う向き。旧 DefaultBullet.AimDir の式そのまま
-  static member AimAtPlayer (x: float32) (y: float32) =
-    Mathf.Atan2(BulletMLManager.GetPlayerPosX() - x, BulletMLManager.GetPlayerPosY() - y)
+  static member RandFunc = randFunc
 
-  /// このコマの Env を、いまの位置から組む。
-  /// **組む位置が変わると aim がずれる**ので、step の直前（差分を足す前）に組む。
-  ///
-  /// `enemyAim` を引数で受けるのは、狙う相手の選び方が場面で違うため。
-  /// 残り 3 本 はグローバルと位置だけで決まるので、ここに閉じている。
-  static member At (x: float32) (y: float32) (enemyAim: float32) : Env =
-    let aim = FrontEnv.AimAtPlayer x y
-    { Rand = randFunc
-      Rank = BulletMLManager.GetRank ()
-      Aim = { ToPlayer = aim; ToEnemy = enemyAim }
-      // 産まれた弾は撃った側と同じ場所に作る（SpawnChild が親の位置を渡す）
-      Spawn = { ToPlayer = aim; ToEnemy = enemyAim } }
+  interface IWorld with
+    member _.Rand = randFunc
+    member _.Rank = BulletMLManager.GetRank ()
+    member _.PlayerX = BulletMLManager.GetPlayerPosX ()
+    member _.PlayerY = BulletMLManager.GetPlayerPosY ()
 
-  /// aim を読まないと分かっているコマの Env。aim 4 本 を 0 に。
-  /// 使ってよい条件は `BulletRun.HasNoScript` の但し書き。
-  /// **`At` と欄が 1 つ でもずれたら、片方だけ直したということ**
-  static member NoAim () : Env =
-    { Rand = randFunc
-      Rank = BulletMLManager.GetRank ()
-      Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
-      Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
+    member _.TryTargetFrom (_x, _y, ex, ey) =
+      let t = BulletEcsRuntime.EnemyTransform
+      if isNull (box t) then false
+      else
+        let p = t.position
+        ex <- p.x
+        ey <- p.y
+        true
 
-  /// 弾幕を読む段の Env。中身は NoAim と同じだが**意味が違うので名前を分ける**。
-  /// 木を組む段は撃つ弾ごとの位置がまだ無いので aim を読まない
-  static member Load () : Env = FrontEnv.NoAim ()
+    /// **撃った側と同じ相手。** このフロントは撃った側と同じ場所に弾を作る
+    member this.TrySpawnTargetFrom (x, y, ex, ey) =
+      (this :> IWorld).TryTargetFrom (x, y, &ex, &ey)
+
+/// このフロントの並び。**2 つ とも 1 か所 だけに書く。**
+module EcsFront =
+
+  /// Unity は Y が上向き
+  let space = Space.YUp
+
+  /// 撃った弾は撃った側と同じ場所に作る（SpawnChild が親の位置を渡す）
+  let origin = SpawnOrigin.AtShooter
 
 /// Entity 1 個 ぶんの弾。**Transform を持たない**（位置は float）。
 ///
@@ -117,6 +118,10 @@ type FrontEnv private () =
 /// Unity の Console は同じ行を畳むので、Collapse を入れておくとよい。
 [<Sealed>]
 type BulletSim () =
+
+  /// この弾から見た世界。**弾 1 個 につき 1 個**（口の約束に合わせる）
+  let world = EcsWorld () :> IWorld
+
   member val Entity = Entity.Null with get, set
   member val Kind = BulletKind.Enemy with get, set
   /// 根の弾か。撃たれた弾は false。**当たっても消さない**判定に使う
@@ -175,24 +180,12 @@ type BulletSim () =
     this.Dir <- 0.0f
     this.IsBullet <- true
     // 旧はここで task.Init(envOfGlobal this) を呼んで木を歩き直していた
-    this.Run <- this.Run |> Option.map (fun r -> Runner.restart (this.EnvNow r) r)
+    this.Run <-
+      this.Run |> Option.map (fun r ->
+        Driver.restart world EcsFront.space EcsFront.origin r this.X this.Y)
 
   member this.Vanish () = this.Used <- false
 
-  /// いちばん近い敵を狙う向き。旧 DefaultBullet.EnemyAimDir の式そのまま。
-  /// この場面では敵が 1 体 しか居ないので、毎コマ 選び直しても相手が変わらない
-  member this.EnemyAimDir () =
-    let t = BulletEcsRuntime.EnemyTransform
-    if isNull (box t) then 0.0f
-    else
-      let p = t.position
-      Mathf.Atan2(p.x - this.X, p.y - this.Y)
-
-  /// このコマの Env。**台本が無い弾は aim を読まない**ので、
-  /// そのときは Atan2 を 4 本 とも省く（`BulletRun.HasNoScript` の但し書き）
-  member this.EnvNow (run: BulletRun) : Env =
-    if run.HasNoScript then FrontEnv.NoAim ()
-    else FrontEnv.At this.X this.Y (this.EnemyAimDir ())
 
   /// 1 コマ 進める。**座標は差分を足す**（`Frame.Delta` は差分で、絶対値ではない）。
   ///
@@ -213,7 +206,8 @@ type BulletSim () =
           Dir = this.Dir
           Accel = { X = this.AccelerationX; Y = this.AccelerationY } }
 
-      let f = Runner.stepWith this.Script (this.EnvNow rn) rn motion
+      // Env を組む位置も、台本が無い弾の枝も Driver が持っている
+      let f = Driver.step this.Script world EcsFront.space EcsFront.origin rn motion
       let after = f.Run.Motion
       this.Speed <- after.Speed
       this.Dir <- after.Dir
@@ -235,5 +229,6 @@ type BulletSim () =
       // 走らせ直しの Env は、位置を更新したあとの自分から組む
       // （旧 DefaultBullet が apply のあとで envOfGlobal を呼ぶのと同じ順）
       this.Run <-
-        if f.Finished then Some (Runner.restart (this.EnvNow f.Run) f.Run)
+        if f.Finished then
+          Some (Driver.restart world EcsFront.space EcsFront.origin f.Run this.X this.Y)
         else Some f.Run
