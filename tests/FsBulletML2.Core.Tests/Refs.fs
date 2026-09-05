@@ -3,7 +3,7 @@
 open NUnit.Framework
 
 /// bulletRef / actionRef / fireRef と、そこへ渡すパラメータ（$1 $2 …）の展開。
-/// IntermediateParser がいちばん大きく、参照の解決はそこに居る。
+/// BulletmlRead がいちばん大きく、参照の解決はそこに居る。
 [<TestFixture>]
 type Refs() =
 
@@ -153,7 +153,7 @@ type Refs() =
   /// どちらの `top` が走るかは既存の 346 件が 1 件も見ていない。
   ///
   /// 凍結予測（経路つき）: 外側が勝つ。
-  /// `IntermediateParser` の `getAction` が `list@[bulletml]@getChildren2` と
+  /// `BulletmlRead` の `getAction` が `list@[bulletml]@getChildren2` と
   /// 自分を子より先に置く行きがけ順なので、平らにした並びで外側が先に来る。
   /// `tryFindAction`（`:737`）はそこへ `List.tryFind` を当てるだけ。
   /// 外側が勝つなら、外側にしかない speed 1 も撃たれる。内側だけなら 9 だけ。

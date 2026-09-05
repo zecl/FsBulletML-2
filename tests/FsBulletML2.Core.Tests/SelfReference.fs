@@ -3,7 +3,7 @@
 open System.Threading
 open NUnit.Framework
 
-/// 輪になった参照。展開を打ち止めているのは IntermediateParser.convertRefBulletmlIn。
+/// 輪になった参照。展開を打ち止めているのは BulletmlRead.convertRefBulletmlIn。
 /// bullet と action の輪はそこで残し、走らせる側が 1 段ずつ解く。
 ///
 /// withTimeout と 1MB スタックは、打ち止めに漏れがあったときと、

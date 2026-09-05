@@ -893,7 +893,7 @@ type StepCommands() =
   // fix round 2, residual 2: repeat の子が Action でない形。
   //
   // DTD は repeat (times, (action | actionRef)) で actionRef も許す。
-  // パーサ（IntermediateParser.convertRefBulletmlIn）は actionRef を
+  // パーサ（BulletmlRead.convertRefBulletmlIn）は actionRef を
   // 1 段展開して実体の Action へ差し替えるが、自己参照（輪）だけは
   // 展開せずに残す。repeat の直下が展開されずに actionRef のまま残るのは、
   // その actionRef が自分を直接包む action への自己参照であるとき

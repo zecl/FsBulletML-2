@@ -73,7 +73,7 @@ open FsBulletML2.DTD
 /// 型が意図を宣言していたので、それに揃えただけ。
 ///
 /// 押さえは tests/FsBulletML2.Core.Tests/PublicParseBoundary.fs。
-module IntermediateParser =
+module BulletmlRead =
   let internal existsAttribute attrs f = attrs |> List.exists (fun (label, v) -> if f label v then true else false)
   let internal tryFindPCData children =  children |> List.tryPick (function | PCData x -> Some x | _ -> None)
 

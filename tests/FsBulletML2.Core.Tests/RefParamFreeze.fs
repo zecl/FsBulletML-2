@@ -5,7 +5,7 @@ open NUnit.Framework
 /// ref の param に入れた $rand / $rank が、走るたびに読み直されるか。
 ///
 /// 直す前は、`BulletRunner.convertBulletmlTask` が
-/// `IntermediateParser.existRandomParam` を見て、$rand を含む ref がひとつでもあれば
+/// `BulletmlRead.existRandomParam` を見て、$rand を含む ref がひとつでもあれば
 /// `BulletmlTask.Original` に生の XML を持たせ、`Init()` が毎周 作り直していた。
 /// 探していたのは `$rand` の 5 文字だけで、`$rank` は見ていなかった。
 ///

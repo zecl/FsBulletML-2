@@ -1,6 +1,6 @@
 ﻿namespace FsBulletML2
 
-/// BulletML の木の上の操作。**IntermediateParser から切り出したもの。**
+/// BulletML の木の上の操作。**BulletmlRead から切り出したもの。**
 ///
 /// 3 つ ある。
 ///

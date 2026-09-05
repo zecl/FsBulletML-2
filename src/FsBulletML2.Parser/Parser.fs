@@ -11,59 +11,59 @@ module Bulletml =
   let readXmlString (xml : string) : Bulletml = 
     use reader = new System.IO.StringReader(xml)
     use reader = XmlReader.Create(reader, readerSettingsIndented) 
-    XmlNode.Read(xml, reader) |> IntermediateParser.convertBulletmlFromXmlNode
+    XmlNode.Read(xml, reader) |> BulletmlRead.convertBulletmlFromXmlNode
 
   let tryReadXmlString (xml : string) : Bulletml option = 
     use reader = new System.IO.StringReader(xml)
     use reader = XmlReader.Create(reader, readerSettingsIndented) 
-    XmlNode.Read(xml, reader) |> IntermediateParser.tryBulletmlFromXmlNode
+    XmlNode.Read(xml, reader) |> BulletmlRead.tryBulletmlFromXmlNode
 
   let readXml (xmlFile : string) : Bulletml =
     use reader = XmlReader.Create((xmlFile:string), readerSettingsIndented) 
-    XmlNode.Read(xmlFile, reader) |> IntermediateParser.convertBulletmlFromXmlNode
+    XmlNode.Read(xmlFile, reader) |> BulletmlRead.convertBulletmlFromXmlNode
 
   let tryReadXml (xmlFile : string) : Bulletml option =
     use reader = XmlReader.Create((xmlFile:string), readerSettingsIndented) 
-    XmlNode.Read(xmlFile, reader) |> IntermediateParser.tryBulletmlFromXmlNode
+    XmlNode.Read(xmlFile, reader) |> BulletmlRead.tryBulletmlFromXmlNode
 
   let readSxmlString (sxml : string) : Bulletml =
     match Sxml.parse sxml with 
-    | Success (r,_,_) -> r |> IntermediateParser.convertBulletmlFromXmlNode 
+    | Success (r,_,_) -> r |> BulletmlRead.convertBulletmlFromXmlNode 
     | Failure (_,_,_) -> failwith "sxml parse error"
 
   let tryReadSxmlString (sxml : string) : Bulletml option =
     match Sxml.parse sxml with 
-    | Success (r,_,_) -> r |> IntermediateParser.tryBulletmlFromXmlNode 
+    | Success (r,_,_) -> r |> BulletmlRead.tryBulletmlFromXmlNode 
     | Failure (_,_,_) -> None
 
   let readSxml (sxmlFile : string) : Bulletml =
     match Sxml.parseFromFile sxmlFile with 
-    | Success (r,_,_) -> r |> IntermediateParser.convertBulletmlFromXmlNode 
+    | Success (r,_,_) -> r |> BulletmlRead.convertBulletmlFromXmlNode 
     | Failure (_,_,_) -> failwith "sxml parse error"
 
   let tryReadSxml (sxmlFile : string) : Bulletml option =
     match Sxml.parseFromFile sxmlFile with 
-    | Success (r,_,_) -> r |> IntermediateParser.tryBulletmlFromXmlNode 
+    | Success (r,_,_) -> r |> BulletmlRead.tryBulletmlFromXmlNode 
     | Failure (_,_,_) -> None
 
   let readFsbString (fsb: string) : Bulletml =
     match Offside.parse fsb with 
-    | Success (r,_,_) -> r |> IntermediateParser.convertBulletmlFromXmlNode
+    | Success (r,_,_) -> r |> BulletmlRead.convertBulletmlFromXmlNode
     | Failure (_,_,_) -> failwith "fsb parse error"
 
   let tryReadFsbString (fsb: string) : Bulletml option =
     match Offside.parse fsb with 
-    | Success (r,_,_) -> r |> IntermediateParser.tryBulletmlFromXmlNode
+    | Success (r,_,_) -> r |> BulletmlRead.tryBulletmlFromXmlNode
     | Failure (_,_,_) -> None
 
   let readFsb (fsbFile : string) : Bulletml =
     match Offside.parseFromFile fsbFile with 
-    | Success (r,_,_) -> r |> IntermediateParser.convertBulletmlFromXmlNode
+    | Success (r,_,_) -> r |> BulletmlRead.convertBulletmlFromXmlNode
     | Failure (_,_,_) -> failwith "fsb parse error"
 
   let tryReadFsb (fsbFile : string) : Bulletml option =
     match Offside.parseFromFile fsbFile with 
-    | Success (r,_,_) -> r |> IntermediateParser.tryBulletmlFromXmlNode
+    | Success (r,_,_) -> r |> BulletmlRead.tryBulletmlFromXmlNode
     | Failure (_,_,_) -> None
 
   type Bulletml with
@@ -102,31 +102,31 @@ module Bulletml =
     // **定数を畳んだ Bulletml**。書くのは BulletmlXml（DTD.fs）。
     // ここを member のままにできないのは、名前が同じで自分を呼ぶため
     member this.ToXmlString() =
-      this |> IntermediateParser.foldConstants
+      this |> BulletmlRead.foldConstants
            |> BulletmlXml.toXmlString EncodingAndDoctype.Nothing
 
     member this.ToXmlStringForTest() =
-      this |> IntermediateParser.foldConstantsForTest
+      this |> BulletmlRead.foldConstantsForTest
            |> BulletmlXml.toXmlString EncodingAndDoctype.Nothing
 
     member this.ToXmlString(?encodingAndDoctype) =
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
-      this |> IntermediateParser.foldConstants
+      this |> BulletmlRead.foldConstants
            |> BulletmlXml.toXmlString encodingAndDoctype
 
     member this.ToXmlStringForTest(?encodingAndDoctype) =
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
-      this |> IntermediateParser.foldConstantsForTest
+      this |> BulletmlRead.foldConstantsForTest
            |> BulletmlXml.toXmlString encodingAndDoctype
 
     member this.ToIndentedXmlString([<Optional; DefaultParameterValue(4)>]?indentation : int, ?encodingAndDoctype) =
       let indentation = defaultArg indentation 4
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
-      this |> IntermediateParser.foldConstants
+      this |> BulletmlRead.foldConstants
            |> BulletmlXml.toIndentedXmlString indentation encodingAndDoctype
 
     member this.ToIndentedXmlStringForTest([<Optional; DefaultParameterValue(4)>]?indentation : int, ?encodingAndDoctype) =
       let indentation = defaultArg indentation 4
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
-      this |> IntermediateParser.foldConstantsForTest
+      this |> BulletmlRead.foldConstantsForTest
            |> BulletmlXml.toIndentedXmlString indentation encodingAndDoctype

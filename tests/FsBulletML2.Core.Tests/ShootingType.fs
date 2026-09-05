@@ -92,7 +92,7 @@ type ShootingType() =
   /// type は弾まで届くようになったが、読んで分岐する所はまだ 1 つも無いので、
   /// 軌跡は動かない。
   ///
-  /// なお `IntermediateParser` の `| None ->` の例外は
+  /// なお `BulletmlRead` の `| None ->` の例外は
   /// 「this element should have ShootingDirection attribute.」と言っていたが、
   /// 条件は type 属性ではなく attrs レコードが None のとき。
   /// メッセージが実際の条件と違ったので、条件のほうに合わせた。
@@ -118,7 +118,7 @@ type ShootingType() =
     sprintf "DTD の定め: <!ATTLIST bulletml type (none|vertical|horizontal) \"none\"> （省略可・既定 none）\n実装: %s" result
     |> Golden.check "shooting-type-omitted"
 
-  /// IntermediateParser.fs の `| None ->` に届く入力があるかを探す。
+  /// BulletmlRead.fs の `| None ->` に届く入力があるかを探す。
   ///
   /// 条件は `tryFindBulletmlAttrs` が None のとき。中身は `maybe { ... }` だが
   /// `let!` が 1 つも無いので Bind を通らず、必ず `return` に着く。

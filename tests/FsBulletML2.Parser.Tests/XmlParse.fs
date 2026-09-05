@@ -1,7 +1,7 @@
 ﻿namespace FsBulletML2.Parser.Tests
 
 open FsBulletML2
-open FsBulletML2.IntermediateParser
+open FsBulletML2.BulletmlRead
 open NUnit.Framework 
 open FsUnit
 

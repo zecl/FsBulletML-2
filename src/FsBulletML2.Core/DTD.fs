@@ -150,7 +150,7 @@ module DTD =
   /// actionRef が指す先は action なので、同じ型で持つのが自然で、
   /// 「fire の名前で action を探す」が型で組めなくなる。以前は
   /// どれも素の string で、種別は refKey が "action:" のような接頭辞を
-  /// 文字で足して区別していた（IntermediateParser）。その足し算が要らなくなる。
+  /// 文字で足して区別していた（BulletmlRead）。その足し算が要らなくなる。
   ///
   /// 3 つを 1 つの型に kind フィールドで畳まないのは、畳むと
   /// 「kind が違うものを渡した」が実行時にしか分からなくなるため
@@ -196,7 +196,7 @@ module DTD =
   /// Action / ActionElm / BulletElm、下）に分かれている。
   ///
   /// **エンジンが歩くのもこの木。** 以前は Rec* という別の 5 つ が並んで
-  /// いたが、腕まで同じだったので畳んだ（IntermediateParser の但し書き）。
+  /// いたが、腕まで同じだったので畳んだ（BulletmlRead の但し書き）。
   ///
   /// 以前はここに 13 腕 あった —— action / wait / fire / repeat …と、
   /// **根になれないものまで根の型に並んでいた。** XML を読む段が、どの位置の

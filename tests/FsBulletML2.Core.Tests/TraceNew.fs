@@ -34,7 +34,7 @@ module TraceNew =
   let run (rand: unit -> float32) (rank: float32) (px: float32) (py: float32)
           (xml: string) (frames: int) : string =
     let bulletml = readXmlString xml
-    let rec' = IntermediateParser.foldConstants bulletml
+    let rec' = BulletmlRead.foldConstants bulletml
     let resolvers : Step.Resolvers =
       { Bullet = BulletmlOps.expandBulletRefOnce rec'
         Action = BulletmlOps.expandActionRefOnce rec' }
@@ -51,7 +51,7 @@ module TraceNew =
       |> List.map (BulletmlOps.convertRefActionElm rec')
 
     // 根の Tops は Progress.initial では組めない。旧の toProcessable は
-    // 木を組む段で wait の term だけをその場で引く（IntermediateParser.fs の
+    // 木を組む段で wait の term だけをその場で引く（BulletmlRead.fs の
     // Action.Wait の腕、convertRecBulletmlEx から）。この段の Env は
     // 撃つ弾ごとの位置がまだ無いので AimDir / EnemyAimDir を 0 に固定し、
     // Rand / Rank はグローバルと同じ値を渡す（設計文書 5.6）。

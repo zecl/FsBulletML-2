@@ -268,10 +268,10 @@ module internal Step =
         PAction (false, None, children |> List.map (resetChild env))
     | ActionElm.ActionRef _ -> PNoop
 
-  /// 木を組む段（`IntermediateParser.foldConstants`。旧の名前は
+  /// 木を組む段（`BulletmlRead.foldConstants`。旧の名前は
   /// convertRecBulletmlEx）の wait だけの引き直し。
   ///
-  /// IntermediateParser.fs の wait の腕は、撃つ弾ごとの Env が
+  /// BulletmlRead.fs の wait の腕は、撃つ弾ごとの Env が
   /// まだ無い木構築の段で、AimDir / EnemyAimDir を 0 に固定した Env で
   /// getValue を呼ぶ。兄弟の changeDirection / changeSpeed は placeholder
   /// （term = 1.f、first = true）を置くだけで、この段では getValue を
@@ -566,7 +566,7 @@ module internal Step =
                         let newRunning = expanded @ (running |> List.skip (idx + 1))
                         // 旧 expandActionRefOnce は、輪を 1 段
                         // 解いた瞬間に展開した中身の wait をまとめて引いていた
-                        // （IntermediateParser.fs の foldConstants。
+                        // （BulletmlRead.fs の foldConstants。
                         // Domain 5.3「木を組む段」と同じ、AimDir / EnemyAimDir
                         // を 0 に固定した Env）。ここが 5 つめの draw site
                         // （設計文書 5.3 参照）。bulletRef（Step.fire）と違い、
@@ -668,7 +668,7 @@ module internal Step =
       // チェックへは到達しないので、cycles > 0 のときだけ見る。
       //
       // DTD は repeat (times, (action | actionRef)) で actionRef も許すが、
-      // パーサ（IntermediateParser.convertRefBulletmlIn）は自己参照だけ
+      // パーサ（BulletmlRead.convertRefBulletmlIn）は自己参照だけ
       // 展開せずに残す（輪を解くのは走らせる側の仕事のため）。repeat の
       // 直下が actionRef になって残るのは、その actionRef が自分を
       // 直接包む action への自己参照であるときだけ —— 通常の（自己参照で
@@ -783,7 +783,7 @@ module internal Step =
                 x
             | Some x -> x
             // ここへは実際には来ない。ラベルが存在しない bulletRef は
-            // convertRefBulletmlIn（IntermediateParser.fs）が構文解析の時点で
+            // convertRefBulletmlIn（BulletmlRead.fs）が構文解析の時点で
             // BulletmlDTDViolationException を投げて弾く。ここまで BulletElm.BulletRef
             // のまま残るのは輪（自己参照）だけで、輪は tryFindBullet が一度
             // Some を返した相手同士でしか作られない。rs.Bullet（= 同じ document・

@@ -215,7 +215,7 @@ module Runner =
   /// 読まれない —— 引かれるのは wait だけ（設計文書 5.6）。
   [<CompiledName "Load">]
   let load (rootEnv: Env) (bulletml: Bulletml) : BulletmlScript =
-    let rec' = IntermediateParser.foldConstants bulletml
+    let rec' = BulletmlRead.foldConstants bulletml
     let resolvers : Step.Resolvers =
       { Bullet = BulletmlOps.expandBulletRefOnce rec'
         Action = BulletmlOps.expandActionRefOnce rec' }

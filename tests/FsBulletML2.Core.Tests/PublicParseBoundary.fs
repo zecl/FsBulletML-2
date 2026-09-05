@@ -32,24 +32,24 @@ type PublicParseBoundary() =
   [<Test>]
   member _.``PCData を渡すと上がる``() =
     Assert.Throws<FsBulletML2.Exception.BulletmlDTDViolationException>(fun () ->
-      IntermediateParser.convertBulletmlFromXmlNode (PCData "ただの文字") |> ignore)
+      BulletmlRead.convertBulletmlFromXmlNode (PCData "ただの文字") |> ignore)
     |> ignore
 
   [<Test>]
   member _.``根が bulletml でない要素を渡すと上がる``() =
     Assert.Throws<FsBulletML2.Exception.BulletmlDTDViolationException>(fun () ->
-      IntermediateParser.convertBulletmlFromXmlNode (Element ("foo", [], [])) |> ignore)
+      BulletmlRead.convertBulletmlFromXmlNode (Element ("foo", [], [])) |> ignore)
     |> ignore
 
   /// **ここが穴だった。** 読めていないのに Some が返っていた
   [<Test>]
   member _.``tryBulletmlFromXmlNode は、読めなければ None を返す``() =
-    IntermediateParser.tryBulletmlFromXmlNode (PCData "ただの文字")
+    BulletmlRead.tryBulletmlFromXmlNode (PCData "ただの文字")
     |> should equal (None: Bulletml option)
 
   [<Test>]
   member _.``tryBulletmlFromXmlNode は、根が bulletml でなくても None を返す``() =
-    IntermediateParser.tryBulletmlFromXmlNode (Element ("foo", [], []))
+    BulletmlRead.tryBulletmlFromXmlNode (Element ("foo", [], []))
     |> should equal (None: Bulletml option)
 
   /// 対照 —— 読める入力では中身のある木が返る。
