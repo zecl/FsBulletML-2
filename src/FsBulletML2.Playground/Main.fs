@@ -28,7 +28,12 @@ type PlaygroundHost() =
   let env = BrowserEnv()
   let mutable current = Initial.pattern.Bulletml
   let mutable field = Playfield.Create env current
-  let mutable playing = false
+  // **開いた時点で走っている。** Play を押すまで止まっていると、
+  // 弾幕を見に来た人が最初に見るのが静止画になる。止めたい人は Pause を
+  // 押せばよく、そちらは 1 手 で戻せる。
+  //
+  // rAF は `onReady` で回り始めるので、ここが true でも起こす順は変わらない
+  let mutable playing = true
   let ret = Array.zeroCreate<float> 2
   let catalog = lazy (All.bullets |> List.toArray)
 
