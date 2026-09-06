@@ -17,7 +17,11 @@ type VocabAttr =
     /// `Values` が空でないとき 1 個 であることは門が見る
     Defaults: string[]
     /// この属性の `<!ATTLIST ...>` 行。**表を持たない** —— 型から組む
-    Dtd: string }
+    Dtd: string
+    /// hover に出す散文（`Spec.fs`）
+    Spec: string
+    /// 値ごとの散文。`Values` と同じ綴りを鍵に持つ
+    ValueSpecs: (string * string)[] }
 
 /// 要素 1 つ。`Children` は「この中に置ける要素」、`Text` は #PCDATA を取るか。
 type VocabElement =
@@ -26,7 +30,9 @@ type VocabElement =
     Attrs: VocabAttr[]
     Text: bool
     /// この要素の `<!ELEMENT ...>` 行。腕の並びから組む
-    Dtd: string }
+    Dtd: string
+    /// hover に出す散文（`Spec.fs`）
+    Spec: string }
 
 /// BulletML の語彙。**正本は `Core/DTD.fs` の型だけ。**
 ///
@@ -54,6 +60,19 @@ type VocabElement =
 /// reflection なので `PublishTrimmed` は false のまま。true にすると
 /// 腕が消えて語彙が空になる。**空は呼ぶ側が赤にする。**
 module Vocabulary =
+
+  /// 散文の引き先。**無ければ空**で、足りていないことは門が見る
+  /// （`SpecCoverage`。ここで落とすと、表を直す前に何も動かなくなる）
+  let private specOf (table: (string * string) list) =
+    let d = dict table
+    fun (key: string) ->
+      match d.TryGetValue key with
+      | true, v -> v
+      | _ -> ""
+
+  let private elementSpec = specOf Spec.elements
+  let private attributeSpec = specOf Spec.attributes
+  let private attrValueSpec = specOf Spec.attrValues
 
   let private camel (s: string) =
     if String.IsNullOrEmpty s then s
@@ -170,7 +189,11 @@ module Vocabulary =
         { Name = name
           Values = values
           Defaults = defaults
-          Dtd = sprintf "<!ATTLIST %s %s %s %s>" elementName name decl def })
+          Dtd = sprintf "<!ATTLIST %s %s %s %s>" elementName name decl def
+          Spec = attributeSpec (sprintf "%s/@%s" elementName name)
+          ValueSpecs =
+            values
+            |> Array.map (fun v -> v, attrValueSpec (sprintf "%s/@%s=%s" elementName name v)) })
 
   /// 木を歩いて、腕ごとに「要素名 -> 腕の持ち物」を集める。
   /// **同じ腕が 2 か所 に出る**（`Action` は BulletmlElm / Action / ActionElm に居る）
@@ -200,7 +223,8 @@ module Vocabulary =
       Children = children |> Seq.distinct |> Seq.toArray
       Attrs = attrs.ToArray()
       Text = text
-      Dtd = sprintf "<!ELEMENT %s %s>" name (contentModel fields) }
+      Dtd = sprintf "<!ELEMENT %s %s>" name (contentModel fields)
+      Spec = elementSpec name }
 
   /// 語彙。**空なら呼ぶ側が赤にすること** —— reflection が効いていない印
   let elements: VocabElement[] =
@@ -215,7 +239,8 @@ module Vocabulary =
              Children = [||]
              Attrs = [||]
              Text = true
-             Dtd = "<!ELEMENT param (#PCDATA)>" } ]
+             Dtd = "<!ELEMENT param (#PCDATA)>"
+             Spec = elementSpec "param" } ]
     |> Seq.sortBy (fun e -> e.Name)
     |> Seq.toArray
 
@@ -259,6 +284,10 @@ module Vocabulary =
         sb.Append(if e.Text then "true" else "false") |> ignore
         sb.Append ",\"children\":" |> ignore
         arr e.Children
+        sb.Append ",\"dtd\":" |> ignore
+        str e.Dtd
+        sb.Append ",\"spec\":" |> ignore
+        str e.Spec
         sb.Append ",\"attrs\":[" |> ignore
         e.Attrs
         |> Array.iteri (fun j a ->
@@ -267,7 +296,22 @@ module Vocabulary =
             str a.Name
             sb.Append ",\"values\":" |> ignore
             arr a.Values
-            sb.Append '}' |> ignore)
+            sb.Append ",\"defaults\":" |> ignore
+            arr a.Defaults
+            sb.Append ",\"dtd\":" |> ignore
+            str a.Dtd
+            sb.Append ",\"spec\":" |> ignore
+            str a.Spec
+            sb.Append ",\"valueSpecs\":[" |> ignore
+            a.ValueSpecs
+            |> Array.iteri (fun k (v, s) ->
+                if k > 0 then sb.Append ',' |> ignore
+                sb.Append "{\"value\":" |> ignore
+                str v
+                sb.Append ",\"spec\":" |> ignore
+                str s
+                sb.Append '}' |> ignore)
+            sb.Append "]}" |> ignore)
         sb.Append "]}" |> ignore)
     sb.Append "],\"expressions\":" |> ignore
     arr expressions

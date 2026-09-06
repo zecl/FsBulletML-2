@@ -22,6 +22,7 @@
     <Compile Include="Playfield.fs" />
     <!-- どちらも Core / Parser しか使わない。
          **Parser.Tests が Link で借りて .NET で走らせる** -->
+    <Compile Include="Spec.fs" />
     <Compile Include="Vocabulary.fs" />
     <Compile Include="Diagnosis.fs" />
     <Compile Include="References.fs" />

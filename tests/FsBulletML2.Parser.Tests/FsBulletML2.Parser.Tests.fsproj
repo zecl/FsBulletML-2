@@ -20,8 +20,10 @@
       借りている中身は Core の型しか使わないので、依存は増えない。
       同じ形の前例: bench/FsBulletML2.Benchmarks が Core.Tests の Fake.fs を借りている。
     -->
+    <Compile Include="..\..\src\FsBulletML2.Playground\Spec.fs" Link="Spec.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Vocabulary.fs" Link="Vocabulary.fs" />
     <Compile Include="VocabularyCoverage.fs" />
+    <Compile Include="SpecCoverage.fs" />
     <Compile Include="AttributeDefaults.fs" />
     <Compile Include="DtdLines.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Diagnosis.fs" Link="Diagnosis.fs" />
