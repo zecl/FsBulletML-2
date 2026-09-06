@@ -13,6 +13,17 @@
     <Compile Include="PublicSurface.fs" />
     <Compile Include="NoAimSkip.fs" />
     <Compile Include="DriverEquiv.fs" />
+    <!--
+      Playground のソースを借りて compile し直す。**参照はしない** ——
+      あちらは Blazor WASM のアプリで、こちらから引くものではない。
+      借りている中身は Core / Front の型しか使わないので、依存は増えない。
+      **`Parser.Tests` では借りられない** —— あちらは Front を参照していない。
+      同じ形の前例: Parser.Tests が Vocabulary.fs / XmlScan.fs を借りている。
+    -->
+    <Compile Include="..\..\src\FsBulletML2.Playground\Stage.fs" Link="Stage.fs" />
+    <Compile Include="..\..\src\FsBulletML2.Playground\Pacing.fs" Link="Pacing.fs" />
+    <Compile Include="..\..\src\FsBulletML2.Playground\Playfield.fs" Link="Playfield.fs" />
+    <Compile Include="StepPacing.fs" />
   </ItemGroup>
   <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
        手のせいか版のせいかが割れない -->

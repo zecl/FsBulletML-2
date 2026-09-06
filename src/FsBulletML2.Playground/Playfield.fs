@@ -6,7 +6,6 @@ open System.Runtime.InteropServices
 open FsBulletML2
 open FsBulletML2.Domain
 open FsBulletML2.Front
-open Dsl
 
 /// 参照型。struct だと `let it = live.[i]` がコピーになって書き戻せない。
 [<Sealed>]

@@ -34,6 +34,14 @@ type PlaygroundHost() =
   //
   // rAF は `onReady` で回り始めるので、ここが true でも起こす順は変わらない
   let mutable playing = true
+  // 進め方は `Pacing` が持つ。**ここで判断しない** ——
+  // 判断をここへ書くと、Bolero を参照するこのファイルの中にしか無くなって
+  // .NET で当てられなくなる
+  let mutable pacing = Pacing.normal
+  // **1 個 だけ作って持ち回る。** 毎コマ `field.Tick` を関数値にすると、
+  // 1 フレーム につき 1 個 の閉包がヒープに乗る。
+  // `field` は Apply で差し替わるが、その都度 読み直すのでこれで足りる
+  let tick = fun () -> field.Tick()
   let ret = Array.zeroCreate<float> 2
   let catalog = lazy (All.bullets |> List.toArray)
 
@@ -41,7 +49,7 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.StepFrame(_now: float, playerX: float, playerY: float) : float[] =
     env.SetPlayer (float32 playerX) (float32 playerY)
-    if playing then field.Tick()
+    if playing then pacing <- Pacing.step tick pacing
     ret.[0] <- float (field.Pack())
     ret.[1] <- field.PackedPtr
     ret
@@ -51,6 +59,20 @@ type PlaygroundHost() =
 
   [<JSInvokable>]
   member _.Pause() = playing <- false
+
+  /// 1 コマ だけ進める。**押した時点で止まる** ——
+  /// 走っているまま 1 コマ 足しても、次のコマで流れてしまって見えない
+  [<JSInvokable>]
+  member _.StepOnce() =
+    playing <- false
+    field.Tick()
+
+  /// 正なら倍速（1 フレームに n 回）、負ならスロー（-n フレームに 1 回）。
+  ///
+  /// **Apply / Reset / プルダウンでは戻さない。** 速さは見る側の都合で、
+  /// 載っている弾幕の一部ではない（拡大率と同じ扱い）
+  [<JSInvokable>]
+  member _.SetRate(n: int) = pacing <- Pacing.withRate n
 
   [<JSInvokable>]
   member _.Reset() =

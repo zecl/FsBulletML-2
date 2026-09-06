@@ -4,6 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FsBulletML2 Playground</title>
+    <!--
+      外から読むのは Monaco だけ。**取ってこられる先を字で閉じる。**
+      SRI（下の integrity）が守るのは loader.js 1 本 だけで、そのローダが
+      あとから取りに行く分（editor.main.js / css / nls）には掛からない。
+      そこを塞ぐのがここ。
+
+      **本番では header で送ること。** meta は frame-ancestors も
+      report-only も持てないし、head より前に注入された物には効かない。
+      Cloudflare へ載せる版（v2.0）でそちらへ移す。
+
+      wasm-unsafe-eval  Blazor WASM の runtime が要る
+      unsafe-inline     Monaco が style を差し込む（script には出していない）
+      blob:             Monaco の worker
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net;
+      style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+      font-src 'self' data: https://cdn.jsdelivr.net;
+      img-src 'self' data:;
+      connect-src 'self' https://cdn.jsdelivr.net;
+      worker-src 'self' blob:;
+      child-src 'self' blob:;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'none'">
     <base href="/">
     <link rel="stylesheet" href="css/playground.css">
     <script type="importmap"></script>
@@ -15,10 +41,10 @@
         <canvas id="stage" width="480" height="640"></canvas>
         <div class="editor">
         <div class="picker">
-          <select id="pattern" onchange="playground.pick()">
+          <select id="pattern">
             <option value="">（XML 編集 / Open）</option>
           </select>
-          <button type="button" id="help" title="補完の使い方" onclick="playground.help()">?</button>
+          <button type="button" id="help" title="補完の使い方">?</button>
         </div>
         <!-- 中身は空。**XML を html に書かない** —— 起動時の本文は host が
              同梱カタログの CE から焼いて渡す（Main.fs の InitialSource） -->
@@ -26,11 +52,23 @@
         </div>
       </div>
       <div class="bar">
-        <button type="button" onclick="playground.call('Play')">Play</button>
-        <button type="button" onclick="playground.call('Pause')">Pause</button>
-        <button type="button" onclick="playground.call('Reset')">Reset</button>
-        <button type="button" onclick="playground.apply()">Apply</button>
-        <button type="button" onclick="playground.open()">Open</button>
+        <button type="button" id="play">Play</button>
+        <button type="button" id="pause">Pause</button>
+        <button type="button" id="step-once" title="1 コマ 進める（押すと止まる）">&#9654;|</button>
+        <!-- 数の意味は host の Pacing が持つ。正なら 1 コマ に何回 進めるか、
+             負なら何コマ に 1 回 進めるか -->
+        <label class="rate">速さ
+          <select id="rate">
+            <option value="-4">1/4</option>
+            <option value="-2">1/2</option>
+            <option value="1" selected>x1</option>
+            <option value="2">x2</option>
+            <option value="4">x4</option>
+          </select>
+        </label>
+        <button type="button" id="reset">Reset</button>
+        <button type="button" id="apply">Apply</button>
+        <button type="button" id="open">Open</button>
         <input id="open-file" type="file" accept=".xml,text/xml,application/xml" hidden>
         <span>FPS: <span id="fps">0</span></span>
         <span>Bullets: <span id="bullet-count">0</span></span>
@@ -101,20 +139,35 @@
         いま書けるのは XML だけ。sxml や F# の DSL は口だけ開けてある。
       </p>
 
-      <button type="button" onclick="playground.closeHelp()">閉じる</button>
+      <button type="button" id="help-close">閉じる</button>
     </dialog>
     <!--
       Monaco は CDN。**版はこの 1 行 だけに在る** —— `Monaco.fs` はこの src から
       vsBase を読むので、上げるときここだけ直す。repo に本体を置かないのは、
-      guard-text が見る追跡ファイルに binary を足さないため
+      guard-text が見る追跡ファイルに binary を足さないため。
+
+      **integrity が掛かるのは loader.js 1 本 だけ。** AMD のローダは、
+      このあと editor.main とその塊を自分で取りに行くが、そちらには掛からない。
+      そこを閉じているのは head の CSP（取ってこられる先を origin で絞る）で、
+      **中身までは見ていない。**
+
+      版と hash は一緒に動かすこと。片方 だけ直すとブラウザが loader.js を
+      捨てるので、`Monaco.fs` の `failwith`（ローダが読めていない）で赤が出る。
+      **走行では出ず、開いた人にだけ見える。**
     -->
-    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.56.0/min/vs/loader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.56.0/min/vs/loader.js"
+            integrity="sha384-jwxunh5pHKFzi60XobDcwOM7qnk4lSGpdBU/hNn9pUGp+ZUpaHJqadNLRF2k+jPu"
+            crossorigin="anonymous"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
     <!--
       **ここにロジックを書かない。** 読み込むだけ。
       WASM を起こすのは Playground.js（Fable）の末尾 ——
-      html に書くと、そこだけ型も検査も掛からない
+      html に書くと、そこだけ型も検査も掛からない。
+
+      **src で読む。** 前は `<script type="module">import ...</script>` と
+      インラインで書いていたが、CSP に `'unsafe-inline'` を出していないので
+      黙って弾かれる（実際に踏んだ。**エラーは出ず、起動待ちのまま止まる**）
     -->
-    <script type="module">import "./js/Playground.js";</script>
+    <script type="module" src="js/Playground.js"></script>
   </body>
 </html>
