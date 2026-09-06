@@ -167,4 +167,8 @@ type XmlLanguage(vocabulary: unit -> Vocab) =
   interface ISourceLanguage with
     member _.Kind = SourceKind.Xml
     member _.MonacoLanguage = "xml"
+    // `<` の直後は要素、`"` の直後は属性値。**空白は入れない** ——
+    // 本文のどこで空白を打っても候補が出ることになる。
+    // 属性名は 1 文字 打つか Ctrl+Space で出る
+    member _.TriggerCharacters = [ "<"; "\"" ]
     member this.Complete source offset = this.Candidates(source, offset)

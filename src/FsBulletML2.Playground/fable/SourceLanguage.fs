@@ -69,6 +69,10 @@ type ISourceLanguage =
   abstract Kind: SourceKind
   /// Monaco 側の language id。表記と 1 対 1 とは限らないので別に持つ
   abstract MonacoLanguage: string
+  /// 打った瞬間に候補を出す字。**語の文字は要らない** —— そちらは Monaco が
+  /// 自分で出す。ここに置くのは「語ではないが、その直後に必ず候補が要る」字。
+  /// **表記ごとに違う**（sxml なら括弧）ので言語モジュールが持つ
+  abstract TriggerCharacters: string list
   /// 本文とカーソルの位置（文字数）から候補を出す。
   /// **WASM に行かない** —— 語彙は起動時にもらったものを引く
   abstract Complete: source: string -> offset: int -> Completion list

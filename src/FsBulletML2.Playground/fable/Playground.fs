@@ -253,8 +253,10 @@ type Playground() as self =
             Monaco.create "source" current.MonacoLanguage seed
             self.loadVocabulary ()
             // **XML を名指ししない。** 次の言語が来ても、通る道はここ 1 本
-            Monaco.registerCompletionProvider current.MonacoLanguage (fun src offset ->
-              current.Complete src offset)
+            Monaco.registerCompletionProvider
+              current.MonacoLanguage
+              current.TriggerCharacters
+              (fun src offset -> current.Complete src offset)
             self.showInitialInPatterns ()
           with ex -> setError ("エディタ: " + string ex))
     with ex -> setError ("エディタ: " + string ex)

@@ -26,8 +26,8 @@ let private amdRequire (id: string) (cb: unit -> unit) : unit = jsNative
 [<Emit("globalThis.monaco.editor.create($0, $1)")>]
 let private createEditor (host: obj) (opts: obj) : obj = jsNative
 
-[<Emit("globalThis.monaco.languages.registerCompletionItemProvider($0, { provideCompletionItems: $1 })")>]
-let private registerCompletion (language: string) (fn: obj -> obj -> obj) : unit = jsNative
+[<Emit("globalThis.monaco.languages.registerCompletionItemProvider($0, { triggerCharacters: $2, provideCompletionItems: $1 })")>]
+let private registerCompletion (language: string) (fn: obj -> obj -> obj) (triggers: string[]) : unit = jsNative
 
 [<Emit("globalThis.monaco.editor.setModelLanguage($0.getModel(), $1)")>]
 let private setModelLanguage (editor: obj) (language: string) : unit = jsNative
@@ -117,6 +117,7 @@ let setLanguage (language: string) = if not (isNull editor) then setModelLanguag
 /// 呼ばれるのは人がキーを打ったときだけ
 let registerCompletionProvider
   (language: string)
+  (triggerCharacters: string list)
   (complete: string -> int -> FsBulletML2.Playground.SourceLanguage.Completion list)
   =
   let provide (model: obj) (position: obj) : obj =
@@ -145,4 +146,4 @@ let registerCompletionProvider
       |> List.toArray
     createObj [ "suggestions" ==> items ]
 
-  registerCompletion language provide
+  registerCompletion language provide (List.toArray triggerCharacters)
