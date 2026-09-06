@@ -5,7 +5,7 @@ open System.Text
 open System.Xml
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
-open System.Xml.Resolvers
+
 
 [<AutoOpen; Extension>]
 module Xml =
@@ -39,11 +39,21 @@ module Xml =
         else () }
     reader |> read |> List.ofSeq |> List.head
 
-  let resolver = new XmlPreloadedResolver(new XmlUrlResolver(), XmlKnownDtds.Xhtml10)
-  // ValidationType.DTD is not supported on .NET Core / .NET 10. Keep the NET40
-  // DtdProcessing.Ignore + XmlPreloadedResolver path so DOCTYPE is skipped.
-  let readerSettingsIndented = new XmlReaderSettings(DtdProcessing = DtdProcessing.Ignore, XmlResolver = resolver, IgnoreComments = true, IgnoreProcessingInstructions = true)
-  let readerSettingsIgnoreWhitespace = new XmlReaderSettings(DtdProcessing = DtdProcessing.Ignore, XmlResolver = resolver, IgnoreComments = true, IgnoreProcessingInstructions = true, IgnoreWhitespace = true)
+  // DOCTYPE は読まない。XmlUrlResolver を置くと外部へ取りにいって、
+  // WASM ではメインスレッドが帰ってこない（Loading のまま Play も Apply も死ぬ）。
+  let readerSettingsIndented =
+    new XmlReaderSettings(
+      DtdProcessing = DtdProcessing.Ignore,
+      XmlResolver = null,
+      IgnoreComments = true,
+      IgnoreProcessingInstructions = true)
+  let readerSettingsIgnoreWhitespace =
+    new XmlReaderSettings(
+      DtdProcessing = DtdProcessing.Ignore,
+      XmlResolver = null,
+      IgnoreComments = true,
+      IgnoreProcessingInstructions = true,
+      IgnoreWhitespace = true)
 
   let loadXml xmlUri settings =
     let rec read (reader:XmlReader) =

@@ -1,5 +1,5 @@
 step が返すのは差分。呼ぶ側が座標に足す。
-係数と Y の符号はフロントごとに違う（MonoGame は 1 倍、Unity2D は 1/100 で Y を反転）。
+係数と Y の符号はフロントごとに違う（MonoGame / Playground は 1 倍、Unity2D は 1/100 で Y を反転）。
 
 samples/FsBulletML2.Sample.MonoGame.CSharp/Enemy.cs
     base.RunTask((x, y) => { this.self.X = this.self.X + x; this.self.Y = this.self.Y + y; });
@@ -26,6 +26,10 @@ src/FsBulletML2.MonoGame/BaseBullet.fs
     let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
     apply f.Delta.X f.Delta.Y
 
+src/FsBulletML2.Playground/Playfield.fs
+    it.X <- it.X + f.Delta.X
+    it.Y <- it.Y + f.Delta.Y
+
 src/FsBulletML2.Unity2D/DefaultBullet.fs
     me.X <- me.X + (x / Settings.Display.PixcelsToUnits)
     me.Y <- me.Y - (y / Settings.Display.PixcelsToUnits)
@@ -35,4 +39,4 @@ run の経路に居ないが、座標を足している所（件数だけ）:
   samples/FsBulletML2.Sample.MonoGame.FSharp/Background.fs         1 行
   samples/FsBulletML2.Sample.MonoGame.FSharp/Player.fs             4 行
 
-―― 本体 8 ファイル / 14 行（0 なら走査か網が壊れている）
+―― 本体 9 ファイル / 16 行（0 なら走査か網が壊れている）

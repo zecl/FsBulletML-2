@@ -29,20 +29,20 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if (-not $Quiet) {
-  Write-Host "選ぶ     $Select"
-  Write-Host "試験     $TestResult   （選ばれた: $PickedTests）"
-  Write-Host "build    $BuildResult  （選ばれた: $PickedBuilds）"
-  Write-Host "同梱 dll $ShippedResult  （選ばずに毎回 走る）"
+  Write-Host "Select       $Select"
+  Write-Host "Test         $TestResult   （選ばれた: $PickedTests）"
+  Write-Host "Build        $BuildResult  （選ばれた: $PickedBuilds）"
+  Write-Host "Shipped DLLs $ShippedResult  （選ばずに毎回 走る）"
 }
 
-if ($Select -ne 'success') { throw "選ぶところが $Select。先の結果は読めない" }
+if ($Select -ne 'success') { throw "Select が $Select。先の結果は読めない" }
 
 # **これは選ばれる側ではない。** 毎回 走るので、success 以外は全部 誤り
-if ($ShippedResult -ne 'success') { throw "同梱 dll が $ShippedResult" }
+if ($ShippedResult -ne 'success') { throw "Shipped DLLs が $ShippedResult" }
 
 foreach ($p in @(
-    @{ Name = '試験';  Result = $TestResult;  Picked = $PickedTests },
-    @{ Name = 'build'; Result = $BuildResult; Picked = $PickedBuilds })) {
+    @{ Name = 'Test';  Result = $TestResult;  Picked = $PickedTests },
+    @{ Name = 'Build'; Result = $BuildResult; Picked = $PickedBuilds })) {
   $wanted = $p.Picked -ne '[]' -and $p.Picked -ne ''
   if ($p.Result -eq 'success') { continue }
   if (-not $wanted -and $p.Result -eq 'skipped') { continue }

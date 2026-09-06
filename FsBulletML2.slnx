@@ -1,4 +1,4 @@
-﻿<Solution>
+<Solution>
   <Folder Name="/.nuget/">
     <File Path=".nuget/NuGet.Config" />
     <File Path=".nuget/NuGet.exe" />
@@ -8,7 +8,6 @@
     <Project Path="bench/FsBulletML2.Benchmarks/FsBulletML2.Benchmarks.fsproj" />
   </Folder>
   <Folder Name="/samples/">
-    <Project Path="samples/FsBulletML2.Bullets.Dsl/FsBulletML2.Bullets.Dsl.fsproj" />
     <Project Path="samples/FsBulletML2.Bullets/FsBulletML2.Bullets.fsproj" />
     <Project Path="samples/FsBulletML2.Sample.MonoGame.CSharp/FsBulletML2.Sample.MonoGame.CSharp.csproj" />
     <Project Path="samples/FsBulletML2.Sample.Unity2D.CSharp.Compile/FsBulletML2.Sample.Unity2D.CSharp.Compile.csproj" />
@@ -18,11 +17,14 @@
     <Project Path="samples/FsBulletML2.Sample.Unity2D.FSharp/FsBulletML2.Sample.Unity2D.FSharp/FsBulletML2.Sample.Unity2D.FSharp.fsproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/FsBulletML2.Bullets.Dsl/FsBulletML2.Bullets.Dsl.fsproj" />
     <Project Path="src/FsBulletML2.Core/FsBulletML2.Core.fsproj" />
     <Project Path="src/FsBulletML2.Dsl/FsBulletML2.Dsl.fsproj" />
     <Project Path="src/FsBulletML2.Front/FsBulletML2.Front.fsproj" />
     <Project Path="src/FsBulletML2.MonoGame/FsBulletML2.MonoGame.fsproj" />
     <Project Path="src/FsBulletML2.Parser/FsBulletML2.Parser.fsproj" />
+    <Project Path="src/FsBulletML2.Playground/FsBulletML2.Playground.fsproj" />
+    <Project Path="src/FsBulletML2.Playground/fable/FsBulletML2.Playground.Js.fsproj" />
     <Project Path="src/FsBulletML2.TypeProviders/FsBulletML2.TypeProviders.fsproj" />
     <Project Path="src/FsBulletML2.Unity2D/FsBulletML2.Unity2D.fsproj" />
 

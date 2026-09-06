@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PublishTrimmed>false</PublishTrimmed>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Stage.fs" />
+    <Compile Include="BrowserEnv.fs" />
+    <Compile Include="Playfield.fs" />
+    <Compile Include="Main.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Bolero" Version="0.25.63" />
+    <PackageReference Include="Bolero.Build" Version="0.25.63" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.*" PrivateAssets="all" />
+  </ItemGroup>
+  <Target Name="CompilePlaygroundJs" BeforeTargets="BeforeBuild">
+    <Exec Command="dotnet tool restore" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Exec Command="dotnet tool run fable -- fable/FsBulletML2.Playground.Js.fsproj -o wwwroot/js" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Front\FsBulletML2.Front.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Bullets.Dsl\FsBulletML2.Bullets.Dsl.fsproj" />
+  </ItemGroup>
+</Project>

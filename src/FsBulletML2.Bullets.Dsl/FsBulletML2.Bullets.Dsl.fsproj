@@ -40,7 +40,7 @@
     <Compile Include="All.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
-    <ProjectReference Include="..\..\src\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
   </ItemGroup>
 </Project>

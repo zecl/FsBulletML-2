@@ -34,7 +34,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
     <ProjectReference Include="..\..\..\src\FsBulletML2.Unity2D\FsBulletML2.Unity2D.fsproj" />
-    <ProjectReference Include="..\..\FsBulletML2.Bullets.Dsl\FsBulletML2.Bullets.Dsl.fsproj" />
+    <ProjectReference Include="..\..\..\src\FsBulletML2.Bullets.Dsl\FsBulletML2.Bullets.Dsl.fsproj" />
     <!-- COMPILE-ONLY UnityEngine stub. Not a substitute for the Unity Editor. -->
     <ProjectReference Include="..\..\..\src\UnityEngine.Stub\UnityEngine.Stub.csproj" Condition="'$(UseRealUnity)' != 'true'" />
     <ProjectReference Include="..\..\..\src\Unity.Mathematics.Stub\Unity.Mathematics.Stub.csproj" Condition="'$(UseRealUnity)' != 'true'" />

@@ -17,7 +17,13 @@ namespace FsBulletML2.Unity2D.Tests
 /// **1 コマ の移動が 0.02 のあたり**なのは 1/100 で縮めているから。
 module FrontRunGolden =
 
-  let Expected = """f00  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.40000 y=-1.00000 d=5.47340 s=2.00000 used=true]
+  // **改行を揃えてから渡す。** 控えは三重引用符でこのソースに埋まっているので、
+  // 改行はファイルの改行そのもの —— `.gitattributes` の `text=auto` で
+  // checkout した機械しだいで CRLF になる。生成側は `\n` に揃えてあるので、
+  // 揃えないと**全行 が字面どおりなのに割れる**（差が `\r` なので目で出ない）。
+  // 落ちるのは autocrlf が効く機械だけで、書いた人の手元は緑のまま
+  let private normalize (s: string) = s.Replace("\r\n", "\n")
+  let Expected = normalize """f00  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.40000 y=-1.00000 d=5.47340 s=2.00000 used=true]
 f01  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.38032 y=-0.99646 d=4.89045 s=2.00000 used=true]
 f02  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.36193 y=-1.00434 d=4.30750 s=2.00000 used=true]
 f03  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.35092 y=-1.02103 d=3.72454 s=2.00000 used=true | b2 x=2.40000 y=-1.00000 d=5.47340 s=2.00000 used=true]

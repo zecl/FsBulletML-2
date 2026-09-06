@@ -2,7 +2,7 @@
 // この道具は、その値を読んで 2 つ を焼く。
 //
 //   samples/FsBulletML2.Bullets/*.fs   DU で直に組んだカタログ（突き合わせ門の相手）
-//   samples/FsBulletML2.Bullets.Dsl/All.fs   全弾幕の一覧
+//   src/FsBulletML2.Bullets.Dsl/All.fs   全弾幕の一覧
 //
 // **値から起こす。** CE のソースを構文解析するのではなく、焼いたアセンブリから
 // Bulletml の値を取り出して印字する。木の形だけが入力なので、書き方
@@ -12,12 +12,13 @@
 // これらは値に残っていないため。
 //
 // 焼き直し:
-//     dotnet build samples/FsBulletML2.Bullets.Dsl -c Release
-//     dotnet fsi samples/FsBulletML2.Bullets.Dsl/gen.fsx
+//     dotnet build src/FsBulletML2.Bullets.Dsl -c Release
+//     dotnet fsi src/FsBulletML2.Bullets.Dsl/gen.fsx
 //
 // **焼き直したら必ず tests/FsBulletML2.Dsl.Tests を回すこと。**
 
-#r @"..\..\src\FsBulletML2.Dsl\bin\Release\net10.0\FsBulletML2.Core.dll"
+#r @"bin\Release\net10.0\FsBulletML2.Core.dll"
+#r @"bin\Release\net10.0\FsBulletML2.Dsl.dll"
 #r @"bin\Release\net10.0\FsBulletML2.Bullets.Dsl.dll"
 
 open System
@@ -27,7 +28,7 @@ open System.Text
 open FsBulletML2
 
 let repo = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "..", ".."))
-let dslDir = Path.Combine(repo, @"samples\FsBulletML2.Bullets.Dsl")
+let dslDir = Path.Combine(repo, @"src\FsBulletML2.Bullets.Dsl")
 let duDir = Path.Combine(repo, @"samples\FsBulletML2.Bullets")
 let dslDll = Path.Combine(dslDir, @"bin\Release\net10.0\FsBulletML2.Bullets.Dsl.dll")
 
@@ -280,12 +281,12 @@ let valueOf (ns: string) (modName: string) (name: string) =
 let duHeader =
   [ "// **このファイルは生成物。手で直すと次の焼き直しで消える。**"
     "//"
-    "// 人が書くのは samples/FsBulletML2.Bullets.Dsl（CE）のほう。ここは"
+    "// 人が書くのは src/FsBulletML2.Bullets.Dsl（CE）のほう。ここは"
     "// その値を DU で直に組んだ形へ写したもので、突き合わせ門の相手として置いてある。"
     "//"
     "// 焼き直し:"
-    "//     dotnet build samples/FsBulletML2.Bullets.Dsl -c Release"
-    "//     dotnet fsi samples/FsBulletML2.Bullets.Dsl/gen.fsx" ]
+    "//     dotnet build src/FsBulletML2.Bullets.Dsl -c Release"
+    "//     dotnet fsi src/FsBulletML2.Bullets.Dsl/gen.fsx" ]
 
 let generateDu (p: Parsed) =
   let out = StringBuilder()
@@ -316,8 +317,8 @@ let generateAll (names: string list) =
   w "// **このファイルは生成物。手で直すと次の焼き直しで消える。**"
   w "//"
   w "// 焼き直し:"
-  w "//     dotnet build samples/FsBulletML2.Bullets.Dsl -c Release"
-  w "//     dotnet fsi samples/FsBulletML2.Bullets.Dsl/gen.fsx"
+  w "//     dotnet build src/FsBulletML2.Bullets.Dsl -c Release"
+  w "//     dotnet fsi src/FsBulletML2.Bullets.Dsl/gen.fsx"
   w ""
   w "namespace FsBulletML2.Bullets.Dsl"
   w "open FsBulletML2"
