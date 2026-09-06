@@ -40,7 +40,30 @@ type VocabElement =
   { Name: string
     Children: string list
     Attrs: VocabAttr list
+    /// #PCDATA を取るか。取る要素の中では式（$rand / $rank）も候補になる
     Text: bool }
+
+type Vocab =
+  { Elements: VocabElement list
+    /// 式の中で使える字
+    Expressions: string list }
+
+/// 候補 1 つ。
+///
+/// **`Replace` を言語モジュールが決める。** Monaco の「語」に任せると、
+/// `$rand` の `$` が語に入らない版で `$$rand` になる。手前 何文字 を
+/// 置き換えるかはこちらが数える —— 何が語かを知っているのは言語のほう
+type Completion =
+  { Label: string
+    /// 入れる字。`Snippet` なら Monaco の記法（`$0` がカーソル）
+    Insert: string
+    Snippet: bool
+    /// カーソルの手前 何文字 を置き換えるか
+    Replace: int }
+
+module Completion =
+  let plain (replace: int) (label: string) =
+    { Label = label; Insert = label; Snippet = false; Replace = replace }
 
 type ISourceLanguage =
   abstract Kind: SourceKind
@@ -48,7 +71,7 @@ type ISourceLanguage =
   abstract MonacoLanguage: string
   /// 本文とカーソルの位置（文字数）から候補を出す。
   /// **WASM に行かない** —— 語彙は起動時にもらったものを引く
-  abstract Complete: source: string -> offset: int -> string list
+  abstract Complete: source: string -> offset: int -> Completion list
 
 [<Emit("JSON.parse($0)")>]
 let private jsonParse (s: string) : obj = jsNative
@@ -64,19 +87,22 @@ let private strings (arr: obj) : string list =
 
 /// host の `Vocabulary()` が返す JSON を読む。
 /// **形が食い違ったら候補が出なくなるだけ**なので、呼ぶ側が空を赤にする
-let parseVocabulary (json: string) : VocabElement list =
+let parseVocabulary (json: string) : Vocab =
   let root = jsonParse json
-  if isNull root then []
+  if isNull root then { Elements = []; Expressions = [] }
   else
-    let len: int = root?length
-    [ for i in 0 .. len - 1 ->
-        let e = item root i
-        let attrs = e?attrs
-        let alen: int = if isNull attrs then 0 else attrs?length
-        { Name = string e?name
-          Children = strings e?children
-          Text = unbox<bool> e?text
-          Attrs =
-            [ for j in 0 .. alen - 1 ->
-                let a = item attrs j
-                { Name = string a?name; Values = strings a?values } ] } ]
+    let els = root?elements
+    let len: int = if isNull els then 0 else els?length
+    { Expressions = strings root?expressions
+      Elements =
+        [ for i in 0 .. len - 1 ->
+            let e = item els i
+            let attrs = e?attrs
+            let alen: int = if isNull attrs then 0 else attrs?length
+            { Name = string e?name
+              Children = strings e?children
+              Text = unbox<bool> e?text
+              Attrs =
+                [ for j in 0 .. alen - 1 ->
+                    let a = item attrs j
+                    { Name = string a?name; Values = strings a?values } ] } ] }

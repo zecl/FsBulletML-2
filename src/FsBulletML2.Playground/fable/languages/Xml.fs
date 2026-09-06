@@ -101,32 +101,68 @@ let contextAt (src: string) (offset: int) : Context =
   | Some c -> c
   | None -> InContent(if stack.Count > 0 then Some stack.[stack.Count - 1] else None)
 
+let private isNameChar c =
+  System.Char.IsLetterOrDigit c || c = '-' || c = '_' || c = '.' || c = ':'
+
+/// カーソルの手前にある「いま打っている名前」の長さ。
+/// **Monaco の語の定義に頼らない** —— 何が名前かを知っているのは言語のほう
+let private nameLenBefore (src: string) (offset: int) =
+  let mutable k = min offset src.Length
+  while k > 0 && isNameChar src.[k - 1] do
+    k <- k - 1
+  (min offset src.Length) - k
+
+/// 式の候補を置き換える長さ。名前のぶんに、手前の `$` が在ればそれも足す。
+/// **`$` を含めないと `$` + `$rand` で `$$rand` になる**
+let private exprLenBefore (src: string) (offset: int) =
+  let n = nameLenBefore src offset
+  let at = (min offset src.Length) - n
+  if at > 0 && src.[at - 1] = '$' then n + 1 else n
+
 /// 語彙を引いて候補を出す。**語彙は引数で受け取る** ——
 /// このモジュールが host を知らないので、次の言語も同じ形で書ける
-type XmlLanguage(vocabulary: unit -> VocabElement list) =
+type XmlLanguage(vocabulary: unit -> Vocab) =
 
-  let find name = vocabulary () |> List.tryFind (fun e -> e.Name = name)
+  let find name = (vocabulary ()).Elements |> List.tryFind (fun e -> e.Name = name)
 
-  member _.Candidates(source: string, offset: int) =
+  member _.Candidates(source: string, offset: int) : Completion list =
+    let nameLen = nameLenBefore source offset
+    let plain = Completion.plain nameLen
     match contextAt source offset with
     | InContent None ->
       // 根の外。置けるのは bulletml だけ
-      vocabulary () |> List.filter (fun e -> e.Name = "bulletml") |> List.map (fun e -> e.Name)
+      (vocabulary ()).Elements
+      |> List.filter (fun e -> e.Name = "bulletml")
+      |> List.map (fun e -> plain e.Name)
     | InContent (Some parent) ->
       match find parent with
-      | Some e -> e.Children
       | None -> []
+      | Some e ->
+        let children = e.Children |> List.map plain
+        // #PCDATA を取る要素の中では式も書ける
+        if not e.Text then children
+        else
+          let exprLen = exprLenBefore source offset
+          children @ ((vocabulary ()).Expressions |> List.map (Completion.plain exprLen))
     | InStartTag element ->
       match find element with
-      | Some e -> e.Attrs |> List.map (fun a -> a.Name)
       | None -> []
+      | Some e ->
+        // **`=""` まで入れて、引用符の中へカーソルを置く。**
+        // 名前だけ入れると、必ず手で 3 文字 足すことになる
+        e.Attrs
+        |> List.map (fun a ->
+             { Label = a.Name
+               Insert = a.Name + "=\"$0\""
+               Snippet = true
+               Replace = nameLen })
     | InAttrValue (element, attr) ->
       match find element with
+      | None -> []
       | Some e ->
         match e.Attrs |> List.tryFind (fun a -> a.Name = attr) with
-        | Some a -> a.Values
+        | Some a -> a.Values |> List.map plain
         | None -> []
-      | None -> []
 
   interface ISourceLanguage with
     member _.Kind = SourceKind.Xml

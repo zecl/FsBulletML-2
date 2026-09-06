@@ -30,6 +30,7 @@
     <Compile Include="..\..\src\FsBulletML2.Playground\fable\SourceLanguage.fs" Link="SourceLanguage.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\fable\languages\Xml.fs" Link="languages\Xml.fs" />
     <Compile Include="XmlContext.fs" />
+    <Compile Include="XmlCompletion.fs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\TestData\**\*">

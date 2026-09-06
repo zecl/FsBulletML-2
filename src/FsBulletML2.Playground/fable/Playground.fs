@@ -68,7 +68,7 @@ type Playground() as self =
   let mutable canvas: HTMLCanvasElement = null
   let mutable canvasCtx: CanvasRenderingContext2D = null
   // host からもらう語彙。正本は Core の DTD.fs
-  let mutable vocabulary: VocabElement list = []
+  let mutable vocabulary: Vocab = { Elements = []; Expressions = [] }
   // 登録されている表記。**v0.3 は XML 1 本。**
   // 次の言語はここに 1 個 足して、host の kind に腕を 1 本 足すだけ
   let languages: ISourceLanguage list = [ Languages.Xml.XmlLanguage(fun () -> vocabulary) ]
@@ -269,7 +269,7 @@ type Playground() as self =
     if isNull dotNet then ()
     else
       vocabulary <- SourceLanguage.parseVocabulary (string (invoke0 dotNet "Vocabulary"))
-      if vocabulary.IsEmpty then setError "語彙が空（Core の型を読めていない）"
+      if vocabulary.Elements.IsEmpty then setError "語彙が空（Core の型を読めていない）"
 
   /// 走っている弾幕をプルダウンにも出す。**空のままにしない** ——
   /// 空は「XML 編集 / Open」の意味なので、同梱を走らせているのに嘘になる

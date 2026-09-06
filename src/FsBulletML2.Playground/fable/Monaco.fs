@@ -115,24 +115,33 @@ let setLanguage (language: string) = if not (isNull editor) then setModelLanguag
 ///
 /// 本文は毎回 `getValue` で取る。**rAF の中ではないので写しても構わない** ——
 /// 呼ばれるのは人がキーを打ったときだけ
-let registerCompletionProvider (language: string) (complete: string -> int -> string list) =
+let registerCompletionProvider
+  (language: string)
+  (complete: string -> int -> FsBulletML2.Playground.SourceLanguage.Completion list)
+  =
   let provide (model: obj) (position: obj) : obj =
-    let w = wordUntil model position
-    let range =
-      createObj [
-        "startLineNumber" ==> position?lineNumber
-        "endLineNumber" ==> position?lineNumber
-        "startColumn" ==> w?startColumn
-        "endColumn" ==> w?endColumn ]
+    let column: int = position?column
     let items =
       complete (getVal model) (offsetAt model position)
-      |> List.map (fun label ->
-           createObj [
-             "label" ==> label
-             // 1 = Keyword。数を名前で書けないのは Monaco 側の enum なので
-             "kind" ==> 1
-             "insertText" ==> label
-             "range" ==> range ])
+      |> List.map (fun c ->
+           // **置き換える幅は候補の側が決める。** `getWordUntilPosition` に
+           // 任せると、語に入らない字（`$`）を持つ候補で二重に入る
+           let range =
+             createObj [
+               "startLineNumber" ==> position?lineNumber
+               "endLineNumber" ==> position?lineNumber
+               "startColumn" ==> max 1 (column - c.Replace)
+               "endColumn" ==> column ]
+           let o =
+             createObj [
+               "label" ==> c.Label
+               // 1 = Keyword。数を名前で書けないのは Monaco 側の enum なので
+               "kind" ==> 1
+               "insertText" ==> c.Insert
+               "range" ==> range ]
+           // 4 = InsertAsSnippet。`$0` をカーソルの置き場として読ませる
+           if c.Snippet then o?insertTextRules <- 4
+           o)
       |> List.toArray
     createObj [ "suggestions" ==> items ]
 

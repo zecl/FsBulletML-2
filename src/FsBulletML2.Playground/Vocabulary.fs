@@ -133,12 +133,22 @@ module Vocabulary =
   let elements: VocabElement[] =
     let acc = Dictionary<string, Type[]>()
     collect typeof<Bulletml> (HashSet<Type>()) acc
-    // `Params` は腕を持たないので木からは出てこない。DTD の <param> をここで足す
-    acc.["param"] <- [||]
     acc
     |> Seq.map (fun kv -> describe kv.Key kv.Value)
+    // `Params = string list` は腕を持たないので木から出てこない。
+    // **DTD は `<!ELEMENT param (#PCDATA)>`** なので、中身を取る要素として足す
+    |> Seq.append [ { Name = "param"; Children = [||]; Attrs = [||]; Text = true } ]
     |> Seq.sortBy (fun e -> e.Name)
     |> Seq.toArray
+
+  /// 式の中で使える字。**DU からは引けない** —— `$rand` / `$rank` という綴りは
+  /// 読む側（`Expr` の parser）が文字で持っていて、木の腕の名前
+  /// （`Rand` / `Rank`）とは別物。ここは短い表にする。
+  ///
+  /// **代わりに「Parser が本当に読める字か」を試験で当てる**
+  /// （`Expr.NumExpr.ofString` に通して、`Invalid` でなく
+  /// `NeedRand` / `NeedRank` が立つこと）。綴りが動けば赤になる。
+  let expressions = [| "$rand"; "$rank" |]
 
   let private escape (s: string) =
     let sb = StringBuilder()
@@ -161,7 +171,7 @@ module Vocabulary =
         if i > 0 then sb.Append ',' |> ignore
         str x)
       sb.Append ']' |> ignore
-    sb.Append "[" |> ignore
+    sb.Append "{\"elements\":[" |> ignore
     elements
     |> Array.iteri (fun i e ->
         if i > 0 then sb.Append ',' |> ignore
@@ -181,5 +191,7 @@ module Vocabulary =
             arr a.Values
             sb.Append '}' |> ignore)
         sb.Append "]}" |> ignore)
-    sb.Append "]" |> ignore
+    sb.Append "],\"expressions\":" |> ignore
+    arr expressions
+    sb.Append "}" |> ignore
     sb.ToString()
