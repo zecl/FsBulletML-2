@@ -9,14 +9,30 @@ open FsBulletML2
 /// 属性 1 つ。`Values` が空なら自由記述（label など）。
 type VocabAttr =
   { Name: string
-    Values: string[] }
+    Values: string[]
+    /// 書かなかったときに走る値。`Core` の腕に付いた `[<BulletmlDefault>]` から。
+    ///
+    /// **1 個 に絞らず並びで持つ。** reflection は 2 個 でも返せるので、
+    /// 型で 1 個 に潰すとその壊れが「先頭を採る」で消える。
+    /// `Values` が空でないとき 1 個 であることは門が見る
+    Defaults: string[]
+    /// この属性の `<!ATTLIST ...>` 行。**表を持たない** —— 型から組む
+    Dtd: string
+    /// hover に出す散文（`Spec.fs`）
+    Spec: string
+    /// 値ごとの散文。`Values` と同じ綴りを鍵に持つ
+    ValueSpecs: (string * string)[] }
 
 /// 要素 1 つ。`Children` は「この中に置ける要素」、`Text` は #PCDATA を取るか。
 type VocabElement =
   { Name: string
     Children: string[]
     Attrs: VocabAttr[]
-    Text: bool }
+    Text: bool
+    /// この要素の `<!ELEMENT ...>` 行。腕の並びから組む
+    Dtd: string
+    /// hover に出す散文（`Spec.fs`）
+    Spec: string }
 
 /// BulletML の語彙。**正本は `Core/DTD.fs` の型だけ。**
 ///
@@ -44,6 +60,19 @@ type VocabElement =
 /// reflection なので `PublishTrimmed` は false のまま。true にすると
 /// 腕が消えて語彙が空になる。**空は呼ぶ側が赤にする。**
 module Vocabulary =
+
+  /// 散文の引き先。**無ければ空**で、足りていないことは門が見る
+  /// （`SpecCoverage`。ここで落とすと、表を直す前に何も動かなくなる）
+  let private specOf (table: (string * string) list) =
+    let d = dict table
+    fun (key: string) ->
+      match d.TryGetValue key with
+      | true, v -> v
+      | _ -> ""
+
+  let private elementSpec = specOf Spec.elements
+  let private attributeSpec = specOf Spec.attributes
+  let private attrValueSpec = specOf Spec.attrValues
 
   let private camel (s: string) =
     if String.IsNullOrEmpty s then s
@@ -82,6 +111,46 @@ module Vocabulary =
       then names |> Array.map (fun s -> s.Substring cut)
       else names
 
+  /// option / list を **1 段 だけ** 剥がして、多重度の印を返す。
+  /// `unwrap` は全部 剥がすので、多重度がここで消える
+  let private occurs (t: Type) =
+    if t.IsGenericType then
+      let d = t.GetGenericTypeDefinition()
+      if d = typedefof<option<_>> then Some("?", t.GetGenericArguments().[0])
+      elif d = typedefof<list<_>> then Some("*", t.GetGenericArguments().[0])
+      else None
+    else None
+
+  /// 「そこに置ける物」1 つ ぶんの字。多腕 DU は選択に、単腕 DU は要素名に
+  let private slot (t: Type) =
+    if FSharpType.IsUnion t then
+      let cs = FSharpType.GetUnionCases t
+      if cs.Length > 1
+      then "(" + (cs |> Array.map (fun c -> camel c.Name) |> String.concat " | ") + ")"
+      else camel t.Name
+    else camel t.Name
+
+  /// `<!ELEMENT ...>` の中身。**腕の field の並びがそのまま順序**、
+  /// option / list がそのまま多重度、多腕 DU がそのまま選択になる
+  let private contentModel (fields: Type[]) =
+    let parts =
+      [ for f in fields do
+          if isParams f then yield "param*"
+          else
+            let occ, inner =
+              match occurs f with
+              | Some(o, i) -> o, i
+              | None -> "", f
+            if isAttrs inner then ()
+            elif inner = typeof<Expr.NumExpr> then yield "#PCDATA"
+            else yield slot inner + occ ]
+    match parts with
+    | [] -> "EMPTY"
+    // 1 つ だけで、それ自体が括弧で括られた組なら外側を足さない
+    // （`((bullet | fire | action)*)` にしない）
+    | [ p ] when p.StartsWith("(", StringComparison.Ordinal) -> p
+    | ps -> "(" + String.concat ", " ps + ")"
+
   let private attrsOf (elementName: string) (t: Type) =
     FSharpType.GetRecordFields t
     |> Array.map (fun p ->
@@ -91,14 +160,40 @@ module Vocabulary =
           then p.Name.Substring elementName.Length
           else p.Name
         let vt = unwrap p.PropertyType
+        let cases = if FSharpType.IsUnion vt then FSharpType.GetUnionCases vt else [||]
+        // 腕が 1 本 の DU は「値の並び」ではない（ActionLabel など）。
+        // **札は並びでない相手にも読む** —— 読まないと「自由記述に既定が付いた」を
+        // 見る門が、当たる先を持たない
         let values =
-          if FSharpType.IsUnion vt && (FSharpType.GetUnionCases vt).Length > 1 then
-            FSharpType.GetUnionCases vt
-            |> Array.map (fun c -> c.Name)
-            |> stripCommonPrefix
-            |> Array.map camel
+          if cases.Length > 1
+          then cases |> Array.map (fun c -> c.Name) |> stripCommonPrefix |> Array.map camel
           else [||]
-        { Name = camel bare; Values = values })
+        // 既定は「腕の位置」で引く。名前をもう一度 変換すると
+        // stripCommonPrefix の結果とずれる余地ができる
+        let defaults =
+          cases
+          |> Array.mapi (fun i c -> i, c)
+          |> Array.filter (fun (_, c) ->
+               (c.GetCustomAttributes typeof<BulletmlDefaultAttribute>).Length > 0)
+          |> Array.map (fun (i, c) -> if values.Length > 0 then values.[i] else camel c.Name)
+        let name = camel bare
+        // option でない field は、書かないと読めない属性（actionRef/@label）
+        let required =
+          not (p.PropertyType.IsGenericType
+               && p.PropertyType.GetGenericTypeDefinition() = typedefof<option<_>>)
+        let decl = if values.Length > 0 then "(" + String.concat "|" values + ")" else "CDATA"
+        let def =
+          match Array.tryHead defaults with
+          | Some d -> "\"" + d + "\""
+          | None -> if required then "#REQUIRED" else "#IMPLIED"
+        { Name = name
+          Values = values
+          Defaults = defaults
+          Dtd = sprintf "<!ATTLIST %s %s %s %s>" elementName name decl def
+          Spec = attributeSpec (sprintf "%s/@%s" elementName name)
+          ValueSpecs =
+            values
+            |> Array.map (fun v -> v, attrValueSpec (sprintf "%s/@%s=%s" elementName name v)) })
 
   /// 木を歩いて、腕ごとに「要素名 -> 腕の持ち物」を集める。
   /// **同じ腕が 2 か所 に出る**（`Action` は BulletmlElm / Action / ActionElm に居る）
@@ -127,7 +222,9 @@ module Vocabulary =
     { Name = name
       Children = children |> Seq.distinct |> Seq.toArray
       Attrs = attrs.ToArray()
-      Text = text }
+      Text = text
+      Dtd = sprintf "<!ELEMENT %s %s>" name (contentModel fields)
+      Spec = elementSpec name }
 
   /// 語彙。**空なら呼ぶ側が赤にすること** —— reflection が効いていない印
   let elements: VocabElement[] =
@@ -137,7 +234,13 @@ module Vocabulary =
     |> Seq.map (fun kv -> describe kv.Key kv.Value)
     // `Params = string list` は腕を持たないので木から出てこない。
     // **DTD は `<!ELEMENT param (#PCDATA)>`** なので、中身を取る要素として足す
-    |> Seq.append [ { Name = "param"; Children = [||]; Attrs = [||]; Text = true } ]
+    |> Seq.append
+         [ { Name = "param"
+             Children = [||]
+             Attrs = [||]
+             Text = true
+             Dtd = "<!ELEMENT param (#PCDATA)>"
+             Spec = elementSpec "param" } ]
     |> Seq.sortBy (fun e -> e.Name)
     |> Seq.toArray
 
@@ -181,6 +284,10 @@ module Vocabulary =
         sb.Append(if e.Text then "true" else "false") |> ignore
         sb.Append ",\"children\":" |> ignore
         arr e.Children
+        sb.Append ",\"dtd\":" |> ignore
+        str e.Dtd
+        sb.Append ",\"spec\":" |> ignore
+        str e.Spec
         sb.Append ",\"attrs\":[" |> ignore
         e.Attrs
         |> Array.iteri (fun j a ->
@@ -189,7 +296,22 @@ module Vocabulary =
             str a.Name
             sb.Append ",\"values\":" |> ignore
             arr a.Values
-            sb.Append '}' |> ignore)
+            sb.Append ",\"defaults\":" |> ignore
+            arr a.Defaults
+            sb.Append ",\"dtd\":" |> ignore
+            str a.Dtd
+            sb.Append ",\"spec\":" |> ignore
+            str a.Spec
+            sb.Append ",\"valueSpecs\":[" |> ignore
+            a.ValueSpecs
+            |> Array.iteri (fun k (v, s) ->
+                if k > 0 then sb.Append ',' |> ignore
+                sb.Append "{\"value\":" |> ignore
+                str v
+                sb.Append ",\"spec\":" |> ignore
+                str s
+                sb.Append '}' |> ignore)
+            sb.Append "]}" |> ignore)
         sb.Append "]}" |> ignore)
     sb.Append "],\"expressions\":" |> ignore
     arr expressions

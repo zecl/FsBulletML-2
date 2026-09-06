@@ -29,6 +29,9 @@ let private createEditor (host: obj) (opts: obj) : obj = jsNative
 [<Emit("globalThis.monaco.languages.registerCompletionItemProvider($0, { triggerCharacters: $2, provideCompletionItems: $1 })")>]
 let private registerCompletion (language: string) (fn: obj -> obj -> obj) (triggers: string[]) : unit = jsNative
 
+[<Emit("globalThis.monaco.languages.registerHoverProvider($0, { provideHover: $1 })")>]
+let private registerHover (language: string) (fn: obj -> obj -> obj) : unit = jsNative
+
 [<Emit("globalThis.monaco.editor.setModelLanguage($0.getModel(), $1)")>]
 let private setModelLanguage (editor: obj) (language: string) : unit = jsNative
 
@@ -208,3 +211,20 @@ let registerCompletionProvider
     createObj [ "suggestions" ==> items ]
 
   registerCompletion language provide (List.toArray triggerCharacters)
+
+/// カーソルの下に在るものの仕様を浮かせる口。**中身はここで決めない** ——
+/// 呼ぶ側（言語モジュール）が markdown の字を組む。
+///
+/// **範囲を返さない。** 返すと Monaco がその範囲を枠で囲うが、範囲の出どころは
+/// 言語のほうなので、渡すなら `tokenAt` の当たった範囲を持ち回ることになる。
+/// いまは中身だけで足りている。
+///
+/// 何の上でもなければ `null`。**空の `contents` を返さない** ——
+/// 空でも枠が浮くので、出ていないことと見分けがつかなくなる
+let registerHoverProvider (language: string) (hover: string -> int -> string option) =
+  let provide (model: obj) (position: obj) : obj =
+    match hover (getVal model) (offsetAt model position) with
+    | None -> null
+    | Some markdown -> createObj [ "contents" ==> [| createObj [ "value" ==> markdown ] |] ]
+
+  registerHover language provide

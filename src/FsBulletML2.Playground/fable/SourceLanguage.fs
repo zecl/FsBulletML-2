@@ -34,14 +34,27 @@ type SourceKind =
 /// ここは受け取った形をそのまま持つだけで、表を書かない
 type VocabAttr =
   { Name: string
-    Values: string list }
+    Values: string list
+    /// 書かなかったときに走る値。**並びで持つ** —— host 側が 1 個 に
+    /// 絞れているかを門で見ているので、ここは受け取った形のまま
+    Defaults: string list
+    /// `<!ATTLIST ...>` 行
+    Dtd: string
+    /// hover に出す散文
+    Spec: string
+    /// 値ごとの散文
+    ValueSpecs: (string * string) list }
 
 type VocabElement =
   { Name: string
     Children: string list
     Attrs: VocabAttr list
     /// #PCDATA を取るか。取る要素の中では式（$rand / $rank）も候補になる
-    Text: bool }
+    Text: bool
+    /// `<!ELEMENT ...>` 行
+    Dtd: string
+    /// hover に出す散文
+    Spec: string }
 
 type Vocab =
   { Elements: VocabElement list
@@ -76,12 +89,22 @@ type ISourceLanguage =
   /// 本文とカーソルの位置（文字数）から候補を出す。
   /// **WASM に行かない** —— 語彙は起動時にもらったものを引く
   abstract Complete: source: string -> offset: int -> Completion list
+  /// カーソルの下に在るものの仕様。**返すのは markdown の字**で、
+  /// Monaco 側の形（`contents` の配列）を組むのは呼ぶ側。
+  /// 何の上でもなければ `None`（**空の字を返さない** ——
+  /// 空でも枠が浮くので、出ていないことと見分けがつかなくなる）
+  abstract Hover: source: string -> offset: int -> string option
 
 [<Emit("JSON.parse($0)")>]
 let private jsonParse (s: string) : obj = jsNative
 
 [<Emit("$0[$1]")>]
 let private item (arr: obj) (i: int) : obj = jsNative
+
+/// 無い鍵は `undefined` で返る。**`string` に通すと "undefined" という
+/// 字になる**ので、空に倒す
+let private text (o: obj) : string =
+  if isNull o then "" else string o
 
 let private strings (arr: obj) : string list =
   if isNull arr then []
@@ -106,7 +129,19 @@ let parseVocabulary (json: string) : Vocab =
             { Name = string e?name
               Children = strings e?children
               Text = unbox<bool> e?text
+              Dtd = text e?dtd
+              Spec = text e?spec
               Attrs =
                 [ for j in 0 .. alen - 1 ->
                     let a = item attrs j
-                    { Name = string a?name; Values = strings a?values } ] } ] }
+                    let vs = a?valueSpecs
+                    let vlen: int = if isNull vs then 0 else vs?length
+                    { Name = string a?name
+                      Values = strings a?values
+                      Defaults = strings a?defaults
+                      Dtd = text a?dtd
+                      Spec = text a?spec
+                      ValueSpecs =
+                        [ for k in 0 .. vlen - 1 ->
+                            let p = item vs k
+                            text p?value, text p?spec ] } ] } ] }
