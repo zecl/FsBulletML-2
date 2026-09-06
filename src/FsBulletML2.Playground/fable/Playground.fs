@@ -213,14 +213,20 @@ type Playground() as self =
             setError ""
             clear ()
           else
-            let message = string r?message
-            setError message
-            // **`line` が 0 なら位置が無い層。** 推定で引かない
-            let line = int (unbox<float> r?line)
-            if line > 0 then
-              Monaco.mark line (int (unbox<float> r?column)) message
-              markedAt <- true
-            else clear ())
+            setError (string r?message)
+            // **`marks` が空なら位置が無い層。** 推定で引かない
+            let marks: obj[] = unbox r?marks
+            if marks.Length = 0 then clear ()
+            else
+              marks
+              |> Array.map (fun m ->
+                  { Monaco.Line = int (unbox<float> m?line)
+                    Monaco.Column = int (unbox<float> m?column)
+                    Monaco.EndColumn = int (unbox<float> m?endColumn)
+                    Monaco.Message = string m?message })
+              |> Array.toList
+              |> Monaco.markAll
+              markedAt <- true)
         (fun err -> setError (errText err))
 
   member _.fillPatterns() =

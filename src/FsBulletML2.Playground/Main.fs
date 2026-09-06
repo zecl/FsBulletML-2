@@ -110,18 +110,31 @@ type PlaygroundHost() =
   /// 「読めない理由が空文字」と見分けられない。
   ///
   ///     {"ok":true}
-  ///     {"ok":false,"line":14,"column":11,"message":"…"}
+  ///     {"ok":false,"message":"…","marks":[{"line":14,"column":11,"endColumn":15,"message":"…"}]}
   ///
-  /// `line` が 0 なら位置が無い層。呼ぶ側は波線を引かない。
+  /// `message` は帯に出す代表で、`marks` が波線。**`marks` が空なら
+  /// 位置が無い層**（呼ぶ側は波線を引かない）。`endColumn` が 0 なら行末まで。
   /// 分け方は `Diagnosis`（`Parser.Tests` が同じ道を通って当てている）。
   [<JSInvokable>]
   member _.ApplySource(kind: string, text: string) : string =
-    let failed (f: Failure) =
-      sprintf
-        "{\"ok\":false,\"line\":%d,\"column\":%d,\"message\":%s}"
-        f.Line
-        f.Column
-        (JsonSerializer.Serialize f.Message)
+    let jstr (s: string) = JsonSerializer.Serialize s
+    /// 帯に出す代表。**何本 引いたかは帯にしか出ない** ——
+    /// 波線は 1 本 ずつ別のところに在るので、まとめて数えられない
+    let banner (fs: Failure list) =
+      match fs with
+      | [] -> ""
+      | [ f ] -> f.Message
+      | f :: rest -> sprintf "%s（ほか %d 件）" f.Message rest.Length
+    let failed (fs: Failure list) =
+      let marks =
+        fs
+        |> List.filter (fun f -> f.Line > 0)
+        |> List.map (fun f ->
+            sprintf
+              "{\"line\":%d,\"column\":%d,\"endColumn\":%d,\"message\":%s}"
+              f.Line f.Column f.EndColumn (jstr f.Message))
+        |> String.concat ","
+      sprintf "{\"ok\":false,\"message\":%s,\"marks\":[%s]}" (jstr (banner fs)) marks
     match kind with
     | "xml" ->
       // **建ててから差し替える。** 木は読めるが組めない層が在るので、
@@ -131,10 +144,11 @@ type PlaygroundHost() =
         let next = Playfield.Create env bulletml
         current <- bulletml
         field <- next
-      match Diagnosis.apply put text with
-      | None -> "{\"ok\":true}"
-      | Some f -> failed f
-    | other -> failed { Line = 0; Column = 0; Message = "未対応: " + other }
+      // **組み合わせは `References.explain` 1 本。** 試験も同じそれを通る
+      match References.explain (Diagnosis.apply put text) text with
+      | [] -> "{\"ok\":true}"
+      | fs -> failed fs
+    | other -> failed [ Diagnosis.plain ("未対応: " + other) ]
 
 /// 空の根。描画のあとで host を JS に渡す。
 type MyApp() =

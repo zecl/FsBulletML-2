@@ -120,30 +120,42 @@ let private lineCount (editor: obj) : int = jsNative
 [<Emit("$0.getModel().onDidChangeContent($1)")>]
 let private onChange (editor: obj) (cb: unit -> unit) : unit = jsNative
 
-/// 波線を 1 本 引く。行と桁は 1 起点。
+/// 波線 1 本 ぶん。行・桁 は 1 起点。**`endColumn` が 0 なら行末まで。**
+type Mark =
+  { Line: int
+    Column: int
+    EndColumn: int
+    Message: string }
+
+/// 波線を引き直す。**渡した並びで丸ごと置き換える** ——
+/// 足す口にすると、前に付けた印が残って場所が嘘になる。
 ///
-/// **範囲はその桁から行末まで。** 1 文字 だけだと細すぎて見つけられないし、
-/// 桁が指すのは「そこから先が読めない」なので、行末までが近い。
+/// 終わりが分からない印（`EndColumn = 0`）は行末まで伸ばす。1 文字 だけだと
+/// 細すぎて見つけられないし、桁が指すのは「そこから先が読めない」なので。
 /// 行末が桁と同じ（行の終わり）なら 1 文字 ぶん伸ばす。
 ///
 /// 行が本文より下を指していたら最後の行に丸める。**範囲が本文の外へ出ると
 /// Monaco は何も描かない** —— 出ないのを「印が付いていない」と読むことになる
-let mark (line: int) (column: int) (message: string) =
+let markAll (marks: Mark list) =
   if not (isNull editor) then
-    let line = max 1 (min line (lineCount editor))
-    let maxCol = lineMaxColumn editor line
-    let startCol = max 1 (min column maxCol)
-    let endCol = if maxCol > startCol then maxCol else startCol + 1
-    let m =
-      createObj [
-        "startLineNumber" ==> line
-        "endLineNumber" ==> line
-        "startColumn" ==> startCol
-        "endColumn" ==> endCol
-        "message" ==> message
-        // 8 = Error。Monaco 側の enum なので数で書く
-        "severity" ==> 8 ]
-    setMarkers editor markerOwner [| m |]
+    let items =
+      marks
+      |> List.map (fun mk ->
+          let line = max 1 (min mk.Line (lineCount editor))
+          let maxCol = lineMaxColumn editor line
+          let startCol = max 1 (min mk.Column maxCol)
+          let wanted = if mk.EndColumn > 0 then min mk.EndColumn maxCol else maxCol
+          let endCol = if wanted > startCol then wanted else startCol + 1
+          createObj [
+            "startLineNumber" ==> line
+            "endLineNumber" ==> line
+            "startColumn" ==> startCol
+            "endColumn" ==> endCol
+            "message" ==> mk.Message
+            // 8 = Error。Monaco 側の enum なので数で書く
+            "severity" ==> 8 ])
+      |> List.toArray
+    setMarkers editor markerOwner items
 
 let clearMarks () = if not (isNull editor) then setMarkers editor markerOwner [||]
 

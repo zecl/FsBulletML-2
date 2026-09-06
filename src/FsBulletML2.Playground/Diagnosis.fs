@@ -7,9 +7,14 @@ open FsBulletML2
 ///
 /// **`Line = 0` は「位置が無い」の印。** 波線を引くかどうかがこれで決まる。
 /// 1 以上 なら 1 起点 の行と桁で、そこに印を付けてよい。
+///
+/// **`EndColumn = 0` は「終わりが分からない」の印。** 引く側が行末まで伸ばす。
+/// 終わりが分かるのは、本文の字から数えた位置（参照の欠けなど）だけ ——
+/// `XmlException` は「そこから先が読めない」しか言わない。
 type Failure =
   { Line: int
     Column: int
+    EndColumn: int
     Message: string }
 
 /// Apply が落ちたときに、**どこまで分かるか**を分ける。
@@ -34,7 +39,11 @@ type Failure =
 module Diagnosis =
 
   /// 位置なしの理由
-  let private plain message = { Line = 0; Column = 0; Message = message }
+  let plain message =
+    { Line = 0
+      Column = 0
+      EndColumn = 0
+      Message = message }
 
   /// 例外を層に分ける。**位置が在るのは `XmlException` だけ。**
   ///
@@ -46,6 +55,8 @@ module Diagnosis =
     | :? XmlException as x ->
       { Line = max 1 x.LineNumber
         Column = max 1 x.LinePosition
+        // 「そこから先が読めない」しか言わないので、終わりは分からない
+        EndColumn = 0
         Message = x.Message }
     | _ -> plain ex.Message
 

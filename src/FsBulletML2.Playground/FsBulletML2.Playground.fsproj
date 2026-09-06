@@ -24,6 +24,7 @@
          **Parser.Tests が Link で借りて .NET で走らせる** -->
     <Compile Include="Vocabulary.fs" />
     <Compile Include="Diagnosis.fs" />
+    <Compile Include="References.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
