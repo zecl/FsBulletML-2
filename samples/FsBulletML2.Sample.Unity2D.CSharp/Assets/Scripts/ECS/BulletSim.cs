@@ -19,7 +19,10 @@ using BulletType = FsBulletML2.DTD.BulletType;
 /// <item><c>Run</c>     この弾 1 体 の実行位置。コマごとに受け取って持ち歩く</item>
 /// </list>
 /// </summary>
-public class BulletSim : IComponentData
+// sealed にしておく。**TypeManager は sealed でない class の中を辿らない**
+// ので、他の managed component から参照されたときに中が見えなくなる
+// （F# 版の BulletSim も [<Sealed>]）
+public sealed class BulletSim : IComponentData
 {
     public Entity Entity;
     public bool Root;

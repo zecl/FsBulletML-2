@@ -119,8 +119,13 @@ module EcsFront =
 [<Sealed>]
 type BulletSim () =
 
-  /// この弾から見た世界。**弾 1 個 につき 1 個**（口の約束に合わせる）
-  let world = EcsWorld () :> IWorld
+  /// この弾から見た世界。**弾 1 個 につき 1 個**（口の約束に合わせる）。
+  ///
+  /// **`IWorld` でなく `EcsWorld` のまま持つ。** この型は managed component
+  /// なので、Unity の TypeManager が中を辿って Entity 参照を探す。
+  /// interface や非 sealed の class が居ると「判断できない」と警告が出る。
+  /// upcast は使うところで書く（IL では何も起きない）
+  let world = EcsWorld ()
 
   member val Entity = Entity.Null with get, set
   member val Kind = BulletKind.Enemy with get, set
@@ -186,7 +191,7 @@ type BulletSim () =
     // 旧はここで task.Init(envOfGlobal this) を呼んで木を歩き直していた
     this.Run <-
       this.Run |> Option.map (fun r ->
-        Driver.restart world r)
+        Driver.restart (world :> IWorld) r)
 
   member this.Vanish () = this.Used <- false
 
@@ -211,7 +216,7 @@ type BulletSim () =
           Accel = { X = this.AccelerationX; Y = this.AccelerationY } }
 
       // Env を組む位置も、台本が無い弾の枝も Driver が持っている
-      let f = Driver.step world EcsFront.space EcsFront.origin rn motion
+      let f = Driver.step (world :> IWorld) EcsFront.space EcsFront.origin rn motion
       let after = f.Run.Motion
       this.Speed <- after.Speed
       this.Dir <- after.Dir
@@ -234,5 +239,5 @@ type BulletSim () =
       // （旧 DefaultBullet が apply のあとで envOfGlobal を呼ぶのと同じ順）
       this.Run <-
         if f.Finished then
-          Some (Driver.restart world f.Run)
+          Some (Driver.restart (world :> IWorld) f.Run)
         else Some f.Run
