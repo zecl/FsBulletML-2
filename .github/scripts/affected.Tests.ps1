@@ -214,7 +214,7 @@ Write-Host '=== matrix に渡る形'
 
 # **数だけ見ても足りない。** `[[{..}]]` は 1 要素 の配列として数えられるが、
 # matrix に渡すと project.name が空になって、名前の無い job が黙って通る。
-# 中身が name / path を持つオブジェクトであることまで見る。
+# 中身が name / label / path を持つオブジェクトであることまで見る。
 function CheckShape {
   param([string]$Name, [string[]]$Files, [int]$Tests, [int]$Builds)
   $script:count++
@@ -244,7 +244,9 @@ function CheckShape {
     if ($items.Count -ne $want[$k]) { $bad.Add("$k の数 期待 $($want[$k]) 実際 $($items.Count)") }
     foreach ($it in $items) {
       if ($it -isnot [pscustomobject]) { $bad.Add("$k の要素がオブジェクトでない: $($it.GetType().Name)"); continue }
-      foreach ($f in 'name', 'path') {
+      # label は job の表示名になる。空だと名前の無い job が黙って通るので、
+      # name / path と同じく在ることと空でないことを見る
+      foreach ($f in 'name', 'label', 'path') {
         if (-not $it.PSObject.Properties.Name.Contains($f)) { $bad.Add("$k の要素に $f が無い") }
         elseif ([string]::IsNullOrWhiteSpace($it.$f)) { $bad.Add("$k の要素の $f が空") }
       }

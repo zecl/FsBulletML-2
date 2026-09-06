@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   select:
-    name: 選ぶ
+    name: Select
     runs-on: ubuntu-latest
     outputs:
       tests: ${{ steps.pick.outputs.tests }}
@@ -86,7 +86,7 @@ jobs:
           ./.github/scripts/affected.ps1 @opt | Out-Null
 
   test:
-    name: 試験 ${{ matrix.project.name }}
+    name: Test · ${{ matrix.project.label }}
     needs: select
     if: needs.select.outputs.tests != '[]'
     runs-on: windows-latest
@@ -117,7 +117,7 @@ jobs:
   # 試験が 1 本 も触らないサンプルとベンチ。**Core の公開型を変えたときに
   # ここが壊れる** —— 試験は通るのに使う側が build できない、が起きる層
   build:
-    name: build ${{ matrix.project.name }}
+    name: Build · ${{ matrix.project.label }}
     needs: select
     if: needs.select.outputs.builds != '[]'
     runs-on: windows-latest
@@ -146,7 +146,7 @@ jobs:
   # 条件を書くと「選ばれなかったから skip」と「壊れて skip」が混ざる。
   # 焼き直しは .github/scripts/bake-unity-dlls.ps1。
   shipped:
-    name: 同梱 dll
+    name: Shipped DLLs
     runs-on: windows-latest
     steps:
       # **浅く取らない。** 下の校正が、stub を割る前の dll を過去の commit から
@@ -186,7 +186,7 @@ jobs:
   # **skipped を成功として数えない** —— 選ばれなかったのか、落ちて飛ばされたのかは
   # 別のことなので、select の結果を見て分ける
   gate:
-    name: 締め
+    name: Gate
     needs: [select, test, build, shipped]
     if: always()
     runs-on: ubuntu-latest

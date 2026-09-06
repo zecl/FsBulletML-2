@@ -211,6 +211,11 @@ if ($testProjects.Count -eq 0 -and $buildProjects.Count -eq 0) {
 
 function ShortName([string]$p) { [IO.Path]::GetFileNameWithoutExtension($p) }
 
+# checks 欄に並ぶ名前。**FsBulletML2. は全行に付くので落とす** —— 一覧で
+# 見分けに効いているのは後ろ側だけ。trx と artifact の名前は name のまま
+# （そちらは重ならないことのほうが大事）
+function Label([string]$p) { (ShortName $p) -replace '^FsBulletML2\.', '' }
+
 $result = [pscustomobject]@{
   Changed = $changed
   Ignored = @($ignored)
@@ -238,7 +243,7 @@ if (-not $Quiet) {
 # ように、括弧は自分で書く。形の校正は affected.Tests.ps1。
 function ToMatrixJson($paths) {
   '[' + (($paths | ForEach-Object {
-    ConvertTo-Json -Compress -InputObject ([ordered]@{ name = (ShortName $_); path = $_ })
+    ConvertTo-Json -Compress -InputObject ([ordered]@{ name = (ShortName $_); label = (Label $_); path = $_ })
   }) -join ',') + ']'
 }
 
