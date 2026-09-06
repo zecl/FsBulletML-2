@@ -19,7 +19,13 @@ namespace FsBulletML2.MonoGame.Tests
 /// 敵（`e0`）は動かない。この弾幕に移動の命令が無いので正しい。
 module FrontRunGolden =
 
-  let Expected = """f00  E[e0 x=240.0000 y=100.0000 d=0.0000 s=0.0000 used=true]  EB[b0 x=240.4337 y=101.9524 d=2.9230 s=2.0000 used=true]  PB[]
+  // **改行を揃えてから渡す。** 控えは三重引用符でこのソースに埋まっているので、
+  // 改行はファイルの改行そのもの —— `.gitattributes` の `text=auto` で
+  // checkout した機械しだいで CRLF になる。生成側は `\n` に揃えてあるので、
+  // 揃えないと**全行 が字面どおりなのに割れる**（差が `\r` なので目で出ない）。
+  // 落ちるのは autocrlf が効く機械だけで、書いた人の手元は緑のまま
+  let private normalize (s: string) = s.Replace("\r\n", "\n")
+  let Expected = normalize """f00  E[e0 x=240.0000 y=100.0000 d=0.0000 s=0.0000 used=true]  EB[b0 x=240.4337 y=101.9524 d=2.9230 s=2.0000 used=true]  PB[]
 f01  E[e0 x=240.0000 y=100.0000 d=0.0000 s=0.0000 used=true]  EB[b0 x=240.7241 y=103.9312 d=2.9959 s=2.0000 used=true]  PB[]
 f02  E[e0 x=240.0000 y=100.0000 d=0.0000 s=0.0000 used=true]  EB[b0 x=240.8697 y=105.9259 d=3.0687 s=2.0000 used=true]  PB[]
 f03  E[e0 x=240.0000 y=100.0000 d=0.0000 s=0.0000 used=true]  EB[b0 x=240.8697 y=107.9259 d=3.1416 s=2.0000 used=true | b1 x=240.4337 y=101.9524 d=2.9230 s=2.0000 used=true]  PB[]
