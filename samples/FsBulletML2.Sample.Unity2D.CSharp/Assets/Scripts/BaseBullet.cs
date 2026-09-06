@@ -28,7 +28,7 @@ public abstract class BaseBullet : MonoBehaviour
     /// この弾から見た世界。<b>弾 1 個 につき 1 個</b>
     /// —— 狙う相手を覚えるのが弾ごとなので使い回せない。
     /// </summary>
-    readonly GameObjectWorld world = new GameObjectWorld();
+    readonly GameObjectEnv front = new GameObjectEnv();
     public abstract GameObject GetBulletPrefubInstance();
     public GameObject BulletPrefab => bulletObject;
 
@@ -142,7 +142,7 @@ public abstract class BaseBullet : MonoBehaviour
             accel: new FsBulletML2.Domain.Vec2(AccelerationX, AccelerationY));
 
         // Env を組む位置も、台本が無い弾の枝も Driver が持っている
-        var f = Driver.Step(world, CSharpWorld.Space, CSharpWorld.Origin, rn, motion);
+        var f = Driver.Step(front, CSharpEnv.Space, CSharpEnv.Origin, rn, motion);
         var after = f.Run.Motion;
         Speed = after.Speed;
         Dir = after.Dir;
@@ -175,7 +175,7 @@ public abstract class BaseBullet : MonoBehaviour
         // 走らせ直しの Env は、位置を更新したあとの自分から組む
         // （旧 BaseBullet が座標を足したあとで envOfGlobal を呼ぶのと同じ順）
         Run = f.Finished
-            ? Driver.Restart(world, f.Run)
+            ? Driver.Restart(front, f.Run)
             : f.Run;
     }
 
@@ -214,7 +214,7 @@ public abstract class BaseBullet : MonoBehaviour
         // 旧はここで task.Init(envOfGlobal this) を呼んで木を歩き直していた
         if (Run.HasValue)
         {
-            Run = Driver.Restart(world, Run.Value);
+            Run = Driver.Restart(front, Run.Value);
         }
     }
 

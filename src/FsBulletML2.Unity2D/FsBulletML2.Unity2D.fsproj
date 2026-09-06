@@ -14,7 +14,7 @@
     <Compile Include="IDefaultBullet.fs" />
     <Compile Include="Manager.fs" />
     <Compile Include="InstanceManager.fs" />
-    <Compile Include="Unity2DWorld.fs" />
+    <Compile Include="Unity2DEnv.fs" />
     <Compile Include="DefaultBullet.fs" />
   </ItemGroup>
   <ItemGroup>

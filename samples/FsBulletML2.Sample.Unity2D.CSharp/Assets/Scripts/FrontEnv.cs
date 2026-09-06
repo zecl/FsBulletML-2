@@ -16,7 +16,7 @@ using Microsoft.FSharp.Core;
 /// GameObject の弾は一度 選んだ相手を持ち回り、ECS の弾は
 /// BulletEcsRuntime.Enemy を毎コマ 見る。
 /// </summary>
-public abstract class CSharpWorld : IWorld
+public abstract class CSharpEnv : IFrontEnv
 {
     /// <summary>
     /// <c>Env.Rand</c> に入れる F# の関数値。<b>1 個 だけ作って使い回す。</b>
@@ -47,10 +47,10 @@ public abstract class CSharpWorld : IWorld
     /// </summary>
     public const FsBulletML2.Front.SpawnOrigin Origin = FsBulletML2.Front.SpawnOrigin.AtShooter;
 
-    FSharpFunc<Unit, float> IWorld.Rand => RandFunc;
-    float IWorld.Rank => BulletMLManager.GetRank();
-    float IWorld.PlayerX => BulletMLManager.GetPlayerPosX();
-    float IWorld.PlayerY => BulletMLManager.GetPlayerPosY();
+    FSharpFunc<Unit, float> IFrontEnv.Rand => RandFunc;
+    float IFrontEnv.Rank => BulletMLManager.GetRank();
+    float IFrontEnv.PlayerX => BulletMLManager.GetPlayerPosX();
+    float IFrontEnv.PlayerY => BulletMLManager.GetPlayerPosY();
 
     public abstract bool TryTargetFrom(float x, float y, out float ex, out float ey);
 
@@ -68,7 +68,7 @@ public abstract class CSharpWorld : IWorld
 /// 相手が要るときに初めて引く</b>ので <c>NearestEnemy</c> に
 /// 「一覧を返すもの」を渡している。
 /// </summary>
-public sealed class GameObjectWorld : CSharpWorld
+public sealed class GameObjectEnv : CSharpEnv
 {
     static readonly Func<IReadOnlyList<GameObject>> Enemies =
         () => GameObject.FindGameObjectsWithTag("Enemy");
@@ -95,7 +95,7 @@ public sealed class GameObjectWorld : CSharpWorld
 /// <c>BulletEcsRuntime.Enemy</c> をそのまま答える ——
 /// 口が一覧を要求しないのはこのため。
 /// </summary>
-public sealed class EcsWorld : CSharpWorld
+public sealed class EcsEnv : CSharpEnv
 {
     public override bool TryTargetFrom(float x, float y, out float ex, out float ey)
     {

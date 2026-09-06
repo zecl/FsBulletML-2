@@ -19,7 +19,7 @@ type DefaultBullet (transform:Transform) as this =
 
   /// この弾から見た世界。**弾 1 個 につき 1 個。**
   /// 狙う相手を覚えるのが弾ごとなので使い回せない
-  let world = Unity2DWorld () :> IWorld
+  let front = Unity2DEnv () :> IFrontEnv
 
   /// 撃たれた弾の実体を作る。旧 GetNewBullet が呼んでいたもの。
   ///
@@ -94,7 +94,7 @@ type DefaultBullet (transform:Transform) as this =
       // 組むところも旧のまま
       run <-
         run |> Option.map (fun r ->
-          Driver.restart world r)
+          Driver.restart front r)
 
     member this.Update () =
       let me = this :> IDefaultBullet
@@ -146,7 +146,7 @@ type DefaultBullet (transform:Transform) as this =
             Accel = { X = me.AccelerationX; Y = me.AccelerationY } }
         // 台本が無い弾は aim を読まない（BulletRun.HasNoScript の但し書き）
         // Env を組む位置も、台本が無い弾の枝も Driver が持っている
-        let f = Driver.step world Unity2DFront.space Unity2DFront.origin rn motion
+        let f = Driver.step front Unity2DFront.space Unity2DFront.origin rn motion
         let after = f.Run.Motion
         me.Speed <- after.Speed
         me.Dir <- after.Dir
@@ -161,6 +161,6 @@ type DefaultBullet (transform:Transform) as this =
         // （旧 DefaultBullet が apply のあとで envOfGlobal を呼ぶのと同じ順）
         run <-
           if f.Finished then
-            Some (Driver.restart world f.Run)
+            Some (Driver.restart front f.Run)
           else Some f.Run
     | _ -> ()

@@ -11,7 +11,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Manager.fs" />
     <Compile Include="Aiming.fs" />
-    <Compile Include="World.fs" />
+    <Compile Include="FrontEnv.fs" />
     <Compile Include="Driver.fs" />
   </ItemGroup>
   <ItemGroup>

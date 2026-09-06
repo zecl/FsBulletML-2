@@ -21,7 +21,7 @@ open FsBulletML2.Front
 /// 測るというフロント側の門の役目が消える。このフロントを使うゲームが
 /// 自前で `Env` を組みたいときにも要る。
 [<Sealed>]
-type MonoGameWorld() =
+type MonoGameEnv() =
 
   let near =
     NearestEnemy<IBullet>((fun () -> Manager.enemies :> IReadOnlyList<IBullet>),
@@ -30,7 +30,7 @@ type MonoGameWorld() =
   /// 覚えている相手を捨てる。次に聞かれたら選び直す
   member _.Forget () = near.Forget ()
 
-  interface IWorld with
+  interface IFrontEnv with
     member _.Rand = BulletMLManager.GetRandom
     member _.Rank = BulletMLManager.GetRank ()
     member _.PlayerX = BulletMLManager.GetPlayerPosX ()

@@ -18,7 +18,7 @@
     <!-- Bomb が GetComponent で引くので、その前に置く -->
     <Compile Include="ParticleSortingLayer.fs" />
     <Compile Include="Bomb.fs" />
-    <!-- ECS。BulletEcs が型（BulletSim / EcsWorld）、Factory が生成、
+    <!-- ECS。BulletEcs が型（BulletSim / EcsEnv）、Factory が生成、
          Driver が毎コマ回す。Enemy / Player より前に置く（あちらが使う） -->
     <!-- URP の安全網。Driver より前（あちらが呼ぶ） -->
     <Compile Include="UrpPlayModeCompat.fs" />

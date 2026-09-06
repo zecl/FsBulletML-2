@@ -55,7 +55,7 @@ type BulletEcsRuntime private () =
 /// **一覧を要求しない口にしてあるのはこのため**（一覧を要求すると、
 /// この側が 1 要素 の一覧を毎コマ 用意することになる）。
 [<Sealed>]
-type EcsWorld() =
+type EcsEnv() =
 
   /// `Env.Rand` に入れる関数値。**1 個 だけ作って使い回す。**
   /// 中身はグローバル（BulletMLManager）を読むだけなので、いつ作っても同じ。
@@ -64,7 +64,7 @@ type EcsWorld() =
 
   static member RandFunc = randFunc
 
-  interface IWorld with
+  interface IFrontEnv with
     member _.Rand = randFunc
     member _.Rank = BulletMLManager.GetRank ()
     member _.PlayerX = BulletMLManager.GetPlayerPosX ()
@@ -81,7 +81,7 @@ type EcsWorld() =
 
     /// **撃った側と同じ相手。** このフロントは撃った側と同じ場所に弾を作る
     member this.TrySpawnTargetFrom (x, y, ex, ey) =
-      (this :> IWorld).TryTargetFrom (x, y, &ex, &ey)
+      (this :> IFrontEnv).TryTargetFrom (x, y, &ex, &ey)
 
 /// このフロントの並び。**2 つ とも 1 か所 だけに書く。**
 module EcsFront =
@@ -121,11 +121,11 @@ type BulletSim () =
 
   /// この弾から見た世界。**弾 1 個 につき 1 個**（口の約束に合わせる）。
   ///
-  /// **`IWorld` でなく `EcsWorld` のまま持つ。** この型は managed component
+  /// **`IFrontEnv` でなく `EcsEnv` のまま持つ。** この型は managed component
   /// なので、Unity の TypeManager が中を辿って Entity 参照を探す。
   /// interface や非 sealed の class が居ると「判断できない」と警告が出る。
   /// upcast は使うところで書く（IL では何も起きない）
-  let world = EcsWorld ()
+  let front = EcsEnv ()
 
   member val Entity = Entity.Null with get, set
   member val Kind = BulletKind.Enemy with get, set
@@ -191,7 +191,7 @@ type BulletSim () =
     // 旧はここで task.Init(envOfGlobal this) を呼んで木を歩き直していた
     this.Run <-
       this.Run |> Option.map (fun r ->
-        Driver.restart (world :> IWorld) r)
+        Driver.restart (front :> IFrontEnv) r)
 
   member this.Vanish () = this.Used <- false
 
@@ -216,7 +216,7 @@ type BulletSim () =
           Accel = { X = this.AccelerationX; Y = this.AccelerationY } }
 
       // Env を組む位置も、台本が無い弾の枝も Driver が持っている
-      let f = Driver.step (world :> IWorld) EcsFront.space EcsFront.origin rn motion
+      let f = Driver.step (front :> IFrontEnv) EcsFront.space EcsFront.origin rn motion
       let after = f.Run.Motion
       this.Speed <- after.Speed
       this.Dir <- after.Dir
@@ -239,5 +239,5 @@ type BulletSim () =
       // （旧 DefaultBullet が apply のあとで envOfGlobal を呼ぶのと同じ順）
       this.Run <-
         if f.Finished then
-          Some (Driver.restart (world :> IWorld) f.Run)
+          Some (Driver.restart (front :> IFrontEnv) f.Run)
         else Some f.Run

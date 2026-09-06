@@ -49,9 +49,9 @@ type DriverEquiv() =
 
   /// Front の口を、一覧を持つフロントとして実装した側。
   /// `NearestEnemy` を弾 1 個 につき 1 個 持つ
-  let world (rand: unit -> float32) =
+  let front (rand: unit -> float32) =
     let near = NearestEnemy<struct (float32 * float32)>((fun () -> enemies), ex, ey)
-    { new IWorld with
+    { new IFrontEnv with
         member _.Rand = rand
         member _.Rank = 0.5f
         member _.PlayerX = playerX
@@ -120,9 +120,9 @@ type DriverEquiv() =
                       (xml: string) (frames: int) : string =
     let script = Runner.load rand 0.5f (Bulletml.readXmlString xml)
     let all = List<Live>()
-    let worlds = List<IWorld>()
+    let worlds = List<IFrontEnv>()
     all.Add { Run = Runner.newRoot BulletType.Enemy script; X = 0.0f; Y = 0.0f; Alive = true; Id = 0 }
-    worlds.Add(world rand)
+    worlds.Add(front rand)
     let sb = StringBuilder()
     for i in 0 .. frames - 1 do
       sb.AppendLine(sprintf "f%02d" i) |> ignore
@@ -145,7 +145,7 @@ type DriverEquiv() =
           for child in f.Spawned do
             all.Add { Run = child; X = child.Motion.Pos.X; Y = child.Motion.Pos.Y
                       Alive = true; Id = all.Count }
-            worlds.Add(world rand)
+            worlds.Add(front rand)
     sb.ToString()
 
   /// Core を直に叩いた走行。**Front を 1 行 も通らない**

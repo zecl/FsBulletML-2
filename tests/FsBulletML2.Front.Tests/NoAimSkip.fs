@@ -9,7 +9,7 @@ open FsBulletML2.Front
 /// 台本が無い弾のコマで、**Front がゲームに何も聞かない**こと。
 ///
 /// **変異で穴が見つかって足した。** `Driver` の
-/// `if run.HasNoScript then noAim world else at ...` を消して
+/// `if run.HasNoScript then noAim front else at ...` を消して
 /// **いつも aim を組む**変異を入れても、598 本 が緑のまま通った ——
 /// **答えが同じだから。** 省いているのは Atan2 4 本 と、ゲームへの
 /// 問い合わせだけで、`Env` の aim 欄はどちらの道でも 0 になる。
@@ -34,7 +34,7 @@ type NoAimSkip() =
   let counting () =
     let mutable asked = 0
     let w =
-      { new IWorld with
+      { new IFrontEnv with
           member _.Rand = (fun () -> 0.5f)
           member _.Rank = 0.5f
           member _.PlayerX = asked <- asked + 1; 0.0f

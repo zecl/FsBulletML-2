@@ -13,7 +13,7 @@ open FsBulletML2.Front
 /// **弾 1 個 につき 1 個 作る。** 狙う相手を覚えるのは弾ごとで、
 /// 使い回すと別の弾が選んだ相手を引き継いでしまう。
 [<Sealed>]
-type Unity2DWorld() =
+type Unity2DEnv() =
 
   let near =
     NearestEnemy<IDefaultBullet>((fun () -> Manager.enemies :> IReadOnlyList<IDefaultBullet>),
@@ -22,7 +22,7 @@ type Unity2DWorld() =
   /// 覚えている相手を捨てる。次に聞かれたら選び直す
   member _.Forget () = near.Forget ()
 
-  interface IWorld with
+  interface IFrontEnv with
     member _.Rand = BulletMLManager.GetRandom
     member _.Rank = BulletMLManager.GetRank ()
     member _.PlayerX = BulletMLManager.GetPlayerPosX ()

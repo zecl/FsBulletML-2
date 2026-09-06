@@ -69,10 +69,10 @@ type EnvGate() =
         member _.GetPlayerPosX() = 30.0f
         member _.GetPlayerPosY() = 100.0f }
 
-  let world () = MonoGameWorld () :> IWorld
+  let front () = MonoGameEnv () :> IFrontEnv
 
   let envAt (x: float32) (y: float32) =
-    FrontEnv.at (world ()) MonoGameFront.space MonoGameFront.origin x y
+    FrontEnv.at (front ()) MonoGameFront.space MonoGameFront.origin x y
 
   [<SetUp>]
   member _.SetUp() =
@@ -135,7 +135,7 @@ type EnvGate() =
   /// いま見るのは「aim 4 本 が 0 で、乱数とランクは素通し」だけ
   [<Test>]
   member _.``aim を読まない Env は aim 4 本 が 0``() =
-    let e = FrontEnv.noAim (world ())
+    let e = FrontEnv.noAim (front ())
     e.Rank |> should equal 0.25f
     e.Rand () |> should equal 0.5f
     e.Aim.ToPlayer |> should equal 0.0f
@@ -179,12 +179,12 @@ type EnvGate() =
   [<Test>]
   member _.``一度 選んだ相手は、より近い敵が現れても入れ替わらない``() =
     Manager.addEnemy (StubBullet(-40.0f, -60.0f))
-    let w = world ()
+    let w = front ()
     let first = (FrontEnv.at w MonoGameFront.space MonoGameFront.origin 10.0f 20.0f).Aim.ToEnemy
     Manager.addEnemy (StubBullet(11.0f, 21.0f))
     let second = (FrontEnv.at w MonoGameFront.space MonoGameFront.origin 10.0f 20.0f).Aim.ToEnemy
     second |> should equal first
     // **較正。** 新しい世界なら近いほうを選ぶ —— 上の一致が
     // 「そもそも敵を見ていない」ことの結果ではないと分かる
-    let fresh = (FrontEnv.at (world ()) MonoGameFront.space MonoGameFront.origin 10.0f 20.0f).Aim.ToEnemy
+    let fresh = (FrontEnv.at (front ()) MonoGameFront.space MonoGameFront.origin 10.0f 20.0f).Aim.ToEnemy
     fresh |> should not' (equal first)

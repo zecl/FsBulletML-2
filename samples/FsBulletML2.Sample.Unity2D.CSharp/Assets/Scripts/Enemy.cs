@@ -101,7 +101,7 @@ public class Enemy : BaseBullet
         {
             // 弾幕は撃つたびに読み直す。読む段の Env は aim を読まない
             // （撃つ弾ごとの位置がまだ無い）ので FrontEnv.Load を渡す
-            var script = this.BulletmlInfo.Script(CSharpWorld.RandFunc, CSharpWorld.LoadRank);
+            var script = this.BulletmlInfo.Script(CSharpEnv.RandFunc, CSharpEnv.LoadRank);
             this.RootSim = BulletEntityFactory.SpawnEnemy(this.transform.position, script, root: true);
         }
     }

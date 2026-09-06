@@ -115,7 +115,7 @@ public sealed class BulletSim : IComponentData
         // この時点の位置（撃たれた直後は、まだ親の位置へ移す前）で組むところも旧のまま
         if (Run.HasValue)
         {
-            Run = Driver.Restart(world, Run.Value);
+            Run = Driver.Restart(front, Run.Value);
         }
     }
 
@@ -127,7 +127,7 @@ public sealed class BulletSim : IComponentData
     /// <summary>
     /// この弾から見た世界。<b>敵は 1 体 しか居ない</b>ので一覧を持たない。
     /// </summary>
-    readonly EcsWorld world = new EcsWorld();
+    readonly EcsEnv front = new EcsEnv();
 
     /// <summary>
     /// 1 コマ進める。<b>座標は呼ぶ側が足す</b>（Frame.Delta は差分）。
@@ -155,7 +155,7 @@ public sealed class BulletSim : IComponentData
             accel: new FsBulletML2.Domain.Vec2(AccelerationX, AccelerationY));
 
         // Env を組む位置も、台本が無い弾の枝も Driver が持っている
-        var f = Driver.Step(world, CSharpWorld.Space, CSharpWorld.Origin, rn, motion);
+        var f = Driver.Step(front, CSharpEnv.Space, CSharpEnv.Origin, rn, motion);
         var after = f.Run.Motion;
         Speed = after.Speed;
         Dir = after.Dir;
@@ -184,7 +184,7 @@ public sealed class BulletSim : IComponentData
         // 走らせ直しの Env は、位置を更新したあとの自分から組む
         // （旧 BulletSim が座標を足したあとで envOfGlobal を呼ぶのと同じ順）
         Run = f.Finished
-            ? Driver.Restart(world, f.Run)
+            ? Driver.Restart(front, f.Run)
             : f.Run;
     }
 }

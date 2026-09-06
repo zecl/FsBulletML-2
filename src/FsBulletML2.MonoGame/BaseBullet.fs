@@ -20,7 +20,7 @@ type BaseBullet () as this =
 
   /// この弾から見た世界。**弾 1 個 につき 1 個。**
   /// 狙う相手を覚えるのが弾ごとなので使い回せない
-  let world = MonoGameWorld () :> IWorld
+  let front = MonoGameEnv () :> IFrontEnv
 
   interface IBullet with
     member this.Pos with get () = this.pos
@@ -109,7 +109,7 @@ type BaseBullet () as this =
             Dir = this.self.Dir
             Accel = { X = this.self.AccelerationX; Y = this.self.AccelerationY } }
         // Env を組む位置も、台本が無い弾の枝も Driver が持っている
-        let f = Driver.step world MonoGameFront.space MonoGameFront.origin rn motion
+        let f = Driver.step front MonoGameFront.space MonoGameFront.origin rn motion
         let after = f.Run.Motion
         this.self.Speed <- after.Speed
         this.self.Dir <- after.Dir
@@ -125,7 +125,7 @@ type BaseBullet () as this =
         // **呼ぶ / 呼ばないはこのフロントの決めごと** —— Driver は既定を作らない
         run <-
           if f.Finished then
-            Some (Driver.restart world f.Run)
+            Some (Driver.restart front f.Run)
           else Some f.Run
     | _ -> ()
 

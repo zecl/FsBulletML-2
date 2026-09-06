@@ -60,12 +60,12 @@ type EnvGate() =
         member _.GetPlayerPosX() = 3.0f
         member _.GetPlayerPosY() = 10.0f }
 
-  let world () = Unity2DWorld () :> IWorld
+  let front () = Unity2DEnv () :> IFrontEnv
 
-  let envOf (w: IWorld) (x: float32) (y: float32) =
+  let envOf (w: IFrontEnv) (x: float32) (y: float32) =
     FrontEnv.at w Unity2DFront.space Unity2DFront.origin x y
 
-  let envAt (x: float32) (y: float32) = envOf (world ()) x y
+  let envAt (x: float32) (y: float32) = envOf (front ()) x y
 
   [<SetUp>]
   member _.SetUp() =
@@ -111,7 +111,7 @@ type EnvGate() =
     // 敵を 1 体 置く。置かないと enemy 側 2 本 が どちらも 0 になり、
     // 入れ替えても気づけない（下の対照がその条件を固定している）
     Manager.addEnemy (StubBullet(-4.0f, -6.0f))
-    let env = envOf (world ()) 1.0f 2.0f
+    let env = envOf (front ()) 1.0f 2.0f
 
     env.Rank |> should equal 0.25f
     env.Rand () |> should equal 0.5f
@@ -128,7 +128,7 @@ type EnvGate() =
   /// aim を読まないコマの Env
   [<Test>]
   member _.``aim を読まない Env は aim 4 本 が 0``() =
-    let e = FrontEnv.noAim (world ())
+    let e = FrontEnv.noAim (front ())
     e.Rank |> should equal 0.25f
     e.Rand () |> should equal 0.5f
     e.Aim.ToPlayer |> should equal 0.0f
@@ -156,7 +156,7 @@ type EnvGate() =
   member _.``産まれる弾の相手は、撃った側が覚えている相手と同じ``() =
     // 遠い E1 だけ置いて 1 回 引く。ここで E1 を覚える
     Manager.addEnemy (StubBullet(5.0f, 8.0f))
-    let w = world ()
+    let w = front ()
     let first = envOf w 1.0f 2.0f
     // より近い E2 を足す。**選び直すなら Spawn 側はこちらを向く**
     Manager.addEnemy (StubBullet(1.5f, 2.5f))
@@ -170,7 +170,7 @@ type EnvGate() =
 
     // **較正。** 新しい世界なら近い E2 を選ぶ —— 上の一致が
     // 「そもそも敵を見ていない」ことの結果ではないと分かる
-    let fresh = envOf (world ()) 1.0f 2.0f
+    let fresh = envOf (front ()) 1.0f 2.0f
     fresh.Spawn.ToEnemy |> should (equalWithin 0.0001) (float32 (Math.Atan2(0.5, 0.5)))
     fresh.Spawn.ToEnemy |> should not' (equalWithin 0.0001 toE1)
 
@@ -179,13 +179,13 @@ type EnvGate() =
   [<Test>]
   member _.``一度 選んだ相手は、より近い敵が現れても入れ替わらない``() =
     Manager.addEnemy (StubBullet(-4.0f, -6.0f))
-    let w = world ()
+    let w = front ()
     let first = (envOf w 1.0f 2.0f).Aim.ToEnemy
     Manager.addEnemy (StubBullet(1.1f, 2.1f))
     let second = (envOf w 1.0f 2.0f).Aim.ToEnemy
     second |> should equal first
     // **較正。** 新しい世界なら近いほうを選ぶ
-    let fresh = (envOf (world ()) 1.0f 2.0f).Aim.ToEnemy
+    let fresh = (envOf (front ()) 1.0f 2.0f).Aim.ToEnemy
     fresh |> should not' (equal first)
 
   /// **世界は弾 1 個 につき 1 個。** 使い回すと別の弾が選んだ相手を
@@ -193,8 +193,8 @@ type EnvGate() =
   [<Test>]
   member _.``Forget すると相手を選び直す``() =
     Manager.addEnemy (StubBullet(-4.0f, -6.0f))
-    let w = Unity2DWorld ()
-    let iw = w :> IWorld
+    let w = Unity2DEnv ()
+    let iw = w :> IFrontEnv
     let first = (envOf iw 1.0f 2.0f).Aim.ToEnemy
     Manager.addEnemy (StubBullet(1.1f, 2.1f))
     w.Forget ()

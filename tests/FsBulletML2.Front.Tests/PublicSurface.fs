@@ -14,7 +14,7 @@ open FsBulletML2.Front
 [<TestFixture>]
 type PublicSurface() =
 
-  let asm = typeof<IWorld>.Assembly
+  let asm = typeof<IFrontEnv>.Assembly
 
   let isEnumerable (t: Type) =
     let rec walk (t: Type) =

@@ -2,6 +2,8 @@ namespace FsBulletML2.Front
 
 open System
 open System.Collections.Generic
+open FsBulletML2
+open FsBulletML2.Domain
 
 /// ゲームの側だけが知っていることを、エンジンの手前で聞く口。
 ///
@@ -11,7 +13,7 @@ open System.Collections.Generic
 /// 用意することになる。
 ///
 /// 一覧を持つフロントは `NearestEnemy` を使って答えればよい。**任意。**
-type IWorld =
+type IFrontEnv =
 
   /// 乱数。**1 個 だけ作って使い回すこと。**
   /// 毎コマ 関数値を作ると弾数 × コマ数 だけヒープを踏む（実測 48 B / 回）。
@@ -118,3 +120,53 @@ type NearestEnemy<'E>(enemies: Func<IReadOnlyList<'E>>,
       true
     else
       false
+
+/// このコマの `Env` を組む。**aim を入れる場所はここだけ。**
+///
+/// 以前は同梱の 4 つ のフロントがそれぞれ同じ形を写していた。写しは
+/// 「片方だけ直す」ができるので、`Aim` と `Spawn` の食い違いが門に出ない。
+module FrontEnv =
+
+  /// aim を読まないと分かっているコマの `Env`。aim 4 本 を 0 に。
+  ///
+  /// 使ってよい条件は `BulletRun.HasNoScript` の但し書き。
+  /// **`at` と欄が 1 つ でもずれたら、片方だけ直したということ**
+  [<CompiledName "NoAim">]
+  let noAim (front: IFrontEnv) : Env =
+    { Rand = front.Rand
+      Rank = front.Rank
+      Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
+      Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
+
+  /// いまの位置から組む。
+  ///
+  /// **組む位置が変わると aim がずれる**ので、呼ぶ側は step の直前
+  /// （差分を足す前）に組むこと。走らせ直しの前は、差分を足した**あと**に組む
+  /// （旧 `BaseBullet` が apply のあとで `envOfGlobal` を呼ぶのと同じ順）。
+  [<CompiledName "At">]
+  let at (front: IFrontEnv) (space: Space) (origin: SpawnOrigin) (x: float32) (y: float32) : Env =
+    let struct (sx, sy) = Aiming.spawnPoint origin x y
+    let mutable tx = 0.0f
+    let mutable ty = 0.0f
+    let toEnemy =
+      if front.TryTargetFrom(x, y, &tx, &ty) then Aiming.toward space x y tx ty else 0.0f
+    let mutable stx = 0.0f
+    let mutable sty = 0.0f
+    let spawnToEnemy =
+      if front.TrySpawnTargetFrom(sx, sy, &stx, &sty) then Aiming.toward space sx sy stx sty else 0.0f
+    { Rand = front.Rand
+      Rank = front.Rank
+      Aim = { ToPlayer = Aiming.toward space x y front.PlayerX front.PlayerY
+              ToEnemy = toEnemy }
+      Spawn = { ToPlayer = Aiming.toward space sx sy front.PlayerX front.PlayerY
+                ToEnemy = spawnToEnemy } }
+
+  /// 台本が無い弾は aim を読まないので、そのときは `noAim`。
+  ///
+  /// **この枝を既定にしてある。** 同梱のフロントは全部 これを通していたが、
+  /// 通し忘れても答えは同じで速さだけ落ちる（5way で 24%）ので、
+  /// 忘れたことが門に出ない
+  [<CompiledName "ForRun">]
+  let forRun (front: IFrontEnv) (space: Space) (origin: SpawnOrigin)
+             (run: BulletRun) (x: float32) (y: float32) : Env =
+    if run.HasNoScript then noAim front else at front space origin x y
