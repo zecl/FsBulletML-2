@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 // COMPILE-ONLY stub of UnityEngine and the Unity packages the samples use.
 //
@@ -283,7 +283,10 @@ namespace UnityEngine
 
     public class Texture2D : Texture
     {
-        public static Texture2D whiteTexture => new Texture2D();
+        // 本物に引数なしの ctor は無い。書かないと public な既定 ctor が生えて、
+        // 呼び手がそれを指してしまう
+        public Texture2D(int width, int height) { }
+        public static Texture2D whiteTexture => new Texture2D(1, 1);
     }
 
     public struct Color
@@ -410,6 +413,16 @@ namespace UnityEngine.Rendering
 {
     // COMPILE-ONLY stub. 透過で描くときに使う面だけ。
 
+    /// <summary>RenderMeshDescription が既定値に使う。**本物と同じ並びにする**
+    /// —— 省いた引数の値は呼び手の IL に焼き込まれる</summary>
+    public enum LightProbeUsage
+    {
+        Off = 0,
+        BlendProbes = 1,
+        UseProxyVolume = 2,
+        CustomProvided = 4,
+    }
+
     public enum ShadowCastingMode
     {
         Off = 0,
@@ -472,6 +485,14 @@ namespace UnityEngine
         public static bool GetKeyDown(KeyCode key) => false;
     }
 
+    /// <summary>Transform.Translate などが取る向きの基準。
+    /// **本物に在って stub に無い型は、名前の衝突を隠す** ——
+    /// FsBulletML2.Front.Space と名前が同じで、Unity でだけ CS0104 になった</summary>
+    public enum Space
+    {
+        World = 0,
+        Self = 1,
+    }
     public enum KeyCode
     {
         None = 0,

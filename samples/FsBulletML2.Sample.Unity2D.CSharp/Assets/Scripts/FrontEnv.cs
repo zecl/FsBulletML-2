@@ -35,15 +35,17 @@ public abstract class CSharpWorld : IWorld
     /// </summary>
     public static float LoadRank => BulletMLManager.GetRank();
 
-    /// <summary>Unity は Y が上向き。</summary>
-    public const Space Space = FsBulletML2.Front.Space.YUp;
+    /// <summary>Unity は Y が上向き。
+    /// <b>型を完全修飾する</b> —— UnityEngine にも Space が在るので、
+    /// 短く書くと CS0104（あいまいな参照）になる。</summary>
+    public const FsBulletML2.Front.Space Space = FsBulletML2.Front.Space.YUp;
 
     /// <summary>
     /// 産まれた弾は撃った側と同じ場所に作る
     /// （BulletEntityFactory.SpawnChild が parent.X / parent.Y をそのまま渡す）。
     /// <b>片方だけ直すと軌跡が割れる。</b>
     /// </summary>
-    public const SpawnOrigin Origin = FsBulletML2.Front.SpawnOrigin.AtShooter;
+    public const FsBulletML2.Front.SpawnOrigin Origin = FsBulletML2.Front.SpawnOrigin.AtShooter;
 
     FSharpFunc<Unit, float> IWorld.Rand => RandFunc;
     float IWorld.Rank => BulletMLManager.GetRank();

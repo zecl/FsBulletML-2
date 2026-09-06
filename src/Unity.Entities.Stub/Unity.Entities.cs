@@ -4,6 +4,11 @@ using System;
 //
 // **アセンブリ名が本物と一致していることが要。** 1 本 に詰めると、焼いた dll が
 // 「この型は UnityEngine に在る」と主張したまま Unity へ渡り、CS7069 で落ちる。
+//
+// **signature も本物どおりに写すこと。** 引数の型・数・既定値は呼び手の IL に
+// そのまま焼き込まれる。ここで楽な形（`Type[]` を取るなど）を足すと、
+// stub では通り、Unity で MissingMethodException になる。
+//
 // 詳しい但し書きは src/UnityEngine.Stub/UnityEngine.cs の頭。
 namespace Unity.Entities
 {
@@ -26,23 +31,22 @@ namespace Unity.Entities
         public static ComponentType ReadOnly<T>() => new ComponentType();
         public static ComponentType ReadWrite(Type type) => new ComponentType();
         public static ComponentType ReadOnly(Type type) => new ComponentType();
+
+        /// <summary>本物にも在る。**C# の呼び手が `typeof(X)` を渡せるのはこれのおかげ**
+        /// —— 無いと `Type[]` を取る口を stub に足したくなる（本物には無い）</summary>
+        public static implicit operator ComponentType(Type type) => new ComponentType();
     }
 
     public struct EntityQuery : IDisposable
     {
-        public Unity.Collections.NativeArray<Entity> ToEntityArray(Unity.Collections.Allocator allocator)
+        /// <summary>本物が取るのは `Allocator` ではなく `AllocatorHandle`。
+        /// `Allocator` からは暗黙変換で入る</summary>
+        public Unity.Collections.NativeArray<Entity> ToEntityArray(
+            Unity.Collections.AllocatorManager.AllocatorHandle allocator)
             => new Unity.Collections.NativeArray<Entity>();
         public void Dispose() { }
     }
 
-    /// <summary>
-    /// ECS の System。**C# サンプルだけが使う** —— F# サンプルは
-    /// `SystemBase` を避けて `FrameTicker` から回している
-    /// （理由は samples/FsBulletML2.Sample.Unity2D.FSharp の BulletEcsDriver.fs）。
-    ///
-    /// 本物は Roslyn の生成器が partial の相方を足すが、compile を通すだけなら
-    /// 空の基底で足りる
-    /// </summary>
     /// <summary>
     /// <b>本物は SystemBase の基底。</b>EntityManager も OnCreate も
     /// GetEntityQuery もこちらに在る。1 つ に潰すと、呼び手が
@@ -55,9 +59,13 @@ namespace Unity.Entities
         protected virtual void OnCreate() { }
         protected virtual void OnDestroy() { }
         protected EntityQuery GetEntityQuery(params ComponentType[] componentTypes) => new EntityQuery();
-        protected EntityQuery GetEntityQuery(params Type[] componentTypes) => new EntityQuery();
     }
 
+    /// <summary>
+    /// ECS の System。**C# サンプルだけが使う** —— F# サンプルは
+    /// `SystemBase` を避けて `FrameTicker` から回している
+    /// （理由は samples/FsBulletML2.Sample.Unity2D.FSharp の BulletEcsDriver.fs）。
+    /// </summary>
     public abstract partial class SystemBase : ComponentSystemBase
     {
         protected virtual void OnUpdate() { }
@@ -95,7 +103,6 @@ namespace Unity.Entities
         public void SetComponentData<T>(Entity entity, T componentData) { }
         public T GetComponentObject<T>(Entity entity) => default;
         public EntityQuery CreateEntityQuery(params ComponentType[] componentTypes) => new EntityQuery();
-        public EntityQuery CreateEntityQuery(params Type[] componentTypes) => new EntityQuery();
     }
 
     /// <summary>
@@ -108,9 +115,21 @@ namespace Unity.Entities
         public static void Initialize() { }
     }
 
+    /// <summary>World の役割。**既定値まで本物と同じにする** ——
+    /// 省いた引数の値は呼び手の IL に焼き込まれる（本物の既定は 9）</summary>
+    [Flags]
+    public enum WorldFlags
+    {
+        None = 0,
+        Live = 1,
+        Editor = 2,
+        Game = 8,
+        Simulation = Live | Game,
+    }
+
     public class World : IDisposable
     {
-        public World(string name) { Name = name; }
+        public World(string name, WorldFlags flags = WorldFlags.Simulation) { Name = name; }
         public string Name { get; }
         public EntityManager EntityManager => new EntityManager();
         public static World DefaultGameObjectInjectionWorld { get; set; }

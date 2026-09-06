@@ -77,17 +77,21 @@ $allBuilds = @(
   'FsBulletML2.Sample.TypeProviders.Debug',
   'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
+# **道具は弾幕を 1 つ も参照しない。** Core を触っても建たない —— 建つのは
+# 「全部」を意味する起点（proj の外・slnx・global.json）を触ったときだけ
+$allBuildsAndTools = $allBuilds + 'StubShapeCheck'
+
 Write-Host '=== 多いほう'
 
 Check 'Core を触ると全部' `
   @('src/FsBulletML2.Core/Step.fs') $allTests $allBuilds
 
 Check 'TestData は proj の外なので全部' `
-  @('tests/TestData/xml/accel/elements/success/accel-horizontal-exist.xml') $allTests $allBuilds
+  @('tests/TestData/xml/accel/elements/success/accel-horizontal-exist.xml') $allTests $allBuildsAndTools
 
-Check 'global.json は全部' @('global.json') $allTests $allBuilds
+Check 'global.json は全部' @('global.json') $allTests $allBuildsAndTools
 
-Check 'slnx を触ると全部' @('FsBulletML2.slnx') $allTests $allBuilds
+Check 'slnx を触ると全部' @('FsBulletML2.slnx') $allTests $allBuildsAndTools
 
 # Unity の C# は Assets に在り、その中に csproj は無い（Unity が生成する側は
 # 追跡していない）。compile するのは隣の `.Compile` で、あちらは
@@ -95,7 +99,7 @@ Check 'slnx を触ると全部' @('FsBulletML2.slnx') $allTests $allBuilds
 # **割り当ては場所で決めるので、この変更は不明に落ちて全部 走る** ——
 # `.Compile` もその「全部」に入るので、compile はされる。
 Check 'Unity の Assets は割り当て不明。全部 走るので .Compile も入る' `
-  @('samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/FrontEnv.cs') $allTests $allBuilds
+  @('samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/FrontEnv.cs') $allTests $allBuildsAndTools
 
 # **.Compile 自身を触ったら、それ 1 本 だけ。** 何も参照していないので
 Check '.Compile 自身なら 1 本 だけ' `

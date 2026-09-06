@@ -57,8 +57,11 @@ try {
   if ($out2 -match '型が (\d+) 件') { $n = [int]$Matches[1] }
 
   Check '割る前の dll は赤くなる' ($ec2 -ne 0) "exit=$ec2"
-  Check '赤くなる型は 20 件' ($n -eq 20) "実際 $n 件"
-  foreach ($want in 'Unity.Entities', 'Unity.Mathematics', 'Unity.Collections',
+  # UnityEngine から引いていた 20 型 のうち、Allocator と NativeArray<> の 2 型 は
+  # **本物でも UnityEngine に在る**（パッケージのほうではない）ので、
+  # あの dll の引き方で正しかった。残る 18 型 が名乗り違い
+  Check '赤くなる型は 18 件' ($n -eq 18) "実際 $n 件"
+  foreach ($want in 'Unity.Entities', 'Unity.Mathematics',
                     'Unity.Transforms', 'Unity.Rendering', 'UnityEngine.Rendering.Universal') {
     Check ("$want を UnityEngine から引いていると出る") `
           ($out2 -match ([regex]::Escape($want) + '\s+<- UnityEngine')) ''

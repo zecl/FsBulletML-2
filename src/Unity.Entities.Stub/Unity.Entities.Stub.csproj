@@ -8,6 +8,6 @@
     <Description>COMPILE-ONLY stub of Unity.Entities. NOT a substitute for the Unity Editor.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\UnityEngine.Stub\UnityEngine.Stub.csproj" />
+    <ProjectReference Include="..\Unity.Collections.Stub\Unity.Collections.Stub.csproj" />
   </ItemGroup>
 </Project>

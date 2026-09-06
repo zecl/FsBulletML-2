@@ -46,27 +46,56 @@ Add-Type -AssemblyName System.Reflection.Metadata
 if (-not $RepoRoot) { $RepoRoot = (git rev-parse --show-toplevel) }
 $RepoRoot = ($RepoRoot -replace '/', '\').TrimEnd('\')
 
-# --- 表を作る: namespace -> 名乗るべきアセンブリ名 -----------------------
+# --- 表を作る: 型 -> 名乗るべきアセンブリ名 -----------------------------
+#
+# **namespace 単位では引けない。** `Unity.Collections` は本物でも 2 つ に
+# 分かれていて、`Allocator` と `NativeArray<>` は UnityEngine.CoreModule、
+# `AllocatorManager` はパッケージのほうに在る。型 1 つ ずつ引く。
 $table = @{}
-$stubProjs = Get-ChildItem -Path (Join-Path $RepoRoot 'src') -Directory |
+$stubDlls = Get-ChildItem -Path (Join-Path $RepoRoot 'src') -Directory |
   Where-Object { $_.Name -like '*.Stub' } |
-  ForEach-Object { Get-ChildItem -Path $_.FullName -Filter '*.csproj' -File }
+  ForEach-Object {
+    Get-ChildItem -Path $_.FullName -Filter '*.dll' -File -Recurse -ErrorAction SilentlyContinue |
+      Where-Object { $_.FullName -match '\\bin\\Release\\' -and $_.BaseName -eq ($_.Name -replace '\.dll$', '') } |
+      Where-Object { $_.BaseName -eq ($_.Directory.Parent.Parent.Parent.Name -replace '\.Stub$', '') } |
+      Select-Object -First 1
+  }
 
-foreach ($proj in $stubProjs) {
-  $xml = [xml][IO.File]::ReadAllText($proj.FullName)
-  $asm = ($xml.Project.PropertyGroup | ForEach-Object { $_.AssemblyName } | Where-Object { $_ }) | Select-Object -First 1
-  if (-not $asm) { throw "AssemblyName が無い: $($proj.FullName)" }
-  foreach ($cs in Get-ChildItem -Path $proj.Directory.FullName -Filter '*.cs' -File) {
-    foreach ($m in [regex]::Matches([IO.File]::ReadAllText($cs.FullName), '(?m)^namespace (\S+)\s*$')) {
-      $ns = $m.Groups[1].Value
-      if ($table.ContainsKey($ns) -and $table[$ns] -ne $asm) {
-        throw "namespace $ns が 2 つ のアセンブリに在る: $($table[$ns]) / $asm"
+function Get-Decls ($path) {
+  $fs = [IO.File]::OpenRead($path)
+  try {
+    $pe = New-Object System.Reflection.PortableExecutable.PEReader($fs)
+    try {
+      $md = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($pe)
+      $asm = $md.GetString($md.GetAssemblyDefinition().Name)
+      $out = @()
+      foreach ($h in $md.TypeDefinitions) {
+        $td = $md.GetTypeDefinition($h)
+        $ns = $md.GetString($td.Namespace)
+        if (-not $ns) { continue }
+        # コンパイラが各アセンブリに生やす印。どの stub にも同じ名前で出る
+        if ($ns -eq 'Microsoft.CodeAnalysis' -or $ns -eq 'System.Runtime.CompilerServices') { continue }
+        $out += [pscustomobject]@{ Asm = $asm; Ns = $ns; Name = $md.GetString($td.Name) }
       }
-      $table[$ns] = $asm
+      $out
+    } finally { $pe.Dispose() }
+  } finally { $fs.Dispose() }
+}
+
+foreach ($dll in $stubDlls) {
+  if (-not $dll) { continue }
+  foreach ($d in (Get-Decls $dll.FullName)) {
+    $key = $d.Ns + '.' + $d.Name
+    if ($table.ContainsKey($key) -and $table[$key] -ne $d.Asm) {
+      throw "型 $key が 2 つ の stub に在る: $($table[$key]) / $($d.Asm)"
     }
+    $table[$key] = $d.Asm
   }
 }
-if ($table.Count -eq 0) { Write-Host '表が空。src/*.Stub が 1 つ も読めていない'; exit 1 }
+if ($table.Count -eq 0) {
+  Write-Host '表が空。src/*.Stub の dll が 1 つ も読めていない（先に build すること）'
+  exit 1
+}
 
 # --- 同梱 dll を読む -----------------------------------------------------
 if (-not $ShippedDir) {
@@ -105,10 +134,11 @@ foreach ($d in $ShippedDir) { $dlls += Get-ChildItem -Path $d -Filter '*.dll' -F
 $bad = @()
 foreach ($dll in $dlls) {
   foreach ($r in (Get-TypeRefs $dll.FullName)) {
-    if (-not $table.ContainsKey($r.Ns)) { continue }
-    if ($r.Asm -ne $table[$r.Ns]) {
+    $key = $r.Ns + '.' + $r.Name
+    if (-not $table.ContainsKey($key)) { continue }
+    if ($r.Asm -ne $table[$key]) {
       $bad += [pscustomobject]@{
-        Dll = $dll.Name; Ns = $r.Ns; Type = $r.Name; From = $r.Asm; Want = $table[$r.Ns]
+        Dll = $dll.Name; Ns = $r.Ns; Type = $r.Name; From = $r.Asm; Want = $table[$key]
       }
     }
   }
