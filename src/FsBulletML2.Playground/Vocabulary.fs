@@ -15,14 +15,18 @@ type VocabAttr =
     /// **1 個 に絞らず並びで持つ。** reflection は 2 個 でも返せるので、
     /// 型で 1 個 に潰すとその壊れが「先頭を採る」で消える。
     /// `Values` が空でないとき 1 個 であることは門が見る
-    Defaults: string[] }
+    Defaults: string[]
+    /// この属性の `<!ATTLIST ...>` 行。**表を持たない** —— 型から組む
+    Dtd: string }
 
 /// 要素 1 つ。`Children` は「この中に置ける要素」、`Text` は #PCDATA を取るか。
 type VocabElement =
   { Name: string
     Children: string[]
     Attrs: VocabAttr[]
-    Text: bool }
+    Text: bool
+    /// この要素の `<!ELEMENT ...>` 行。腕の並びから組む
+    Dtd: string }
 
 /// BulletML の語彙。**正本は `Core/DTD.fs` の型だけ。**
 ///
@@ -88,6 +92,46 @@ module Vocabulary =
       then names |> Array.map (fun s -> s.Substring cut)
       else names
 
+  /// option / list を **1 段 だけ** 剥がして、多重度の印を返す。
+  /// `unwrap` は全部 剥がすので、多重度がここで消える
+  let private occurs (t: Type) =
+    if t.IsGenericType then
+      let d = t.GetGenericTypeDefinition()
+      if d = typedefof<option<_>> then Some("?", t.GetGenericArguments().[0])
+      elif d = typedefof<list<_>> then Some("*", t.GetGenericArguments().[0])
+      else None
+    else None
+
+  /// 「そこに置ける物」1 つ ぶんの字。多腕 DU は選択に、単腕 DU は要素名に
+  let private slot (t: Type) =
+    if FSharpType.IsUnion t then
+      let cs = FSharpType.GetUnionCases t
+      if cs.Length > 1
+      then "(" + (cs |> Array.map (fun c -> camel c.Name) |> String.concat " | ") + ")"
+      else camel t.Name
+    else camel t.Name
+
+  /// `<!ELEMENT ...>` の中身。**腕の field の並びがそのまま順序**、
+  /// option / list がそのまま多重度、多腕 DU がそのまま選択になる
+  let private contentModel (fields: Type[]) =
+    let parts =
+      [ for f in fields do
+          if isParams f then yield "param*"
+          else
+            let occ, inner =
+              match occurs f with
+              | Some(o, i) -> o, i
+              | None -> "", f
+            if isAttrs inner then ()
+            elif inner = typeof<Expr.NumExpr> then yield "#PCDATA"
+            else yield slot inner + occ ]
+    match parts with
+    | [] -> "EMPTY"
+    // 1 つ だけで、それ自体が括弧で括られた組なら外側を足さない
+    // （`((bullet | fire | action)*)` にしない）
+    | [ p ] when p.StartsWith("(", StringComparison.Ordinal) -> p
+    | ps -> "(" + String.concat ", " ps + ")"
+
   let private attrsOf (elementName: string) (t: Type) =
     FSharpType.GetRecordFields t
     |> Array.map (fun p ->
@@ -113,7 +157,20 @@ module Vocabulary =
           |> Array.filter (fun (_, c) ->
                (c.GetCustomAttributes typeof<BulletmlDefaultAttribute>).Length > 0)
           |> Array.map (fun (i, c) -> if values.Length > 0 then values.[i] else camel c.Name)
-        { Name = camel bare; Values = values; Defaults = defaults })
+        let name = camel bare
+        // option でない field は、書かないと読めない属性（actionRef/@label）
+        let required =
+          not (p.PropertyType.IsGenericType
+               && p.PropertyType.GetGenericTypeDefinition() = typedefof<option<_>>)
+        let decl = if values.Length > 0 then "(" + String.concat "|" values + ")" else "CDATA"
+        let def =
+          match Array.tryHead defaults with
+          | Some d -> "\"" + d + "\""
+          | None -> if required then "#REQUIRED" else "#IMPLIED"
+        { Name = name
+          Values = values
+          Defaults = defaults
+          Dtd = sprintf "<!ATTLIST %s %s %s %s>" elementName name decl def })
 
   /// 木を歩いて、腕ごとに「要素名 -> 腕の持ち物」を集める。
   /// **同じ腕が 2 か所 に出る**（`Action` は BulletmlElm / Action / ActionElm に居る）
@@ -142,7 +199,8 @@ module Vocabulary =
     { Name = name
       Children = children |> Seq.distinct |> Seq.toArray
       Attrs = attrs.ToArray()
-      Text = text }
+      Text = text
+      Dtd = sprintf "<!ELEMENT %s %s>" name (contentModel fields) }
 
   /// 語彙。**空なら呼ぶ側が赤にすること** —— reflection が効いていない印
   let elements: VocabElement[] =
@@ -152,7 +210,12 @@ module Vocabulary =
     |> Seq.map (fun kv -> describe kv.Key kv.Value)
     // `Params = string list` は腕を持たないので木から出てこない。
     // **DTD は `<!ELEMENT param (#PCDATA)>`** なので、中身を取る要素として足す
-    |> Seq.append [ { Name = "param"; Children = [||]; Attrs = [||]; Text = true } ]
+    |> Seq.append
+         [ { Name = "param"
+             Children = [||]
+             Attrs = [||]
+             Text = true
+             Dtd = "<!ELEMENT param (#PCDATA)>" } ]
     |> Seq.sortBy (fun e -> e.Name)
     |> Seq.toArray
 
