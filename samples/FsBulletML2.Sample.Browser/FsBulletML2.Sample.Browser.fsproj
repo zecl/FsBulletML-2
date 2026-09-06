@@ -22,5 +22,6 @@
     <ProjectReference Include="..\..\src\FsBulletML2.Front\FsBulletML2.Front.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Bullets.Dsl\FsBulletML2.Bullets.Dsl.fsproj" />
   </ItemGroup>
 </Project>

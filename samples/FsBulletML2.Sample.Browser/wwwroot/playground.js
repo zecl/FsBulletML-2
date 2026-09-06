@@ -94,8 +94,48 @@ window.playground = {
     });
   },
   apply: function () {
+    var sel = document.getElementById("pattern");
+    if (sel) sel.value = "";
     var text = (document.getElementById("source") || {}).value || "";
     this.call("ApplySource", text);
+  },
+  fillPatterns: function () {
+    var sel = document.getElementById("pattern");
+    if (!sel || !this._dotNet) return;
+    var names = this._dotNet.invokeMethod("ListPatterns");
+    sel.innerHTML = "";
+    var blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "（XML 編集 / Open）";
+    sel.appendChild(blank);
+    for (var i = 0; i < names.length; i++) {
+      var o = document.createElement("option");
+      o.value = String(i);
+      o.textContent = names[i];
+      sel.appendChild(o);
+    }
+  },
+  pick: function () {
+    var sel = document.getElementById("pattern");
+    var errEl = document.getElementById("loop-error");
+    if (!sel || sel.value === "") return;
+    if (!this._dotNet) {
+      if (errEl) errEl.textContent = "まだ起動していない";
+      return;
+    }
+    var i = Number(sel.value);
+    var self = this;
+    this._dotNet.invokeMethodAsync("SelectPattern", i).then(function (xml) {
+      if (typeof xml === "string" && xml.indexOf("ERROR:") === 0) {
+        if (errEl) errEl.textContent = xml.slice(6);
+        return;
+      }
+      var source = document.getElementById("source");
+      if (source) source.value = xml;
+      if (errEl) errEl.textContent = "";
+    }).catch(function (err) {
+      if (errEl) errEl.textContent = String(err);
+    });
   },
   open: function () {
     var input = document.getElementById("open-file");
@@ -111,6 +151,8 @@ window.playground = {
       var text = String(reader.result || "");
       var source = document.getElementById("source");
       if (source) source.value = text;
+      var sel = document.getElementById("pattern");
+      if (sel) sel.value = "";
       playground.apply();
     };
     reader.onerror = function () {
@@ -121,8 +163,14 @@ window.playground = {
   onReady: function (dotNet) {
     this._dotNet = dotNet;
     this.attach();
+    try {
+      this.fillPatterns();
+    } catch (err) {
+      var fillErr = document.getElementById("loop-error");
+      if (fillErr) fillErr.textContent = String(err);
+    }
     var errEl = document.getElementById("loop-error");
-    if (errEl) errEl.textContent = "";
+    if (errEl && errEl.textContent === "起動待ち") errEl.textContent = "";
     if (this._running) return;
     this._running = true;
     var self = this;

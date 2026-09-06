@@ -13,6 +13,10 @@
       <h1>FsBulletML2 Playground</h1>
       <div class="row">
         <canvas id="stage" width="480" height="640"></canvas>
+        <div class="editor">
+        <select id="pattern" onchange="playground.pick()">
+          <option value="">（XML 編集 / Open）</option>
+        </select>
         <textarea id="source" class="source" spellcheck="false" wrap="off">&lt;bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml"&gt;
   &lt;action label="top"&gt;
     &lt;repeat&gt;
@@ -33,6 +37,7 @@
     &lt;/repeat&gt;
   &lt;/action&gt;
 &lt;/bulletml&gt;</textarea>
+        </div>
       </div>
       <div class="bar">
         <button type="button" onclick="playground.call('Play')">Play</button>

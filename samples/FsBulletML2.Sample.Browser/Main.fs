@@ -6,6 +6,7 @@ open Bolero.Html
 open Microsoft.AspNetCore.Components
 open Microsoft.JSInterop
 open FsBulletML2
+open FsBulletML2.Bullets.Dsl
 
 /// JSInvokable の実体。アセンブリ名経由だと WASM 起動直後に見つからない。
 type PlaygroundHost() =
@@ -15,6 +16,7 @@ type PlaygroundHost() =
   let mutable field = Playfield.Create env current
   let mutable playing = false
   let ret = Array.zeroCreate<float> 2
+  let catalog = lazy (All.bullets |> List.toArray)
 
   /// `[n; ptr]`。Apply で配列が差し替わるので ptr は毎コマ返す。
   [<JSInvokable>]
@@ -34,6 +36,26 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.Reset() =
     field <- Playfield.Create env current
+
+  /// 同梱 CE の名前。初回だけ木を組む。
+  [<JSInvokable>]
+  member _.ListPatterns() : string[] =
+    catalog.Value
+    |> Array.mapi (fun i info ->
+         if System.String.IsNullOrEmpty info.Name then sprintf "#%d" i else info.Name)
+
+  /// 一覧の番号で差し替える。成功なら XML。失敗は `ERROR:` で始まる。
+  [<JSInvokable>]
+  member _.SelectPattern(index: int) : string =
+    try
+      let items = catalog.Value
+      if index < 0 || index >= items.Length then "ERROR:範囲外"
+      else
+        let info = items.[index]
+        current <- info.Bulletml
+        field <- Playfield.Create env info.Bulletml
+        info.Bulletml.ToIndentedXmlString()
+    with ex -> "ERROR:" + ex.Message
 
   /// 右側の XML を読んで弾幕を差し替える。成功なら空文字。
   [<JSInvokable>]
