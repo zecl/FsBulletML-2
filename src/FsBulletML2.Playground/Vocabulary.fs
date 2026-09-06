@@ -9,7 +9,13 @@ open FsBulletML2
 /// 属性 1 つ。`Values` が空なら自由記述（label など）。
 type VocabAttr =
   { Name: string
-    Values: string[] }
+    Values: string[]
+    /// 書かなかったときに走る値。`Core` の腕に付いた `[<BulletmlDefault>]` から。
+    ///
+    /// **1 個 に絞らず並びで持つ。** reflection は 2 個 でも返せるので、
+    /// 型で 1 個 に潰すとその壊れが「先頭を採る」で消える。
+    /// `Values` が空でないとき 1 個 であることは門が見る
+    Defaults: string[] }
 
 /// 要素 1 つ。`Children` は「この中に置ける要素」、`Text` は #PCDATA を取るか。
 type VocabElement =
@@ -91,14 +97,23 @@ module Vocabulary =
           then p.Name.Substring elementName.Length
           else p.Name
         let vt = unwrap p.PropertyType
+        let cases = if FSharpType.IsUnion vt then FSharpType.GetUnionCases vt else [||]
+        // 腕が 1 本 の DU は「値の並び」ではない（ActionLabel など）。
+        // **札は並びでない相手にも読む** —— 読まないと「自由記述に既定が付いた」を
+        // 見る門が、当たる先を持たない
         let values =
-          if FSharpType.IsUnion vt && (FSharpType.GetUnionCases vt).Length > 1 then
-            FSharpType.GetUnionCases vt
-            |> Array.map (fun c -> c.Name)
-            |> stripCommonPrefix
-            |> Array.map camel
+          if cases.Length > 1
+          then cases |> Array.map (fun c -> c.Name) |> stripCommonPrefix |> Array.map camel
           else [||]
-        { Name = camel bare; Values = values })
+        // 既定は「腕の位置」で引く。名前をもう一度 変換すると
+        // stripCommonPrefix の結果とずれる余地ができる
+        let defaults =
+          cases
+          |> Array.mapi (fun i c -> i, c)
+          |> Array.filter (fun (_, c) ->
+               (c.GetCustomAttributes typeof<BulletmlDefaultAttribute>).Length > 0)
+          |> Array.map (fun (i, c) -> if values.Length > 0 then values.[i] else camel c.Name)
+        { Name = camel bare; Values = values; Defaults = defaults })
 
   /// 木を歩いて、腕ごとに「要素名 -> 腕の持ち物」を集める。
   /// **同じ腕が 2 か所 に出る**（`Action` は BulletmlElm / Action / ActionElm に居る）

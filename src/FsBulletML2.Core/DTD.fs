@@ -44,14 +44,32 @@ module DTD =
   /// Expr.NumExpr.mapSource が「置き換えてから読み直す」形で通る
   let numExpr (s: string) : Expr.NumExpr = Expr.NumExpr.ofString s
 
+  /// 属性値の並びのうち、**その属性を書かなかったときに走る腕**に付ける。
+  ///
+  /// 置き場が型しか無い。読む側は属性が無ければ Attrs ごと None にするので、
+  /// 既定が決まるのは Step / Api の fall-through（`| None -> aim` の形）で、
+  /// AST には何も残らない。字のコメントで書くとどこからも引けず、
+  /// 実装がずれても赤くならない。
+  ///
+  /// **RELAX 定義（license/bulletml/relax/bulletml.rlx）は既定値を持たない。**
+  /// 取れる値の並びだけが書いてある。下の doc コメントの ATTLIST 行に在る
+  /// "aim" などはそこから来たものではなく、別に書かれた書き起こし ——
+  /// **だからこの属性と突き合わせる相手になる。**
+  ///
+  /// 1 つ の並びに付くのは 0 個 か 1 個。読むのは
+  /// `UnionCaseInfo.GetCustomAttributes`
+  [<AttributeUsage(AttributeTargets.All, AllowMultiple = false)>]
+  type BulletmlDefaultAttribute() =
+    inherit Attribute()
+
   /// BulletML DTD
   /// <!ELEMENT vertical (#PCDATA)>
   /// <!ATTLIST vertical type (absolute|relative|sequence) "absolute">
   type Vertical =
   | Vertical of VerticalAttrs option * Expr.NumExpr 
   and VerticalAttrs = { verticalType : VerticalType }
-  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]VerticalType = 
-  | Absolute 
+  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]VerticalType =
+  | [<BulletmlDefault>] Absolute
   | Relative
   | Sequence
     member private t.ToStructuredDisplay = t.ToString()
@@ -92,9 +110,9 @@ module DTD =
   type Speed =
   | Speed of SpeedAttrs option * Expr.NumExpr
   and SpeedAttrs = { speedType : SpeedType }
-  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]SpeedType = 
-  | Absolute 
-  | Relative 
+  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]SpeedType =
+  | [<BulletmlDefault>] Absolute
+  | Relative
   | Sequence
     member private t.ToStructuredDisplay = t.ToString()
     override t.ToString () = stringifyFullName t 
@@ -106,7 +124,10 @@ module DTD =
   | Direction of DirectionAttrs option * Expr.NumExpr
   and DirectionAttrs = { directionType : DirectionType }
   and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]DirectionType =
-  | Aim | Absolute | Relative | Sequence
+  | [<BulletmlDefault>] Aim
+  | Absolute
+  | Relative
+  | Sequence
     member private t.ToStructuredDisplay = t.ToString()
     override t.ToString () = stringifyFullName t 
 
@@ -124,17 +145,21 @@ module DTD =
   type Horizontal = 
   | Horizontal of HorizontalAttrs option * Expr.NumExpr
   and HorizontalAttrs = { horizontalType : HorizontalType }
-  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]HorizontalType = 
-  | Absolute // Default
+  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]HorizontalType =
+  | [<BulletmlDefault>] Absolute
   | Relative
   | Sequence
     member private t.ToStructuredDisplay = t.ToString()
     override t.ToString () = stringifyFullName t 
 
   type BulletmlAttrs = { bulletmlXmlns : string option; bulletmlType : ShootingDirection option; bulletmlName : string option; bulletmlDescription : string option }
+  /// **省いたときに走るのは vertical。** 属性が無いとき Api が
+  /// BulletVertical を返す。bulletml の ATTLIST 行（下）は "none" と
+  /// 書き起こされているが、RELAX 定義に既定値は無いので出どころが辿れない。
+  /// **消さずに残してある** —— 実装と食い違っていること自体が手がかり
   and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]ShootingDirection =
-  | BulletNone // Default
-  | BulletVertical
+  | BulletNone
+  | [<BulletmlDefault>] BulletVertical
   | BulletHorizontal
     member private t.ToStructuredDisplay = t.ToString()
     override t.ToString () = stringifyFullName t
