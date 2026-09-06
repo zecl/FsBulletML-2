@@ -17,31 +17,9 @@
         <select id="pattern" onchange="playground.pick()">
           <option value="">（XML 編集 / Open）</option>
         </select>
+        <!-- 中身は空。**XML を html に書かない** —— 起動時の本文は host が
+             同梱カタログの CE から焼いて渡す（Main.fs の InitialSource） -->
         <div id="source" class="source"></div>
-        <!--
-          起動時の本文。**script なので中身は生の XML のまま置ける**
-          （HTML として解析されない）。Monaco の初期値はここから読む
-        -->
-        <script type="text/plain" id="source-initial"><bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
-  <action label="top">
-    <repeat>
-      <times>9999</times>
-      <action>
-        <fire>
-          <direction type="absolute">-12</direction>
-          <speed>3</speed>
-          <bullet/>
-        </fire>
-        <fire>
-          <direction type="absolute">12</direction>
-          <speed>3</speed>
-          <bullet/>
-        </fire>
-        <wait>8</wait>
-      </action>
-    </repeat>
-  </action>
-</bulletml></script>
         </div>
       </div>
       <div class="bar">

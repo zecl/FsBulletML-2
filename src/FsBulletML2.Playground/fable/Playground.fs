@@ -217,7 +217,9 @@ type Playground() as self =
       reader.readAsText (file :?> Blob) |> ignore
 
   /// Monaco を読んで `#source` に建てる。**ここが落ちてもループは回す。**
-  /// 初期の本文は `#source-initial`（html に 1 か所）。
+  ///
+  /// 初期の本文は host が焼く（`InitialSource`）。**html に XML を置かない** ——
+  /// 置くと、走る弾幕を替えたとき欄の字だけが古びる。
   member _.startEditor() =
     try
       match Monaco.vsBaseFromPage () with
@@ -225,12 +227,23 @@ type Playground() as self =
       | Some vs ->
         Monaco.load vs (fun () ->
           try
-            let seed = el "source-initial"
-            Monaco.create "source" "xml" (if isNull seed then "" else seed.textContent)
+            let seed = if isNull dotNet then "" else string (invoke0 dotNet "InitialSource")
+            Monaco.create "source" "xml" seed
             // spike: 語彙は段 1 で host から取る。ここはまだ当たりを見るだけ
             Monaco.registerCompletionProvider "xml" (fun () -> [ "spike" ])
+            self.showInitialInPatterns ()
           with ex -> setError ("エディタ: " + string ex))
     with ex -> setError ("エディタ: " + string ex)
+
+  /// 走っている弾幕をプルダウンにも出す。**空のままにしない** ——
+  /// 空は「XML 編集 / Open」の意味なので、同梱を走らせているのに嘘になる
+  member _.showInitialInPatterns() =
+    let sel = el "pattern"
+    if isNull sel || isNull dotNet then ()
+    else
+      let i = int (unbox<float> (invoke0 dotNet "InitialIndex"))
+      if i >= 0 then (sel :?> HTMLSelectElement).value <- string i
+      else setError "起動時の弾幕が一覧に無い"
 
   member _.onReady(dn: obj) =
     dotNet <- dn
