@@ -281,6 +281,10 @@ namespace UnityEngine
 
     public class Texture : Object { }
 
+    /// <summary>AnimationClip の基底。**このサンプルは 1 度 も使わない** ——
+    /// それでも置くのは、`FsBulletML2.Motion` と名前がかぶるから。
+    /// 本物に在る型を stub が持たないと、その衝突が Unity でだけ出る（CS0104）</summary>
+    public class Motion : Object { }
     public class Texture2D : Texture
     {
         // 本物に引数なしの ctor は無い。書かないと public な既定 ctor が生えて、

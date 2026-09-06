@@ -74,4 +74,100 @@ if (-not $anyStub) {
 
 $tool = Join-Path $RepoRoot 'tools\StubShapeCheck\StubShapeCheck.csproj'
 dotnet run --project $tool -c Release -- $RepoRoot
-exit $LASTEXITCODE
+$shape = $LASTEXITCODE
+
+# --- 名前の衝突 ---------------------------------------------------------
+#
+# **stub が本物より狭いことも壊れの原因になる。** 本物に在る型を stub が
+# 持たないと、C# サンプルの `using` で起きる名前の衝突（CS0104）が
+# `.Compile` では出ず、Unity でだけ出る。実際に 2 回 踏んだ（Space / Motion）。
+#
+# ここで数えるのは「こちらの型と Unity の型で単純名がかぶり、かつ
+# C# サンプルが両方 の namespace を using しているもの」。
+# かぶっている型が stub にも在れば `.Compile` が同じ CS0104 を出すので、
+# CI が捕まえる。**stub に無いものだけが危ない。**
+
+Add-Type -AssemblyName System.Reflection.Metadata
+
+function Get-PublicTypes ($path) {
+  $fs = [IO.File]::OpenRead($path)
+  try {
+    $pe = New-Object System.Reflection.PortableExecutable.PEReader($fs)
+    try {
+      if (-not $pe.HasMetadata) { return @() }
+      $md = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($pe)
+      $out = @()
+      foreach ($h in $md.TypeDefinitions) {
+        $td = $md.GetTypeDefinition($h)
+        if (($td.Attributes -band [System.Reflection.TypeAttributes]::VisibilityMask) -ne
+            [System.Reflection.TypeAttributes]::Public) { continue }
+        $ns = $md.GetString($td.Namespace)
+        if ($ns) { $out += [pscustomobject]@{ Ns = $ns; Name = $md.GetString($td.Name) } }
+      }
+      foreach ($h in $md.ExportedTypes) {
+        $et = $md.GetExportedType($h)
+        $ns = $md.GetString($et.Namespace)
+        if ($ns) { $out += [pscustomobject]@{ Ns = $ns; Name = $md.GetString($et.Name) } }
+      }
+      $out
+    } finally { $pe.Dispose() }
+  } finally { $fs.Dispose() }
+}
+
+$csProj = Join-Path $RepoRoot 'samples\FsBulletML2.Sample.Unity2D.CSharp'
+$usings = @{}
+foreach ($cs in Get-ChildItem -Path (Join-Path $csProj 'Assets') -Filter *.cs -File -Recurse) {
+  foreach ($m in [regex]::Matches([IO.File]::ReadAllText($cs.FullName), '(?m)^\s*using\s+(?!static)([A-Za-z0-9_.]+)\s*;')) {
+    $usings[$m.Groups[1].Value] = $true
+  }
+}
+
+$ours = @{}
+foreach ($f in Get-ChildItem (Join-Path $csProj 'Assets\FsBulletML2') -Filter 'FsBulletML2*.dll' -File) {
+  foreach ($t in Get-PublicTypes $f.FullName) {
+    if ($usings.ContainsKey($t.Ns)) { $ours[$t.Name] = $t.Ns }
+  }
+}
+
+$dirs = @($sa, "$editor\UnityEngine", $editor)
+$pc = Join-Path $proj 'Library\PackageCache'
+if (Test-Path $pc) {
+  $dirs += (Get-ChildItem $pc -Directory -Recurse -Depth 3 |
+            Where-Object { $_.Name -in 'Runtime', 'lib' } | ForEach-Object { $_.FullName })
+}
+$theirs = @{}
+foreach ($d in $dirs) {
+  foreach ($f in (Get-ChildItem $d -Filter *.dll -File -ErrorAction SilentlyContinue)) {
+    $ts = @(); try { $ts = Get-PublicTypes $f.FullName } catch { continue }
+    foreach ($t in $ts) { if ($usings.ContainsKey($t.Ns)) { $theirs[$t.Name] = $t.Ns } }
+  }
+}
+
+# stub が持っている型の単純名
+$inStub = @{}
+foreach ($sd in (Get-ChildItem (Join-Path $RepoRoot 'src') -Directory | Where-Object { $_.Name -like '*.Stub' })) {
+  $dll = Get-ChildItem -Path $sd.FullName -Filter '*.dll' -File -Recurse -ErrorAction SilentlyContinue |
+         Where-Object { $_.FullName -match '\\bin\\Release\\' -and $_.BaseName -eq ($sd.Name -replace '\.Stub$', '') } |
+         Select-Object -First 1
+  if ($dll) { foreach ($t in Get-PublicTypes $dll.FullName) { $inStub[$t.Name] = $true } }
+}
+
+$hidden = @()
+$seen = @()
+foreach ($n in ($ours.Keys | Where-Object { $theirs.ContainsKey($_) } | Sort-Object)) {
+  if ($inStub.ContainsKey($n)) { $seen += $n } else { $hidden += $n }
+}
+
+''
+'名前がかぶる型 {0}: {1}' -f ($seen.Count + $hidden.Count), ((($seen + $hidden) | Sort-Object) -join ', ')
+if ($hidden.Count -gt 0) {
+  ''
+  '** stub に無いので .Compile をすり抜ける型が {0} 件 **' -f $hidden.Count
+  foreach ($n in $hidden) { '    {0,-24} こちら {1} / Unity {2}' -f $n, $ours[$n], $theirs[$n] }
+  ''
+  'src/UnityEngine.Stub などに足すこと。足せば .Compile が同じ CS0104 を出す'
+  exit 1
+}
+'  どれも stub に在る（.Compile が同じ CS0104 を出す）'
+
+exit $shape

@@ -145,7 +145,7 @@ public class BulletSim : IComponentData
         // 物理量はフロントが持っている。毎コマ入れ直す（旧 stateOfBullet）。
         // **名前付き引数で書く理由は BaseBullet.RunTask の但し書き**
         // （位置ずれは落ちるが、値の取り違えは落ちない）
-        var motion = new Motion(
+        var motion = new FsBulletML2.Motion(
             pos: new FsBulletML2.Domain.Vec2(X, Y),
             speed: Speed,
             dir: Dir,

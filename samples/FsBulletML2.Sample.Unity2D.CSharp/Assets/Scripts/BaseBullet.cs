@@ -135,7 +135,7 @@ public abstract class BaseBullet : MonoBehaviour
         // （綴り違いで較正済み）。ただし**値そのものを取り違えた場合は
         // 落ちない** —— `speed: Dir` は名前が正しいので通る。
         // そこは軌跡でしか見えない
-        var motion = new Motion(
+        var motion = new FsBulletML2.Motion(
             pos: new FsBulletML2.Domain.Vec2(X, Y),
             speed: Speed,
             dir: Dir,
