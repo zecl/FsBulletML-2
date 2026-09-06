@@ -41,6 +41,7 @@
     <Compile Include="..\..\src\FsBulletML2.Playground\fable\languages\Xml.fs" Link="languages\Xml.fs" />
     <Compile Include="XmlContext.fs" />
     <Compile Include="XmlCompletion.fs" />
+    <Compile Include="HoverMarkdown.fs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\TestData\**\*">

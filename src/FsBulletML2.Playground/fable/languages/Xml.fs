@@ -68,6 +68,46 @@ type XmlLanguage(vocabulary: unit -> Vocab) =
         | Some a -> a.Values |> List.map plain
         | None -> []
 
+  /// hover に出す markdown を組む。
+  ///
+  /// **DTD の行は必ずコードフェンスに入れる。** markdown は `<` をタグとして
+  /// 食うので、素で渡すと `<!ELEMENT ...>` が丸ごと消える。**消えても hover は
+  /// 浮く**ので、目でも試験でも「出ていない」には見えない。
+  ///
+  /// 重複させない —— 「置ける子」も「取る値」も「既定」も、DTD の行が既に
+  /// 言っている。属性値のときだけ「省いたときはこれ」を足す（あの行は
+  /// 属性の hover にしか出ないので）
+  member private _.Block(title: string, prose: string, lines: string list) =
+    let head = "**`" + title + "`**\n\n" + prose
+    match lines |> List.filter (fun l -> l <> "") with
+    | [] -> head
+    | ls -> head + "\n\n```xml\n" + String.concat "\n" ls + "\n```"
+
+  member this.HoverAt(source: string, offset: int) : string option =
+    let v = vocabulary ()
+    let element name = v.Elements |> List.tryFind (fun e -> e.Name = name)
+    let attribute el at =
+      element el |> Option.bind (fun e -> e.Attrs |> List.tryFind (fun a -> a.Name = at))
+    match XmlScan.tokenAt source offset with
+    | Nothing -> None
+    | Element name ->
+      element name
+      |> Option.map (fun e ->
+           this.Block("<" + e.Name + ">", e.Spec, e.Dtd :: (e.Attrs |> List.map (fun a -> a.Dtd))))
+    | Attribute (el, at) ->
+      attribute el at |> Option.map (fun a -> this.Block(el + "/@" + a.Name, a.Spec, [ a.Dtd ]))
+    | AttrValue (el, at, value) ->
+      attribute el at
+      |> Option.bind (fun a ->
+           a.ValueSpecs
+           |> List.tryFind (fun (v, _) -> v = value)
+           |> Option.map (fun (_, spec) ->
+                let spec =
+                  if List.contains value a.Defaults
+                  then spec + "\n\n**省いたときはこれ。**"
+                  else spec
+                this.Block(a.Name + "=\"" + value + "\"", spec, [])))
+
   interface ISourceLanguage with
     member _.Kind = SourceKind.Xml
     member _.MonacoLanguage = "xml"
@@ -76,3 +116,4 @@ type XmlLanguage(vocabulary: unit -> Vocab) =
     // 属性名は 1 文字 打つか Ctrl+Space で出る
     member _.TriggerCharacters = [ "<"; "\"" ]
     member this.Complete source offset = this.Candidates(source, offset)
+    member this.Hover source offset = this.HoverAt(source, offset)

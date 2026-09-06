@@ -320,6 +320,9 @@ type Playground() as self =
               current.MonacoLanguage
               current.TriggerCharacters
               (fun src offset -> current.Complete src offset)
+            Monaco.registerHoverProvider
+              current.MonacoLanguage
+              (fun src offset -> current.Hover src offset)
             // **印は文字に追随しない。** 1 文字 打った時点で場所が嘘になるので、
             // そこで消す。付けていないときは何もしない（毎打鍵の空振りを避ける）
             Monaco.onContentChanged (fun () ->

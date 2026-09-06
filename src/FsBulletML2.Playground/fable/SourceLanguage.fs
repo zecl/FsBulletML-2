@@ -89,6 +89,11 @@ type ISourceLanguage =
   /// 本文とカーソルの位置（文字数）から候補を出す。
   /// **WASM に行かない** —— 語彙は起動時にもらったものを引く
   abstract Complete: source: string -> offset: int -> Completion list
+  /// カーソルの下に在るものの仕様。**返すのは markdown の字**で、
+  /// Monaco 側の形（`contents` の配列）を組むのは呼ぶ側。
+  /// 何の上でもなければ `None`（**空の字を返さない** ——
+  /// 空でも枠が浮くので、出ていないことと見分けがつかなくなる）
+  abstract Hover: source: string -> offset: int -> string option
 
 [<Emit("JSON.parse($0)")>]
 let private jsonParse (s: string) : obj = jsNative
