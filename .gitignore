@@ -51,6 +51,9 @@ samples/**/*.slnx
 !samples/FsBulletML2.Sample.Browser/FsBulletML2.Sample.Browser.slnx
 samples/**/*.csproj.user
 
+samples/FsBulletML2.Sample.Browser/wwwroot/js/
+samples/FsBulletML2.Sample.Browser/.tools/
+
 # leftover from Unity IAP default package
 **/BillingMode.json
 **/BillingMode.json.meta

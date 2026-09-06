@@ -52,9 +52,9 @@
       </div>
       <div id="main"></div>
     </div>
-    <script src="playground.js"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
-    <script>
+    <script type="module">
+      import "./js/Playground.js";
       Blazor.start().catch(function (err) {
         var e = document.getElementById("loop-error");
         if (e) e.textContent = String(err && err.message ? err.message : err);

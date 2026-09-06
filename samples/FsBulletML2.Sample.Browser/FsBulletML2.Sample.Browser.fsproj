@@ -17,6 +17,10 @@
     <PackageReference Include="Bolero.Build" Version="0.25.63" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.*" PrivateAssets="all" />
   </ItemGroup>
+  <Target Name="CompilePlaygroundJs" BeforeTargets="BeforeBuild">
+    <Exec Command="dotnet tool restore" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Exec Command="dotnet tool run fable -- fable/Playground.fsproj -o wwwroot/js" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.Front\FsBulletML2.Front.fsproj" />
