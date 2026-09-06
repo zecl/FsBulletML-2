@@ -30,6 +30,13 @@ $root = (git -C $here rev-parse --show-toplevel)
 $fails = 0
 $count = 0
 
+# **入力のパスが実在するかを先に見る。** 置き場が動くと、消えたパスは
+# 「割り当て不明」に落ちて全部 走る側に化ける —— 答えが安全側に出るので、
+# その点がもう何も測っていないことに気づけない。名指しで落とす
+function Missing([string[]]$Files) {
+  @($Files | Where-Object { -not (Test-Path -LiteralPath (Join-Path $root $_)) })
+}
+
 function Check {
   param(
     [string]$Name,
@@ -38,6 +45,12 @@ function Check {
     [string[]]$Builds
   )
   $script:count++
+  $gone = @(Missing $Files)
+  if ($gone.Count -gt 0) {
+    $script:fails++
+    Write-Host "  NG   $Name  校正の材料が消えた: $($gone -join ', ')"
+    return
+  }
   $r = & $affected -ChangedFiles $Files -RepoRoot $root -Quiet
   $gotT = @($r.Tests | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) } | Sort-Object)
   $gotB = @($r.Builds | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) } | Sort-Object)
@@ -73,13 +86,16 @@ $allTests = @(
 'FsBulletML2.Unity2D.Tests')
 $allBuilds = @(
   'FsBulletML2.Benchmarks',
+  'FsBulletML2.Playground',
   'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
   'FsBulletML2.Sample.TypeProviders.Debug',
   'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
-# **道具は弾幕を 1 つ も参照しない。** Core を触っても建たない —— 建つのは
-# 「全部」を意味する起点（proj の外・slnx・global.json）を触ったときだけ
-$allBuildsAndTools = $allBuilds + 'StubShapeCheck'
+# **どちらも Core を 1 つ も参照しない。** Core を触っても建たない —— 建つのは
+# 「全部」を意味する起点（proj の外・slnx・global.json）を触ったときだけ。
+# StubShapeCheck は弾幕を参照しない道具、Playground.Js は Fable に渡す側で
+# .NET の参照を持たない
+$allBuildsAndTools = $allBuilds + 'FsBulletML2.Playground.Js' + 'StubShapeCheck'
 
 Write-Host '=== 多いほう'
 
@@ -99,7 +115,7 @@ Check 'slnx を触ると全部' @('FsBulletML2.slnx') $allTests $allBuildsAndToo
 # **割り当ては場所で決めるので、この変更は不明に落ちて全部 走る** ——
 # `.Compile` もその「全部」に入るので、compile はされる。
 Check 'Unity の Assets は割り当て不明。全部 走るので .Compile も入る' `
-  @('samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/FrontEnv.cs') $allTests $allBuildsAndTools
+  @('samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/CSharpEnv.cs') $allTests $allBuildsAndTools
 
 # **.Compile 自身を触ったら、それ 1 本 だけ。** 何も参照していないので
 Check '.Compile 自身なら 1 本 だけ' `
@@ -108,12 +124,14 @@ Check '.Compile 自身なら 1 本 だけ' `
 
 Write-Host '=== 少ないほう'
 
-# Dsl は samples/Bullets.Dsl 経由でサンプル 4 つ に届く。**試験は 1 本 だが
-# build は 4 本 残る** —— 弾幕 DSL を変えると弾幕定義のほうが先に壊れるので
-Check 'Dsl だけなら試験は Dsl.Tests だけ、build は弾幕を使うサンプル 4 つ' `
+# Dsl は src/Bullets.Dsl 経由でサンプル 4 つ と Playground に届く。
+# **試験は 1 本 だが build は 5 本 残る** —— 弾幕 DSL を変えると弾幕定義の
+# ほうが先に壊れるので
+Check 'Dsl だけなら試験は Dsl.Tests だけ、build は弾幕を使う 5 本' `
   @('src/FsBulletML2.Dsl/BulletDsl.fs') `
   @('FsBulletML2.Dsl.Tests') `
-  @('FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
+  @('FsBulletML2.Playground',
+    'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
     'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
 Check 'MonoGame だけなら MonoGame.Tests と、それが build しないサンプル 2 つ' `
@@ -129,7 +147,8 @@ Check 'MonoGame だけなら MonoGame.Tests と、それが build しないサ�
 Check 'Parser だけなら Dsl.Tests は走らない' `
   @('src/FsBulletML2.Parser/Sxml.fs') `
   @('FsBulletML2.Core.Tests', 'FsBulletML2.Front.Tests', 'FsBulletML2.MonoGame.Tests', 'FsBulletML2.Parser.Tests', 'FsBulletML2.TypeProviders.Tests', 'FsBulletML2.Unity2D.Tests') `
-  @('FsBulletML2.Benchmarks', 'FsBulletML2.Sample.MonoGame.CSharp',
+  @('FsBulletML2.Benchmarks', 'FsBulletML2.Playground',
+    'FsBulletML2.Sample.MonoGame.CSharp',
     'FsBulletML2.Sample.MonoGame.FSharp', 'FsBulletML2.Sample.TypeProviders.Debug')
 
 Check 'TypeProviders だけなら 1 本' `
@@ -141,12 +160,13 @@ Check '試験そのものを触ったらその試験だけ' `
   @('tests/FsBulletML2.Parser.Tests/ReadEntryPoints.fs') @('FsBulletML2.Parser.Tests') @()
 
 Check 'サンプルの弾幕は Dsl.Tests が見ている' `
-  @('samples/FsBulletML2.Bullets/Bullets.fs') @('FsBulletML2.Dsl.Tests') @()
+  @('samples/FsBulletML2.Bullets/Dodonpachi.fs') @('FsBulletML2.Dsl.Tests') @()
 
-Check '弾幕 DSL 版はサンプル 4 つ にも届く' `
-  @('samples/FsBulletML2.Bullets.Dsl/Bullets.fs') `
+Check '弾幕 DSL 版はサンプル 4 つ と Playground にも届く' `
+  @('src/FsBulletML2.Bullets.Dsl/Dodonpachi.fs') `
   @('FsBulletML2.Dsl.Tests') `
-  @('FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
+  @('FsBulletML2.Playground',
+    'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
     'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
 Write-Host '=== git が返す名前'
@@ -176,7 +196,10 @@ if ($jp.Count -gt 0) {
 
 Write-Host '=== 0 件 のあつかい'
 
-Check 'md だけなら何も走らない' @('README.md', 'tests/README.md') @() @()
+# 2 本目 は「割り当て不明に落ちる置き場」に在る md。**そこに在るのが効く** ——
+# 拡張子を見ずに置き場だけで決めていたら、この 1 本 で全部 走ってしまう
+Check 'md だけなら何も走らない' `
+  @('README.md', 'samples/FsBulletML2.Sample.Unity2D.CSharp/README.md') @() @()
 
 Check 'ライセンス本文・出力済みドキュメント・パッケージの bat は走らせない' `
   @('license/bulletml/readme.txt', 'docs/templates/template-file.html',
@@ -195,6 +218,12 @@ Write-Host '=== matrix に渡る形'
 function CheckShape {
   param([string]$Name, [string[]]$Files, [int]$Tests, [int]$Builds)
   $script:count++
+  $gone = @(Missing $Files)
+  if ($gone.Count -gt 0) {
+    $script:fails++
+    Write-Host "  NG   $Name  校正の材料が消えた: $($gone -join ', ')"
+    return
+  }
   $tmp = [IO.Path]::GetTempFileName()
   try {
     $env:GITHUB_OUTPUT = $tmp
@@ -233,7 +262,7 @@ function CheckShape {
 
 CheckShape '0 件 でも空配列' @('README.md') 0 0
 CheckShape '1 件 が配列のまま出る' @('tests/FsBulletML2.Parser.Tests/ReadEntryPoints.fs') 1 0
-CheckShape '複数' @('src/FsBulletML2.Parser/Sxml.fs') 6 4
+CheckShape '複数' @('src/FsBulletML2.Parser/Sxml.fs') 6 5
 
 Write-Host ''
 if ($fails -gt 0) {
