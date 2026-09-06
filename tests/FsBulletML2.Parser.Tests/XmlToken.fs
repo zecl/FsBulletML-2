@@ -2,7 +2,7 @@ namespace FsBulletML2.Parser.Tests
 
 open NUnit.Framework
 open FsUnit
-open FsBulletML2.Playground
+open FsBulletML2.LanguageService
 
 /// **カーソルの下に在るもの**の判定。hover の中身はこれで決まる。
 ///

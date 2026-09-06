@@ -3,14 +3,16 @@
     <TargetFramework>net10.0</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
-  <!-- 順は依存の順。Monaco のバインディングを先に、配線を後に。
-       XmlScan.fs は中身が純 F# で、**host と Parser.Tests が Link で借りる**。
-       ここに置いてあるのは、外へ出すと Fable の出力が wwwroot/js/ の
-       外へ落ちるため（`..\XmlScan.fs` を引くと wwwroot/XmlScan.js になる。実測） -->
+  <!-- 順は依存の順。JSON 読みを先に、Monaco のバインディング、配線を後に。
+
+       **語彙・補完・hover の中身はここに無い。** 器
+       （FsBulletML2.LanguageService）へ移した。Fable は ProjectReference を
+       辿ってあちらのソースも焼き、出力は wwwroot/js/<proj 名>/ に入る。
+
+       ここに残っているのは **Fable でしか走らないもの** ——
+       VocabularyJson は [<Emit>]、Monaco と Playground はブラウザの API。 -->
   <ItemGroup>
-    <Compile Include="XmlScan.fs" />
-    <Compile Include="SourceLanguage.fs" />
-    <Compile Include="languages/Xml.fs" />
+    <Compile Include="VocabularyJson.fs" />
     <Compile Include="Monaco.fs" />
     <Compile Include="Playground.fs" />
   </ItemGroup>

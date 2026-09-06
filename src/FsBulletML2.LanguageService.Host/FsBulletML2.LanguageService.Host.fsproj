@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Language Service の、**.NET でしか走らない側。**
+
+    ## なぜ 2 つ に割れているか
+
+    器（`FsBulletML2.LanguageService`）は Fable が `ProjectReference` を
+    辿って**まるごと**焼く。焼く範囲を proj の中で選ぶ口は無いので、
+    **Fable で焼けないものを器に置くと器ごと焼けなくなる。**
+
+    実測（v0.8 の頭で、器に入れて fable を回した）——
+
+        Parser を参照した瞬間          FParsec は dll 参照で F# ソースを含まない。
+                                       Offside.fs が全行 赤
+        UnionCaseInfo
+          .GetCustomAttributes         Fable 非対応
+        System.Text.Encoding
+          .GetEncoding / StreamReader  Fable 非対応
+
+    だからこちらに置くのは「Core / Parser を読んで、ブラウザへ渡す材料を
+    作るもの」。**割れ目は測定が決めた**（設計の趣味ではない）。
+
+    ## 名前空間は器と同じ
+
+    `FsBulletML2.LanguageService`。**proj が 2 つ に割れているのは Fable の
+    都合**であって、概念としては 1 つ の Language Service。
+    使う側は `open` 1 行 で両方 を引く。
+
+    ## 配らない
+
+    nuspec を足さない。器と同じ扱い。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML2.LanguageService</RootNamespace>
+    <AssemblyName>FsBulletML2.LanguageService.Host</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- 順は依存の順。Vocabulary が Spec を引き、References が Vocabulary と
+         器の XmlScan を引く -->
+    <Compile Include="Spec.fs" />
+    <Compile Include="Vocabulary.fs" />
+    <Compile Include="Diagnosis.fs" />
+    <Compile Include="References.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
+  </ItemGroup>
+</Project>

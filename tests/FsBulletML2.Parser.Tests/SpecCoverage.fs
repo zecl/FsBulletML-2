@@ -2,7 +2,7 @@ namespace FsBulletML2.Parser.Tests
 
 open NUnit.Framework
 open FsUnit
-open FsBulletML2.Playground
+open FsBulletML2.LanguageService
 
 /// **散文の表が、語彙と過不足なく一致するか。**
 ///

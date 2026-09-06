@@ -91,9 +91,12 @@ writer.WriteStartElement("vanish")
   # 要素名で引くので、当てる先から外してある
   Make 'svc/FsBulletML2.LanguageService.fsproj' '<Project><ItemGroup /></Project>' | Out-Null
   Make 'svc/SourceKind.fs' 'let ids = [ "xml"; "sxml" ]' | Out-Null
+  # `.Host` の側。**線が 1 本 違う** —— 要素名はあちらに在ってよい
+  Make 'host/FsBulletML2.LanguageService.Host.fsproj' '<Project><ItemGroup /></Project>' | Out-Null
+  Make 'host/Spec.fs' 'let elements = [ "vanish", "自分を消す" ]' | Out-Null
 
   $ok = @{ RepoRoot = $tmp; PlaygroundDir = 'pg'; CoreProj = $proj; DtdSource = $dtd; IndexHtml = $html
-           ServiceDir = (Join-Path $tmp 'svc')
+           ServiceDir = (Join-Path $tmp 'svc'); HostDir = (Join-Path $tmp 'host')
            PlaygroundProj = $pgProj; Files = @('pg/fable/Playground.fs') }
 
   Write-Host '=== 通る側'
@@ -116,6 +119,14 @@ writer.WriteStartElement("vanish")
     (With $ok @{ ServiceDir = (Join-Path $tmp 'svc-bad') }) `
     $false 'FsBulletML2.LanguageService.fsproj が表示側を参照している'
 
+  # **`.Host` も同じ線の内側。** 片方 だけ当てても、もう片方 は素通りする
+  Make 'host-bad/FsBulletML2.LanguageService.Host.fsproj' `
+    '<Project><ItemGroup><PackageReference Include="Blazor" /></ItemGroup></Project>' | Out-Null
+  Make 'host-bad/Spec.fs' 'let elements = []' | Out-Null
+  Check 'LanguageService.Host が Blazor を参照している' `
+    (With $ok @{ HostDir = (Join-Path $tmp 'host-bad') }) `
+    $false 'FsBulletML2.LanguageService.Host.fsproj が表示側を参照している'
+
   # **コメントの中の但し書きは数えない。** 数えると「Bolero を参照しない」と
   # proj に書けなくなる（実際に踏んだ）
   Make 'svc-note/FsBulletML2.LanguageService.fsproj' `
@@ -131,7 +142,20 @@ writer.WriteStartElement("vanish")
     ($okHead + $okMonaco + $okBoot) | Out-Null
   Check 'Fable 側に要素名が在る' `
     (With $ok @{ PlaygroundDir = 'bad'; IndexHtml = (Join-Path $tmp 'bad/wwwroot/index.html'); Files = @() }) `
-    $false 'Fable 側に要素名'
+    $false 'ブラウザ側に要素名'
+
+  # **器へ移した先でも赤くなること。** v0.8 で `languages/Xml.fs` が
+  # `$fableDir` から器へ移った —— 走査先を伸ばさないと、移した先で書いても
+  # 赤くならない（守る対象が消えたのに緑を出し続ける形）
+  Make 'svc-name/FsBulletML2.LanguageService.fsproj' '<Project><ItemGroup /></Project>' | Out-Null
+  Make 'svc-name/Languages/Xml.fs' 'let root = "vanish"' | Out-Null
+  Check '器に要素名が在る' (With $ok @{ ServiceDir = (Join-Path $tmp 'svc-name') }) `
+    $false 'ブラウザ側に要素名'
+
+  # **`.Host` に在るのは正しい。** `Spec.fs` は要素名で引く散文の表。
+  # ここが赤になると、散文が書けなくなる（既定の `host/Spec.fs` が
+  # `"vanish"` を持っているので、通る側の点がそのまま証拠）
+  Check 'Host に要素名が在っても通る' $ok $true ''
 
   # **`Monaco` の語ではなく、叩いている字を当てる。** 語で当てると
   # doc コメントや `MonacoLanguage` まで赤になる
@@ -159,6 +183,12 @@ writer.WriteStartElement("vanish")
   Make 'svc-monaco/Hover.fs' 'let ed = globalThis.monaco.editor.getEditors()' | Out-Null
   Check 'LanguageService から Monaco を叩いている' `
     (With $ok @{ ServiceDir = (Join-Path $tmp 'svc-monaco') }) `
+    $false 'Monaco.fs の外から Monaco を叩いている'
+
+  Make 'host-monaco/FsBulletML2.LanguageService.Host.fsproj' '<Project><ItemGroup /></Project>' | Out-Null
+  Make 'host-monaco/Hover.fs' 'let ed = globalThis.monaco.editor.getEditors()' | Out-Null
+  Check 'LanguageService.Host から Monaco を叩いている' `
+    (With $ok @{ HostDir = (Join-Path $tmp 'host-monaco') }) `
     $false 'Monaco.fs の外から Monaco を叩いている'
 
   # `src` 付きにして、**インラインの点でなく起動のロジックの点で赤くする**
@@ -232,6 +262,8 @@ writer.WriteStartElement("vanish")
   Make 'svc-obj/obj/Debug/net10.0/AssemblyInfo.fs' 'namespace Generated' | Out-Null
   Check 'obj の下の生成物しか無い' (With $ok @{ ServiceDir = (Join-Path $tmp 'svc-obj') }) `
     $false 'LanguageService のソースを 1 本 も読めなかった'
+  Check 'LanguageService.Host のソースが 0 本' (With $ok @{ HostDir = (Join-Path $tmp 'nowhere') }) `
+    $false 'LanguageService.Host のソースを 1 本 も読めなかった'
   Check 'csproj が読めない' (With $ok @{ PlaygroundProj = (Join-Path $tmp 'pg/Nope.fsproj') }) `
     $false 'Playground の csproj を読めなかった'
   Check 'html が読めない' (With $ok @{ IndexHtml = (Join-Path $tmp 'pg/wwwroot/nope.html') }) `

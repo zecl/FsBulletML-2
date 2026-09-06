@@ -1,4 +1,4 @@
-namespace FsBulletML2.Playground
+namespace FsBulletML2.LanguageService
 
 /// hover に出す散文。**この repo で唯一、語彙の表を手で書くところ。**
 ///

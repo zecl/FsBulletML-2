@@ -3,7 +3,7 @@ namespace FsBulletML2.Parser.Tests
 open NUnit.Framework
 open FsUnit
 open FsBulletML2
-open FsBulletML2.Playground
+open FsBulletML2.LanguageService
 
 /// **Apply が落ちたとき、どこまで分かるか。**
 ///

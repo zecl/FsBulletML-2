@@ -5,7 +5,7 @@ open System.IO
 open System.Text.RegularExpressions
 open NUnit.Framework
 open FsUnit
-open FsBulletML2.Playground
+open FsBulletML2.LanguageService
 
 /// **`<!ELEMENT ...>` / `<!ATTLIST ...>` を、語彙から組む。**
 ///

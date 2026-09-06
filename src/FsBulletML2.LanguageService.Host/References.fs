@@ -1,4 +1,4 @@
-namespace FsBulletML2.Playground
+namespace FsBulletML2.LanguageService
 
 open System
 
@@ -18,7 +18,12 @@ open System
 ///
 ///   - **本番と同じ道**（`explain`）で、Apply が通る弾幕には 1 本 も引かないこと
 ///   - 参照を 1 つ 壊して Core が落ちたとき、同じ名前をここも挙げること
-module internal References =
+///
+/// **`internal` を外した（v0.8）。** 前は Playground の中に在り、
+/// `Parser.Tests` が `Link` で借りて**同じ assembly として** compile して
+/// いたので `internal` でも見えていた。器へ移して assembly が分かれた時点で
+/// 見えなくなる —— **移して初めて出る形**で、build が赤くなって分かった。
+module References =
 
   // --- 走る先は語彙から引く -------------------------------------------------
 

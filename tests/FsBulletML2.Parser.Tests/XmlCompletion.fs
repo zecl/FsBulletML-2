@@ -3,9 +3,9 @@ namespace FsBulletML2.Parser.Tests
 open NUnit.Framework
 open FsUnit
 open FsBulletML2
-open FsBulletML2.Playground
-open FsBulletML2.Playground.SourceLanguage
-open FsBulletML2.Playground.Languages.Xml
+open FsBulletML2.LanguageService
+open FsBulletML2.LanguageService.SourceLanguage
+open FsBulletML2.LanguageService.Languages.Xml
 
 /// **候補づくりを機械で回す。** ブラウザでも当てられるが、そこは CI では
 /// 動かない（背面タブは rAF も layout も止まる）ので、ここが唯一の道。

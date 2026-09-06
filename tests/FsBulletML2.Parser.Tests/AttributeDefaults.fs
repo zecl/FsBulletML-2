@@ -4,7 +4,7 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2
 open FsBulletML2.Domain
-open FsBulletML2.Playground
+open FsBulletML2.LanguageService
 
 /// **属性を書かなかったときに走る値が、Core のマーカーと合っているか。**
 ///
