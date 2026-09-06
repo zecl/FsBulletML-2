@@ -266,6 +266,22 @@ type Playground() as self =
             setError "")
         (fun err -> setError (errText err))
 
+  /// 速さのプルダウン。**値の意味を html に書かない** ——
+  /// html に在るのは `-4` のような数だけで、それが何回 進めるかは host の `Pacing`。
+  ///
+  /// 速さは host にだけ持つ。Fable 側にも持つと、Apply や Reset のあとで
+  /// 2 か所 が食い違う
+  member _.setRate() =
+    let sel = el "rate"
+    if isNull sel then ()
+    elif isNull dotNet then setError "まだ起動していない"
+    else
+      let n = float (sel :?> HTMLSelectElement).value
+      thenCatch
+        (invokeAsync1 dotNet "SetRate" n)
+        (fun _ -> ())
+        (fun err -> setError (errText err))
+
   /// 補完の使い方。**中身は html に在る字だけ**で、ここは開け閉めだけ。
   /// ループは止めない —— 開いている間も弾幕は動く
   member _.help() =
@@ -403,6 +419,28 @@ if not (isNull openInput) then
       let file = if isNull files then null else jsItem files 0
       playground.loadFile file
   )
+
+/// html の `onclick=` を使わない。**CSP に `'unsafe-inline'` を出していないので
+/// インラインのハンドラは弾かれる** —— ボタンが押せないだけで、
+/// エラーも出ず、走行でも試験でも見えない（実際に踏んだ）。
+///
+/// **`html にロジックを書かない`線とも合う。** `onclick="playground.call('Play')"`
+/// は、そこだけ型も検査も掛からない字だった
+let private on (id: string) (event: string) (handler: unit -> unit) =
+  let node = el id
+  if isNull node then setError ("配線する先が無い: " + id)
+  else node.addEventListener (event, fun _ -> handler ())
+
+on "pattern" "change" (fun () -> playground.pick ())
+on "help" "click" (fun () -> playground.help ())
+on "help-close" "click" (fun () -> playground.closeHelp ())
+on "play" "click" (fun () -> playground.call("Play"))
+on "pause" "click" (fun () -> playground.call("Pause"))
+on "step-once" "click" (fun () -> playground.call("StepOnce"))
+on "rate" "change" (fun () -> playground.setRate ())
+on "reset" "click" (fun () -> playground.call("Reset"))
+on "apply" "click" (fun () -> playground.apply ())
+on "open" "click" (fun () -> playground.``open``())
 
 // **いちばん最後。** 上の配線が済んでから WASM を起こす ——
 // `onReady` はここから返ってくるので、先に起こすと受け口が無い。

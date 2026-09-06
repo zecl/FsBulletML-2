@@ -24,10 +24,28 @@
      語彙は host が `Core/DTD.fs` から焼いて渡す。**当てる名前は
      `WriteStartElement(...)` から引く** —— 門の中に表を持たない
 
-  4. `index.html` に起動のロジックが無い
+  4. Monaco を叩くのは `fable/Monaco.fs` 1 本 だけ
+     v0.7 の Language Service が Monaco を直に叩き始めると、**Monaco 以外 の
+     エディタへ載せられなくなる。** build でも試験でも出ず、載せ替えようと
+     した版で初めて分かる。当てるのは `globalThis.monaco`（叩いているか）で、
+     `Monaco` という語（言及しているか）ではない
+
+  5. `index.html` に起動のロジックが無い
      html に書くと、そこだけ型も検査も掛からない
 
-  5. Playground の csproj で `UseSystemResourceKeys` が `false`
+  6. Monaco の版が **正確な版で固定**されている（`monaco-editor@x.y.z`）
+     CDN から読むので、固定されていなければ黙って上がる。上がったこと自体は
+     走行にも試験にも出ず、補完や hover の形が変わったときに初めて分かる。
+     `@latest` も `@^0.56` も、読むたび別のものが来る
+
+  7. Monaco の src に SRI（`integrity` と `crossorigin`）が在り、CSP が在り、
+     **中身の在るインライン script が無い**
+     どれも外されても走るので、走行でも試験でも出ない。integrity が守るのは
+     loader.js 1 本 だけで、ローダが後から取りに行く分は CSP の origin でしか
+     閉じていない。インライン script は CSP に弾かれて「起動待ち」で止まる
+     （実際に踏んだ）
+
+  8. Playground の csproj で `UseSystemResourceKeys` が `false`
      読めなかった理由をそのまま人へ見せるので、例外の文面が字である必要が
      ある。Blazor WASM の SDK は Release でこれを立てるので、放っておくと
      `Xml_TagMismatchEx` のような鍵が波線に載る。**動きは変わらないので、
@@ -36,7 +54,8 @@
   ## 0 件 を緑にしない
 
   当てる材料が読めなければ赤にする —— 3 つ目 の要素名、Fable のソース、
-  5 つ目 の csproj。拾えなくなった状態は、「違反 0 件」と同じ顔をする。
+  4 つ目 の Monaco.fs 以外 のソース、6 つ目 の html と Monaco の src、8 つ目 の csproj。
+  拾えなくなった状態は、「違反 0 件」と同じ顔をする。
 #>
 [CmdletBinding()]
 param(
@@ -124,17 +143,104 @@ if ($hardcoded.Count -gt 0) {
            "`n      語彙は host が Core/DTD.fs から焼いて渡す。ここに表を持たない")
 }
 
-# --- 4. html のロジック ----------------------------------------------------
-if (Test-Path -LiteralPath $IndexHtml) {
-  $logic = @(Select-String -LiteralPath $IndexHtml -Pattern 'Blazor\.start' |
-             ForEach-Object { "{0} 行  {1}" -f $_.LineNumber, $_.Line.Trim() })
-  if ($logic.Count -gt 0) {
-    $bad.Add("  html に起動のロジックが $($logic.Count) 件:`n      " + ($logic -join "`n      ") +
-             "`n      起こすのは Fable の側。html は読み込むだけ")
+# --- 4. Monaco を叩く場所 --------------------------------------------------
+#
+# **Monaco を知るのは `fable/Monaco.fs` 1 本 だけ。**
+#
+# v0.7 で「他の DSL でも使える Language Service」を建てる計画が在る。
+# 中身が Monaco を直に叩き始めると、**Monaco 以外 のエディタへ載せられなくなる** ——
+# しかもそれは build でも試験でも出ず、載せ替えようとした版で初めて分かる。
+#
+# 見るのは `globalThis.monaco`（`[<Emit>]` の中の字）。`Monaco` という語そのものは
+# doc コメントにも `MonacoLanguage`（language id を持つ抽象の名前）にも出るので
+# 当てない。**当てる先は「叩いているか」であって「言及しているか」ではない。**
+$monacoOwner = Join-Path $fableDir 'Monaco.fs'
+$others = @($fableFiles | Where-Object { $_ -ne $monacoOwner })
+if ($others.Count -eq 0) {
+  throw "Monaco.fs 以外 の Fable のソースが 1 本 も無い（$fableDir）。" +
+        "**違反 0 件 と同じ顔をする**ので、ここで落とす"
+}
+$callers = @(Select-String -LiteralPath $others -Pattern 'globalThis\.monaco' -CaseSensitive |
+             ForEach-Object { "{0} {1} 行  {2}" -f (Split-Path $_.Path -Leaf), $_.LineNumber, $_.Line.Trim() })
+if ($callers.Count -gt 0) {
+  $bad.Add("  Monaco.fs の外から Monaco を叩いている $($callers.Count) 件:`n      " +
+           ($callers -join "`n      ") +
+           "`n      叩くのは Monaco.fs 1 本。ほかは Monaco を知らない形で書く")
+}
+
+# --- html を 1 回 だけ読む -------------------------------------------------
+#
+# **材料が読めないときは落とす。** 下の 3 つ（ロジック / 版 / SRI）は
+# どれも「読めなければ違反 0 件」になる。
+#
+# **コメントを外してから当てる。** 外さないと、但し書きに書いた例文が
+# そのまま違反として出る（実際に踏んだ —— 「前はこう書いていた」の例に
+# インライン script の点が当たった）。コメントの中の script はブラウザも
+# 読まないので、外すのが正しい
+if (-not (Test-Path -LiteralPath $IndexHtml)) {
+  throw "index.html を読めなかった（$IndexHtml）。**違反 0 件 と同じ顔をする**ので、ここで落とす"
+}
+$html = [regex]::Replace((Get-Content -LiteralPath $IndexHtml -Raw), '<!--[\s\S]*?-->', '')
+
+# --- 5. html のロジック ----------------------------------------------------
+if ($html -match 'Blazor\.start') {
+  $bad.Add("  html に起動のロジックが在る:`n      $IndexHtml" +
+           "`n      起こすのは Fable の側。html は読み込むだけ")
+}
+
+# --- 6. Monaco の版 --------------------------------------------------------
+#
+# **CDN から読むので、固定されていなければ黙って上がる。** 上がったこと自体は
+# 走行にも試験にも出ず、補完や hover の形が変わったときに初めて分かる。
+#
+# 見るのは「そこに版が在る」ではなく「**正確な版**で書いてある」——
+# `@latest` も `@^0.56` も、読むたび別のものが来る。
+#
+# **Monaco の src が 1 本 も無いのも落とす。** 違反 0 件 と同じ顔をする
+$monaco = @([regex]::Matches($html, 'monaco-editor@([^/"]+)') |
+            ForEach-Object { $_.Groups[1].Value })
+if ($monaco.Count -eq 0) {
+  $bad.Add("  Monaco の src が index.html に無い:`n      $IndexHtml" +
+           "`n      版はこの 1 行 だけに在る。無いと Monaco.fs が読む先も消える")
+} else {
+  $floating = @($monaco | Where-Object { $_ -notmatch '^\d+\.\d+\.\d+$' })
+  if ($floating.Count -gt 0) {
+    $bad.Add("  Monaco の版が固定されていない: " + ($floating -join ', ') +
+             "`n      CDN は読むたび取りに行く。x.y.z で書くこと")
   }
 }
 
-# --- 5. 例外の文面 ---------------------------------------------------------
+# --- 7. SRI と CSP ---------------------------------------------------------
+#
+# **どちらも外されても走る。** integrity を消しても Monaco は読めるし、
+# CSP を消しても画は出る。**走行でも試験でも出ない**ので、字で見るしかない。
+#
+# integrity が守るのは loader.js 1 本 だけ。ローダが後から取りに行く分は
+# CSP の origin でしか閉じていない —— **その但し書きは html に書いてある。**
+if ($html -notmatch 'integrity="sha(256|384|512)-') {
+  $bad.Add("  Monaco の src に integrity が無い:`n      $IndexHtml" +
+           "`n      CDN が別の物を返しても気づけない。sha384 を付けること")
+}
+if ($html -notmatch 'crossorigin=') {
+  $bad.Add("  Monaco の src に crossorigin が無い:`n      $IndexHtml" +
+           "`n      付けないとブラウザが integrity を当てられない（黙って素通りする）")
+}
+if ($html -notmatch 'http-equiv="Content-Security-Policy"') {
+  $bad.Add("  CSP が index.html に無い:`n      $IndexHtml" +
+           "`n      integrity は loader.js 1 本 にしか掛からない。残りは origin で閉じる")
+}
+# **インラインの script を置かない。** CSP に 'unsafe-inline' を出していないので
+# 黙って弾かれる（実際に踏んだ。エラーは出ず「起動待ち」のまま止まる）。
+# 空の importmap は中身が無いので数えない
+$inline = @([regex]::Matches($html, '<script(?![^>]*\ssrc=)[^>]*>(?<body>[\s\S]*?)</script>') |
+            Where-Object { $_.Groups['body'].Value.Trim() -ne '' } |
+            ForEach-Object { $_.Value.Split("`n")[0].Trim() })
+if ($inline.Count -gt 0) {
+  $bad.Add("  中身の在るインライン script が $($inline.Count) 件:`n      " + ($inline -join "`n      ") +
+           "`n      CSP に 'unsafe-inline' を出していないので黙って弾かれる。src で読むこと")
+}
+
+# --- 8. 例外の文面 ---------------------------------------------------------
 #
 # **現状固定。** 外すと Release で resource key に戻り、波線に載る文面が
 # 鍵になる。動きは変わらないので、外れても走行では気づけない
