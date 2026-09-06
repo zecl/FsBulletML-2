@@ -19,6 +19,7 @@
   <ItemGroup>
     <Compile Include="Stage.fs" />
     <Compile Include="BrowserEnv.fs" />
+    <Compile Include="Pacing.fs" />
     <Compile Include="Playfield.fs" />
     <!-- どちらも Core / Parser しか使わない。
          **Parser.Tests が Link で借りて .NET で走らせる** -->
