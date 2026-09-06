@@ -8,6 +8,10 @@ open Microsoft.AspNetCore.Components
 open Microsoft.JSInterop
 open FsBulletML2
 open FsBulletML2.Bullets.Dsl
+// `SourceKind`。**ブラウザ側（Fable）が同じ 1 本 を引く** ——
+// 前は こちらが `match kind with | "xml"` で受け、あちらが
+// `SourceKind.Xml.Id` で作っていて、片方 だけ変えても落ちなかった
+open FsBulletML2.LanguageService
 
 /// 起動時に載せる弾幕。**同梱カタログの CE が正本。**
 ///
@@ -162,8 +166,10 @@ type PlaygroundHost() =
               f.Line f.Column f.EndColumn (jstr f.Message))
         |> String.concat ","
       sprintf "{\"ok\":false,\"message\":%s,\"marks\":[%s]}" (jstr (banner fs)) marks
-    match kind with
-    | "xml" ->
+    // **字を直に書かない。** 送ってくるのは Fable 側の `SourceKind.Id` で、
+    // どちらも `LanguageService` の 1 本 を引く
+    match SourceKind.tryParse kind with
+    | Some Xml ->
       // **建ててから差し替える。** 木は読めるが組めない層が在るので、
       // 先に `current` を書くと、落ちたあとの Reset がその弾幕で作り直して
       // また落ちる（`Reset` は `current` から建てる）
@@ -175,7 +181,10 @@ type PlaygroundHost() =
       match References.explain (Diagnosis.apply put text) text with
       | [] -> "{\"ok\":true}"
       | fs -> failed fs
-    | other -> failed [ Diagnosis.plain ("未対応: " + other) ]
+    // 知らない字と、まだ読めない表記を分けない。**どちらも人には同じ** ——
+    // 分けると「口は在るが読めない」を人に見せることになる
+    | Some other -> failed [ Diagnosis.plain ("未対応: " + other.Id) ]
+    | None -> failed [ Diagnosis.plain ("未対応: " + kind) ]
 
 /// 空の根。描画のあとで host を JS に渡す。
 type MyApp() =

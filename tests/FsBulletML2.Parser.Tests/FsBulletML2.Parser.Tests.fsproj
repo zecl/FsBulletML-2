@@ -66,5 +66,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
+    <!--
+      **こちらは借りずに参照する。** 借りている Fable のソースが `SourceKind` を
+      引くので要る。Playground（Blazor WASM のアプリ）と違って、
+      LanguageService は他所から参照されるために建てた proj
+    -->
+    <ProjectReference Include="..\..\src\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />
   </ItemGroup>
 </Project>

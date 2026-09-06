@@ -262,7 +262,7 @@ type Playground() as self =
           if s.StartsWith "ERROR:" then setError (s.Substring 6)
           else
             Monaco.setValue s
-            Monaco.setLanguage current.MonacoLanguage
+            Monaco.setLanguage current.EditorLanguageId
             setError "")
         (fun err -> setError (errText err))
 
@@ -310,7 +310,7 @@ type Playground() as self =
       reader.onload <-
         fun _ ->
           Monaco.setValue (string reader.result)
-          Monaco.setLanguage current.MonacoLanguage
+          Monaco.setLanguage current.EditorLanguageId
           let sel = el "pattern"
           if not (isNull sel) then (sel :?> HTMLSelectElement).value <- ""
           self.apply ()
@@ -329,15 +329,15 @@ type Playground() as self =
         Monaco.load vs (fun () ->
           try
             let seed = if isNull dotNet then "" else string (invoke0 dotNet "InitialSource")
-            Monaco.create "source" current.MonacoLanguage seed
+            Monaco.create "source" current.EditorLanguageId seed
             self.loadVocabulary ()
             // **XML を名指ししない。** 次の言語が来ても、通る道はここ 1 本
             Monaco.registerCompletionProvider
-              current.MonacoLanguage
+              current.EditorLanguageId
               current.TriggerCharacters
               (fun src offset -> current.Complete src offset)
             Monaco.registerHoverProvider
-              current.MonacoLanguage
+              current.EditorLanguageId
               (fun src offset -> current.Hover src offset)
             // **印は文字に追随しない。** 1 文字 打った時点で場所が嘘になるので、
             // そこで消す。付けていないときは何もしない（毎打鍵の空振りを避ける）

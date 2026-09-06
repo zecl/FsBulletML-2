@@ -10,6 +10,8 @@ module FsBulletML2.Playground.Languages.Xml
 
 open FsBulletML2.Playground
 open FsBulletML2.Playground.SourceLanguage
+// `SourceKind`。host も同じ 1 本 を引く
+open FsBulletML2.LanguageService
 
 /// 字を数えるのは `XmlScan` の 1 本。**ここが持つのは語彙の引き方だけ。**
 /// 名前をここへ引き直しているのは、呼ぶ側（試験と `Playground.fs`）が
@@ -110,7 +112,7 @@ type XmlLanguage(vocabulary: unit -> Vocab) =
 
   interface ISourceLanguage with
     member _.Kind = SourceKind.Xml
-    member _.MonacoLanguage = "xml"
+    member _.EditorLanguageId = "xml"
     // `<` の直後は要素、`"` の直後は属性値。**空白は入れない** ——
     // 本文のどこで空白を打っても候補が出ることになる。
     // 属性名は 1 文字 打つか Ctrl+Space で出る

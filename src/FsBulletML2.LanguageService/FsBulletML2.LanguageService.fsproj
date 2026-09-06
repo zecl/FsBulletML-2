@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    エディタの中身（語彙・補完・hover・診断）を置く器。**まだ器だけ。**
+    XML の実装を移すのは次の版。
+
+    ## 参照してよいもの
+
+    Core / Parser までの、表示を知らない側だけ。**Monaco も Bolero も
+    Blazor も参照しない** —— 参照した瞬間に Monaco 以外 のエディタへ
+    載せられなくなるが、それは build でも試験でも出ず、載せ替えようと
+    した版で初めて分かる。門で見ている
+    （`.github/scripts/guard-playground-boundaries.ps1` の 2 つ目）。
+
+    いまは何も参照していない。
+
+    ## 2 つ の runtime で走る
+
+    ここのソースは host（Blazor WASM の .NET）と ブラウザ側（Fable が
+    焼いた JS）の**両方 で走る**。Fable 側は `Playground.Js.fsproj` が
+    `ProjectReference` で引き、Fable がソースから焼く。
+
+    **`Fable.Core` に依存しない形で書くこと。** 依存すると host 側の
+    build が壊れる。答えが 2 つ の runtime で一致することは
+    `guard-fable-parity.ps1` が走行で見ている。
+
+    ## 配らない
+
+    nuspec を足さない。ブラウザのエディタのための器で、
+    Core / Front / Parser のように他所へ配る物ではない。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML2.LanguageService</RootNamespace>
+    <AssemblyName>FsBulletML2.LanguageService</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SourceKind.fs" />
+  </ItemGroup>
+</Project>

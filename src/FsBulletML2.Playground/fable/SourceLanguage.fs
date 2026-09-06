@@ -16,19 +16,10 @@ module FsBulletML2.Playground.SourceLanguage
 open Fable.Core
 open Fable.Core.JsInterop
 
-type SourceKind =
-  | Xml
-  | Sxml
-  | Fsb
-  | FSharpDsl
-
-  /// host に渡す字。`ApplySource` の kind と同じもの
-  member this.Id =
-    match this with
-    | Xml -> "xml"
-    | Sxml -> "sxml"
-    | Fsb -> "fsb"
-    | FSharpDsl -> "fsharp"
+// **`SourceKind` はここに無い。** host（`Main.fs`）が同じ字を受けるので
+// `FsBulletML2.LanguageService` に出してある —— 前は同じ並びが 2 か所 に
+// 書いてあり、片方 だけ変えても build も試験も落ちなかった
+open FsBulletML2.LanguageService
 
 /// 語彙の写し。**正本は Core の DTD.fs**（host が JSON にして渡す）。
 /// ここは受け取った形をそのまま持つだけで、表を書かない
@@ -80,8 +71,12 @@ module Completion =
 
 type ISourceLanguage =
   abstract Kind: SourceKind
-  /// Monaco 側の language id。表記と 1 対 1 とは限らないので別に持つ
-  abstract MonacoLanguage: string
+  /// エディタ側の language id。表記と 1 対 1 とは限らないので別に持つ。
+  ///
+  /// **`MonacoLanguage` という名前だった。** 中身は Monaco 固有の値ではなく
+  /// 「エディタに渡す language id」で、名前だけが唯一 Monaco を名指ししていた ——
+  /// 抽象がエディタを名指しすると、載せ替えるときに抽象ごと直すことになる
+  abstract EditorLanguageId: string
   /// 打った瞬間に候補を出す字。**語の文字は要らない** —— そちらは Monaco が
   /// 自分で出す。ここに置くのは「語ではないが、その直後に必ず候補が要る」字。
   /// **表記ごとに違う**（sxml なら括弧）ので言語モジュールが持つ

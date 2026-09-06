@@ -1,0 +1,14 @@
+[
+  {
+    "target": "XmlScan",
+    "note": "字を数える 1 本。host（波線）と Fable（補完・hover）が同じソースを compile する",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/XmlScan.js",
+    "export": "XmlScan_describe"
+  },
+  {
+    "target": "SourceKind",
+    "note": "表記の名前。proj をまたぐ（Fable が ProjectReference を辿って焼く）",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/SourceKind.js",
+    "export": "SourceKindModule_describe"
+  }
+]

@@ -48,5 +48,9 @@
     <ProjectReference Include="..\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
     <ProjectReference Include="..\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
     <ProjectReference Include="..\FsBulletML2.Bullets.Dsl\FsBulletML2.Bullets.Dsl.fsproj" />
+    <!-- **Fable 側（`fable/FsBulletML2.Playground.Js.fsproj`）も同じものを参照する。**
+         あちらは Fable がソースから焼き、こちらは .NET が dll にする。
+         答えが一致することは `guard-fable-parity.ps1` が走行で見ている -->
+    <ProjectReference Include="..\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />
   </ItemGroup>
 </Project>
