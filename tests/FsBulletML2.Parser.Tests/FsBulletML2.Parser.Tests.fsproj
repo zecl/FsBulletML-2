@@ -22,6 +22,14 @@
     -->
     <Compile Include="..\..\src\FsBulletML2.Playground\Vocabulary.fs" Link="Vocabulary.fs" />
     <Compile Include="VocabularyCoverage.fs" />
+    <!--
+      Fable 側のソースも借りる。**カーソルの居場所の判定は、ブラウザでしか
+      当てられないと CI で一度も回らない。** 中身は文字列を数えるだけで
+      JS を呼ばないので .NET でもそのまま走る（[<Emit>] の口には触らない）。
+    -->
+    <Compile Include="..\..\src\FsBulletML2.Playground\fable\SourceLanguage.fs" Link="SourceLanguage.fs" />
+    <Compile Include="..\..\src\FsBulletML2.Playground\fable\languages\Xml.fs" Link="languages\Xml.fs" />
+    <Compile Include="XmlContext.fs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\TestData\**\*">
@@ -35,6 +43,8 @@
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
     <PackageReference Include="FsUnit" Version="5.0.1" />
     <PackageReference Include="FParsec" Version="1.1.1" />
+    <!-- 借りている Fable のソースが [<Emit>] を使う。**呼ばないので実体は要らない** -->
+    <PackageReference Include="Fable.Core" Version="4.5.1" />
     <!-- 行と分岐のカバレッジを出すために要る（XPlat Code Coverage の収集器） -->
     <PackageReference Include="coverlet.collector" Version="6.0.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

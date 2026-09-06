@@ -93,16 +93,26 @@ type PlaygroundHost() =
         info.Bulletml.ToIndentedXmlString()
     with ex -> "ERROR:" + ex.Message
 
-  /// 右側の XML を読んで弾幕を差し替える。成功なら空文字。
+  /// 右側の本文を読んで弾幕を差し替える。成功なら空文字。
+  ///
+  /// **どの表記かを受け取る。** v0.3 が読めるのは `"xml"` だけだが、
+  /// 口だけ先に開けておく —— テキストだけ受け取る形にすると、
+  /// 呼ぶ側にも XML が焼き込まれて、次の言語で両方 直すことになる。
+  ///
+  /// sxml / fsb は Parser に既に口が在る（`tryReadSxmlString` /
+  /// `tryReadFsbString`）。載せるのはここに腕を 1 本 足すだけ。
   [<JSInvokable>]
-  member _.ApplySource(xml: string) : string =
+  member _.ApplySource(kind: string, text: string) : string =
     try
-      match tryReadXmlString xml with
-      | None -> "XML を読めなかった"
-      | Some bulletml ->
-          current <- bulletml
-          field <- Playfield.Create env bulletml
-          ""
+      match kind with
+      | "xml" ->
+        match tryReadXmlString text with
+        | None -> "XML を読めなかった"
+        | Some bulletml ->
+            current <- bulletml
+            field <- Playfield.Create env bulletml
+            ""
+      | other -> "未対応: " + other
     with ex -> ex.Message
 
 /// 空の根。描画のあとで host を JS に渡す。

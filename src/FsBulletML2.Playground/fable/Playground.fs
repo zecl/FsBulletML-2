@@ -4,6 +4,7 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Browser
 open Browser.Types
+open FsBulletML2.Playground.SourceLanguage
 
 [<Emit("$0[$1]")>]
 let private jsItem (arr: obj) (i: int) : obj = jsNative
@@ -26,6 +27,9 @@ let private invokeAsync0 (dn: obj) (name: string) : obj = jsNative
 [<Emit("$0.invokeMethodAsync($1, $2)")>]
 let private invokeAsync1 (dn: obj) (name: string) (arg: obj) : obj = jsNative
 
+[<Emit("$0.invokeMethodAsync($1, $2, $3)")>]
+let private invokeAsync2 (dn: obj) (name: string) (a: obj) (b: obj) : obj = jsNative
+
 [<Emit("$0.then($1).catch($2)")>]
 let private thenCatch (p: obj) (ok: obj -> unit) (err: obj -> unit) : unit = jsNative
 
@@ -37,9 +41,6 @@ let private newFileReader () : FileReader = jsNative
 
 [<Emit("globalThis.getDotnetRuntime && globalThis.getDotnetRuntime(0)")>]
 let private runtime () : obj = jsNative
-
-[<Emit("JSON.parse($0)")>]
-let private jsonParse (s: string) : obj = jsNative
 
 let private el (id: string) = document.getElementById id
 
@@ -66,8 +67,13 @@ type Playground() as self =
   let mutable lastN = -1
   let mutable canvas: HTMLCanvasElement = null
   let mutable canvasCtx: CanvasRenderingContext2D = null
-  // host からもらう語彙。文脈で絞るのは段 3 / 段 5（ISourceLanguage）
-  let mutable vocabulary: string list = []
+  // host からもらう語彙。正本は Core の DTD.fs
+  let mutable vocabulary: VocabElement list = []
+  // 登録されている表記。**v0.3 は XML 1 本。**
+  // 次の言語はここに 1 個 足して、host の kind に腕を 1 本 足すだけ
+  let languages: ISourceLanguage list = [ Languages.Xml.XmlLanguage(fun () -> vocabulary) ]
+  // いま欄に載っている表記。UI に切替は出さない
+  let mutable current = List.head languages
 
   member _.attach() =
     let c = el "stage"
@@ -154,10 +160,21 @@ type Playground() as self =
         (fun err -> if jsTypeof err = "string" then setError (string err))
         (fun err -> setError (string err))
 
+  /// 表記を明示して読ませる。**`apply` から XML を名指ししない** ——
+  /// 名指しすると、次の言語を足すとき呼ぶ側も直すことになる
+  member _.call2(name: string, a: obj, b: obj) =
+    if isNull dotNet then setError "まだ起動していない"
+    else
+      thenCatch
+        (invokeAsync2 dotNet name a b)
+        // 戻りは「読めなかった理由」。空なら成功
+        (fun err -> if jsTypeof err = "string" then setError (string err))
+        (fun err -> setError (string err))
+
   member _.apply() =
     let sel = el "pattern"
     if not (isNull sel) then (sel :?> HTMLSelectElement).value <- ""
-    self.call ("ApplySource", Monaco.getValue ())
+    self.call2 ("ApplySource", current.Kind.Id, Monaco.getValue ())
 
   member _.fillPatterns() =
     let sel = el "pattern"
@@ -192,7 +209,7 @@ type Playground() as self =
           if s.StartsWith "ERROR:" then setError (s.Substring 6)
           else
             Monaco.setValue s
-            Monaco.setLanguage "xml"
+            Monaco.setLanguage current.MonacoLanguage
             setError "")
         (fun err -> setError (string err))
 
@@ -214,7 +231,7 @@ type Playground() as self =
       reader.onload <-
         fun _ ->
           Monaco.setValue (string reader.result)
-          Monaco.setLanguage "xml"
+          Monaco.setLanguage current.MonacoLanguage
           let sel = el "pattern"
           if not (isNull sel) then (sel :?> HTMLSelectElement).value <- ""
           self.apply ()
@@ -233,9 +250,11 @@ type Playground() as self =
         Monaco.load vs (fun () ->
           try
             let seed = if isNull dotNet then "" else string (invoke0 dotNet "InitialSource")
-            Monaco.create "source" "xml" seed
+            Monaco.create "source" current.MonacoLanguage seed
             self.loadVocabulary ()
-            Monaco.registerCompletionProvider "xml" (fun () -> vocabulary)
+            // **XML を名指ししない。** 次の言語が来ても、通る道はここ 1 本
+            Monaco.registerCompletionProvider current.MonacoLanguage (fun src offset ->
+              current.Complete src offset)
             self.showInitialInPatterns ()
           with ex -> setError ("エディタ: " + string ex))
     with ex -> setError ("エディタ: " + string ex)
@@ -249,11 +268,8 @@ type Playground() as self =
   member _.loadVocabulary() =
     if isNull dotNet then ()
     else
-      let parsed = jsonParse (string (invoke0 dotNet "Vocabulary"))
-      let len: int = parsed?length
-      let names = [ for i in 0 .. len - 1 -> string ((jsItem parsed i)?name) ]
-      vocabulary <- names
-      if names.IsEmpty then setError "語彙が空（Core の型を読めていない）"
+      vocabulary <- SourceLanguage.parseVocabulary (string (invoke0 dotNet "Vocabulary"))
+      if vocabulary.IsEmpty then setError "語彙が空（Core の型を読めていない）"
 
   /// 走っている弾幕をプルダウンにも出す。**空のままにしない** ——
   /// 空は「XML 編集 / Open」の意味なので、同梱を走らせているのに嘘になる

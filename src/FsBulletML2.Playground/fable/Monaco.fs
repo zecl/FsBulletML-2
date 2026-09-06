@@ -41,6 +41,10 @@ let private setVal (editor: obj) (text: string) : unit = jsNative
 [<Emit("$0.getWordUntilPosition($1)")>]
 let private wordUntil (model: obj) (position: obj) : obj = jsNative
 
+// 行と桁でなく文字数で渡す。**行の数え方を自分で書かない**
+[<Emit("$0.getOffsetAt($1)")>]
+let private offsetAt (model: obj) (position: obj) : int = jsNative
+
 // 引数なしの layout() は「入れ物の実寸を測り直す」。寸法を渡すと逆に固定される
 [<Emit("$0.layout()")>]
 let private layoutToContainer (editor: obj) : unit = jsNative
@@ -104,10 +108,14 @@ let setValue (text: string) = if not (isNull editor) then setVal editor text
 let setLanguage (language: string) = if not (isNull editor) then setModelLanguage editor language
 
 /// 候補を出す口。**候補の中身はここで決めない** —— 呼ぶ側（言語モジュール）が
-/// ラベルの並びを作る。Monaco 側の形（range を持つこと）だけここが知っている。
+/// 本文とカーソルの位置から並びを作る。Monaco 側の形（range を持つこと）だけ
+/// ここが知っている。
 ///
 /// range を省くと版によっては候補が出ないので、必ず「いま打っている語」に当てる。
-let registerCompletionProvider (language: string) (labels: unit -> string list) =
+///
+/// 本文は毎回 `getValue` で取る。**rAF の中ではないので写しても構わない** ——
+/// 呼ばれるのは人がキーを打ったときだけ
+let registerCompletionProvider (language: string) (complete: string -> int -> string list) =
   let provide (model: obj) (position: obj) : obj =
     let w = wordUntil model position
     let range =
@@ -117,7 +125,7 @@ let registerCompletionProvider (language: string) (labels: unit -> string list) 
         "startColumn" ==> w?startColumn
         "endColumn" ==> w?endColumn ]
     let items =
-      labels ()
+      complete (getVal model) (offsetAt model position)
       |> List.map (fun label ->
            createObj [
              "label" ==> label
