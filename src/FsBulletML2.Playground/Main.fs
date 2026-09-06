@@ -1,5 +1,6 @@
 namespace FsBulletML2.Playground
 
+open System.Text.Json
 open System.Threading.Tasks
 open Bolero
 open Bolero.Html
@@ -88,12 +89,15 @@ type PlaygroundHost() =
       if index < 0 || index >= items.Length then "ERROR:範囲外"
       else
         let info = items.[index]
+        // 建ててから差し替える（`ApplySource` と同じ理由。落ちたあとの
+        // `Reset` が `current` から建て直すので、進めてはいけない）
+        let next = Playfield.Create env info.Bulletml
         current <- info.Bulletml
-        field <- Playfield.Create env info.Bulletml
+        field <- next
         info.Bulletml.ToIndentedXmlString()
     with ex -> "ERROR:" + ex.Message
 
-  /// 右側の本文を読んで弾幕を差し替える。成功なら空文字。
+  /// 右側の本文を読んで弾幕を差し替える。
   ///
   /// **どの表記かを受け取る。** v0.3 が読めるのは `"xml"` だけだが、
   /// 口だけ先に開けておく —— テキストだけ受け取る形にすると、
@@ -101,19 +105,50 @@ type PlaygroundHost() =
   ///
   /// sxml / fsb は Parser に既に口が在る（`tryReadSxmlString` /
   /// `tryReadFsbString`）。載せるのはここに腕を 1 本 足すだけ。
+  ///
+  /// **戻りは JSON。空文字を成功の印にしない** ——
+  /// 「読めない理由が空文字」と見分けられない。
+  ///
+  ///     {"ok":true}
+  ///     {"ok":false,"message":"…","marks":[{"line":14,"column":11,"endColumn":15,"message":"…"}]}
+  ///
+  /// `message` は帯に出す代表で、`marks` が波線。**`marks` が空なら
+  /// 位置が無い層**（呼ぶ側は波線を引かない）。`endColumn` が 0 なら行末まで。
+  /// 分け方は `Diagnosis`（`Parser.Tests` が同じ道を通って当てている）。
   [<JSInvokable>]
   member _.ApplySource(kind: string, text: string) : string =
-    try
-      match kind with
-      | "xml" ->
-        match tryReadXmlString text with
-        | None -> "XML を読めなかった"
-        | Some bulletml ->
-            current <- bulletml
-            field <- Playfield.Create env bulletml
-            ""
-      | other -> "未対応: " + other
-    with ex -> ex.Message
+    let jstr (s: string) = JsonSerializer.Serialize s
+    /// 帯に出す代表。**何本 引いたかは帯にしか出ない** ——
+    /// 波線は 1 本 ずつ別のところに在るので、まとめて数えられない
+    let banner (fs: Failure list) =
+      match fs with
+      | [] -> ""
+      | [ f ] -> f.Message
+      | f :: rest -> sprintf "%s（ほか %d 件）" f.Message rest.Length
+    let failed (fs: Failure list) =
+      let marks =
+        fs
+        |> List.filter (fun f -> f.Line > 0)
+        |> List.map (fun f ->
+            sprintf
+              "{\"line\":%d,\"column\":%d,\"endColumn\":%d,\"message\":%s}"
+              f.Line f.Column f.EndColumn (jstr f.Message))
+        |> String.concat ","
+      sprintf "{\"ok\":false,\"message\":%s,\"marks\":[%s]}" (jstr (banner fs)) marks
+    match kind with
+    | "xml" ->
+      // **建ててから差し替える。** 木は読めるが組めない層が在るので、
+      // 先に `current` を書くと、落ちたあとの Reset がその弾幕で作り直して
+      // また落ちる（`Reset` は `current` から建てる）
+      let put bulletml =
+        let next = Playfield.Create env bulletml
+        current <- bulletml
+        field <- next
+      // **組み合わせは `References.explain` 1 本。** 試験も同じそれを通る
+      match References.explain (Diagnosis.apply put text) text with
+      | [] -> "{\"ok\":true}"
+      | fs -> failed fs
+    | other -> failed [ Diagnosis.plain ("未対応: " + other) ]
 
 /// 空の根。描画のあとで host を JS に渡す。
 type MyApp() =

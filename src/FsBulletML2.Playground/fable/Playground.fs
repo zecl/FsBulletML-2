@@ -51,6 +51,10 @@ let private blazorStart () : obj = jsNative
 [<Emit("($0 && $0.message) ? $0.message : String($0)")>]
 let private errText (e: obj) : string = jsNative
 
+// Apply の戻りだけ JSON。**空文字を成功の印にしない**ため
+[<Emit("JSON.parse($0)")>]
+let private jsonParse (s: string) : obj = jsNative
+
 // dialog は素で Esc と背景を持っている。**自前で被せを作らない**
 [<Emit("$0.showModal()")>]
 let private showModal (dialog: obj) : unit = jsNative
@@ -90,6 +94,8 @@ type Playground() as self =
   let languages: ISourceLanguage list = [ Languages.Xml.XmlLanguage(fun () -> vocabulary) ]
   // いま欄に載っている表記。UI に切替は出さない
   let mutable current = List.head languages
+  // 波線を付けたか。**印は文字に追随しない**ので、次の打鍵で消す
+  let mutable markedAt = false
 
   member _.attach() =
     let c = el "stage"
@@ -187,10 +193,41 @@ type Playground() as self =
         (fun err -> if jsTypeof err = "string" then setError (string err))
         (fun err -> setError (errText err))
 
+  /// Apply の戻りだけ JSON。**`call2` を使わない** ——
+  /// あちらは `Play` なども通るので、JSON を前提にすると全部 壊れる
   member _.apply() =
     let sel = el "pattern"
     if not (isNull sel) then (sel :?> HTMLSelectElement).value <- ""
-    self.call2 ("ApplySource", current.Kind.Id, Monaco.getValue ())
+    if isNull dotNet then setError "まだ起動していない"
+    else
+      thenCatch
+        (invokeAsync2 dotNet "ApplySource" current.Kind.Id (Monaco.getValue ()))
+        (fun res ->
+          let r = jsonParse (string res)
+          // **消したら札も下ろす。** 立てっぱなしだと、次の打鍵が
+          // 付いていない印を消しに行く
+          let clear () =
+            markedAt <- false
+            Monaco.clearMarks ()
+          if unbox<bool> r?ok then
+            setError ""
+            clear ()
+          else
+            setError (string r?message)
+            // **`marks` が空なら位置が無い層。** 推定で引かない
+            let marks: obj[] = unbox r?marks
+            if marks.Length = 0 then clear ()
+            else
+              marks
+              |> Array.map (fun m ->
+                  { Monaco.Line = int (unbox<float> m?line)
+                    Monaco.Column = int (unbox<float> m?column)
+                    Monaco.EndColumn = int (unbox<float> m?endColumn)
+                    Monaco.Message = string m?message })
+              |> Array.toList
+              |> Monaco.markAll
+              markedAt <- true)
+        (fun err -> setError (errText err))
 
   member _.fillPatterns() =
     let sel = el "pattern"
@@ -283,6 +320,12 @@ type Playground() as self =
               current.MonacoLanguage
               current.TriggerCharacters
               (fun src offset -> current.Complete src offset)
+            // **印は文字に追随しない。** 1 文字 打った時点で場所が嘘になるので、
+            // そこで消す。付けていないときは何もしない（毎打鍵の空振りを避ける）
+            Monaco.onContentChanged (fun () ->
+              if markedAt then
+                markedAt <- false
+                Monaco.clearMarks ())
             self.showInitialInPatterns ()
           with ex -> setError ("エディタ: " + string ex))
     with ex -> setError ("エディタ: " + string ex)

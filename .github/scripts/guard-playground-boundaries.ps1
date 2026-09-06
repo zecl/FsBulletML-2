@@ -1,11 +1,11 @@
 #requires -Version 7
 <#
 .SYNOPSIS
-  Playground が守ると決めた 4 つ の線を、機械で見る。
+  Playground が守ると決めた線を、機械で見る。
 
 .DESCRIPTION
-  実装計画 v0.3 の「完成条件」のうち、目で確かめると書いてあったものを門にする。
-  **どれも 4 つ とも いまは 0 件** なので、これは網ではなく現状固定 ——
+  実装計画の「完成条件」のうち、目で確かめると書いてあったものを門にする。
+  **どれも いまは守れている**ので、これは網ではなく現状固定 ——
   「いま守れている形を、次の PR で崩さない」ためだけに置く。
   例外は 3 つ目 で、当てる名前は DTD から毎回 引き直すので、
   そちらは要素が増えれば網も広がる。
@@ -27,10 +27,16 @@
   4. `index.html` に起動のロジックが無い
      html に書くと、そこだけ型も検査も掛からない
 
+  5. Playground の csproj で `UseSystemResourceKeys` が `false`
+     読めなかった理由をそのまま人へ見せるので、例外の文面が字である必要が
+     ある。Blazor WASM の SDK は Release でこれを立てるので、放っておくと
+     `Xml_TagMismatchEx` のような鍵が波線に載る。**動きは変わらないので、
+     外れても誰も気づかない**
+
   ## 0 件 を緑にしない
 
-  3 つ目 の当てる名前が 1 つ も引けなければ赤にする。
-  DTD の書き方が変わって拾えなくなった状態は、「違反 0 件」と同じ顔をする。
+  当てる材料が読めなければ赤にする —— 3 つ目 の要素名、Fable のソース、
+  5 つ目 の csproj。拾えなくなった状態は、「違反 0 件」と同じ顔をする。
 #>
 [CmdletBinding()]
 param(
@@ -42,6 +48,7 @@ param(
   [string]$CoreProj,
   [string]$DtdSource,
   [string]$IndexHtml,
+  [string]$PlaygroundProj,
   [switch]$Quiet
 )
 
@@ -55,6 +62,7 @@ if (-not $PlaygroundDir) { $PlaygroundDir = 'src/FsBulletML2.Playground' }
 if (-not $CoreProj) { $CoreProj = "$RepoRoot/src/FsBulletML2.Core/FsBulletML2.Core.fsproj" }
 if (-not $DtdSource) { $DtdSource = "$RepoRoot/src/FsBulletML2.Core/DTD.fs" }
 if (-not $IndexHtml) { $IndexHtml = "$RepoRoot/$PlaygroundDir/wwwroot/index.html" }
+if (-not $PlaygroundProj) { $PlaygroundProj = "$RepoRoot/$PlaygroundDir/FsBulletML2.Playground.fsproj" }
 if (-not $PSBoundParameters.ContainsKey('Files')) {
   $Files = @(git -C $RepoRoot -c core.quotepath=false ls-files)
 }
@@ -124,6 +132,25 @@ if (Test-Path -LiteralPath $IndexHtml) {
     $bad.Add("  html に起動のロジックが $($logic.Count) 件:`n      " + ($logic -join "`n      ") +
              "`n      起こすのは Fable の側。html は読み込むだけ")
   }
+}
+
+# --- 5. 例外の文面 ---------------------------------------------------------
+#
+# **現状固定。** 外すと Release で resource key に戻り、波線に載る文面が
+# 鍵になる。動きは変わらないので、外れても走行では気づけない
+if (-not (Test-Path -LiteralPath $PlaygroundProj)) {
+  throw "Playground の csproj を読めなかった（$PlaygroundProj）。" +
+        "**違反 0 件 と同じ顔をする**ので、ここで落とす"
+}
+$resourceKeys = @(Select-String -LiteralPath $PlaygroundProj `
+                    -Pattern '<UseSystemResourceKeys>([^<]*)</UseSystemResourceKeys>' -AllMatches |
+                  ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value.Trim() })
+if ($resourceKeys.Count -eq 0) {
+  $bad.Add("  UseSystemResourceKeys が csproj に無い:`n      $PlaygroundProj" +
+           "`n      Blazor WASM の SDK が Release で立てるので、書かないと鍵に戻る")
+} elseif ($resourceKeys.Count -ne 1 -or $resourceKeys[0] -ne 'false') {
+  $bad.Add("  UseSystemResourceKeys が false でない: " + ($resourceKeys -join ', ') +
+           "`n      読めなかった理由をそのまま人へ見せる。文面は字で出す")
 }
 
 if (-not $Quiet) {

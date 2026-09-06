@@ -103,6 +103,67 @@ let create (hostId: string) (language: string) (initial: string) =
 /// 大きさを引数で渡さないのは、渡すとそこで固定されて追随しなくなるから。
 let relayout () = if not (isNull editor) then layoutToContainer editor
 
+/// 印の持ち主。**1 つ に固定する** —— 名前が揺れると、前に付けた印を
+/// 自分で消せなくなる。
+/// 要素名と綴りを分ける。Fable 側に要素名を書かない線を、門が見ている
+let private markerOwner = "fsbulletml2"
+
+[<Emit("globalThis.monaco.editor.setModelMarkers($0.getModel(), $1, $2)")>]
+let private setMarkers (editor: obj) (owner: string) (markers: obj[]) : unit = jsNative
+
+[<Emit("$0.getModel().getLineMaxColumn($1)")>]
+let private lineMaxColumn (editor: obj) (line: int) : int = jsNative
+
+[<Emit("$0.getModel().getLineCount()")>]
+let private lineCount (editor: obj) : int = jsNative
+
+[<Emit("$0.getModel().onDidChangeContent($1)")>]
+let private onChange (editor: obj) (cb: unit -> unit) : unit = jsNative
+
+/// 波線 1 本 ぶん。行・桁 は 1 起点。**`endColumn` が 0 なら行末まで。**
+type Mark =
+  { Line: int
+    Column: int
+    EndColumn: int
+    Message: string }
+
+/// 波線を引き直す。**渡した並びで丸ごと置き換える** ——
+/// 足す口にすると、前に付けた印が残って場所が嘘になる。
+///
+/// 終わりが分からない印（`EndColumn = 0`）は行末まで伸ばす。1 文字 だけだと
+/// 細すぎて見つけられないし、桁が指すのは「そこから先が読めない」なので。
+/// 行末が桁と同じ（行の終わり）なら 1 文字 ぶん伸ばす。
+///
+/// 行が本文より下を指していたら最後の行に丸める。**範囲が本文の外へ出ると
+/// Monaco は何も描かない** —— 出ないのを「印が付いていない」と読むことになる
+let markAll (marks: Mark list) =
+  if not (isNull editor) then
+    let items =
+      marks
+      |> List.map (fun mk ->
+          let line = max 1 (min mk.Line (lineCount editor))
+          let maxCol = lineMaxColumn editor line
+          let startCol = max 1 (min mk.Column maxCol)
+          let wanted = if mk.EndColumn > 0 then min mk.EndColumn maxCol else maxCol
+          let endCol = if wanted > startCol then wanted else startCol + 1
+          createObj [
+            "startLineNumber" ==> line
+            "endLineNumber" ==> line
+            "startColumn" ==> startCol
+            "endColumn" ==> endCol
+            "message" ==> mk.Message
+            // 8 = Error。Monaco 側の enum なので数で書く
+            "severity" ==> 8 ])
+      |> List.toArray
+    setMarkers editor markerOwner items
+
+let clearMarks () = if not (isNull editor) then setMarkers editor markerOwner [||]
+
+/// 本文が変わったら呼ぶ。**印は文字に追随しない** ——
+/// 1 文字 打った時点で場所が嘘になるので、そこで消す側が要る
+let onContentChanged (handler: unit -> unit) =
+  if not (isNull editor) then onChange editor handler
+
 let getValue () : string = if isNull editor then "" else getVal editor
 let setValue (text: string) = if not (isNull editor) then setVal editor text
 let setLanguage (language: string) = if not (isNull editor) then setModelLanguage editor language
