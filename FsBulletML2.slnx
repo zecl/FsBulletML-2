@@ -25,6 +25,13 @@
     <Project Path="src/FsBulletML2.Parser/FsBulletML2.Parser.fsproj" />
     <Project Path="src/FsBulletML2.TypeProviders/FsBulletML2.TypeProviders.fsproj" />
     <Project Path="src/FsBulletML2.Unity2D/FsBulletML2.Unity2D.fsproj" />
+
+
+    <Project Path="src/Unity.Entities.Stub/Unity.Entities.Stub.csproj" />
+    <Project Path="src/Unity.Entities.Graphics.Stub/Unity.Entities.Graphics.Stub.csproj" />
+    <Project Path="src/Unity.Mathematics.Stub/Unity.Mathematics.Stub.csproj" />
+    <Project Path="src/Unity.RenderPipelines.Universal.Runtime.Stub/Unity.RenderPipelines.Universal.Runtime.Stub.csproj" />
+    <Project Path="src/Unity.Transforms.Stub/Unity.Transforms.Stub.csproj" />
     <Project Path="src/UnityEngine.Stub/UnityEngine.Stub.csproj" />
   </Folder>
   <Folder Name="/tests/">

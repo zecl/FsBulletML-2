@@ -57,6 +57,17 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-text.Tests.ps1
 
+      # 同梱 dll が、名乗りどおりのアセンブリから型を引いているか。
+      # stub のアセンブリ名がずれると、そのずれが dll に焼き込まれて
+      # Unity でだけ落ちる（-p:UseShippedDlls=true の build は stub を
+      # 参照するので、そちらは最後まで緑になる）
+      - name: 同梱 dll の参照先
+        shell: pwsh
+        run: ./.github/scripts/guard-shipped-refs.ps1
+
+      - name: 同梱 dll の門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-shipped-refs.Tests.ps1
       - name: 変更から選ぶ
         id: pick
         shell: pwsh

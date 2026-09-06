@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Unity.Transforms</AssemblyName>
+    <RootNamespace>Unity.Transforms</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <Description>COMPILE-ONLY stub of Unity.Transforms. NOT a substitute for the Unity Editor.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Unity.Entities.Stub\Unity.Entities.Stub.csproj" />
+    <ProjectReference Include="..\Unity.Mathematics.Stub\Unity.Mathematics.Stub.csproj" />
+  </ItemGroup>
+</Project>

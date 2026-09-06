@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Unity.Entities.Graphics</AssemblyName>
+    <RootNamespace>Unity.Rendering</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <Description>COMPILE-ONLY stub of Entities Graphics. NOT a substitute for the Unity Editor.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Unity.Entities.Stub\Unity.Entities.Stub.csproj" />
+    <ProjectReference Include="..\UnityEngine.Stub\UnityEngine.Stub.csproj" />
+  </ItemGroup>
+</Project>

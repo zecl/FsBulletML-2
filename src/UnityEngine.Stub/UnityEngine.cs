@@ -1,5 +1,31 @@
 using System;
 
+// COMPILE-ONLY stub of UnityEngine and the Unity packages the samples use.
+//
+// **これは Editor の代わりにはならない。** 型と面の形を写しただけで、
+// エンティティは 1 つ も作られないし、何も描かれない。
+// 「Unity を持っていない機械でも sln がビルドできる」ためだけに在る。
+//
+// **本番の門は `-p:UseRealUnity=true` のビルドと、Unity での実行のほう**
+// （samples/FsBulletML2.Sample.Unity2D.FSharp/Assets/Editor/BulletSmokeCheck.cs）。
+// ここが通ることは、動くことを 1 つ も保証しない。
+//
+// 足す面は「サンプルが実際に呼ぶもの」に限る。広げると本物とずれても
+// 気づけなくなる。
+//
+// ## アセンブリ名は本物と 1 対 1 にすること
+//
+// 以前は ECS も URP も、この `AssemblyName=UnityEngine` の中に同居していた。
+// **stub では通るが、Unity では通らない。** 焼いた dll が
+// 「`Unity.Entities.Entity` は UnityEngine に在る」と主張したまま渡り、
+// Unity の `UnityEngine.dll`（型フォワードだけの facade）には無いので
+// CS7069 で落ちる。`Transform` や `Vector3` はフォワードが在るので通り、
+// **ECS と URP を触った所だけが落ちる**ので、気づくのが遅れた。
+//
+// いまは本物と同じ名前で 1 本 ずつ在る（src/Unity.*.Stub）。
+// 同梱 dll がどこから型を引いているかは
+// .github/scripts/guard-shipped-refs.ps1 が見ている。
+
 namespace UnityEngine
 {
     // COMPILE-ONLY stub. Not a substitute for the Unity Editor.
@@ -46,14 +72,17 @@ namespace UnityEngine
 
     public struct Rect
     {
-        public float x, y, width, height;
+        public float x { get; set; }
+        public float y { get; set; }
+        public float width { get; set; }
+        public float height { get; set; }
         public Rect(float x, float y, float width, float height)
         {
             this.x = x; this.y = y; this.width = width; this.height = height;
         }
     }
 
-    public static class Mathf
+    public struct Mathf
     {
         public const float Rad2Deg = 57.29578f;
         public const float Deg2Rad = 0.0174532924f;
@@ -126,8 +155,6 @@ namespace UnityEngine
         public T AddComponent<T>() where T : Component => default;
         public static GameObject Find(string name) => null;
         public static GameObject[] FindGameObjectsWithTag(string tag) => Array.Empty<GameObject>();
-        public static new T FindObjectOfType<T>() where T : Object => default;
-        public static new T FindAnyObjectByType<T>() where T : Object => default;
     }
 
     public class Component : Object
@@ -267,7 +294,9 @@ namespace UnityEngine
 
     public struct Bounds
     {
-        public Vector3 center, extents;
+        // 本物は auto-property。field にすると MissingFieldException
+        public Vector3 center { get; set; }
+        public Vector3 extents { get; set; }
     }
 
     public class Sprite : Object
@@ -335,7 +364,6 @@ namespace UnityEngine
         public void Stop() { }
         public void Stop(bool withChildren) { }
         public void Stop(bool withChildren, ParticleSystemStopBehavior behavior) { }
-        public ParticleSystemRenderer GetRenderer() => new ParticleSystemRenderer();
     }
 
     public class ParticleSystemRenderer : Renderer { }
@@ -407,9 +435,14 @@ namespace UnityEngine.Rendering
     }
 
     /// <summary>いま使われているレンダリングパイプライン。URP へ移ったかを見る</summary>
+    public class RenderPipelineAsset : Object { }
+
     public static class GraphicsSettings
     {
-        public static UnityEngine.Object defaultRenderPipeline { get; set; }
+        /// <summary>本物の戻り型は RenderPipelineAsset。Object にすると
+        /// 呼び手が get_defaultRenderPipeline():Object を吐き、
+        /// 実行時に MissingMethodException になる</summary>
+        public static RenderPipelineAsset defaultRenderPipeline { get; set; }
     }
 }
 
@@ -489,5 +522,27 @@ namespace UnityEngine
         public void Stop() { }
         public void PlayOneShot(AudioClip clip) { }
         public void PlayOneShot(AudioClip clip, float volumeScale) { }
+    }
+}
+
+// **Unity.Collections のこの 2 型 は、本物では UnityEngine.CoreModule に在る。**
+// パッケージ（com.unity.collections）ではない。名乗りを間違えると、焼いた dll が
+// 「Unity.Collections アセンブリに在る」と主張して Unity で解決できなくなる。
+namespace Unity.Collections
+{
+    public enum Allocator
+    {
+        Invalid = 0,
+        None = 1,
+        Temp = 2,
+        TempJob = 3,
+        Persistent = 4,
+    }
+
+    public struct NativeArray<T> : IDisposable
+    {
+        public int Length => 0;
+        public T this[int index] { get => default; set { } }
+        public void Dispose() { }
     }
 }

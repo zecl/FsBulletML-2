@@ -53,6 +53,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\UnityEngine.Stub\UnityEngine.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Unity.Mathematics.Stub\Unity.Mathematics.Stub.csproj" />
+
+
+    <ProjectReference Include="..\..\src\Unity.Entities.Stub\Unity.Entities.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Unity.Transforms.Stub\Unity.Transforms.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Unity.Entities.Graphics.Stub\Unity.Entities.Graphics.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Unity.RenderPipelines.Universal.Runtime.Stub\Unity.RenderPipelines.Universal.Runtime.Stub.csproj" />
   </ItemGroup>
 
   <ItemGroup>

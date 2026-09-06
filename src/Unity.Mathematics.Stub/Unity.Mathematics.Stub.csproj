@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Unity.Mathematics</AssemblyName>
+    <RootNamespace>Unity.Mathematics</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <Description>COMPILE-ONLY stub of Unity.Mathematics. NOT a substitute for the Unity Editor.</Description>
+  </PropertyGroup>
+</Project>
