@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FsBulletML2 Playground</title>
+    <base href="/">
+    <link rel="stylesheet" href="css/playground.css">
+    <script type="importmap"></script>
+  </head>
+  <body>
+    <div class="page">
+      <h1>FsBulletML2 Playground</h1>
+      <div class="row">
+        <canvas id="stage" width="480" height="640"></canvas>
+        <textarea id="source" class="source" spellcheck="false" wrap="off">&lt;bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml"&gt;
+  &lt;action label="top"&gt;
+    &lt;repeat&gt;
+      &lt;times&gt;9999&lt;/times&gt;
+      &lt;action&gt;
+        &lt;fire&gt;
+          &lt;direction type="absolute"&gt;-12&lt;/direction&gt;
+          &lt;speed&gt;3&lt;/speed&gt;
+          &lt;bullet/&gt;
+        &lt;/fire&gt;
+        &lt;fire&gt;
+          &lt;direction type="absolute"&gt;12&lt;/direction&gt;
+          &lt;speed&gt;3&lt;/speed&gt;
+          &lt;bullet/&gt;
+        &lt;/fire&gt;
+        &lt;wait&gt;8&lt;/wait&gt;
+      &lt;/action&gt;
+    &lt;/repeat&gt;
+  &lt;/action&gt;
+&lt;/bulletml&gt;</textarea>
+      </div>
+      <div class="bar">
+        <button type="button" onclick="playground.call('Play')">Play</button>
+        <button type="button" onclick="playground.call('Pause')">Pause</button>
+        <button type="button" onclick="playground.call('Reset')">Reset</button>
+        <button type="button" onclick="playground.apply()">Apply</button>
+        <button type="button" onclick="playground.open()">Open</button>
+        <input id="open-file" type="file" accept=".xml,text/xml,application/xml" hidden>
+        <span>FPS: <span id="fps">0</span></span>
+        <span>Bullets: <span id="bullet-count">0</span></span>
+        <span class="error" id="loop-error">起動待ち</span>
+      </div>
+      <div id="main"></div>
+    </div>
+    <script src="playground.js"></script>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
+    <script>
+      Blazor.start().catch(function (err) {
+        var e = document.getElementById("loop-error");
+        if (e) e.textContent = String(err && err.message ? err.message : err);
+      });
+    </script>
+  </body>
+</html>
