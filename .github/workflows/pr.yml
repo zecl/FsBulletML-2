@@ -67,6 +67,17 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-abs-paths.Tests.ps1
 
+      # ブラウザ側が守ると決めた線。**どれも目で確かめると書いてあったもの** ——
+      # 手書きの .js、Core からの表示側への参照、Fable 側の要素名、
+      # html に書いた起動のロジック
+      - name: Playground の線
+        shell: pwsh
+        run: ./.github/scripts/guard-playground-boundaries.ps1
+
+      - name: Playground の門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-playground-boundaries.Tests.ps1
+
       - name: 変更から選ぶ
         id: pick
         shell: pwsh

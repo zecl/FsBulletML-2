@@ -32,18 +32,6 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>) =
     if pin.IsAllocated then pin.Free()
     pin <- GCHandle.Alloc(xs, GCHandleType.Pinned)
 
-  /// 起動時は XML を読まない（WASM で XmlReader がメインスレッドを止める）。
-  static member Demo =
-    vertical "2way" {
-        top {
-            repeat "9999" {
-                fire { absolute "-12"; speed "3"; plain }
-                fire { absolute "12"; speed "3"; plain }
-                wait "8"
-            }
-        }
-    }
-
   static member Create (front: IFrontEnv) (bulletml: Bulletml) =
     let script = Runner.load front.Rand front.Rank bulletml
     let run = Runner.newRoot BulletType.Enemy script

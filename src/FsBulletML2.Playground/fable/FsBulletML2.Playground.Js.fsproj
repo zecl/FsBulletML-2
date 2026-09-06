@@ -3,7 +3,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
+  <!-- 順は依存の順。Monaco のバインディングを先に、配線を後に -->
   <ItemGroup>
+    <Compile Include="SourceLanguage.fs" />
+    <Compile Include="languages/Xml.fs" />
+    <Compile Include="Monaco.fs" />
     <Compile Include="Playground.fs" />
   </ItemGroup>
   <ItemGroup>

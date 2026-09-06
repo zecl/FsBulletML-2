@@ -4,6 +4,7 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Browser
 open Browser.Types
+open FsBulletML2.Playground.SourceLanguage
 
 [<Emit("$0[$1]")>]
 let private jsItem (arr: obj) (i: int) : obj = jsNative
@@ -26,6 +27,9 @@ let private invokeAsync0 (dn: obj) (name: string) : obj = jsNative
 [<Emit("$0.invokeMethodAsync($1, $2)")>]
 let private invokeAsync1 (dn: obj) (name: string) (arg: obj) : obj = jsNative
 
+[<Emit("$0.invokeMethodAsync($1, $2, $3)")>]
+let private invokeAsync2 (dn: obj) (name: string) (a: obj) (b: obj) : obj = jsNative
+
 [<Emit("$0.then($1).catch($2)")>]
 let private thenCatch (p: obj) (ok: obj -> unit) (err: obj -> unit) : unit = jsNative
 
@@ -37,6 +41,22 @@ let private newFileReader () : FileReader = jsNative
 
 [<Emit("globalThis.getDotnetRuntime && globalThis.getDotnetRuntime(0)")>]
 let private runtime () : obj = jsNative
+
+// html は `autostart="false"` で読み込むだけ。**起こすのはこちら** ——
+// html にロジックを置くと、そこだけ検査も型も掛からない
+[<Emit("globalThis.Blazor.start()")>]
+let private blazorStart () : obj = jsNative
+
+// Error は string にすると [object Object] になる
+[<Emit("($0 && $0.message) ? $0.message : String($0)")>]
+let private errText (e: obj) : string = jsNative
+
+// dialog は素で Esc と背景を持っている。**自前で被せを作らない**
+[<Emit("$0.showModal()")>]
+let private showModal (dialog: obj) : unit = jsNative
+
+[<Emit("$0.close()")>]
+let private closeDialog (dialog: obj) : unit = jsNative
 
 let private el (id: string) = document.getElementById id
 
@@ -63,6 +83,13 @@ type Playground() as self =
   let mutable lastN = -1
   let mutable canvas: HTMLCanvasElement = null
   let mutable canvasCtx: CanvasRenderingContext2D = null
+  // host からもらう語彙。正本は Core の DTD.fs
+  let mutable vocabulary: Vocab = { Elements = []; Expressions = [] }
+  // 登録されている表記。**v0.3 は XML 1 本。**
+  // 次の言語はここに 1 個 足して、host の kind に腕を 1 本 足すだけ
+  let languages: ISourceLanguage list = [ Languages.Xml.XmlLanguage(fun () -> vocabulary) ]
+  // いま欄に載っている表記。UI に切替は出さない
+  let mutable current = List.head languages
 
   member _.attach() =
     let c = el "stage"
@@ -147,14 +174,23 @@ type Playground() as self =
       thenCatch
         p
         (fun err -> if jsTypeof err = "string" then setError (string err))
-        (fun err -> setError (string err))
+        (fun err -> setError (errText err))
+
+  /// 表記を明示して読ませる。**`apply` から XML を名指ししない** ——
+  /// 名指しすると、次の言語を足すとき呼ぶ側も直すことになる
+  member _.call2(name: string, a: obj, b: obj) =
+    if isNull dotNet then setError "まだ起動していない"
+    else
+      thenCatch
+        (invokeAsync2 dotNet name a b)
+        // 戻りは「読めなかった理由」。空なら成功
+        (fun err -> if jsTypeof err = "string" then setError (string err))
+        (fun err -> setError (errText err))
 
   member _.apply() =
     let sel = el "pattern"
     if not (isNull sel) then (sel :?> HTMLSelectElement).value <- ""
-    let source = el "source"
-    let text = if isNull source then "" else (source :?> HTMLTextAreaElement).value
-    self.call ("ApplySource", text)
+    self.call2 ("ApplySource", current.Kind.Id, Monaco.getValue ())
 
   member _.fillPatterns() =
     let sel = el "pattern"
@@ -188,10 +224,24 @@ type Playground() as self =
           let s = string xml
           if s.StartsWith "ERROR:" then setError (s.Substring 6)
           else
-            let source = el "source"
-            if not (isNull source) then (source :?> HTMLTextAreaElement).value <- s
+            Monaco.setValue s
+            Monaco.setLanguage current.MonacoLanguage
             setError "")
-        (fun err -> setError (string err))
+        (fun err -> setError (errText err))
+
+  /// 補完の使い方。**中身は html に在る字だけ**で、ここは開け閉めだけ。
+  /// ループは止めない —— 開いている間も弾幕は動く
+  member _.help() =
+    let d = el "help-dialog"
+    if not (isNull d) then showModal d
+
+  member _.closeHelp() =
+    let d = el "help-dialog"
+    if not (isNull d) then closeDialog d
+
+  /// 入れ物の大きさを変えた側から呼ぶ。**モーダルに入れて開いた直後** ——
+  /// 0x0 で建った版が、そこで実寸を測り直す
+  member _.relayout() = Monaco.relayout ()
 
   member _.``open``() =
     let input = el "open-file"
@@ -206,14 +256,58 @@ type Playground() as self =
       let reader = newFileReader ()
       reader.onload <-
         fun _ ->
-          let text = string reader.result
-          let source = el "source"
-          if not (isNull source) then (source :?> HTMLTextAreaElement).value <- text
+          Monaco.setValue (string reader.result)
+          Monaco.setLanguage current.MonacoLanguage
           let sel = el "pattern"
           if not (isNull sel) then (sel :?> HTMLSelectElement).value <- ""
           self.apply ()
       reader.onerror <- fun _ -> setError "ファイルを読めなかった"
       reader.readAsText (file :?> Blob) |> ignore
+
+  /// Monaco を読んで `#source` に建てる。**ここが落ちてもループは回す。**
+  ///
+  /// 初期の本文は host が焼く（`InitialSource`）。**html に XML を置かない** ——
+  /// 置くと、走る弾幕を替えたとき欄の字だけが古びる。
+  member _.startEditor() =
+    try
+      match Monaco.vsBaseFromPage () with
+      | None -> setError "Monaco のローダの script src が見つからない"
+      | Some vs ->
+        Monaco.load vs (fun () ->
+          try
+            let seed = if isNull dotNet then "" else string (invoke0 dotNet "InitialSource")
+            Monaco.create "source" current.MonacoLanguage seed
+            self.loadVocabulary ()
+            // **XML を名指ししない。** 次の言語が来ても、通る道はここ 1 本
+            Monaco.registerCompletionProvider
+              current.MonacoLanguage
+              current.TriggerCharacters
+              (fun src offset -> current.Complete src offset)
+            self.showInitialInPatterns ()
+          with ex -> setError ("エディタ: " + string ex))
+    with ex -> setError ("エディタ: " + string ex)
+
+  /// 語彙を host から **1 回 だけ** もらう。正本は `Core/DTD.fs`。
+  ///
+  /// **毎キー WASM に行かない。** 引くのはこちら側で、行き来はここ 1 回。
+  /// 空で返ってきたら黙って進まない —— reflection が効いていない印
+  /// （`PublishTrimmed` を true にした、など）で、そのまま進むと
+  /// 「候補が出ないエディタ」が正常に見える
+  member _.loadVocabulary() =
+    if isNull dotNet then ()
+    else
+      vocabulary <- SourceLanguage.parseVocabulary (string (invoke0 dotNet "Vocabulary"))
+      if vocabulary.Elements.IsEmpty then setError "語彙が空（Core の型を読めていない）"
+
+  /// 走っている弾幕をプルダウンにも出す。**空のままにしない** ——
+  /// 空は「XML 編集 / Open」の意味なので、同梱を走らせているのに嘘になる
+  member _.showInitialInPatterns() =
+    let sel = el "pattern"
+    if isNull sel || isNull dotNet then ()
+    else
+      let i = int (unbox<float> (invoke0 dotNet "InitialIndex"))
+      if i >= 0 then (sel :?> HTMLSelectElement).value <- string i
+      else setError "起動時の弾幕が一覧に無い"
 
   member _.onReady(dn: obj) =
     dotNet <- dn
@@ -244,6 +338,11 @@ type Playground() as self =
             setError (string ex)
       window.requestAnimationFrame loop |> ignore
 
+    // **エディタは rAF を予約したあと。** ローダは CDN 越しなので、
+    // 先に呼ぶと最初の 1 コマ がその往復ぶん遅れる。
+    // 読めなくても Canvas は 2way のまま動かす —— 理由だけ出す
+    self.startEditor ()
+
 let playground = Playground()
 window?playground <- playground
 playground.attach ()
@@ -258,3 +357,8 @@ if not (isNull openInput) then
       let file = if isNull files then null else jsItem files 0
       playground.loadFile file
   )
+
+// **いちばん最後。** 上の配線が済んでから WASM を起こす ——
+// `onReady` はここから返ってくるので、先に起こすと受け口が無い。
+// 失敗は `#loop-error` に出す。黙って白い画面にしない
+thenCatch (blazorStart ()) ignore (fun err -> setError (errText err))

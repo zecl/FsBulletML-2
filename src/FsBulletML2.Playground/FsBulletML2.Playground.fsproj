@@ -9,6 +9,8 @@
     <Compile Include="Stage.fs" />
     <Compile Include="BrowserEnv.fs" />
     <Compile Include="Playfield.fs" />
+    <!-- Core の型しか使わない。**Dsl.Tests が Link で借りて突き合わせる** -->
+    <Compile Include="Vocabulary.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
