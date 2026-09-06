@@ -15,17 +15,20 @@ type ObjectData () =
   /// そのままだと `g_bullet_s0` から数千 個 の GameObject が起動時にできる
   /// —— **1 つ も使われない**（弾は Entity になった）。
   ///
-  /// **爆風（Bomb）は入れない。** あれはまだ GameObject のままで、
-  /// `Bomb.GenerateBomb` がプールから取る。いちど 入れてしまい、
-  /// 敵に弾が当たった瞬間に落ちた（プールが空で `Array.find` が失敗）。
-  /// 同梱の C# サンプルは Bomb も除いているが、あちらは `Bomb` 自体を
-  /// ParticleSystem 1 個 の `Emit` に書き換えてプールを使っていない。
-  /// **判定だけ写すと、対になる書き換えが抜ける。**
+  /// **爆風（Bomb）も入れない。** ここに残っていると、起動時に cacheSize ぶん
+  /// `bomb0` `bomb1` ... の GameObject ができて、**1 つ も使われない** ——
+  /// `Bomb` は ParticleSystem 1 個 の `Emit` に書き換えたので、
+  /// プールから取らなくなった。
+  ///
+  /// **対になる書き換えとセットでしか外せない。** 前に判定だけ写して、
+  /// 敵に弾が当たった瞬間に落ちたことがある（プールが空なのに取りに行った）。
+  /// C# サンプルは書き換えのほうが先に済んでいたので、あちらでは
+  /// この 3 つ とも除かれている。
   member this.IsBulletPrefab () =
     if isNull (box this.prefab) then true
     else
       let tag = this.prefab.tag
-      tag = "EnemyBullet" || tag = "PlayerBullet"
+      tag = "EnemyBullet" || tag = "PlayerBullet" || tag = "Bomb"
 
   member this.Initialize () =
     if this.IsBulletPrefab () then

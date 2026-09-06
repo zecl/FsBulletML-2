@@ -4,23 +4,32 @@ open UnityEngine
 
 /// 爆発の見た目。
 ///
-/// **GameObject を毎回 作らない。** 旧はここで `InstanceManager.InstantiatePrefab`
-/// を呼んでいて、敵と自機が落ちるたびに GameObject が 1 個 ずつ場に残っていた
-/// （プールの tag が合わないので毎回 `Instantiate` に落ちる）。
-/// **C# のサンプルはすでにこの形**で、あちらでは起きていなかった。
+/// **GameObject を作らない。** 旧はここで `InstanceManager.InstantiatePrefab`
+/// を呼んでプールから取っていた。そのプールは起動時に `cacheSize` ぶんの
+/// `bomb0` `bomb1` ... を作るので、**1 発 も撃たないうちから場に並ぶ。**
+/// `Bomb` をこの形にして初めて、プールから外せる
+/// （`ObjectData.IsBulletPrefab` の但し書き）。
+/// **C# のサンプルは書き換えが先に済んでいた**ので、あちらでは起きていない。
 ///
 /// いま起こすのは `ParticleSystem` 1 個 だけ。あとはそこから粒子を出す。
 ///
-/// **音は鳴らさない。** このサンプルには音を出す仕組みがそもそも無い
-/// （C# 側は `AudioManager.PlaySE` を持っているので、あちらは鳴る）。
+/// **音は prefab の AudioSource で鳴らす。** このサンプルには
+/// `AudioManager` が無いので、C# 側のように別口では鳴らせない。
+/// 入れ物は 1 個 しか無いから、連打すると前の音が切れる ——
+/// C# と同じ間隔（0.12 秒）で間引く。
 [<AbstractClass; Sealed>]
 type Bomb private () =
 
   /// 1 回 の爆発で出す粒の数
   static let emitCount = 12
 
+  /// 音を鳴らす間隔。これより短い連打は鳴らさない
+  static let seCooldown = 0.12f
+
   /// 起こした入れ物。**シーンをまたいで 1 個。**
   static let mutable ps : ParticleSystem = null
+  static let mutable sound : AudioSource = null
+  static let mutable lastSe = -999.0f
 
   /// prefab から 1 個 だけ起こす。2 回目 以降は何もしない
   static member private Ensure (bombType: GameObject) =
@@ -29,13 +38,14 @@ type Bomb private () =
       go.name <- "BombVfxPool"
       Object.DontDestroyOnLoad go
 
-      // prefab に付いている「1 発 ぶんの見せ方」は切る。
-      // ここは撃たれるたびに Emit する入れ物で、自分では並べ替えないし鳴らない
+      // 並べ替えは切る。ここは撃たれるたびに Emit する入れ物で、
+      // 自分では並べ替えない
       let sorting = go.GetComponent<ParticleSortingLayer>()
       if not (isNull (box sorting)) then sorting.enabled <- false
-      let sound = go.GetComponent<AudioSource>()
+
+      // **音は残す。** ただし起きた瞬間に鳴らないよう playOnAwake は切る
+      sound <- go.GetComponent<AudioSource>()
       if not (isNull (box sound)) then
-        sound.enabled <- false
         sound.playOnAwake <- false
 
       ps <- go.GetComponent<ParticleSystem>()
@@ -56,3 +66,6 @@ type Bomb private () =
       emit.position <- position
       emit.applyShapeToPosition <- true
       ps.Emit(emit, emitCount)
+      if not (isNull (box sound)) && Time.unscaledTime - lastSe >= seCooldown then
+        lastSe <- Time.unscaledTime
+        sound.Play()
