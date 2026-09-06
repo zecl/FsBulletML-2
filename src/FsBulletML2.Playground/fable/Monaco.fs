@@ -41,6 +41,10 @@ let private setVal (editor: obj) (text: string) : unit = jsNative
 [<Emit("$0.getWordUntilPosition($1)")>]
 let private wordUntil (model: obj) (position: obj) : obj = jsNative
 
+// 引数なしの layout() は「入れ物の実寸を測り直す」。寸法を渡すと逆に固定される
+[<Emit("$0.layout()")>]
+let private layoutToContainer (editor: obj) : unit = jsNative
+
 let mutable private editor: obj = null
 
 /// 版は `index.html` の `<script src>` 1 か所 だけに在る。**そこから読む** ——
@@ -76,11 +80,24 @@ let create (hostId: string) (language: string) (initial: string) =
         "value" ==> initial
         "language" ==> language
         "theme" ==> "vs-dark"
+        // 入れ物の大きさへの追随は Monaco 自身に任せる。
+        // **自前の ResizeObserver に替えかけたが戻した** —— 背面タブでは
+        // どちらも発火しない（layout / paint の流れが回らない）ので、
+        // 「自前のほうが確かめやすい」は成り立たなかった。
+        // 動く実績のある側を残し、測れないものを増やさない
         "automaticLayout" ==> true
         "minimap" ==> createObj [ "enabled" ==> false ]
         "scrollBeyondLastLine" ==> false
         "fontSize" ==> 12
         "tabSize" ==> 2 ])
+
+/// 入れ物の実寸に合わせ直す。
+///
+/// **`automaticLayout` は入れ物の大きさが変わったときに動く。**
+/// 幅も高さも 0 のところ（`display: none` のモーダルなど）で `create` すると、
+/// 見えるようになるまで 0 のままのことがある。開いた側が 1 回 これを呼べば直る。
+/// 大きさを引数で渡さないのは、渡すとそこで固定されて追随しなくなるから。
+let relayout () = if not (isNull editor) then layoutToContainer editor
 
 let getValue () : string = if isNull editor then "" else getVal editor
 let setValue (text: string) = if not (isNull editor) then setVal editor text

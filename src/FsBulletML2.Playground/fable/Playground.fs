@@ -191,6 +191,10 @@ type Playground() as self =
             setError "")
         (fun err -> setError (string err))
 
+  /// 入れ物の大きさを変えた側から呼ぶ。**モーダルに入れて開いた直後** ——
+  /// 0x0 で建った版が、そこで実寸を測り直す
+  member _.relayout() = Monaco.relayout ()
+
   member _.``open``() =
     let input = el "open-file"
     if isNull input then ()

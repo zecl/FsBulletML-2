@@ -1,14 +1,22 @@
 html, body {
   margin: 0;
+  height: 100%;
   background: #0b0b10;
   color: #e8e8ee;
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
+/* **高さを px で持たない。** 窓の空きぶんを縦に配って、余りをエディタに渡す。
+   モーダルの中へ入れても同じ —— 親が高さを持っていれば下まで伝わる。
+   dvh はモバイルのアドレスバーで縦が変わる分を吸う */
 .page {
-  max-width: 960px;
+  height: 100dvh;
   margin: 0 auto;
   padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 h1 {
@@ -20,13 +28,30 @@ h1 {
 .row {
   display: flex;
   gap: 16px;
-  align-items: flex-start;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
+/* **内部解像度は 480x640 のまま**（弾の座標がその面の上に在る）。
+   伸ばすのは CSS だけ。`attach()` が `cv.width / r.width` で換算するので、
+   拡大しても自機の位置はずれない */
 #stage {
   background: #101018;
   border: 1px solid #333;
   display: block;
+  /* 縦が足りなければ縮む。**足りていても 480x640 を超えて太らせない** ——
+     太らせるとエディタの取り分をそのぶん食う。
+     **align-self が要る** —— 親の stretch は高さを埋めてしまい、
+     max-width だけが効いて縦に伸びた面になる（自機の丸が楕円になる）。
+     比は canvas の width / height 属性が持っているので書かない */
+  align-self: flex-start;
+  max-height: 100%;
+  max-width: 480px;
+  height: auto;
+  width: auto;
+  flex: none;
+  min-width: 0;
 }
 
 .editor {
@@ -35,7 +60,7 @@ h1 {
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  height: 640px;
+  min-height: 0;
 }
 
 /* Monaco の入れ物。**中身は Monaco が全部 持つ**ので、こちらは枠と大きさだけ。
