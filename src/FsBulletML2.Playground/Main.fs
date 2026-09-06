@@ -54,6 +54,12 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.InitialSource() : string = current.ToIndentedXmlString()
 
+  /// 補完の語彙。**起動時に 1 回 だけ。** 正本は Core の DTD.fs で、
+  /// ここは reflection で読んだものを JSON にして渡すだけ。
+  /// 毎キー呼ばない —— 引くのは Fable 側でやる
+  [<JSInvokable>]
+  member _.Vocabulary() : string = Vocabulary.toJson ()
+
   /// 起動時の弾幕が一覧の何番目か。**無ければ -1。**
   ///
   /// 中身の `Bulletml` で引く —— `BulletmlInfo` は struct なので、

@@ -14,6 +14,14 @@
     <Compile Include="OtherParse.fs" />
     <Compile Include="Snippet.fs" />
     <Compile Include="ReadEntryPoints.fs" />
+    <!--
+      Playground のソースを借りて compile し直す。**参照はしない** ——
+      あちらは Blazor WASM のアプリで、こちらから引くものではない。
+      借りている中身は Core の型しか使わないので、依存は増えない。
+      同じ形の前例: bench/FsBulletML2.Benchmarks が Core.Tests の Fake.fs を借りている。
+    -->
+    <Compile Include="..\..\src\FsBulletML2.Playground\Vocabulary.fs" Link="Vocabulary.fs" />
+    <Compile Include="VocabularyCoverage.fs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\TestData\**\*">

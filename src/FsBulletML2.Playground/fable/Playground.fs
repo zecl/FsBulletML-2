@@ -38,6 +38,9 @@ let private newFileReader () : FileReader = jsNative
 [<Emit("globalThis.getDotnetRuntime && globalThis.getDotnetRuntime(0)")>]
 let private runtime () : obj = jsNative
 
+[<Emit("JSON.parse($0)")>]
+let private jsonParse (s: string) : obj = jsNative
+
 let private el (id: string) = document.getElementById id
 
 let private setError (msg: string) =
@@ -63,6 +66,8 @@ type Playground() as self =
   let mutable lastN = -1
   let mutable canvas: HTMLCanvasElement = null
   let mutable canvasCtx: CanvasRenderingContext2D = null
+  // host からもらう語彙。文脈で絞るのは段 3 / 段 5（ISourceLanguage）
+  let mutable vocabulary: string list = []
 
   member _.attach() =
     let c = el "stage"
@@ -229,11 +234,26 @@ type Playground() as self =
           try
             let seed = if isNull dotNet then "" else string (invoke0 dotNet "InitialSource")
             Monaco.create "source" "xml" seed
-            // spike: 語彙は段 1 で host から取る。ここはまだ当たりを見るだけ
-            Monaco.registerCompletionProvider "xml" (fun () -> [ "spike" ])
+            self.loadVocabulary ()
+            Monaco.registerCompletionProvider "xml" (fun () -> vocabulary)
             self.showInitialInPatterns ()
           with ex -> setError ("エディタ: " + string ex))
     with ex -> setError ("エディタ: " + string ex)
+
+  /// 語彙を host から **1 回 だけ** もらう。正本は `Core/DTD.fs`。
+  ///
+  /// **毎キー WASM に行かない。** 引くのはこちら側で、行き来はここ 1 回。
+  /// 空で返ってきたら黙って進まない —— reflection が効いていない印
+  /// （`PublishTrimmed` を true にした、など）で、そのまま進むと
+  /// 「候補が出ないエディタ」が正常に見える
+  member _.loadVocabulary() =
+    if isNull dotNet then ()
+    else
+      let parsed = jsonParse (string (invoke0 dotNet "Vocabulary"))
+      let len: int = parsed?length
+      let names = [ for i in 0 .. len - 1 -> string ((jsItem parsed i)?name) ]
+      vocabulary <- names
+      if names.IsEmpty then setError "語彙が空（Core の型を読めていない）"
 
   /// 走っている弾幕をプルダウンにも出す。**空のままにしない** ——
   /// 空は「XML 編集 / Open」の意味なので、同梱を走らせているのに嘘になる
