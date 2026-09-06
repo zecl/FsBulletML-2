@@ -67,17 +67,6 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-abs-paths.Tests.ps1
 
-      # 同梱 dll が、名乗りどおりのアセンブリから型を引いているか。
-      # stub のアセンブリ名がずれると、そのずれが dll に焼き込まれて
-      # Unity でだけ落ちる（-p:UseShippedDlls=true の build は stub を
-      # 参照するので、そちらは最後まで緑になる）
-      - name: 同梱 dll の参照先
-        shell: pwsh
-        run: ./.github/scripts/guard-shipped-refs.ps1
-
-      - name: 同梱 dll の門の校正
-        shell: pwsh
-        run: ./.github/scripts/guard-shipped-refs.Tests.ps1
       - name: 変更から選ぶ
         id: pick
         shell: pwsh
@@ -160,7 +149,11 @@ jobs:
     name: 同梱 dll
     runs-on: windows-latest
     steps:
+      # **浅く取らない。** 下の校正が、stub を割る前の dll を過去の commit から
+      # 取り出して当てる —— 既定の深さ 1 だとその blob が無くて落ちる
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
@@ -171,6 +164,23 @@ jobs:
           restore-keys: nuget-${{ runner.os }}-
 
       - run: dotnet build samples/FsBulletML2.Sample.Unity2D.CSharp.Compile -c Release -p:UseShippedDlls=true
+
+      # 同梱 dll が、名乗りどおりのアセンブリから型を引いているか。
+      # stub のアセンブリ名がずれると、そのずれが dll に焼き込まれて
+      # Unity でだけ落ちる（上の build は stub を参照するので、そちらは
+      # 最後まで緑になる）。
+      #
+      # **この job に置く理由が 2 つ ある。** 上の build が 7 本 の stub を
+      # 焼くので、突き合わせる表の材料がここにしか無い。もう 1 つ は門が
+      # 出力を `\bin\Release\` で絞っていて、区切りが `/` の機械では
+      # 1 本 も拾えないこと。**選ぶ job（ubuntu）へ戻すとどちらも消える。**
+      - name: 同梱 dll の参照先
+        shell: pwsh
+        run: ./.github/scripts/guard-shipped-refs.ps1
+
+      - name: 同梱 dll の門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-shipped-refs.Tests.ps1
 
   # 枝分かれした job をまとめて 1 つ の必須チェックにする。
   # **skipped を成功として数えない** —— 選ばれなかったのか、落ちて飛ばされたのかは
