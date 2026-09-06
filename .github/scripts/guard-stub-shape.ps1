@@ -48,17 +48,13 @@ if (-not (Test-Path $verFile)) {
   Write-Host "測っていない: $verFile が無い"
   exit 1
 }
-$ver = ((Get-Content $verFile -TotalCount 1) -replace '^m_EditorVersion:\s*', '').Trim()
-$editor = "C:\Program Files\Unity\Hub\Editor\$ver\Editor\Data\Managed"
 $sa = Join-Path $proj 'Library\ScriptAssemblies'
 
-foreach ($need in @($editor, $sa)) {
-  if (-not (Test-Path $need)) {
-    Write-Host "測っていない: $need が無い"
-    Write-Host '  Unity をインストールし、一度 このプロジェクトを開くこと'
-    Write-Host '  （ECS はソースで配られるので、Unity が建てるまで dll が無い）'
-    exit 1
-  }
+if (-not (Test-Path $sa)) {
+  Write-Host "測っていない: $sa が無い"
+  Write-Host '  Unity で一度 このプロジェクトを開くこと'
+  Write-Host '  （ECS はソースで配られるので、Unity が建てるまで dll が無い）'
+  exit 1
 }
 
 # stub の dll が要る。建っていなければ建てる
@@ -73,8 +69,19 @@ if (-not $anyStub) {
 }
 
 $tool = Join-Path $RepoRoot 'tools\StubShapeCheck\StubShapeCheck.csproj'
-dotnet run --project $tool -c Release -- $RepoRoot
+$out = & dotnet run --project $tool -c Release -- $RepoRoot 2>&1
 $shape = $LASTEXITCODE
+$out | ForEach-Object { Write-Host $_ }
+
+# **Unity の置き場を探すのは道具の側 1 か所 だけ。** ここで同じ順番を書くと、
+# 片方だけ直したときに黙ってずれる。使った先を道具に言わせて受け取る
+$m = $out | Select-String -Pattern '^Unity Managed: (.+)$' | Select-Object -First 1
+if (-not $m) {
+  Write-Host ''
+  Write-Host '測っていない: Unity の Managed が見つからなかった（上を見ること）'
+  exit 1
+}
+$editor = $m.Matches[0].Groups[1].Value.Trim()
 
 # --- 名前の衝突 ---------------------------------------------------------
 #

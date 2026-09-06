@@ -44,6 +44,12 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-text.ps1
 
+      # 機械に貼り付いた絶対パスは、書いた人の手元では完全に緑になる。
+      # repo を別の場所に置いた人、道具を別のドライブに入れた人でだけ落ちる
+      - name: その機械にしか無い絶対パスが入っていないか
+        shell: pwsh
+        run: ./.github/scripts/guard-abs-paths.ps1
+
       # 判断する側そのものの校正。**これが赤いときは、下の緑を信じてはいけない**
       - name: 選ぶ道具の校正
         shell: pwsh
@@ -56,6 +62,10 @@ jobs:
       - name: 制御文字の門の校正
         shell: pwsh
         run: ./.github/scripts/guard-text.Tests.ps1
+
+      - name: 絶対パスの門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-abs-paths.Tests.ps1
 
       # 同梱 dll が、名乗りどおりのアセンブリから型を引いているか。
       # stub のアセンブリ名がずれると、そのずれが dll に焼き込まれて
