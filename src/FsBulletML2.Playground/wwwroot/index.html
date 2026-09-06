@@ -42,12 +42,11 @@
     -->
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.56.0/min/vs/loader.js"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
-    <script type="module">
-      import "./js/Playground.js";
-      Blazor.start().catch(function (err) {
-        var e = document.getElementById("loop-error");
-        if (e) e.textContent = String(err && err.message ? err.message : err);
-      });
-    </script>
+    <!--
+      **ここにロジックを書かない。** 読み込むだけ。
+      WASM を起こすのは Playground.js（Fable）の末尾 ——
+      html に書くと、そこだけ型も検査も掛からない
+    -->
+    <script type="module">import "./js/Playground.js";</script>
   </body>
 </html>

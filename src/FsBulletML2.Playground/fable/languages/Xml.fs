@@ -130,9 +130,13 @@ type XmlLanguage(vocabulary: unit -> Vocab) =
     let plain = Completion.plain nameLen
     match contextAt source offset with
     | InContent None ->
-      // 根の外。置けるのは bulletml だけ
-      (vocabulary ()).Elements
-      |> List.filter (fun e -> e.Name = "bulletml")
+      // 根の外。置けるのは根の要素だけ。
+      // **名前を書かない** —— 根は「誰の子にもなっていない要素」で引ける。
+      // 書くと、この段だけが BulletML を知っていることになる
+      let elements = (vocabulary ()).Elements
+      let children = elements |> List.collect (fun e -> e.Children) |> Set.ofList
+      elements
+      |> List.filter (fun e -> not (children.Contains e.Name))
       |> List.map (fun e -> plain e.Name)
     | InContent (Some parent) ->
       match find parent with

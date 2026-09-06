@@ -42,6 +42,15 @@ let private newFileReader () : FileReader = jsNative
 [<Emit("globalThis.getDotnetRuntime && globalThis.getDotnetRuntime(0)")>]
 let private runtime () : obj = jsNative
 
+// html は `autostart="false"` で読み込むだけ。**起こすのはこちら** ——
+// html にロジックを置くと、そこだけ検査も型も掛からない
+[<Emit("globalThis.Blazor.start()")>]
+let private blazorStart () : obj = jsNative
+
+// Error は string にすると [object Object] になる
+[<Emit("($0 && $0.message) ? $0.message : String($0)")>]
+let private errText (e: obj) : string = jsNative
+
 let private el (id: string) = document.getElementById id
 
 let private setError (msg: string) =
@@ -158,7 +167,7 @@ type Playground() as self =
       thenCatch
         p
         (fun err -> if jsTypeof err = "string" then setError (string err))
-        (fun err -> setError (string err))
+        (fun err -> setError (errText err))
 
   /// 表記を明示して読ませる。**`apply` から XML を名指ししない** ——
   /// 名指しすると、次の言語を足すとき呼ぶ側も直すことになる
@@ -169,7 +178,7 @@ type Playground() as self =
         (invokeAsync2 dotNet name a b)
         // 戻りは「読めなかった理由」。空なら成功
         (fun err -> if jsTypeof err = "string" then setError (string err))
-        (fun err -> setError (string err))
+        (fun err -> setError (errText err))
 
   member _.apply() =
     let sel = el "pattern"
@@ -211,7 +220,7 @@ type Playground() as self =
             Monaco.setValue s
             Monaco.setLanguage current.MonacoLanguage
             setError "")
-        (fun err -> setError (string err))
+        (fun err -> setError (errText err))
 
   /// 入れ物の大きさを変えた側から呼ぶ。**モーダルに入れて開いた直後** ——
   /// 0x0 で建った版が、そこで実寸を測り直す
@@ -331,3 +340,8 @@ if not (isNull openInput) then
       let file = if isNull files then null else jsItem files 0
       playground.loadFile file
   )
+
+// **いちばん最後。** 上の配線が済んでから WASM を起こす ——
+// `onReady` はここから返ってくるので、先に起こすと受け口が無い。
+// 失敗は `#loop-error` に出す。黙って白い画面にしない
+thenCatch (blazorStart ()) ignore (fun err -> setError (errText err))
