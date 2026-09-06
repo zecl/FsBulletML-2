@@ -17,26 +17,31 @@
         <select id="pattern" onchange="playground.pick()">
           <option value="">（XML 編集 / Open）</option>
         </select>
-        <textarea id="source" class="source" spellcheck="false" wrap="off">&lt;bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml"&gt;
-  &lt;action label="top"&gt;
-    &lt;repeat&gt;
-      &lt;times&gt;9999&lt;/times&gt;
-      &lt;action&gt;
-        &lt;fire&gt;
-          &lt;direction type="absolute"&gt;-12&lt;/direction&gt;
-          &lt;speed&gt;3&lt;/speed&gt;
-          &lt;bullet/&gt;
-        &lt;/fire&gt;
-        &lt;fire&gt;
-          &lt;direction type="absolute"&gt;12&lt;/direction&gt;
-          &lt;speed&gt;3&lt;/speed&gt;
-          &lt;bullet/&gt;
-        &lt;/fire&gt;
-        &lt;wait&gt;8&lt;/wait&gt;
-      &lt;/action&gt;
-    &lt;/repeat&gt;
-  &lt;/action&gt;
-&lt;/bulletml&gt;</textarea>
+        <div id="source" class="source"></div>
+        <!--
+          起動時の本文。**script なので中身は生の XML のまま置ける**
+          （HTML として解析されない）。Monaco の初期値はここから読む
+        -->
+        <script type="text/plain" id="source-initial"><bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
+  <action label="top">
+    <repeat>
+      <times>9999</times>
+      <action>
+        <fire>
+          <direction type="absolute">-12</direction>
+          <speed>3</speed>
+          <bullet/>
+        </fire>
+        <fire>
+          <direction type="absolute">12</direction>
+          <speed>3</speed>
+          <bullet/>
+        </fire>
+        <wait>8</wait>
+      </action>
+    </repeat>
+  </action>
+</bulletml></script>
         </div>
       </div>
       <div class="bar">
@@ -52,6 +57,12 @@
       </div>
       <div id="main"></div>
     </div>
+    <!--
+      Monaco は CDN。**版はこの 1 行 だけに在る** —— `Monaco.fs` はこの src から
+      vsBase を読むので、上げるときここだけ直す。repo に本体を置かないのは、
+      guard-text が見る追跡ファイルに binary を足さないため
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.56.0/min/vs/loader.js"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
     <script type="module">
       import "./js/Playground.js";

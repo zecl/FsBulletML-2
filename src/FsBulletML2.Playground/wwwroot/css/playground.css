@@ -38,20 +38,16 @@ h1 {
   height: 640px;
 }
 
+/* Monaco の入れ物。**中身は Monaco が全部 持つ**ので、こちらは枠と大きさだけ。
+   padding を残すと桁と行番号がずれる。overflow は Monaco 自身がやる */
 .source {
   margin: 0;
-  padding: 12px;
   background: #16161e;
-  color: #e8e8ee;
   border: 1px solid #333;
-  font-family: ui-monospace, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.4;
-  overflow: auto;
+  overflow: hidden;
   flex: 1;
   min-height: 0;
   width: 100%;
-  resize: vertical;
   box-sizing: border-box;
 }
 

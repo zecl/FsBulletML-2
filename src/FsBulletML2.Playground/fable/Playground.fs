@@ -152,9 +152,7 @@ type Playground() as self =
   member _.apply() =
     let sel = el "pattern"
     if not (isNull sel) then (sel :?> HTMLSelectElement).value <- ""
-    let source = el "source"
-    let text = if isNull source then "" else (source :?> HTMLTextAreaElement).value
-    self.call ("ApplySource", text)
+    self.call ("ApplySource", Monaco.getValue ())
 
   member _.fillPatterns() =
     let sel = el "pattern"
@@ -188,8 +186,8 @@ type Playground() as self =
           let s = string xml
           if s.StartsWith "ERROR:" then setError (s.Substring 6)
           else
-            let source = el "source"
-            if not (isNull source) then (source :?> HTMLTextAreaElement).value <- s
+            Monaco.setValue s
+            Monaco.setLanguage "xml"
             setError "")
         (fun err -> setError (string err))
 
@@ -206,14 +204,29 @@ type Playground() as self =
       let reader = newFileReader ()
       reader.onload <-
         fun _ ->
-          let text = string reader.result
-          let source = el "source"
-          if not (isNull source) then (source :?> HTMLTextAreaElement).value <- text
+          Monaco.setValue (string reader.result)
+          Monaco.setLanguage "xml"
           let sel = el "pattern"
           if not (isNull sel) then (sel :?> HTMLSelectElement).value <- ""
           self.apply ()
       reader.onerror <- fun _ -> setError "ファイルを読めなかった"
       reader.readAsText (file :?> Blob) |> ignore
+
+  /// Monaco を読んで `#source` に建てる。**ここが落ちてもループは回す。**
+  /// 初期の本文は `#source-initial`（html に 1 か所）。
+  member _.startEditor() =
+    try
+      match Monaco.vsBaseFromPage () with
+      | None -> setError "Monaco のローダの script src が見つからない"
+      | Some vs ->
+        Monaco.load vs (fun () ->
+          try
+            let seed = el "source-initial"
+            Monaco.create "source" "xml" (if isNull seed then "" else seed.textContent)
+            // spike: 語彙は段 1 で host から取る。ここはまだ当たりを見るだけ
+            Monaco.registerCompletionProvider "xml" (fun () -> [ "spike" ])
+          with ex -> setError ("エディタ: " + string ex))
+    with ex -> setError ("エディタ: " + string ex)
 
   member _.onReady(dn: obj) =
     dotNet <- dn
@@ -243,6 +256,11 @@ type Playground() as self =
             console.error ex
             setError (string ex)
       window.requestAnimationFrame loop |> ignore
+
+    // **エディタは rAF を予約したあと。** ローダは CDN 越しなので、
+    // 先に呼ぶと最初の 1 コマ がその往復ぶん遅れる。
+    // 読めなくても Canvas は 2way のまま動かす —— 理由だけ出す
+    self.startEditor ()
 
 let playground = Playground()
 window?playground <- playground
