@@ -86,8 +86,14 @@ writer.WriteStartElement("vanish")
   Make 'pg/fable/Playground.fs' 'let el (id: string) = document.getElementById id' | Out-Null
   $pgProj = Make 'pg/Playground.fsproj' `
     '<Project><PropertyGroup><UseSystemResourceKeys>false</UseSystemResourceKeys></PropertyGroup></Project>'
+  # LanguageService の側。**線の内側** —— 表示側を参照せず、Monaco も叩かない。
+  # 要素名（`vanish` など）はここに在ってよい：あちらへ移す散文の表は
+  # 要素名で引くので、当てる先から外してある
+  Make 'svc/FsBulletML2.LanguageService.fsproj' '<Project><ItemGroup /></Project>' | Out-Null
+  Make 'svc/SourceKind.fs' 'let ids = [ "xml"; "sxml" ]' | Out-Null
 
   $ok = @{ RepoRoot = $tmp; PlaygroundDir = 'pg'; CoreProj = $proj; DtdSource = $dtd; IndexHtml = $html
+           ServiceDir = (Join-Path $tmp 'svc')
            PlaygroundProj = $pgProj; Files = @('pg/fable/Playground.fs') }
 
   Write-Host '=== 通る側'
@@ -98,7 +104,25 @@ writer.WriteStartElement("vanish")
   Check '追跡された .js が在る' (With $ok @{ Files = @('pg/wwwroot/js/glue.js') }) $false '追跡された .js'
 
   $badProj = Make 'core/Bad.fsproj' '<Project><ItemGroup><PackageReference Include="Bolero" /></ItemGroup></Project>'
-  Check 'Core が Bolero を参照している' (With $ok @{ CoreProj = $badProj }) $false 'Core が表示側を参照している'
+  Check 'Core が Bolero を参照している' (With $ok @{ CoreProj = $badProj }) `
+    $false 'Bad.fsproj が表示側を参照している'
+
+  # **LanguageService も同じ線の内側。** 器がエディタを参照した瞬間に、
+  # そのエディタ以外 へ載せられなくなる
+  Make 'svc-bad/FsBulletML2.LanguageService.fsproj' `
+    '<Project><ItemGroup><PackageReference Include="Bolero" /></ItemGroup></Project>' | Out-Null
+  Make 'svc-bad/SourceKind.fs' 'let ids = [ "xml" ]' | Out-Null
+  Check 'LanguageService が Bolero を参照している' `
+    (With $ok @{ ServiceDir = (Join-Path $tmp 'svc-bad') }) `
+    $false 'FsBulletML2.LanguageService.fsproj が表示側を参照している'
+
+  # **コメントの中の但し書きは数えない。** 数えると「Bolero を参照しない」と
+  # proj に書けなくなる（実際に踏んだ）
+  Make 'svc-note/FsBulletML2.LanguageService.fsproj' `
+    '<Project><!-- Monaco も Bolero も Blazor も参照しない --><ItemGroup /></Project>' | Out-Null
+  Make 'svc-note/SourceKind.fs' 'let ids = [ "xml" ]' | Out-Null
+  Check 'proj のコメントで Bolero に触れているだけ' `
+    (With $ok @{ ServiceDir = (Join-Path $tmp 'svc-note') }) $true ''
 
   # **要素名は DTD から引く。** ここでは vanish を Fable 側に書いてみる
   $badFable = Join-Path $tmp 'bad/fable'
@@ -128,6 +152,14 @@ writer.WriteStartElement("vanish")
   Check 'doc コメントで Monaco に触れているだけ' `
     (With $ok @{ PlaygroundDir = 'monaco2'; IndexHtml = (Join-Path $tmp 'monaco2/wwwroot/index.html'); Files = @() }) `
     $true ''
+
+  # **LanguageService も走査の中に居る。** あちらのソースは Fable が
+  # ProjectReference を辿って焼くので、ブラウザ側でも走る = 叩けてしまう位置
+  Make 'svc-monaco/FsBulletML2.LanguageService.fsproj' '<Project><ItemGroup /></Project>' | Out-Null
+  Make 'svc-monaco/Hover.fs' 'let ed = globalThis.monaco.editor.getEditors()' | Out-Null
+  Check 'LanguageService から Monaco を叩いている' `
+    (With $ok @{ ServiceDir = (Join-Path $tmp 'svc-monaco') }) `
+    $false 'Monaco.fs の外から Monaco を叩いている'
 
   # `src` 付きにして、**インラインの点でなく起動のロジックの点で赤くする**
   $badHtml = Make 'pg/wwwroot/bad.html' `
@@ -192,6 +224,14 @@ writer.WriteStartElement("vanish")
     $false '当てる要素名を 1 つ も引けなかった'
   Check 'Fable のソースが 0 本' (With $ok @{ PlaygroundDir = 'nowhere' }) `
     $false 'Fable のソースを 1 本 も読めなかった'
+  Check 'LanguageService のソースが 0 本' (With $ok @{ ServiceDir = (Join-Path $tmp 'nowhere') }) `
+    $false 'LanguageService のソースを 1 本 も読めなかった'
+  # **`obj/` の下しか無いのも 0 本。** 数えると、本数が手元（build 済み）と
+  # CI（clean）で変わり、生成物だけで「1 本 も無い」が満たされなくなる
+  Make 'svc-obj/FsBulletML2.LanguageService.fsproj' '<Project><ItemGroup /></Project>' | Out-Null
+  Make 'svc-obj/obj/Debug/net10.0/AssemblyInfo.fs' 'namespace Generated' | Out-Null
+  Check 'obj の下の生成物しか無い' (With $ok @{ ServiceDir = (Join-Path $tmp 'svc-obj') }) `
+    $false 'LanguageService のソースを 1 本 も読めなかった'
   Check 'csproj が読めない' (With $ok @{ PlaygroundProj = (Join-Path $tmp 'pg/Nope.fsproj') }) `
     $false 'Playground の csproj を読めなかった'
   Check 'html が読めない' (With $ok @{ IndexHtml = (Join-Path $tmp 'pg/wwwroot/nope.html') }) `

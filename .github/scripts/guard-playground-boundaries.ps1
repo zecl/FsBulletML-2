@@ -16,19 +16,27 @@
      ブラウザ側は Fable で書く。glue を手で書き始めると、そこだけ型も
      検査も掛からなくなる（v0.2 で一度 捨てている）
 
-  2. Core が Bolero / Monaco / Blazor を参照していない
+  2. Core と LanguageService が Bolero / Monaco / Blazor を参照していない
      Core は表示を知らない。参照が付くと、Unity も MonoGame も
-     ブラウザの物を引きずる
+     ブラウザの物を引きずる。**LanguageService も同じ側** ——
+     エディタの中身を置く器で、どのエディタに載るかを知らない
 
   3. Fable 側に BulletML の要素名が書かれていない
      語彙は host が `Core/DTD.fs` から焼いて渡す。**当てる名前は
      `WriteStartElement(...)` から引く** —— 門の中に表を持たない
 
+     **LanguageService には当てない。** あちらへ移す `Spec.fs` は
+     要素名で引く散文の表で、名前が在るのが正しい
+
   4. Monaco を叩くのは `fable/Monaco.fs` 1 本 だけ
-     v0.7 の Language Service が Monaco を直に叩き始めると、**Monaco 以外 の
+     Language Service が Monaco を直に叩き始めると、**Monaco 以外 の
      エディタへ載せられなくなる。** build でも試験でも出ず、載せ替えようと
      した版で初めて分かる。当てるのは `globalThis.monaco`（叩いているか）で、
      `Monaco` という語（言及しているか）ではない
+
+     **走査するのは Fable のソースと LanguageService のソース。**
+     `obj/` と `bin/` の下は外す —— SDK が置く `AssemblyInfo.fs` を数えると、
+     本数が手元と CI で変わり、**Monaco.fs を消しても「0 本 ではない」が通る**
 
   5. `index.html` に起動のロジックが無い
      html に書くと、そこだけ型も検査も掛からない
@@ -65,6 +73,7 @@ param(
   # 以下は較正で差し替えるためだけに開けてある
   [string]$PlaygroundDir,
   [string]$CoreProj,
+  [string]$ServiceDir,
   [string]$DtdSource,
   [string]$IndexHtml,
   [string]$PlaygroundProj,
@@ -79,6 +88,7 @@ $RepoRoot = ($RepoRoot -replace '\\', '/').TrimEnd('/')
 
 if (-not $PlaygroundDir) { $PlaygroundDir = 'src/FsBulletML2.Playground' }
 if (-not $CoreProj) { $CoreProj = "$RepoRoot/src/FsBulletML2.Core/FsBulletML2.Core.fsproj" }
+if (-not $ServiceDir) { $ServiceDir = "$RepoRoot/src/FsBulletML2.LanguageService" }
 if (-not $DtdSource) { $DtdSource = "$RepoRoot/src/FsBulletML2.Core/DTD.fs" }
 if (-not $IndexHtml) { $IndexHtml = "$RepoRoot/$PlaygroundDir/wwwroot/index.html" }
 if (-not $PlaygroundProj) { $PlaygroundProj = "$RepoRoot/$PlaygroundDir/FsBulletML2.Playground.fsproj" }
@@ -96,12 +106,31 @@ if ($js.Count -gt 0) {
            "`n      ブラウザ側は Fable で書く。焼いた js は .gitignore の下に置く")
 }
 
-# --- 2. Core の参照 --------------------------------------------------------
-if (Test-Path -LiteralPath $CoreProj) {
-  $refs = @(Select-String -LiteralPath $CoreProj -Pattern 'Bolero|Monaco|Blazor' |
-            ForEach-Object { "{0} 行  {1}" -f $_.LineNumber, $_.Line.Trim() })
+# --- 2. 表示を知らない側の参照 ---------------------------------------------
+#
+# **Core と LanguageService。** どちらも「どのエディタ / どの画面に載るか」を
+# 知らない側で、参照が付いた瞬間に載せ替えられなくなる。
+#
+# LanguageService の proj は `$ServiceDir` から引く —— 較正が
+# ディレクトリごと差し替えるので、ここで名前を組む
+#
+# **コメントを外してから当てる。** proj に「Bolero を参照しない」と
+# 書いた但し書きが、そのまま違反として出る（実際に踏んだ）。
+# 外すのは中身だけで改行は残す —— 残さないと行番号がずれる
+$serviceProjs = @()
+if (Test-Path -LiteralPath $ServiceDir) {
+  $serviceProjs = @(Get-ChildItem -LiteralPath $ServiceDir -Filter '*.fsproj' -File |
+                    ForEach-Object { $_.FullName })
+}
+foreach ($proj in (@($CoreProj) + $serviceProjs)) {
+  if (-not (Test-Path -LiteralPath $proj)) { continue }
+  $text = [regex]::Replace((Get-Content -LiteralPath $proj -Raw), '<!--[\s\S]*?-->',
+                           { param($m) $m.Value -replace '[^\r\n]', '' })
+  $refs = @($text -split "`n" | ForEach-Object -Begin { $ln = 0 } -Process {
+              $ln++
+              if ($_ -match 'Bolero|Monaco|Blazor') { "{0} 行  {1}" -f $ln, $_.Trim() } })
   if ($refs.Count -gt 0) {
-    $bad.Add("  Core が表示側を参照している:`n      " + ($refs -join "`n      "))
+    $bad.Add("  $(Split-Path $proj -Leaf) が表示側を参照している:`n      " + ($refs -join "`n      "))
   }
 }
 
@@ -122,11 +151,18 @@ if ($names.Count -eq 0) {
 # 文字列の足し算で組む。**`"$prefix`fable"` と書くと `` `f `` が改ページになり**、
 # ディレクトリが見つからず「走査 0 本 で違反 0 件」になる（実際にやった）
 $fableDir = Join-Path $RepoRoot ($prefix + 'fable')
-$fableFiles = @()
-if (Test-Path -LiteralPath $fableDir) {
-  $fableFiles = @(Get-ChildItem -LiteralPath $fableDir -Recurse -Filter '*.fs' -File |
-                  ForEach-Object { $_.FullName })
+
+# **`obj/` と `bin/` を外す。** SDK が置く `AssemblyInfo.fs` が混ざると、
+# 本数が手元（build 済み）と CI（clean）で変わり、下の「1 本 も無い」が
+# 生成物だけで満たされる
+function Sources([string]$dir) {
+  if (-not (Test-Path -LiteralPath $dir)) { return @() }
+  @(Get-ChildItem -LiteralPath $dir -Recurse -Filter '*.fs' -File |
+    Where-Object { ($_.FullName -replace '\\', '/') -notmatch '/(obj|bin)/' } |
+    ForEach-Object { $_.FullName })
 }
+
+$fableFiles = @(Sources $fableDir)
 if ($fableFiles.Count -eq 0) {
   throw "Fable のソースを 1 本 も読めなかった（$fableDir）。" +
         "**違反 0 件 と同じ顔をする**ので、ここで落とす"
@@ -147,17 +183,26 @@ if ($hardcoded.Count -gt 0) {
 #
 # **Monaco を知るのは `fable/Monaco.fs` 1 本 だけ。**
 #
-# v0.7 で「他の DSL でも使える Language Service」を建てる計画が在る。
-# 中身が Monaco を直に叩き始めると、**Monaco 以外 のエディタへ載せられなくなる** ——
-# しかもそれは build でも試験でも出ず、載せ替えようとした版で初めて分かる。
+# Language Service が Monaco を直に叩き始めると、**Monaco 以外 のエディタへ
+# 載せられなくなる** —— しかもそれは build でも試験でも出ず、載せ替えようと
+# した版で初めて分かる。
+#
+# **走査するのは Fable のソースと LanguageService のソース。** あちらは
+# ブラウザ側でも走る（Fable が ProjectReference を辿って焼く）ので、
+# 叩けてしまう位置に居る。
 #
 # 見るのは `globalThis.monaco`（`[<Emit>]` の中の字）。`Monaco` という語そのものは
-# doc コメントにも `MonacoLanguage`（language id を持つ抽象の名前）にも出るので
+# doc コメントにも `Monaco.setLanguage`（バインディングを呼ぶ側）にも出るので
 # 当てない。**当てる先は「叩いているか」であって「言及しているか」ではない。**
+$serviceFiles = @(Sources $ServiceDir)
+if ($serviceFiles.Count -eq 0) {
+  throw "LanguageService のソースを 1 本 も読めなかった（$ServiceDir）。" +
+        "**違反 0 件 と同じ顔をする**ので、ここで落とす"
+}
 $monacoOwner = Join-Path $fableDir 'Monaco.fs'
-$others = @($fableFiles | Where-Object { $_ -ne $monacoOwner })
+$others = @(($fableFiles + $serviceFiles) | Where-Object { $_ -ne $monacoOwner })
 if ($others.Count -eq 0) {
-  throw "Monaco.fs 以外 の Fable のソースが 1 本 も無い（$fableDir）。" +
+  throw "Monaco.fs 以外 のブラウザ側のソースが 1 本 も無い（$fableDir / $ServiceDir）。" +
         "**違反 0 件 と同じ顔をする**ので、ここで落とす"
 }
 $callers = @(Select-String -LiteralPath $others -Pattern 'globalThis\.monaco' -CaseSensitive |
@@ -260,8 +305,8 @@ if ($resourceKeys.Count -eq 0) {
 }
 
 if (-not $Quiet) {
-  Write-Host ("走査 {0} 件 / 当てる要素名 {1} 個 / Fable のファイル {2} 本" -f
-              $Files.Count, $names.Count, $fableFiles.Count)
+  Write-Host ("走査 {0} 件 / 当てる要素名 {1} 個 / Fable {2} 本 / LanguageService {3} 本" -f
+              $Files.Count, $names.Count, $fableFiles.Count, $serviceFiles.Count)
 }
 
 if ($bad.Count -gt 0) {
