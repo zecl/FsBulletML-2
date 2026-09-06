@@ -15,6 +15,8 @@
     <Compile Include="BaseBullet.fs" />
     <Compile Include="EnemyBullet.fs" />
     <Compile Include="PlayerBullet.fs" />
+    <!-- Bomb が GetComponent で引くので、その前に置く -->
+    <Compile Include="ParticleSortingLayer.fs" />
     <Compile Include="Bomb.fs" />
     <!-- ECS。BulletEcs が型（BulletSim / EcsWorld）、Factory が生成、
          Driver が毎コマ回す。Enemy / Player より前に置く（あちらが使う） -->
@@ -28,7 +30,6 @@
     <Compile Include="BulletEcsDriver.fs" />
     <Compile Include="Informations.fs" />
     <Compile Include="BgScroll.fs" />
-    <Compile Include="ParticleSortingLayer.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
