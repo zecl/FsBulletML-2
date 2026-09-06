@@ -1,4 +1,4 @@
-module FsBulletML2.Sample.Browser.Js.Playground
+module FsBulletML2.Playground.Js
 
 open Fable.Core
 open Fable.Core.JsInterop

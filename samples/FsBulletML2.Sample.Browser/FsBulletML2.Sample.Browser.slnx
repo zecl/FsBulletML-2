@@ -1,4 +1,0 @@
-<Solution>
-  <Project Path="FsBulletML2.Sample.Browser.fsproj" />
-  <Project Path="fable/Playground.fsproj" />
-</Solution>

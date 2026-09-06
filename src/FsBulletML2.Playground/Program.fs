@@ -1,4 +1,4 @@
-namespace FsBulletML2.Sample.Browser
+namespace FsBulletML2.Playground
 
 open Microsoft.AspNetCore.Components.WebAssembly.Hosting
 

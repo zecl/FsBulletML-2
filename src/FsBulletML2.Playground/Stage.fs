@@ -1,4 +1,4 @@
-namespace FsBulletML2.Sample.Browser
+namespace FsBulletML2.Playground
 
 /// Canvas の大きさ。MonoGame の `Settings.Display` と同じ 480×640。
 module Stage =

@@ -1,11 +1,11 @@
 // **このファイルは生成物。手で直すと次の焼き直しで消える。**
 //
-// 人が書くのは samples/FsBulletML2.Bullets.Dsl（CE）のほう。ここは
+// 人が書くのは src/FsBulletML2.Bullets.Dsl（CE）のほう。ここは
 // その値を DU で直に組んだ形へ写したもので、突き合わせ門の相手として置いてある。
 //
 // 焼き直し:
-//     dotnet build samples/FsBulletML2.Bullets.Dsl -c Release
-//     dotnet fsi samples/FsBulletML2.Bullets.Dsl/gen.fsx
+//     dotnet build src/FsBulletML2.Bullets.Dsl -c Release
+//     dotnet fsi src/FsBulletML2.Bullets.Dsl/gen.fsx
 
 namespace FsBulletML2.Bullets.EnemyBullet.Sdmkun
 open FsBulletML2

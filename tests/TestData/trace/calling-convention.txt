@@ -1,9 +1,5 @@
 step が返すのは差分。呼ぶ側が座標に足す。
-係数と Y の符号はフロントごとに違う（MonoGame / Browser は 1 倍、Unity2D は 1/100 で Y を反転）。
-
-samples/FsBulletML2.Sample.Browser/Playfield.fs
-    it.X <- it.X + f.Delta.X
-    it.Y <- it.Y + f.Delta.Y
+係数と Y の符号はフロントごとに違う（MonoGame / Playground は 1 倍、Unity2D は 1/100 で Y を反転）。
 
 samples/FsBulletML2.Sample.MonoGame.CSharp/Enemy.cs
     base.RunTask((x, y) => { this.self.X = this.self.X + x; this.self.Y = this.self.Y + y; });
@@ -29,6 +25,10 @@ src/FsBulletML2.Front/Driver.fs
 src/FsBulletML2.MonoGame/BaseBullet.fs
     let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
     apply f.Delta.X f.Delta.Y
+
+src/FsBulletML2.Playground/Playfield.fs
+    it.X <- it.X + f.Delta.X
+    it.Y <- it.Y + f.Delta.Y
 
 src/FsBulletML2.Unity2D/DefaultBullet.fs
     me.X <- me.X + (x / Settings.Display.PixcelsToUnits)

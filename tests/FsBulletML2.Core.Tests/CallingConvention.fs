@@ -8,7 +8,7 @@ open NUnit.Framework
 ///
 /// 返るのは **差分**（そのフレームの移動量）で、呼ぶ側が座標に足す。
 /// 3 で見つけたとおり、絶対値を返す枝に届くと座標が膨らむ。膨らむ量は
-/// 呼ぶ側の係数しだいで、同梱では MonoGame / Browser が 1 倍、Unity2D が 1/100。
+/// 呼ぶ側の係数しだいで、同梱では MonoGame / Playground が 1 倍、Unity2D が 1/100。
 ///
 /// **フロントは Core.Tests から呼べない**（MonoGame と UnityEngine が要る）。
 /// なのでソースを読む門にする。壊れ方は 3 通りあって、どれもここに出る。
@@ -146,7 +146,7 @@ type CallingConvention() =
 
     let lines =
       [ yield "step が返すのは差分。呼ぶ側が座標に足す。"
-        yield "係数と Y の符号はフロントごとに違う（MonoGame / Browser は 1 倍、Unity2D は 1/100 で Y を反転）。"
+        yield "係数と Y の符号はフロントごとに違う（MonoGame / Playground は 1 倍、Unity2D は 1/100 で Y を反転）。"
         yield ""
         for (file, _, hit) in core |> List.sortBy (fun (n, _, _) -> n) do
           yield file
