@@ -11,15 +11,11 @@
 ///
 /// `Complete` が返すのは文字列の並び。**`{ Label; InsertText; Detail }` にしない** ——
 /// v0.3 で使うのは Label だけで、残り 2 つ は誰も読まない。要る言語が来たら広げる。
-module FsBulletML2.Playground.SourceLanguage
-
-open Fable.Core
-open Fable.Core.JsInterop
-
-// **`SourceKind` はここに無い。** host（`Main.fs`）が同じ字を受けるので
-// `FsBulletML2.LanguageService` に出してある —— 前は同じ並びが 2 か所 に
-// 書いてあり、片方 だけ変えても build も試験も落ちなかった
-open FsBulletML2.LanguageService
+///
+/// **JSON を読むところはここに無い。** `[<Emit>]` を使うので Fable でしか
+/// 走らず、器に置くと片方 の runtime で当てられなくなる。読む側は
+/// `Playground/fable/VocabularyJson.fs`。**形の正本はこちら。**
+module FsBulletML2.LanguageService.SourceLanguage
 
 /// 語彙の写し。**正本は Core の DTD.fs**（host が JSON にして渡す）。
 /// ここは受け取った形をそのまま持つだけで、表を書かない
@@ -89,54 +85,3 @@ type ISourceLanguage =
   /// 何の上でもなければ `None`（**空の字を返さない** ——
   /// 空でも枠が浮くので、出ていないことと見分けがつかなくなる）
   abstract Hover: source: string -> offset: int -> string option
-
-[<Emit("JSON.parse($0)")>]
-let private jsonParse (s: string) : obj = jsNative
-
-[<Emit("$0[$1]")>]
-let private item (arr: obj) (i: int) : obj = jsNative
-
-/// 無い鍵は `undefined` で返る。**`string` に通すと "undefined" という
-/// 字になる**ので、空に倒す
-let private text (o: obj) : string =
-  if isNull o then "" else string o
-
-let private strings (arr: obj) : string list =
-  if isNull arr then []
-  else
-    let len: int = arr?length
-    [ for i in 0 .. len - 1 -> string (item arr i) ]
-
-/// host の `Vocabulary()` が返す JSON を読む。
-/// **形が食い違ったら候補が出なくなるだけ**なので、呼ぶ側が空を赤にする
-let parseVocabulary (json: string) : Vocab =
-  let root = jsonParse json
-  if isNull root then { Elements = []; Expressions = [] }
-  else
-    let els = root?elements
-    let len: int = if isNull els then 0 else els?length
-    { Expressions = strings root?expressions
-      Elements =
-        [ for i in 0 .. len - 1 ->
-            let e = item els i
-            let attrs = e?attrs
-            let alen: int = if isNull attrs then 0 else attrs?length
-            { Name = string e?name
-              Children = strings e?children
-              Text = unbox<bool> e?text
-              Dtd = text e?dtd
-              Spec = text e?spec
-              Attrs =
-                [ for j in 0 .. alen - 1 ->
-                    let a = item attrs j
-                    let vs = a?valueSpecs
-                    let vlen: int = if isNull vs then 0 else vs?length
-                    { Name = string a?name
-                      Values = strings a?values
-                      Defaults = strings a?defaults
-                      Dtd = text a?dtd
-                      Spec = text a?spec
-                      ValueSpecs =
-                        [ for k in 0 .. vlen - 1 ->
-                            let p = item vs k
-                            text p?value, text p?spec ] } ] } ] }

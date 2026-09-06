@@ -16,17 +16,21 @@
      ブラウザ側は Fable で書く。glue を手で書き始めると、そこだけ型も
      検査も掛からなくなる（v0.2 で一度 捨てている）
 
-  2. Core と LanguageService が Bolero / Monaco / Blazor を参照していない
+  2. Core と 器 2 つ が Bolero / Monaco / Blazor を参照していない
      Core は表示を知らない。参照が付くと、Unity も MonoGame も
-     ブラウザの物を引きずる。**LanguageService も同じ側** ——
+     ブラウザの物を引きずる。**器も同じ側** ——
      エディタの中身を置く器で、どのエディタに載るかを知らない
 
-  3. Fable 側に BulletML の要素名が書かれていない
+  3. ブラウザ側に BulletML の要素名が書かれていない
      語彙は host が `Core/DTD.fs` から焼いて渡す。**当てる名前は
      `WriteStartElement(...)` から引く** —— 門の中に表を持たない
 
-     **LanguageService には当てない。** あちらへ移す `Spec.fs` は
-     要素名で引く散文の表で、名前が在るのが正しい
+     当てる先は Fable のソースと `$ServiceDir`。**v0.8 で `languages/Xml.fs` が
+     `$fableDir` から器へ移った** —— 走査先を伸ばさないと、移した先で要素名を
+     書いても赤くならない（守る対象が消えたのに緑を出し続ける形）。
+
+     **`$HostDir` には当てない。** あちらの `Spec.fs` は要素名で引く散文の表で、
+     名前が在るのが正しい
 
   4. Monaco を叩くのは `fable/Monaco.fs` 1 本 だけ
      Language Service が Monaco を直に叩き始めると、**Monaco 以外 の
@@ -34,7 +38,7 @@
      した版で初めて分かる。当てるのは `globalThis.monaco`（叩いているか）で、
      `Monaco` という語（言及しているか）ではない
 
-     **走査するのは Fable のソースと LanguageService のソース。**
+     **走査するのは Fable と 器 2 つ のソース。**
      `obj/` と `bin/` の下は外す —— SDK が置く `AssemblyInfo.fs` を数えると、
      本数が手元と CI で変わり、**Monaco.fs を消しても「0 本 ではない」が通る**
 
@@ -73,7 +77,10 @@ param(
   # 以下は較正で差し替えるためだけに開けてある
   [string]$PlaygroundDir,
   [string]$CoreProj,
+  # 器の 2 つ。**当てる線が違う** —— 下の 3 つ目（要素名）は
+  # `$ServiceDir` にだけ当てる
   [string]$ServiceDir,
+  [string]$HostDir,
   [string]$DtdSource,
   [string]$IndexHtml,
   [string]$PlaygroundProj,
@@ -89,6 +96,7 @@ $RepoRoot = ($RepoRoot -replace '\\', '/').TrimEnd('/')
 if (-not $PlaygroundDir) { $PlaygroundDir = 'src/FsBulletML2.Playground' }
 if (-not $CoreProj) { $CoreProj = "$RepoRoot/src/FsBulletML2.Core/FsBulletML2.Core.fsproj" }
 if (-not $ServiceDir) { $ServiceDir = "$RepoRoot/src/FsBulletML2.LanguageService" }
+if (-not $HostDir) { $HostDir = "$RepoRoot/src/FsBulletML2.LanguageService.Host" }
 if (-not $DtdSource) { $DtdSource = "$RepoRoot/src/FsBulletML2.Core/DTD.fs" }
 if (-not $IndexHtml) { $IndexHtml = "$RepoRoot/$PlaygroundDir/wwwroot/index.html" }
 if (-not $PlaygroundProj) { $PlaygroundProj = "$RepoRoot/$PlaygroundDir/FsBulletML2.Playground.fsproj" }
@@ -118,9 +126,11 @@ if ($js.Count -gt 0) {
 # 書いた但し書きが、そのまま違反として出る（実際に踏んだ）。
 # 外すのは中身だけで改行は残す —— 残さないと行番号がずれる
 $serviceProjs = @()
-if (Test-Path -LiteralPath $ServiceDir) {
-  $serviceProjs = @(Get-ChildItem -LiteralPath $ServiceDir -Filter '*.fsproj' -File |
-                    ForEach-Object { $_.FullName })
+foreach ($d in @($ServiceDir, $HostDir)) {
+  if (Test-Path -LiteralPath $d) {
+    $serviceProjs += @(Get-ChildItem -LiteralPath $d -Filter '*.fsproj' -File |
+                       ForEach-Object { $_.FullName })
+  }
 }
 foreach ($proj in (@($CoreProj) + $serviceProjs)) {
   if (-not (Test-Path -LiteralPath $proj)) { continue }
@@ -167,15 +177,28 @@ if ($fableFiles.Count -eq 0) {
   throw "Fable のソースを 1 本 も読めなかった（$fableDir）。" +
         "**違反 0 件 と同じ顔をする**ので、ここで落とす"
 }
+$serviceFiles = @(Sources $ServiceDir)
+if ($serviceFiles.Count -eq 0) {
+  throw "LanguageService のソースを 1 本 も読めなかった（$ServiceDir）。" +
+        "**違反 0 件 と同じ顔をする**ので、ここで落とす"
+}
+
+# **当てる先は「ブラウザ側で走るもの」全部。** v0.8 で `languages/Xml.fs` が
+# `$fableDir` から器へ移った —— 走査先を伸ばさないと、**移した先で要素名を
+# 書いても赤くならない**。守る対象が消えたのに緑を出し続ける形
+#
+# **`$HostDir` には当てない。** あちらの `Spec.fs` は要素名で引く散文の表で、
+# 名前が在るのが正しい
+$vocabFiles = @($fableFiles + $serviceFiles)
 $hardcoded = [System.Collections.Generic.List[string]]::new()
 foreach ($n in $names) {
-  $hits = Select-String -LiteralPath $fableFiles -Pattern ('"' + [regex]::Escape($n) + '"') -CaseSensitive
+  $hits = Select-String -LiteralPath $vocabFiles -Pattern ('"' + [regex]::Escape($n) + '"') -CaseSensitive
   foreach ($h in $hits) {
     $hardcoded.Add(("{0} {1} 行  {2}" -f (Split-Path $h.Path -Leaf), $h.LineNumber, $h.Line.Trim()))
   }
 }
 if ($hardcoded.Count -gt 0) {
-  $bad.Add("  Fable 側に要素名が $($hardcoded.Count) 件:`n      " + ($hardcoded -join "`n      ") +
+  $bad.Add("  ブラウザ側に要素名が $($hardcoded.Count) 件:`n      " + ($hardcoded -join "`n      ") +
            "`n      語彙は host が Core/DTD.fs から焼いて渡す。ここに表を持たない")
 }
 
@@ -187,22 +210,22 @@ if ($hardcoded.Count -gt 0) {
 # 載せられなくなる** —— しかもそれは build でも試験でも出ず、載せ替えようと
 # した版で初めて分かる。
 #
-# **走査するのは Fable のソースと LanguageService のソース。** あちらは
-# ブラウザ側でも走る（Fable が ProjectReference を辿って焼く）ので、
-# 叩けてしまう位置に居る。
+# **走査するのは Fable と 器 2 つ のソース。** 器はブラウザ側でも走る
+# （Fable が ProjectReference を辿って焼く）ので叩けてしまう位置に居る。
+# `.Host` は .NET だけだが、**そちらへ書いても同じく載せ替えの邪魔になる**ので当てる。
 #
 # 見るのは `globalThis.monaco`（`[<Emit>]` の中の字）。`Monaco` という語そのものは
 # doc コメントにも `Monaco.setLanguage`（バインディングを呼ぶ側）にも出るので
 # 当てない。**当てる先は「叩いているか」であって「言及しているか」ではない。**
-$serviceFiles = @(Sources $ServiceDir)
-if ($serviceFiles.Count -eq 0) {
-  throw "LanguageService のソースを 1 本 も読めなかった（$ServiceDir）。" +
+$hostFiles = @(Sources $HostDir)
+if ($hostFiles.Count -eq 0) {
+  throw "LanguageService.Host のソースを 1 本 も読めなかった（$HostDir）。" +
         "**違反 0 件 と同じ顔をする**ので、ここで落とす"
 }
 $monacoOwner = Join-Path $fableDir 'Monaco.fs'
-$others = @(($fableFiles + $serviceFiles) | Where-Object { $_ -ne $monacoOwner })
+$others = @(($fableFiles + $serviceFiles + $hostFiles) | Where-Object { $_ -ne $monacoOwner })
 if ($others.Count -eq 0) {
-  throw "Monaco.fs 以外 のブラウザ側のソースが 1 本 も無い（$fableDir / $ServiceDir）。" +
+  throw "Monaco.fs 以外 のソースが 1 本 も無い（$fableDir / $ServiceDir / $HostDir）。" +
         "**違反 0 件 と同じ顔をする**ので、ここで落とす"
 }
 $callers = @(Select-String -LiteralPath $others -Pattern 'globalThis\.monaco' -CaseSensitive |
@@ -305,8 +328,8 @@ if ($resourceKeys.Count -eq 0) {
 }
 
 if (-not $Quiet) {
-  Write-Host ("走査 {0} 件 / 当てる要素名 {1} 個 / Fable {2} 本 / LanguageService {3} 本" -f
-              $Files.Count, $names.Count, $fableFiles.Count, $serviceFiles.Count)
+  Write-Host ("走査 {0} 件 / 当てる要素名 {1} 個 / Fable {2} 本 / 器 {3} 本 / 器.Host {4} 本" -f
+              $Files.Count, $names.Count, $fableFiles.Count, $serviceFiles.Count, $hostFiles.Count)
 }
 
 if ($bad.Count -gt 0) {

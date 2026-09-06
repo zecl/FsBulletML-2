@@ -8,12 +8,11 @@
 //
 // 答えを組み立てるのは各 target の `describe`。node 側と同じ 1 本。
 #load "../../src/FsBulletML2.LanguageService/SourceKind.fs"
-#load "../../src/FsBulletML2.Playground/fable/XmlScan.fs"
+#load "../../src/FsBulletML2.LanguageService/XmlScan.fs"
 
 open System
 open System.IO
 open System.Text.Json
-open FsBulletML2.Playground
 open FsBulletML2.LanguageService
 
 let casesPath =

@@ -4,7 +4,8 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Browser
 open Browser.Types
-open FsBulletML2.Playground.SourceLanguage
+open FsBulletML2.LanguageService
+open FsBulletML2.LanguageService.SourceLanguage
 
 [<Emit("$0[$1]")>]
 let private jsItem (arr: obj) (i: int) : obj = jsNative
@@ -358,7 +359,7 @@ type Playground() as self =
   member _.loadVocabulary() =
     if isNull dotNet then ()
     else
-      vocabulary <- SourceLanguage.parseVocabulary (string (invoke0 dotNet "Vocabulary"))
+      vocabulary <- VocabularyJson.parseVocabulary (string (invoke0 dotNet "Vocabulary"))
       if vocabulary.Elements.IsEmpty then setError "語彙が空（Core の型を読めていない）"
 
   /// 走っている弾幕をプルダウンにも出す。**空のままにしない** ——

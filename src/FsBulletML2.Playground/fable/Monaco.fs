@@ -182,7 +182,7 @@ let setLanguage (language: string) = if not (isNull editor) then setModelLanguag
 let registerCompletionProvider
   (language: string)
   (triggerCharacters: string list)
-  (complete: string -> int -> FsBulletML2.Playground.SourceLanguage.Completion list)
+  (complete: string -> int -> FsBulletML2.LanguageService.SourceLanguage.Completion list)
   =
   let provide (model: obj) (position: obj) : obj =
     let column: int = position?column

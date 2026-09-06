@@ -6,10 +6,9 @@
 /// **精度より、止まらないこと。** 打っている途中の XML は必ず壊れているので、
 /// パーサは使わずに `<` から左へ数えるだけにする。閉じていないタグも
 /// 引用符の中の `>` も、そのぶんだけ数えて先へ進む。
-module FsBulletML2.Playground.Languages.Xml
+module FsBulletML2.LanguageService.Languages.Xml
 
-open FsBulletML2.Playground
-open FsBulletML2.Playground.SourceLanguage
+open FsBulletML2.LanguageService.SourceLanguage
 // `SourceKind`。host も同じ 1 本 を引く
 open FsBulletML2.LanguageService
 

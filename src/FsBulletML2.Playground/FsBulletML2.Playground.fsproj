@@ -16,20 +16,14 @@
     <UseSystemResourceKeys>false</UseSystemResourceKeys>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
   </PropertyGroup>
+  <!-- **語彙・補完・hover・診断はここに無い。** 器
+       （FsBulletML2.LanguageService と .Host）へ移した。ここに残るのは
+       ブラウザのアプリそのもの —— 描画の場と、JS から呼ばれる口。 -->
   <ItemGroup>
     <Compile Include="Stage.fs" />
     <Compile Include="BrowserEnv.fs" />
     <Compile Include="Pacing.fs" />
     <Compile Include="Playfield.fs" />
-    <!-- どちらも Core / Parser しか使わない。
-         **Parser.Tests が Link で借りて .NET で走らせる** -->
-    <Compile Include="Spec.fs" />
-    <Compile Include="Vocabulary.fs" />
-    <Compile Include="Diagnosis.fs" />
-    <!-- **Fable 側のソースを借りる。** 中身は純 F# で、字を数えるだけ。
-         host（波線）と Fable（補完・hover）が同じ 1 本 を compile する -->
-    <Compile Include="fable\XmlScan.fs" Link="XmlScan.fs" />
-    <Compile Include="References.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
@@ -52,5 +46,6 @@
          あちらは Fable がソースから焼き、こちらは .NET が dll にする。
          答えが一致することは `guard-fable-parity.ps1` が走行で見ている -->
     <ProjectReference Include="..\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.LanguageService.Host\FsBulletML2.LanguageService.Host.fsproj" />
   </ItemGroup>
 </Project>

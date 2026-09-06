@@ -6,7 +6,7 @@ open System.Xml.Linq
 open NUnit.Framework
 open FsUnit
 open FsBulletML2
-open FsBulletML2.Playground
+open FsBulletML2.LanguageService
 
 /// **補完の語彙が、書き出す側と食い違っていないか。**
 ///

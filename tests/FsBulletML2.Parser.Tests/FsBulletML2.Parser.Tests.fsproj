@@ -14,31 +14,13 @@
     <Compile Include="OtherParse.fs" />
     <Compile Include="Snippet.fs" />
     <Compile Include="ReadEntryPoints.fs" />
-    <!--
-      Playground のソースを借りて compile し直す。**参照はしない** ——
-      あちらは Blazor WASM のアプリで、こちらから引くものではない。
-      借りている中身は Core の型しか使わないので、依存は増えない。
-      同じ形の前例: bench/FsBulletML2.Benchmarks が Core.Tests の Fake.fs を借りている。
-    -->
-    <Compile Include="..\..\src\FsBulletML2.Playground\Spec.fs" Link="Spec.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\Vocabulary.fs" Link="Vocabulary.fs" />
     <Compile Include="VocabularyCoverage.fs" />
     <Compile Include="SpecCoverage.fs" />
     <Compile Include="AttributeDefaults.fs" />
     <Compile Include="DtdLines.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\Diagnosis.fs" Link="Diagnosis.fs" />
     <Compile Include="DiagnosisLayers.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\fable\XmlScan.fs" Link="XmlScan.fs" />
     <Compile Include="XmlToken.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\References.fs" Link="References.fs" />
     <Compile Include="ReferenceScan.fs" />
-    <!--
-      Fable 側のソースも借りる。**カーソルの居場所の判定は、ブラウザでしか
-      当てられないと CI で一度も回らない。** 中身は文字列を数えるだけで
-      JS を呼ばないので .NET でもそのまま走る（[<Emit>] の口には触らない）。
-    -->
-    <Compile Include="..\..\src\FsBulletML2.Playground\fable\SourceLanguage.fs" Link="SourceLanguage.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\fable\languages\Xml.fs" Link="languages\Xml.fs" />
     <Compile Include="XmlContext.fs" />
     <Compile Include="XmlCompletion.fs" />
     <Compile Include="HoverMarkdown.fs" />
@@ -55,8 +37,7 @@
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
     <PackageReference Include="FsUnit" Version="5.0.1" />
     <PackageReference Include="FParsec" Version="1.1.1" />
-    <!-- 借りている Fable のソースが [<Emit>] を使う。**呼ばないので実体は要らない** -->
-    <PackageReference Include="Fable.Core" Version="5.0.0" />
+
     <!-- 行と分岐のカバレッジを出すために要る（XPlat Code Coverage の収集器） -->
     <PackageReference Include="coverlet.collector" Version="6.0.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -67,10 +48,12 @@
     <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
     <!--
-      **こちらは借りずに参照する。** 借りている Fable のソースが `SourceKind` を
-      引くので要る。Playground（Blazor WASM のアプリ）と違って、
-      LanguageService は他所から参照されるために建てた proj
+      **借りずに参照する（v0.8）。** 前は Playground のソースを `Link` で
+      借りて compile し直していた。**`affected.ps1` は `Link` を追わない**ので、
+      借りたソースを触っても、借りている試験が CI で選ばれなかった
+      （実測。移す前は 7 本 どれを触っても 試験 0 本）。
     -->
     <ProjectReference Include="..\..\src\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.LanguageService.Host\FsBulletML2.LanguageService.Host.fsproj" />
   </ItemGroup>
 </Project>

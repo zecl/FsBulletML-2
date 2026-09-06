@@ -6,7 +6,7 @@ open System.Text.RegularExpressions
 open NUnit.Framework
 open FsUnit
 open FsBulletML2
-open FsBulletML2.Playground
+open FsBulletML2.LanguageService
 
 /// **参照の欠けを、本文の字から全部 数える側の目盛り。**
 ///

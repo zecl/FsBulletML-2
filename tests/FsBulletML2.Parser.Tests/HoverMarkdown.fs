@@ -2,9 +2,9 @@ namespace FsBulletML2.Parser.Tests
 
 open NUnit.Framework
 open FsUnit
-open FsBulletML2.Playground
-open FsBulletML2.Playground.SourceLanguage
-open FsBulletML2.Playground.Languages.Xml
+open FsBulletML2.LanguageService
+open FsBulletML2.LanguageService.SourceLanguage
+open FsBulletML2.LanguageService.Languages.Xml
 
 /// **hover が返す markdown の字。**
 ///

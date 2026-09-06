@@ -36,6 +36,10 @@
     <AssemblyName>FsBulletML2.LanguageService</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <!-- 順は依存の順。SourceLanguage の型を Languages/Xml が引く -->
     <Compile Include="SourceKind.fs" />
+    <Compile Include="XmlScan.fs" />
+    <Compile Include="SourceLanguage.fs" />
+    <Compile Include="Languages/Xml.fs" />
   </ItemGroup>
 </Project>

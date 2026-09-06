@@ -1,4 +1,4 @@
-namespace FsBulletML2.Playground
+namespace FsBulletML2.LanguageService
 
 open System
 open System.Collections.Generic

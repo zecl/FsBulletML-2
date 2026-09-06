@@ -95,9 +95,19 @@ try {
   # **repo と同じ相対構造で写す。** 表の `js` は repo からの相対で、
   # 根だけ `-JsRoot` で差し替える。相対 import ごと写すために
   # `wwwroot/js` を丸ごと持ってくる（`fable_modules` を `./` で引いている）
+  # **当てる先の在り処は表から引く。** ここに書くと 2 か所目 の表になり、
+  # 移したときにそちらだけ古びる（v0.8 で実際に踏んだ ——
+  # `languages/Xml.fs` と `XmlScan.fs` を器へ移して、ここだけ赤くなった）
+  function TargetJs([string]$Target) {
+    $hit = @($targets | Where-Object { $_.target -ceq $Target })
+    if ($hit.Count -ne 1) { throw "表の中で『$Target』が $($hit.Count) 本 当たった（1 本 のはず）" }
+    $hit[0].js
+  }
   $realJsDir = Join-Path $root 'src/FsBulletML2.Playground/wwwroot/js'
-  if (-not (Test-Path -LiteralPath (Join-Path $realJsDir 'XmlScan.js'))) {
-    throw "較正の材料が無い。先に dotnet build src/FsBulletML2.Playground で焼くこと"
+  foreach ($x in $targets) {
+    if (-not (Test-Path -LiteralPath (Join-Path $root $x.js))) {
+      throw "較正の材料が無い（$($x.js)）。先に dotnet build src/FsBulletML2.Playground で焼くこと"
+    }
   }
   $jsParent = Join-Path $tmp 'src/FsBulletML2.Playground/wwwroot'
   New-Item -ItemType Directory -Path $jsParent -Force | Out-Null
@@ -119,16 +129,25 @@ try {
 
   Write-Host '=== 落ちる側（当てる先ごとに 1 つ ずつ壊す）'
 
-  $scanStale = 'src/FsBulletML2.Playground/wwwroot/js/xmlscan-stale.js'
-  Copy-Item -LiteralPath (Join-Path $tmp 'src/FsBulletML2.Playground/wwwroot/js/XmlScan.js') `
-            -Destination (Join-Path $tmp $scanStale) -Force
+  # **写しは元と同じディレクトリに置く。** 焼いた JS は `../fable_modules/` を
+  # 相対で引くので、別の深さへ置くと import が解けず「答えが 0 行」で落ちて、
+  # 狙った点と別の赤になる（v0.8 で実際に踏んだ —— `XmlScan.js` が
+  # `js/` 直下 から器のサブディレクトリへ移り、深さが 1 つ 変わった）
+  function StaleCopy([string]$Target, [string]$Suffix) {
+    $rel = (TargetJs $Target) -replace '\\', '/'
+    $dir = [IO.Path]::GetDirectoryName($rel) -replace '\\', '/'
+    $out = $dir + '/' + [IO.Path]::GetFileNameWithoutExtension($rel) + '-' + $Suffix + '.js'
+    Copy-Item -LiteralPath (Join-Path $tmp $rel) -Destination (Join-Path $tmp $out) -Force
+    $out
+  }
+
+  $scanStale = StaleCopy 'XmlScan' 'stale'
   Mutate $scanStale 'add(" ctx=");' 'add(" where=");' '焼いた JS の中身が想定と違う'
   Check 'XmlScan の焼いた JS だけ答えが違う' `
     (With $ok @{ TargetsPath = (TargetsWith 'XmlScan' $scanStale) }) $false '違う答えを出した'
 
-  $kindRel = 'src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/SourceKind.js'
-  $kindStale = 'src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/sourcekind-stale.js'
-  Copy-Item -LiteralPath (Join-Path $tmp $kindRel) -Destination (Join-Path $tmp $kindStale) -Force
+  $kindStale = StaleCopy 'SourceKind' 'stale'
+
   Mutate $kindStale '" all="' '" kinds="' 'SourceKind の焼いた JS の中身が想定と違う'
   Check 'SourceKind の焼いた JS だけ答えが違う' `
     (With $ok @{ TargetsPath = (TargetsWith 'SourceKind' $kindStale) }) $false '違う答えを出した'
@@ -167,8 +186,8 @@ try {
 
   # `describe` の export を消す。**node 側が 0 行 を返す** ——
   # 突き合わせるものが無いのに緑にしてはいけない
-  $noExport = 'src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/sourcekind-noexport.js'
-  Copy-Item -LiteralPath (Join-Path $tmp $kindRel) -Destination (Join-Path $tmp $noExport) -Force
+  $noExport = StaleCopy 'SourceKind' 'noexport'
+
   Mutate $noExport 'export function SourceKindModule_describe' 'function SourceKindModule_describe' `
     'export の綴りが想定と違う'
   Check '焼いた JS に口が無い' `
