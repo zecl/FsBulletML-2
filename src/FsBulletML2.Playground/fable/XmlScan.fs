@@ -3,13 +3,22 @@ namespace FsBulletML2.Playground
 open System
 open System.Text
 
-/// 開始タグの中の属性 1 つ。位置は値の中身（引用符の内側）で、1 起点。
+/// 開始タグの中の属性 1 つ。
+///
+/// `Line` / `Column` / `EndColumn` は**波線を引くための 1 起点**で、
+/// 指すのは値の中身（引用符の内側）。`*Start` / `*Stop` は
+/// **カーソルの下を当てるための 0 起点 の文字数**で、`Stop` は含まない。
+/// 2 通り 持っているのは、要る側が Monaco の行桁と本文の添字で違うため
 type AttrHit =
   { AttrName: string
     Value: string
     Line: int
     Column: int
-    EndColumn: int }
+    EndColumn: int
+    NameStart: int
+    NameStop: int
+    ValueStart: int
+    ValueStop: int }
 
 /// タグ 1 つ。
 ///
@@ -28,7 +37,10 @@ type TagHit =
     /// `<` の位置（0 起点 の文字数）
     Start: int
     /// `>` の位置。閉じていなければ本文の末尾
-    Stop: int }
+    Stop: int
+    /// 要素名の範囲。`Stop` は含まない
+    NameStart: int
+    NameStop: int }
 
 /// カーソルの居場所
 type Context =
@@ -38,6 +50,18 @@ type Context =
   | InStartTag of string
   /// `<name attr="` の中。属性値を出す
   | InAttrValue of string * string
+
+/// カーソルの**下**に在るもの。`Context` が「そこで何を打てるか」なのに対して、
+/// こちらは「いま何の上に居るか」。hover が引く
+type Token =
+  /// 要素名。開き札でも閉じ札でも同じ
+  | Element of string
+  /// 属性名（要素名, 属性名）
+  | Attribute of string * string
+  /// 属性値（要素名, 属性名, 値）
+  | AttrValue of string * string * string
+  /// 何の上でもない。本文・空白・引用符そのもの・コメントの中
+  | Nothing
 
 /// **XML の字を数える 1 本。**
 ///
@@ -98,6 +122,7 @@ module XmlScan =
         let nameFrom = i
         while i < src.Length && isNameChar src.[i] do advance ()
         let name = src.Substring(nameFrom, i - nameFrom)
+        let nameStop = i
         let attrs = ResizeArray<AttrHit>()
         let mutable selfClosing = false
         let mutable stop = -1
@@ -111,6 +136,7 @@ module XmlScan =
             let aFrom = i
             while i < src.Length && isNameChar src.[i] do advance ()
             let aName = src.Substring(aFrom, i - aFrom)
+            let aNameStop = i
             while i < src.Length && Char.IsWhiteSpace src.[i] do advance ()
             if i < src.Length && src.[i] = '=' then
               advance ()
@@ -133,7 +159,11 @@ module XmlScan =
                       Line = vLine
                       Column = vCol
                       // 中身が空でも 1 文字 ぶんは指せるようにする
-                      EndColumn = max (vCol + 1) (col i) }
+                      EndColumn = max (vCol + 1) (col i)
+                      NameStart = aFrom
+                      NameStop = aNameStop
+                      ValueStart = vFrom
+                      ValueStop = i }
                   advance () // 閉じ引用符
           else advance ()
         if name <> "" then
@@ -143,7 +173,9 @@ module XmlScan =
               Closing = closing
               SelfClosing = selfClosing
               Start = start
-              Stop = if stop < 0 then src.Length else stop }
+              Stop = if stop < 0 then src.Length else stop
+              NameStart = nameFrom
+              NameStop = nameStop }
     List.ofSeq hits
 
   /// タグの中にカーソルが居るときの居場所。
@@ -205,6 +237,36 @@ module XmlScan =
       match inTag (src.Substring(t.Start, cursor - t.Start)) with
       | Some c -> c
       | None -> content ()
+
+  /// カーソルの**下**に在るものを出す。hover が引く。
+  ///
+  /// **`contextAt` とは向きが違う。** あちらは「そこで何を打てるか」なので
+  /// 手前だけを見て、名前を打っている途中なら本文扱いにする。こちらは
+  /// 「いま何の上に居るか」なので、語の途中でもその語を返す。
+  ///
+  /// 指すのは**カーソルの位置に在る 1 文字**。だから
+  ///
+  ///   `<` の上 / `>` の上 / 引用符そのものの上   何でもない
+  ///   要素名の最初の字と最後の字               その要素
+  ///   タグの中の空白                           何でもない
+  ///   コメント・CDATA・宣言・本文の字          何でもない
+  ///
+  /// 閉じ札の名前も要素として返す（`</fire>` に触っても fire の仕様が出る）
+  let tokenAt (src: string) (offset: int) : Token =
+    let p = max 0 (min offset (src.Length - 1))
+    if src.Length = 0 then Nothing
+    else
+      match tags src |> List.tryFind (fun t -> p >= t.Start && p <= t.Stop) with
+      | None -> Nothing
+      | Some t ->
+        if p >= t.NameStart && p < t.NameStop then Element t.TagName
+        else
+          match t.Attrs |> List.tryFind (fun a -> p >= a.NameStart && p < a.NameStop) with
+          | Some a -> Attribute(t.TagName, a.AttrName)
+          | None ->
+            match t.Attrs |> List.tryFind (fun a -> p >= a.ValueStart && p < a.ValueStop) with
+            | Some a -> AttrValue(t.TagName, a.AttrName, a.Value)
+            | None -> Nothing
 
   /// カーソルの手前にある「いま打っている名前」の長さ。
   /// **Monaco の語の定義に頼らない** —— 何が名前かを知っているのは言語のほう
@@ -268,6 +330,27 @@ module XmlScan =
       add e
       add ","
       add a
+      add ")"
+    add " token="
+    match tokenAt src cursor with
+    | Nothing -> add "nothing"
+    | Element n ->
+      add "element("
+      add n
+      add ")"
+    | Attribute (e, a) ->
+      add "attribute("
+      add e
+      add ","
+      add a
+      add ")"
+    | AttrValue (e, a, v) ->
+      add "attrValue("
+      add e
+      add ","
+      add a
+      add ","
+      add v
       add ")"
     add " nameLen="
     add (string (nameLenBefore src cursor))
