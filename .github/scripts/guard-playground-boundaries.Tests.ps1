@@ -4,7 +4,7 @@
   guard-playground-boundaries.ps1 の較正。
 
 .DESCRIPTION
-  4 つ の線を 1 つ ずつ、**通る側と落ちる側**で当てる。
+  線を 1 つ ずつ、**通る側と落ちる側**で当てる。
   落ちる側だけ見ていると「常に赤」の壊れ方が、通る側だけ見ていると
   「何も見ていない」壊れ方が、それぞれ緑のまま残る。
 
@@ -79,8 +79,11 @@ writer.WriteStartElement("vanish")
   $proj = Make 'core/Core.fsproj' '<Project><ItemGroup><Compile Include="DTD.fs" /></ItemGroup></Project>'
   $html = Make 'pg/wwwroot/index.html' '<script type="module">import "./js/Playground.js";</script>'
   Make 'pg/fable/Playground.fs' 'let el (id: string) = document.getElementById id' | Out-Null
+  $pgProj = Make 'pg/Playground.fsproj' `
+    '<Project><PropertyGroup><UseSystemResourceKeys>false</UseSystemResourceKeys></PropertyGroup></Project>'
 
-  $ok = @{ RepoRoot = $tmp; PlaygroundDir = 'pg'; CoreProj = $proj; DtdSource = $dtd; IndexHtml = $html; Files = @('pg/fable/Playground.fs') }
+  $ok = @{ RepoRoot = $tmp; PlaygroundDir = 'pg'; CoreProj = $proj; DtdSource = $dtd; IndexHtml = $html
+           PlaygroundProj = $pgProj; Files = @('pg/fable/Playground.fs') }
 
   Write-Host '=== 通る側'
   Check '線の内側' $ok $true ''
@@ -103,12 +106,25 @@ writer.WriteStartElement("vanish")
   $badHtml = Make 'pg/wwwroot/bad.html' '<script>Blazor.start().catch(function (e) {});</script>'
   Check 'html に起動のロジックが在る' (With $ok @{ IndexHtml = $badHtml }) $false 'html に起動のロジック'
 
+  # **書き忘れと、書いてあるが逆を、別々に当てる。** 既定は SDK 側が立てるので、
+  # 「無い」は「true と書いた」と同じ結果になる —— 門の側では別の壊れ方
+  $noKeys = Make 'pg/NoKeys.fsproj' '<Project><PropertyGroup /></Project>'
+  Check 'UseSystemResourceKeys が無い' (With $ok @{ PlaygroundProj = $noKeys }) `
+    $false 'UseSystemResourceKeys が csproj に無い'
+
+  $trueKeys = Make 'pg/TrueKeys.fsproj' `
+    '<Project><PropertyGroup><UseSystemResourceKeys>true</UseSystemResourceKeys></PropertyGroup></Project>'
+  Check 'UseSystemResourceKeys が true' (With $ok @{ PlaygroundProj = $trueKeys }) `
+    $false 'UseSystemResourceKeys が false でない'
+
   Write-Host '=== 材料が読めないときも落ちる'
   # **ここが本体。** 0 件 は違反 0 件 と同じ顔をする
   Check '当てる要素名が 0 個' (With $ok @{ DtdSource = (Make 'core/Empty.fs' 'なにも書いていない') }) `
     $false '当てる要素名を 1 つ も引けなかった'
   Check 'Fable のソースが 0 本' (With $ok @{ PlaygroundDir = 'nowhere' }) `
     $false 'Fable のソースを 1 本 も読めなかった'
+  Check 'csproj が読めない' (With $ok @{ PlaygroundProj = (Join-Path $tmp 'pg/Nope.fsproj') }) `
+    $false 'Playground の csproj を読めなかった'
 
   Write-Host '=== 本番の軸'
   # 差し替えを 1 つ も渡さないで呼ぶ。渡した数点が緑でも、

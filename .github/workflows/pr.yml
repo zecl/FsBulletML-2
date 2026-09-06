@@ -69,7 +69,7 @@ jobs:
 
       # ブラウザ側が守ると決めた線。**どれも目で確かめると書いてあったもの** ——
       # 手書きの .js、Core からの表示側への参照、Fable 側の要素名、
-      # html に書いた起動のロジック
+      # html に書いた起動のロジック、例外の文面を字で出す設定
       - name: Playground の線
         shell: pwsh
         run: ./.github/scripts/guard-playground-boundaries.ps1

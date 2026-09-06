@@ -1,5 +1,6 @@
 namespace FsBulletML2.Playground
 
+open System.Text.Json
 open System.Threading.Tasks
 open Bolero
 open Bolero.Html
@@ -88,12 +89,15 @@ type PlaygroundHost() =
       if index < 0 || index >= items.Length then "ERROR:範囲外"
       else
         let info = items.[index]
+        // 建ててから差し替える（`ApplySource` と同じ理由。落ちたあとの
+        // `Reset` が `current` から建て直すので、進めてはいけない）
+        let next = Playfield.Create env info.Bulletml
         current <- info.Bulletml
-        field <- Playfield.Create env info.Bulletml
+        field <- next
         info.Bulletml.ToIndentedXmlString()
     with ex -> "ERROR:" + ex.Message
 
-  /// 右側の本文を読んで弾幕を差し替える。成功なら空文字。
+  /// 右側の本文を読んで弾幕を差し替える。
   ///
   /// **どの表記かを受け取る。** v0.3 が読めるのは `"xml"` だけだが、
   /// 口だけ先に開けておく —— テキストだけ受け取る形にすると、
@@ -101,19 +105,36 @@ type PlaygroundHost() =
   ///
   /// sxml / fsb は Parser に既に口が在る（`tryReadSxmlString` /
   /// `tryReadFsbString`）。載せるのはここに腕を 1 本 足すだけ。
+  ///
+  /// **戻りは JSON。空文字を成功の印にしない** ——
+  /// 「読めない理由が空文字」と見分けられない。
+  ///
+  ///     {"ok":true}
+  ///     {"ok":false,"line":14,"column":11,"message":"…"}
+  ///
+  /// `line` が 0 なら位置が無い層。呼ぶ側は波線を引かない。
+  /// 分け方は `Diagnosis`（`Parser.Tests` が同じ道を通って当てている）。
   [<JSInvokable>]
   member _.ApplySource(kind: string, text: string) : string =
-    try
-      match kind with
-      | "xml" ->
-        match tryReadXmlString text with
-        | None -> "XML を読めなかった"
-        | Some bulletml ->
-            current <- bulletml
-            field <- Playfield.Create env bulletml
-            ""
-      | other -> "未対応: " + other
-    with ex -> ex.Message
+    let failed (f: Failure) =
+      sprintf
+        "{\"ok\":false,\"line\":%d,\"column\":%d,\"message\":%s}"
+        f.Line
+        f.Column
+        (JsonSerializer.Serialize f.Message)
+    match kind with
+    | "xml" ->
+      // **建ててから差し替える。** 木は読めるが組めない層が在るので、
+      // 先に `current` を書くと、落ちたあとの Reset がその弾幕で作り直して
+      // また落ちる（`Reset` は `current` から建てる）
+      let put bulletml =
+        let next = Playfield.Create env bulletml
+        current <- bulletml
+        field <- next
+      match Diagnosis.apply put text with
+      | None -> "{\"ok\":true}"
+      | Some f -> failed f
+    | other -> failed { Line = 0; Column = 0; Message = "未対応: " + other }
 
 /// 空の根。描画のあとで host を JS に渡す。
 type MyApp() =

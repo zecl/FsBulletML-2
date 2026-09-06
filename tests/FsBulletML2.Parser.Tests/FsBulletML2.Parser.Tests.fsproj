@@ -22,6 +22,8 @@
     -->
     <Compile Include="..\..\src\FsBulletML2.Playground\Vocabulary.fs" Link="Vocabulary.fs" />
     <Compile Include="VocabularyCoverage.fs" />
+    <Compile Include="..\..\src\FsBulletML2.Playground\Diagnosis.fs" Link="Diagnosis.fs" />
+    <Compile Include="DiagnosisLayers.fs" />
     <!--
       Fable 側のソースも借りる。**カーソルの居場所の判定は、ブラウザでしか
       当てられないと CI で一度も回らない。** 中身は文字列を数えるだけで

@@ -3,14 +3,27 @@
     <TargetFramework>net10.0</TargetFramework>
     <PublishTrimmed>false</PublishTrimmed>
     <RunAOTCompilation>false</RunAOTCompilation>
+    <!--
+      例外の文面を鍵でなく字で出す。Blazor WASM の SDK は Release で
+      これを立てるので、`Xml_TagMismatchEx` のような resource key が返る。
+      Apply の理由をそのまま人へ見せるので、切る。
+
+      **代償を測った: 6 バイト**（46,762,424 -> 46,762,418）。
+      `PublishTrimmed` が false なので resource の字はもともと dll に在り、
+      この設定は「使うかどうか」しか変えない。
+      **trim を入れたら測り直すこと** —— そのときは本当に太る。
+    -->
+    <UseSystemResourceKeys>false</UseSystemResourceKeys>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Stage.fs" />
     <Compile Include="BrowserEnv.fs" />
     <Compile Include="Playfield.fs" />
-    <!-- Core の型しか使わない。**Dsl.Tests が Link で借りて突き合わせる** -->
+    <!-- どちらも Core / Parser しか使わない。
+         **Parser.Tests が Link で借りて .NET で走らせる** -->
     <Compile Include="Vocabulary.fs" />
+    <Compile Include="Diagnosis.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
