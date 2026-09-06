@@ -21,6 +21,7 @@ param(
   [string]$TestResult = $env:TEST,
   [string]$BuildResult = $env:BUILD,
   [string]$ShippedResult = $env:SHIPPED,
+  [string]$ParityResult = $env:PARITY,
   [string]$PickedTests = $env:TESTS,
   [string]$PickedBuilds = $env:BUILDS,
   [switch]$Quiet
@@ -33,12 +34,14 @@ if (-not $Quiet) {
   Write-Host "Test         $TestResult   （選ばれた: $PickedTests）"
   Write-Host "Build        $BuildResult  （選ばれた: $PickedBuilds）"
   Write-Host "Shipped DLLs $ShippedResult  （選ばずに毎回 走る）"
+  Write-Host "Fable Parity $ParityResult  （選ばずに毎回 走る）"
 }
 
 if ($Select -ne 'success') { throw "Select が $Select。先の結果は読めない" }
 
 # **これは選ばれる側ではない。** 毎回 走るので、success 以外は全部 誤り
 if ($ShippedResult -ne 'success') { throw "Shipped DLLs が $ShippedResult" }
+if ($ParityResult -ne 'success') { throw "Fable Parity が $ParityResult" }
 
 foreach ($p in @(
     @{ Name = 'Test';  Result = $TestResult;  Picked = $PickedTests },

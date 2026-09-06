@@ -25,6 +25,9 @@
     <Compile Include="Spec.fs" />
     <Compile Include="Vocabulary.fs" />
     <Compile Include="Diagnosis.fs" />
+    <!-- **Fable 側のソースを借りる。** 中身は純 F# で、字を数えるだけ。
+         host（波線）と Fable（補完・hover）が同じ 1 本 を compile する -->
+    <Compile Include="fable\XmlScan.fs" Link="XmlScan.fs" />
     <Compile Include="References.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="Program.fs" />

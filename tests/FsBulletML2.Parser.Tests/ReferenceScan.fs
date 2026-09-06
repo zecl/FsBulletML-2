@@ -33,6 +33,11 @@ open FsBulletML2.Playground
 [<TestFixture>]
 type ReferenceScan() =
 
+  /// `References` が見ているのと同じ形。**閉じ札は落とす** ——
+  /// `XmlScan.tags` は閉じ札も返すが、それを使うのはカーソルの居場所を
+  /// 出す側で、参照の欠けを数える側は開始札しか見ない
+  let openTags (src: string) = XmlScan.tags src |> List.filter (fun t -> not t.Closing)
+
   let rand () = 0.5f
   let rank = 0.5f
   let build (b: Bulletml) = Runner.load rand rank b |> ignore
@@ -129,14 +134,14 @@ type ReferenceScan() =
   [<Test>]
   member _.``宣言と閉じ札を積まない``() =
     // `<?xml ...?>` と `</action>` をタグとして拾うと、名前が空の札が混ざる
-    References.tags "<?xml version=\"1.0\"?><bulletml><action label=\"top\"></action></bulletml>"
+    openTags "<?xml version=\"1.0\"?><bulletml><action label=\"top\"></action></bulletml>"
     |> List.map (fun t -> t.TagName)
     |> should equal [ "bulletml"; "action" ]
 
   [<Test>]
   member _.``引用符の中の 大なり に騙されない``() =
     // 値の中の `>` でタグが終わったことにすると、次の属性を取り落とす
-    let tags = References.tags "<action label=\"a>b\" x=\"1\"><actionRef label=\"a>b\"/></action>"
+    let tags = openTags "<action label=\"a>b\" x=\"1\"><actionRef label=\"a>b\"/></action>"
     tags |> List.map (fun t -> t.TagName) |> should equal [ "action"; "actionRef" ]
     tags.Head.Attrs |> List.length |> should equal 2
     // 定義側も参照側も同じ値なので、欠けは無い

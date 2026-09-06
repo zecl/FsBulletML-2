@@ -2,6 +2,9 @@ namespace FsBulletML2.Parser.Tests
 
 open NUnit.Framework
 open FsUnit
+// Context の腕は `XmlScan`（字を数える 1 本）が持つ。
+// `contextAt` は表記のモジュールから引く
+open FsBulletML2.Playground
 open FsBulletML2.Playground.Languages.Xml
 
 /// **カーソルがどこに居るか**の判定。補完の候補はこれで決まる。

@@ -28,6 +28,7 @@
     <Compile Include="DtdLines.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Diagnosis.fs" Link="Diagnosis.fs" />
     <Compile Include="DiagnosisLayers.fs" />
+    <Compile Include="..\..\src\FsBulletML2.Playground\fable\XmlScan.fs" Link="XmlScan.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\References.fs" Link="References.fs" />
     <Compile Include="ReferenceScan.fs" />
     <!--

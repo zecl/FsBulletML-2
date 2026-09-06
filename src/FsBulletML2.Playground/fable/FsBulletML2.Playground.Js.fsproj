@@ -3,8 +3,12 @@
     <TargetFramework>net10.0</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
-  <!-- 順は依存の順。Monaco のバインディングを先に、配線を後に -->
+  <!-- 順は依存の順。Monaco のバインディングを先に、配線を後に。
+       XmlScan.fs は中身が純 F# で、**host と Parser.Tests が Link で借りる**。
+       ここに置いてあるのは、外へ出すと Fable の出力が wwwroot/js/ の
+       外へ落ちるため（`..\XmlScan.fs` を引くと wwwroot/XmlScan.js になる。実測） -->
   <ItemGroup>
+    <Compile Include="XmlScan.fs" />
     <Compile Include="SourceLanguage.fs" />
     <Compile Include="languages/Xml.fs" />
     <Compile Include="Monaco.fs" />

@@ -1,0 +1,18 @@
+[
+  { "note": "素の開始札と自己閉じ", "cursor": 6, "src": "<fire label=\"a\"/>" },
+  { "note": "閉じ札を拾う", "cursor": 20, "src": "<bulletml><action label=\"top\"></action></bulletml>" },
+  { "note": "引用符の中の 大なり", "cursor": 5, "src": "<action label=\"a>b\" x=\"1\"><actionRef label=\"a>b\"/></action>" },
+  { "note": "コメントの中は数えない", "cursor": 40, "src": "<bulletml><action label=\"top\"><!-- x > <actionRef label=\"a\"/> --><wait>1</wait></action></bulletml>" },
+  { "note": "CDATA の中は数えない", "cursor": 45, "src": "<bulletml><wait><![CDATA[x > <actionRef label=\"a\"/>]]></wait></bulletml>" },
+  { "note": "宣言を拾わない", "cursor": 24, "src": "<?xml version=\"1.0\"?><bulletml><action/></bulletml>" },
+  { "note": "閉じ引用符が無い", "cursor": 30, "src": "<bulletml><actionRef label=\"a/></bulletml>" },
+  { "note": "行と桁（改行をまたぐ）", "cursor": 30, "src": "<bulletml>\n  <action label=\"top\">\n    <wait>1</wait>\n  </action>\n</bulletml>" },
+  { "note": "本文に居る（親は action）", "cursor": 31, "src": "<bulletml><action label=\"top\">\n</action></bulletml>" },
+  { "note": "自己閉じの先は親に戻る", "cursor": 40, "src": "<bulletml><fire><bullet/></fire>\n</bulletml>" },
+  { "note": "属性値の中に居る", "cursor": 27, "src": "<bulletml><direction type=\"a\">0</direction></bulletml>" },
+  { "note": "要素名を打っている途中", "cursor": 14, "src": "<bulletml><act</bulletml>" },
+  { "note": "式の手前（$ を含めて数える）", "cursor": 24, "src": "<bulletml><wait>$ran</wait></bulletml>" },
+  { "note": "根の外", "cursor": 0, "src": "<bulletml></bulletml>" },
+  { "note": "空の本文", "cursor": 0, "src": "" },
+  { "note": "単引用符と、値が空", "cursor": 22, "src": "<action label='' x=''><wait>1</wait></action>" }
+]

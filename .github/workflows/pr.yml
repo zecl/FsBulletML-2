@@ -193,12 +193,49 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-shipped-refs.Tests.ps1
 
+  # **1 本 のソースが 2 つ の runtime で走る。片方 しか測らないのは穴。**
+  # fable/XmlScan.fs は .NET（波線）と焼いた JS（補完・hover）の両方 で走るが、
+  # Build · Playground.Js は build するだけで、**焼いた出力を誰も走らせていない**。
+  # 同じ入力を両方 に通して答えを突き合わせる。
+  #
+  # **選ばずに毎回 走らせる。** 焼くのは fable だけなので WASM workload が要らず
+  # 数秒で終わる。条件を書くと「選ばれなかったから skip」と「壊れて skip」が混ざる。
+  parity:
+    name: Fable Parity
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # **Playground まるごとは建てない。** あちらは WASM workload が要る。
+      # 焼くのに要るのは Fable 側の proj だけ
+      - name: 焼く
+        working-directory: src/FsBulletML2.Playground
+        run: |
+          dotnet tool restore
+          dotnet tool run fable -- fable/FsBulletML2.Playground.Js.fsproj -o wwwroot/js
+
+      - name: 焼いた JS と .NET の突き合わせ
+        shell: pwsh
+        run: ./.github/scripts/guard-fable-parity.ps1
+
+      - name: 突き合わせの門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-fable-parity.Tests.ps1
+
   # 枝分かれした job をまとめて 1 つ の必須チェックにする。
   # **skipped を成功として数えない** —— 選ばれなかったのか、落ちて飛ばされたのかは
   # 別のことなので、select の結果を見て分ける
   gate:
     name: Gate
-    needs: [select, test, build, shipped]
+    needs: [select, test, build, shipped, parity]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -209,6 +246,7 @@ jobs:
           TEST: ${{ needs.test.result }}
           BUILD: ${{ needs.build.result }}
           SHIPPED: ${{ needs.shipped.result }}
+          PARITY: ${{ needs.parity.result }}
           TESTS: ${{ needs.select.outputs.tests }}
           BUILDS: ${{ needs.select.outputs.builds }}
         run: ./.github/scripts/gate.ps1
