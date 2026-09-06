@@ -51,6 +51,13 @@ let private blazorStart () : obj = jsNative
 [<Emit("($0 && $0.message) ? $0.message : String($0)")>]
 let private errText (e: obj) : string = jsNative
 
+// dialog は素で Esc と背景を持っている。**自前で被せを作らない**
+[<Emit("$0.showModal()")>]
+let private showModal (dialog: obj) : unit = jsNative
+
+[<Emit("$0.close()")>]
+let private closeDialog (dialog: obj) : unit = jsNative
+
 let private el (id: string) = document.getElementById id
 
 let private setError (msg: string) =
@@ -221,6 +228,16 @@ type Playground() as self =
             Monaco.setLanguage current.MonacoLanguage
             setError "")
         (fun err -> setError (errText err))
+
+  /// 補完の使い方。**中身は html に在る字だけ**で、ここは開け閉めだけ。
+  /// ループは止めない —— 開いている間も弾幕は動く
+  member _.help() =
+    let d = el "help-dialog"
+    if not (isNull d) then showModal d
+
+  member _.closeHelp() =
+    let d = el "help-dialog"
+    if not (isNull d) then closeDialog d
 
   /// 入れ物の大きさを変えた側から呼ぶ。**モーダルに入れて開いた直後** ——
   /// 0x0 で建った版が、そこで実寸を測り直す

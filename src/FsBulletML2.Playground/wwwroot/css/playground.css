@@ -97,13 +97,96 @@ button:disabled {
   cursor: default;
 }
 
+/* プルダウンと ? を横に並べる。余りはプルダウンが取る */
+.picker {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
 #pattern {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   box-sizing: border-box;
   background: #2a2a3a;
   color: #e8e8ee;
   border: 1px solid #555;
   padding: 6px 8px;
+}
+
+#help {
+  flex: none;
+  width: 2.2em;
+  padding: 6px 0;
+}
+
+/* 使い方。**大きさは中身と窓の小さいほう** —— 長くなったら中で送る */
+.help {
+  max-width: 46em;
+  max-height: 80dvh;
+  overflow: auto;
+  background: #16161e;
+  color: #e8e8ee;
+  border: 1px solid #555;
+  padding: 20px 24px;
+  line-height: 1.7;
+}
+
+.help::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.help h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+.help h3 {
+  margin: 20px 0 8px;
+  font-size: 1rem;
+}
+
+.help table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+}
+
+.help th,
+.help td {
+  border: 1px solid #333;
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.help th {
+  background: #21212c;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.help td:first-child {
+  white-space: nowrap;
+}
+
+.help code,
+.help kbd {
+  font-family: ui-monospace, Consolas, monospace;
+  background: #21212c;
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+}
+
+.help ul {
+  margin: 8px 0;
+  padding-left: 1.4em;
+}
+
+.help .note {
+  color: #a0a0b0;
 }
 
 .error {

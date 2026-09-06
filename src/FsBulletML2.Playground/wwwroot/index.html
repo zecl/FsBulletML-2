@@ -14,9 +14,12 @@
       <div class="row">
         <canvas id="stage" width="480" height="640"></canvas>
         <div class="editor">
-        <select id="pattern" onchange="playground.pick()">
-          <option value="">（XML 編集 / Open）</option>
-        </select>
+        <div class="picker">
+          <select id="pattern" onchange="playground.pick()">
+            <option value="">（XML 編集 / Open）</option>
+          </select>
+          <button type="button" id="help" title="補完の使い方" onclick="playground.help()">?</button>
+        </div>
         <!-- 中身は空。**XML を html に書かない** —— 起動時の本文は host が
              同梱カタログの CE から焼いて渡す（Main.fs の InitialSource） -->
         <div id="source" class="source"></div>
@@ -35,6 +38,71 @@
       </div>
       <div id="main"></div>
     </div>
+
+    <!--
+      補完の使い方。**中身は字だけで、ロジックは書かない** ——
+      開け閉めは Fable（playground.help / closeHelp）。
+      dialog なので Esc と背景のクリックで閉じるのは素で付いてくる
+    -->
+    <dialog id="help-dialog" class="help">
+      <h2>補完の使い方</h2>
+
+      <p>
+        候補は BulletML の DTD から出しているので、<strong>その場所に置けるものしか出ない</strong>。
+        打っている途中で XML が壊れていても止まらない。
+      </p>
+
+      <table>
+        <thead><tr><th>打つ</th><th>出るもの</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>&lt;</code></td>
+            <td>そこに置ける要素。<code>&lt;action&gt;</code> の中なら <code>fire</code> や <code>wait</code>、
+                <code>&lt;fire&gt;</code> の中なら <code>direction</code> や <code>bullet</code></td>
+          </tr>
+          <tr>
+            <td><code>&lt;</code> に続けて何文字か</td>
+            <td>絞り込み。確定すると <code>&lt;fire&gt;</code> のように入る</td>
+          </tr>
+          <tr>
+            <td>タグの中で空白＋何文字か</td>
+            <td>属性名。確定すると <code>type=""</code> まで入って、カーソルが引用符の中に来る</td>
+          </tr>
+          <tr>
+            <td><code>"</code></td>
+            <td>属性値。<code>type</code> なら <code>aim</code> / <code>absolute</code> /
+                <code>relative</code> / <code>sequence</code></td>
+          </tr>
+          <tr>
+            <td><code>$</code> に続けて何文字か</td>
+            <td><code>$rand</code> と <code>$rank</code>。
+                <code>&lt;wait&gt;</code> や <code>&lt;speed&gt;</code> のように
+                <strong>中身に式を書ける要素の中だけ</strong></td>
+          </tr>
+          <tr>
+            <td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td>
+            <td>どこでも明示的に出す。空白を打っただけでは出ないので、属性名はこれが早い</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>ほかの操作</h3>
+      <ul>
+        <li><strong>Apply</strong> を押すと、書いた XML が弾幕に反映される。
+            打つたびには反映しない（見ている弾幕が最初に戻ってしまうため）</li>
+        <li>読めない XML は Apply したときに下のバーへ理由が出る</li>
+        <li><strong>Reset</strong> はいま載っている弾幕を最初から。<strong>欄の文字は触らない</strong></li>
+        <li>プルダウンで同梱の弾幕を選ぶと、その XML が欄に入る</li>
+        <li>折りたたみ・検索（<kbd>Ctrl</kbd>+<kbd>F</kbd>）・
+            取り消し（<kbd>Ctrl</kbd>+<kbd>Z</kbd>）はエディタの標準機能</li>
+      </ul>
+
+      <p class="note">
+        いま書けるのは XML だけ。sxml や F# の DSL は口だけ開けてある。
+      </p>
+
+      <button type="button" onclick="playground.closeHelp()">閉じる</button>
+    </dialog>
     <!--
       Monaco は CDN。**版はこの 1 行 だけに在る** —— `Monaco.fs` はこの src から
       vsBase を読むので、上げるときここだけ直す。repo に本体を置かないのは、
