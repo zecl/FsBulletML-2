@@ -8,9 +8,13 @@
   壊れ方が、通る側だけ見ていると「何も見ていない」壊れ方が、それぞれ
   緑のまま残る。
 
-  **当てる先が 2 本 に増えた**（`XmlScan` と、proj をまたぐ `SourceKind`）ので、
-  変異はそれぞれに 1 つ ずつ置く。片方 だけ壊して赤を見ても、
-  もう片方 が突き合わせから外れている状態は緑のまま残る。
+  **当てる先ごとに変異を 1 つ ずつ置く**（`XmlScan` / `SxmlScan` /
+  proj をまたぐ `SourceKind`）。1 本 だけ壊して赤を見ても、
+  ほかが突き合わせから外れている状態は緑のまま残る。
+
+  **変異はその 1 本 の中に置く。** 答えを字にするところ（`Scan.describe`）は
+  スキャナ 2 本 の共通なので、そこを壊すとどちらでも赤くなり、
+  「この target が突き合わせに入っているか」を見たことにならない。
 
   いちばん怖いのは**材料が読めないとき** —— 焼いた JS が無い、表が空、
   片方 の答えが 0 行、**target を表に足しただけで 1 件 も当てていない**。
@@ -141,10 +145,19 @@ try {
     $out
   }
 
+  # **変異は「その 1 本 の中」に置く。** 答えを字にするところ（`Scan.describe`）は
+  # v0.9 で 2 本 の共通になったので、そこを壊すと**どちらの target でも赤くなり**、
+  # 「この target が突き合わせに入っているか」を見たことにならない
   $scanStale = StaleCopy 'XmlScan' 'stale'
-  Mutate $scanStale 'add(" ctx=");' 'add(" where=");' '焼いた JS の中身が想定と違う'
+  Mutate $scanStale 'skipUntil("-->");' 'skipUntil("--x");' '焼いた JS の中身が想定と違う'
   Check 'XmlScan の焼いた JS だけ答えが違う' `
     (With $ok @{ TargetsPath = (TargetsWith 'XmlScan' $scanStale) }) $false '違う答えを出した'
+
+  $sxmlStale = StaleCopy 'SxmlScan' 'stale'
+  Mutate $sxmlStale '(src[i + 1] === "@")' '(src[i + 1] === "#")' `
+    'SxmlScan の焼いた JS の中身が想定と違う'
+  Check 'SxmlScan の焼いた JS だけ答えが違う' `
+    (With $ok @{ TargetsPath = (TargetsWith 'SxmlScan' $sxmlStale) }) $false '違う答えを出した'
 
   $kindStale = StaleCopy 'SourceKind' 'stale'
 
@@ -179,10 +192,20 @@ try {
     note   = '較正のためだけに足した、誰も当てていない target'
     js     = $targets[0].js
     export = $targets[0].export
+    args   = $targets[0].args
   }
   [IO.File]::WriteAllText($orphanPath, (ConvertTo-Json -InputObject $orphan -Depth 5))
   Check 'target に当てる入力が 0 件' (With $ok @{ TargetsPath = $orphanPath }) `
     $false '当てる入力が 1 件 も無い'
+
+  # **引数の名前も表に在る。** 前は node 側に `target === 'XmlScan' ? … : …` と
+  # 書いてあり、2 本 目 のスキャナを足した瞬間にそちらが別の枝へ落ちる形だった。
+  # 表から引くようにした以上、**引けなかったときに落ちること**を見る
+  $noArgsPath = Join-Path $tmp 'targets-noargs.json'
+  $noArgs = @(Get-Content -LiteralPath $realTargets -Raw | ConvertFrom-Json)
+  foreach ($x in $noArgs) { if ($x.target -ceq 'SxmlScan') { $x.PSObject.Properties.Remove('args') } }
+  [IO.File]::WriteAllText($noArgsPath, (ConvertTo-Json -InputObject $noArgs -Depth 5))
+  Check 'target に args が無い' (With $ok @{ TargetsPath = $noArgsPath }) $false '答えが 0 行'
 
   # `describe` の export を消す。**node 側が 0 行 を返す** ——
   # 突き合わせるものが無いのに緑にしてはいけない

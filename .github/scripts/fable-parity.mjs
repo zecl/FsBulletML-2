@@ -6,8 +6,12 @@
 // 中に在って、.NET と共通。ここで組むと、組み方のほうが食い違って
 // 「中身は同じなのに赤」「違うのに緑」になる。
 //
-// **引数の取り出しだけは target ごと。** F# 側が静的に型を要るので、
-// どちらの runtime にも小さな振り分けが要る。取り違えれば答えがずれるので、
+// **引数の名前は表に在る**（targets.json の `args`）。前はここに
+// `c.target === 'XmlScan' ? … : …` と書いてあり、**2 本 目 のスキャナを
+// 足した瞬間に、そちらが `fn(c.id)` の側へ落ちる**形だった —— 表を 1 か所 に
+// したはずが、引数の取り出しだけ 2 か所 目 の表になっていた。
+//
+// F# 側には振り分けが残る（静的に型が要る）。取り違えれば答えがずれるので、
 // 突き合わせ自身がそこも見ている。
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
@@ -30,15 +34,18 @@ for (const t of targets) {
     console.error(`${t.export} が焼いた JS に無い（${t.js}）`)
     process.exit(3)
   }
-  describe[t.target] = fn
+  if (!Array.isArray(t.args) || t.args.length === 0) {
+    console.error(`target『${t.target}』に args が無い（targets.json）`)
+    process.exit(3)
+  }
+  describe[t.target] = { fn, args: t.args }
 }
 
 cases.forEach((c, i) => {
-  const fn = describe[c.target]
-  if (!fn) {
+  const d = describe[c.target]
+  if (!d) {
     console.error(`表に知らない target が在る: ${c.target}`)
     process.exit(4)
   }
-  const answer = c.target === 'XmlScan' ? fn(c.src, c.cursor) : fn(c.id)
-  console.log(`${i}\t${answer}`)
+  console.log(`${i}\t${d.fn(...d.args.map((a) => c[a]))}`)
 })

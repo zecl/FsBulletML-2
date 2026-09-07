@@ -1,5 +1,6 @@
 namespace FsBulletML2.LanguageService
 
+open System
 open System.Xml
 open FsBulletML2
 
@@ -21,10 +22,13 @@ type Failure =
 ///
 /// 実際に流して数えた 4 層。
 ///
-///     XML の構文        XmlException                  行・桁 あり
-///     BulletML でない   tryReadXmlString が None      位置なし
+///     構文              XmlException / FParsec        行・桁 あり
+///     BulletML でない   tryRead… が None              位置なし
 ///     木は組めない      BulletmlDTDViolationException 位置なし（label 名は在る）
 ///     式                XPathException                位置なし
+///
+/// **層の並びは表記に依らない。** 1 層 目 だけが表記ごとで、そこは
+/// `apply` / `applySxml` に分けてある（束ねるのは `SourceReader`）。
 ///
 /// **位置が在るのは 1 層 目 だけ。** 3 層 目 は label 名を持っているので
 /// 本文を探せば当てられるが、**同じ label が 2 つ 在るときに嘘の場所を指す。**
@@ -65,6 +69,8 @@ module Diagnosis =
   /// どちらも同じ分け方を通るので、**試験で当てた形が本番の形になる。**
   ///
   /// 返りが `None` なら成功。
+  ///
+  /// **XML の 1 本。** sxml は `applySxml`。束ねているのは `SourceReader`
   let apply (build: Bulletml -> unit) (xml: string) : Failure option =
     try
       match tryReadXmlString xml with
@@ -72,4 +78,49 @@ module Diagnosis =
       | Some bulletml ->
         build bulletml
         None
+    with ex -> Some(ofException ex)
+
+  /// FParsec の文面は 5 行 ある —— `Error in Ln: ...`、本文の写し、
+  /// キャレットの絵、`Note:`、`Expecting:`。**帯にも波線にも絵は要らない**ので、
+  /// 何を待っていたかを言う行だけ足す。
+  ///
+  /// **飾り。** 位置が本体で、この行が取れなくても波線は同じところに出る ——
+  /// FParsec が文面を変えたら静かに落ちるだけ
+  let private expectation (message: string) =
+    message.Split('\n')
+    |> Array.map (fun l -> l.Trim())
+    |> Array.tryFind (fun l -> l.StartsWith("Expecting:", StringComparison.Ordinal))
+
+  /// sxml を読んで、載せる。**`tryReadSxmlString` を使わない。**
+  ///
+  /// あちらは `Failure (_,_,_) -> None` で、**FParsec が持っている位置を
+  /// 捨てている**（v0.9 の頭で測った）。口が在ることと、その口が要るものを
+  /// 返すことは別 —— ここは `Sxml.parse` を直に呼んで位置を拾う。
+  ///
+  /// **読む筋そのものは `tryReadSxmlString` と同じ**（`Sxml.parse` して
+  /// `tryBulletmlFromXmlNode`）。2 本 書いていることになるので、
+  /// **コーパス 171 本 で答えが一致することを門で見ている**
+  /// （`Parser.Tests/SxmlReader.fs`）。
+  let applySxml (build: Bulletml -> unit) (sxml: string) : Failure option =
+    try
+      match Sxml.parse sxml with
+      | FParsec.CharParsers.Failure (message, error, _) ->
+        let where = "S 式として読めなかった"
+        Some
+          { // 空文字を読ませても 1 起点 で返ってくるが、**丸めておく** ——
+            // 0 のまま渡すと Monaco の範囲が壊れる
+            Line = max 1 (int error.Position.Line)
+            Column = max 1 (int error.Position.Column)
+            // 「そこから先が読めない」しか言わないので、終わりは分からない
+            EndColumn = 0
+            Message =
+              match expectation message with
+              | Some e -> where + "。" + e
+              | None -> where }
+      | FParsec.CharParsers.Success (node, _, _) ->
+        match BulletmlRead.tryBulletmlFromXmlNode node with
+        | None -> Some(plain "BulletML として読めなかった")
+        | Some bulletml ->
+          build bulletml
+          None
     with ex -> Some(ofException ex)

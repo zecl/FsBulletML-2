@@ -38,12 +38,13 @@
     <AssemblyName>FsBulletML2.LanguageService.Host</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <!-- 順は依存の順。Vocabulary が Spec を引き、References が Vocabulary と
-         器の XmlScan を引く -->
+    <!-- 順は依存の順。Vocabulary が Spec を引き、References が Vocabulary を引き、
+         SourceReader が Diagnosis と器のスキャナを束ねる -->
     <Compile Include="Spec.fs" />
     <Compile Include="Vocabulary.fs" />
     <Compile Include="Diagnosis.fs" />
     <Compile Include="References.fs" />
+    <Compile Include="SourceReader.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />

@@ -88,13 +88,18 @@ type Playground() as self =
   let mutable lastN = -1
   let mutable canvas: HTMLCanvasElement = null
   let mutable canvasCtx: CanvasRenderingContext2D = null
-  // host からもらう語彙。正本は Core の DTD.fs
+  // host からもらう語彙。正本は Core の DTD.fs。**表記が変わっても同じ**
   let mutable vocabulary: Vocab = { Elements = []; Expressions = [] }
-  // 登録されている表記。**v0.3 は XML 1 本。**
-  // 次の言語はここに 1 個 足して、host の kind に腕を 1 本 足すだけ
-  let languages: ISourceLanguage list = [ Languages.Xml.XmlLanguage(fun () -> vocabulary) ]
-  // いま欄に載っている表記。UI に切替は出さない
-  let mutable current = List.head languages
+  // **同梱カタログは XML ダンプ。** `SelectPattern` が `ToIndentedXmlString` で
+  // 焼くので、選んだら表記も XML に戻す。ほかの表記では焼けない ——
+  // repo に**書く口が無い**（読むだけ。v0.9 の頭で測った）
+  let catalogLanguage: ISourceLanguage = Languages.Xml.XmlLanguage(fun () -> vocabulary)
+  // 登録されている表記。**v0.9 で 2 本。**
+  // 次の表記はここに 1 個 足して、host の `SourceReader` に 1 行 足すだけ
+  let languages: ISourceLanguage list =
+    [ catalogLanguage; Languages.Sxml.SxmlLanguage(fun () -> vocabulary) ]
+  // いま欄に載っている表記
+  let mutable current = catalogLanguage
   // 波線を付けたか。**印は文字に追随しない**ので、次の打鍵で消す
   let mutable markedAt = false
 
@@ -230,6 +235,49 @@ type Playground() as self =
               markedAt <- true)
         (fun err -> setError (errText err))
 
+  /// 表記を差し替える。**本文は触らない。**
+  ///
+  /// XML を書いたまま sxml にすると Apply が落ちる —— **それが正しい。**
+  /// 黙って変換すると人が書いた字が消えるし、そもそも**書く口が repo に無い**
+  member _.useLanguage(lang: ISourceLanguage) =
+    current <- lang
+    Monaco.setLanguage lang.EditorLanguageId
+    let sel = el "mode"
+    if not (isNull sel) then (sel :?> HTMLSelectElement).value <- lang.Kind.Id
+
+  /// 表記のプルダウンを、登録されている並びから作る。**html に表を書かない**
+  member _.fillModes() =
+    let sel = el "mode"
+    if isNull sel then ()
+    else
+      sel.innerHTML <- ""
+      for lang in languages do
+        let o = document.createElement "option" :?> HTMLOptionElement
+        o.value <- lang.Kind.Id
+        o.textContent <- lang.Kind.Id
+        sel.appendChild o |> ignore
+      (sel :?> HTMLSelectElement).value <- current.Kind.Id
+      // 開ける拡張子も同じ並びから。**html と 2 か所 に書かない**
+      let input = el "open-file"
+      if not (isNull input) then
+        input.setAttribute (
+          "accept",
+          languages |> List.map (fun l -> l.Kind.FileExtension) |> String.concat ",")
+
+  member _.setMode() =
+    let sel = el "mode"
+    if isNull sel then ()
+    else
+      let id = (sel :?> HTMLSelectElement).value
+      match languages |> List.tryFind (fun l -> l.Kind.Id = id) with
+      | None -> setError ("知らない表記: " + id)
+      | Some lang ->
+        self.useLanguage lang
+        // **印を下ろす。** 前の表記で引いた波線は、切り替えた時点で嘘になる
+        markedAt <- false
+        Monaco.clearMarks ()
+        setError ""
+
   member _.fillPatterns() =
     let sel = el "pattern"
     if isNull sel || isNull dotNet then ()
@@ -238,7 +286,7 @@ type Playground() as self =
       sel.innerHTML <- ""
       let blank = document.createElement "option" :?> HTMLOptionElement
       blank.value <- ""
-      blank.textContent <- "（XML 編集 / Open）"
+      blank.textContent <- "（編集 / Open）"
       sel.appendChild blank |> ignore
       let len: int = names?length
       let mutable i = 0
@@ -263,7 +311,9 @@ type Playground() as self =
           if s.StartsWith "ERROR:" then setError (s.Substring 6)
           else
             Monaco.setValue s
-            Monaco.setLanguage current.EditorLanguageId
+            // **表記も戻す。** 返ってくるのは同梱カタログの XML ダンプなので、
+            // sxml のまま載せると Apply が落ちる
+            self.useLanguage catalogLanguage
             setError "")
         (fun err -> setError (errText err))
 
@@ -307,11 +357,18 @@ type Playground() as self =
   member _.loadFile(file: obj) =
     if isNull file then ()
     else
+      // **名前で表記を決める。** 決めないと、`.sxml` を開いた人がまず見るのは
+      // 「読めなかった」になる —— 拡張子はその場に在る材料
+      let name = (string (file?name : obj)).ToLower()
+      let byName =
+        languages
+        |> List.tryFind (fun l -> name.EndsWith l.Kind.FileExtension)
+        |> Option.defaultValue current
       let reader = newFileReader ()
       reader.onload <-
         fun _ ->
           Monaco.setValue (string reader.result)
-          Monaco.setLanguage current.EditorLanguageId
+          self.useLanguage byName
           let sel = el "pattern"
           if not (isNull sel) then (sel :?> HTMLSelectElement).value <- ""
           self.apply ()
@@ -332,14 +389,18 @@ type Playground() as self =
             let seed = if isNull dotNet then "" else string (invoke0 dotNet "InitialSource")
             Monaco.create "source" current.EditorLanguageId seed
             self.loadVocabulary ()
-            // **XML を名指ししない。** 次の言語が来ても、通る道はここ 1 本
-            Monaco.registerCompletionProvider
-              current.EditorLanguageId
-              current.TriggerCharacters
-              (fun src offset -> current.Complete src offset)
-            Monaco.registerHoverProvider
-              current.EditorLanguageId
-              (fun src offset -> current.Hover src offset)
+            self.fillModes ()
+            // **表記ごとに 1 回 ずつ、起動時に。** Monaco の provider は
+            // language id に付くので、切り替えるたびに登録すると同じ id へ
+            // 何本も積み上がり、候補が表記の数だけ重なる
+            for lang in languages do
+              Monaco.registerCompletionProvider
+                lang.EditorLanguageId
+                lang.TriggerCharacters
+                (fun src offset -> lang.Complete src offset)
+              Monaco.registerHoverProvider
+                lang.EditorLanguageId
+                (fun src offset -> lang.Hover src offset)
             // **印は文字に追随しない。** 1 文字 打った時点で場所が嘘になるので、
             // そこで消す。付けていないときは何もしない（毎打鍵の空振りを避ける）
             Monaco.onContentChanged (fun () ->
@@ -433,6 +494,7 @@ let private on (id: string) (event: string) (handler: unit -> unit) =
   else node.addEventListener (event, fun _ -> handler ())
 
 on "pattern" "change" (fun () -> playground.pick ())
+on "mode" "change" (fun () -> playground.setMode ())
 on "help" "click" (fun () -> playground.help ())
 on "help-close" "click" (fun () -> playground.closeHelp ())
 on "play" "click" (fun () -> playground.call("Play"))

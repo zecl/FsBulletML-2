@@ -38,12 +38,16 @@ type ReferenceScan() =
   /// 出す側で、参照の欠けを数える側は開始札しか見ない
   let openTags (src: string) = XmlScan.tags src |> List.filter (fun t -> not t.Closing)
 
+  /// **字を数える 1 本 を渡す（v0.9）。** `References` は表記を知らなくなった ——
+  /// ここが渡しているのは XML の側で、sxml は `SxmlReferenceScan.fs`
+  let missing = References.missing XmlScan.tags
+
   let rand () = 0.5f
   let rank = 0.5f
   let build (b: Bulletml) = Runner.load rand rank b |> ignore
   let coreFails xml = (Diagnosis.apply build xml).IsSome
   /// 本番と同じ道。`Main.fs` の `ApplySource` もこれを通る
-  let explain xml = References.explain (Diagnosis.apply build xml) xml
+  let explain xml = References.explain XmlScan.tags (Diagnosis.apply build xml) xml
 
   let corpus =
     lazy
@@ -69,27 +73,27 @@ type ReferenceScan() =
 
   [<Test>]
   member _.``定義が在れば挙げない``() =
-    References.missing "<bulletml><action label=\"a\"><wait>1</wait></action><action label=\"top\"><actionRef label=\"a\"/></action></bulletml>"
+    missing "<bulletml><action label=\"a\"><wait>1</wait></action><action label=\"top\"><actionRef label=\"a\"/></action></bulletml>"
     |> should be Empty
 
   [<Test>]
   member _.``無い参照を 2 つ とも挙げる``() =
     // **これが本題。** Core はここで 1 件 目 しか言わない
     let found =
-      References.missing "<bulletml><action label=\"top\"><actionRef label=\"a\"/><actionRef label=\"b\"/></action></bulletml>"
+      missing "<bulletml><action label=\"top\"><actionRef label=\"a\"/><actionRef label=\"b\"/></action></bulletml>"
     found.Length |> should equal 2
     found |> List.forall (fun f -> f.Line > 0) |> should be True
 
   [<Test>]
   member _.``同じ名前を 2 回 参照したら 2 本``() =
     // どちらも直す先なので、1 本 に畳まない
-    (References.missing "<bulletml><action label=\"top\"><actionRef label=\"a\"/><actionRef label=\"a\"/></action></bulletml>").Length
+    (missing "<bulletml><action label=\"top\"><actionRef label=\"a\"/><actionRef label=\"a\"/></action></bulletml>").Length
     |> should equal 2
 
   [<Test>]
   member _.``fire と bullet も見る``() =
     let found =
-      References.missing
+      missing
         "<bulletml><action label=\"top\"><fireRef label=\"f\"/><fire><bulletRef label=\"b\"/></fire></action></bulletml>"
     found.Length |> should equal 2
     found |> List.map (fun f -> f.Message.Split(' ').[0]) |> List.sort
@@ -101,7 +105,7 @@ type ReferenceScan() =
   member _.``位置が label の値そのものを指す``() =
     // 3 行目 の `<actionRef label="a"/>`。`a` は 19 桁目、閉じ引用符が 20
     let xml = "<bulletml>\n<action label=\"top\">\n<actionRef label=\"a\"/>\n</action>\n</bulletml>"
-    match References.missing xml with
+    match missing xml with
     | [ f ] ->
       f.Line |> should equal 3
       f.Column |> should equal 19
@@ -114,7 +118,7 @@ type ReferenceScan() =
     // いつも 1 を返す壊れ方が緑で通らないように、2 か所 の行を数える
     let xml =
       "<bulletml>\n<action label=\"top\">\n<actionRef label=\"a\"/>\n<wait>1</wait>\n<actionRef label=\"b\"/>\n</action>\n</bulletml>"
-    References.missing xml |> List.map (fun f -> f.Line) |> should equal [ 3; 5 ]
+    missing xml |> List.map (fun f -> f.Line) |> should equal [ 3; 5 ]
 
   // --- 飛ばすもの -----------------------------------------------------------
 
@@ -122,13 +126,13 @@ type ReferenceScan() =
   member _.``コメントの中は数えない``() =
     // **コメントの中に `>` を先に置く。** 置かないと、コメント専用の飛ばしを
     // 外しても `<!` の枝が `>` まで食って同じ結果になり、変異が当たらない
-    References.missing "<bulletml><action label=\"top\"><!-- x > <actionRef label=\"a\"/> --><wait>1</wait></action></bulletml>"
+    missing "<bulletml><action label=\"top\"><!-- x > <actionRef label=\"a\"/> --><wait>1</wait></action></bulletml>"
     |> should be Empty
 
   [<Test>]
   member _.``CDATA の中は数えない``() =
     // コメントと同じで、中に `>` を先に置かないと変異が `<!` の枝に吸われる
-    References.missing "<bulletml><action label=\"top\"><wait><![CDATA[x > <actionRef label=\"a\"/>]]></wait></action></bulletml>"
+    missing "<bulletml><action label=\"top\"><wait><![CDATA[x > <actionRef label=\"a\"/>]]></wait></action></bulletml>"
     |> should be Empty
 
   [<Test>]
@@ -145,13 +149,13 @@ type ReferenceScan() =
     tags |> List.map (fun t -> t.TagName) |> should equal [ "action"; "actionRef" ]
     tags.Head.Attrs |> List.length |> should equal 2
     // 定義側も参照側も同じ値なので、欠けは無い
-    References.missing "<bulletml><action label=\"a>b\"><wait>1</wait></action><action label=\"top\"><actionRef label=\"a>b\"/></action></bulletml>"
+    missing "<bulletml><action label=\"a>b\"><wait>1</wait></action><action label=\"top\"><actionRef label=\"a>b\"/></action></bulletml>"
     |> should be Empty
 
   [<Test>]
   member _.``閉じ引用符が無い属性は捨てる``() =
     // **位置が本文とずれるものを挙げない。** 読めていないまま挙げると嘘の波線
-    References.missing "<bulletml><action label=\"top\"><actionRef label=\"a/></action></bulletml>"
+    missing "<bulletml><action label=\"top\"><actionRef label=\"a/></action></bulletml>"
     |> should be Empty
 
   // --- コーパスと突き合わせる -----------------------------------------------
@@ -181,7 +185,7 @@ type ReferenceScan() =
     // 本文が読めていないので、字から数えた位置は当てにならない。
     // **参照の欠けが本文に在っても、そちらへ乗り換えない**
     let xml = "<bulletml><action label=\"top\"><actionRef label=\"nope\"/><fire>"
-    (References.missing xml).Length |> should equal 1   // 単独なら挙げる
+    (missing xml).Length |> should equal 1   // 単独なら挙げる
     match explain xml with
     | [ f ] ->
       f.Line |> should greaterThan 0
@@ -197,7 +201,7 @@ type ReferenceScan() =
       + "<fire label=\"orphan\"><bulletRef label=\"nope\"/></fire></bulletml>"
     coreFails xml |> should be False
     // `missing` 単独では挙げる。**広いこと自体は間違いではない**
-    (References.missing xml).Length |> should equal 1
+    (missing xml).Length |> should equal 1
     // 本番の道では出ない
     explain xml |> should be Empty
 

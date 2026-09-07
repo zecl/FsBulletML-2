@@ -42,8 +42,11 @@
         <div class="editor">
         <div class="picker">
           <select id="pattern">
-            <option value="">（XML 編集 / Open）</option>
+            <option value="">（編集 / Open）</option>
           </select>
+          <!-- 中身は空。**表記の表を html に書かない** —— 登録されている
+               並び（Playground.fs の languages）から Fable が作る -->
+          <label class="mode">表記<select id="mode"></select></label>
           <button type="button" id="help" title="補完の使い方">?</button>
         </div>
         <!-- 中身は空。**XML を html に書かない** —— 起動時の本文は host が
@@ -69,7 +72,9 @@
         <button type="button" id="reset">Reset</button>
         <button type="button" id="apply">Apply</button>
         <button type="button" id="open">Open</button>
-        <input id="open-file" type="file" accept=".xml,text/xml,application/xml" hidden>
+        <!-- accept は Fable が入れる（登録されている表記の拡張子）。
+             ここに書くと、表記を足したとき 2 か所 直すことになる -->
+        <input id="open-file" type="file" hidden>
         <span>FPS: <span id="fps">0</span></span>
         <span>Bullets: <span id="bullet-count">0</span></span>
         <span class="error" id="loop-error">起動待ち</span>
@@ -87,24 +92,35 @@
 
       <p>
         候補は BulletML の DTD から出しているので、<strong>その場所に置けるものしか出ない</strong>。
-        打っている途中で XML が壊れていても止まらない。
+        打っている途中で本文が壊れていても止まらない。
+      </p>
+
+      <p>
+        <strong>表記</strong>のプルダウンで XML と sxml を切り替える。
+        <strong>語彙は同じ</strong>で、変わるのは書き方だけ ——
+        XML の <code>&lt;fire label="a"&gt;</code> が sxml では
+        <code>(fire (@ (label "a")))</code>。
+        切り替えても<strong>本文はそのまま</strong>なので、書いたものが消えることはない
+        （そのぶん、XML を書いたまま sxml にすると Apply は落ちる）。
       </p>
 
       <table>
-        <thead><tr><th>打つ</th><th>出るもの</th></tr></thead>
+        <thead><tr><th>打つ（XML / sxml）</th><th>出るもの</th></tr></thead>
         <tbody>
           <tr>
-            <td><code>&lt;</code></td>
-            <td>そこに置ける要素。<code>&lt;action&gt;</code> の中なら <code>fire</code> や <code>wait</code>、
-                <code>&lt;fire&gt;</code> の中なら <code>direction</code> や <code>bullet</code></td>
+            <td><code>&lt;</code> / <code>(</code></td>
+            <td>そこに置ける要素。<code>action</code> の中なら <code>fire</code> や <code>wait</code>、
+                <code>fire</code> の中なら <code>direction</code> や <code>bullet</code></td>
           </tr>
           <tr>
-            <td><code>&lt;</code> に続けて何文字か</td>
-            <td>絞り込み。確定すると <code>&lt;fire&gt;</code> のように入る</td>
+            <td>続けて何文字か</td>
+            <td>絞り込み。確定すると <code>&lt;fire&gt;</code> / <code>(fire)</code> のように入る</td>
           </tr>
           <tr>
-            <td>タグの中で空白＋何文字か</td>
-            <td>属性名。確定すると <code>type=""</code> まで入って、カーソルが引用符の中に来る</td>
+            <td>タグの中で空白＋何文字か<br>
+                <code>(@ (</code> に続けて何文字か</td>
+            <td>属性名。確定すると <code>type=""</code> / <code>(type "")</code> まで入って、
+                カーソルが引用符の中に来る</td>
           </tr>
           <tr>
             <td><code>"</code></td>
@@ -113,8 +129,7 @@
           </tr>
           <tr>
             <td><code>$</code> に続けて何文字か</td>
-            <td><code>$rand</code> と <code>$rank</code>。
-                <code>&lt;wait&gt;</code> や <code>&lt;speed&gt;</code> のように
+            <td><code>$rand</code> と <code>$rank</code>。<code>wait</code> や <code>speed</code> のように
                 <strong>中身に式を書ける要素の中だけ</strong></td>
           </tr>
           <tr>
@@ -126,17 +141,18 @@
 
       <h3>ほかの操作</h3>
       <ul>
-        <li><strong>Apply</strong> を押すと、書いた XML が弾幕に反映される。
+        <li><strong>Apply</strong> を押すと、書いたものが弾幕に反映される。
             打つたびには反映しない（見ている弾幕が最初に戻ってしまうため）</li>
-        <li>読めない XML は Apply したときに下のバーへ理由が出る</li>
+        <li>読めなければ Apply したときに下のバーへ理由が出て、分かる位置には波線が付く</li>
         <li><strong>Reset</strong> はいま載っている弾幕を最初から。<strong>欄の文字は触らない</strong></li>
-        <li>プルダウンで同梱の弾幕を選ぶと、その XML が欄に入る</li>
+        <li>プルダウンで同梱の弾幕を選ぶと、その XML が欄に入る（<strong>表記も XML に戻る</strong>）</li>
+        <li><strong>Open</strong> は名前で表記を決める。<code>.sxml</code> を開けば sxml に切り替わる</li>
         <li>折りたたみ・検索（<kbd>Ctrl</kbd>+<kbd>F</kbd>）・
             取り消し（<kbd>Ctrl</kbd>+<kbd>Z</kbd>）はエディタの標準機能</li>
       </ul>
 
       <p class="note">
-        いま書けるのは XML だけ。sxml や F# の DSL は口だけ開けてある。
+        いま書けるのは XML と sxml。fsb と F# の DSL は口だけ開けてある。
       </p>
 
       <button type="button" id="help-close">閉じる</button>

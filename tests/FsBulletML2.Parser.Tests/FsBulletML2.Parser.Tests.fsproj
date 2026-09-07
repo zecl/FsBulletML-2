@@ -24,6 +24,12 @@
     <Compile Include="XmlContext.fs" />
     <Compile Include="XmlCompletion.fs" />
     <Compile Include="HoverMarkdown.fs" />
+    <!-- sxml（v0.9）。XML 側と対で、名前が対応している -->
+    <Compile Include="SxmlReader.fs" />
+    <Compile Include="SxmlToken.fs" />
+    <Compile Include="SxmlReferenceScan.fs" />
+    <Compile Include="SxmlContext.fs" />
+    <Compile Include="SxmlCompletion.fs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\TestData\**\*">
