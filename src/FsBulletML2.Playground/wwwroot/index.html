@@ -109,8 +109,9 @@
         XML の <code>&lt;fire label="a"&gt;</code> が
         sxml では <code>(fire (@ (label "a")))</code>、
         fsb では <code>fire label="a"</code>（入れ子は行頭の空白で決まる）。
-        切り替えても<strong>本文はそのまま</strong>なので、書いたものが消えることはない
-        （そのぶん、XML を書いたまま sxml にすると Apply は落ちる）。
+        <strong>切り替えると、いまの本文がその表記に書き直される。</strong>
+        プルダウンの弾幕を読み直すのではなく<strong>いまの本文を変換する</strong>ので、
+        自分で足した字も残る。読めない本文のときは触らずに理由が出る。
       </p>
 
       <p>

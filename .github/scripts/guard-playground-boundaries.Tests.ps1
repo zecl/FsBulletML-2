@@ -1,4 +1,4 @@
-#requires -Version 7
+﻿#requires -Version 7
 <#
 .SYNOPSIS
   guard-playground-boundaries.ps1 の較正。
@@ -72,9 +72,9 @@ try {
   # 差し替え用の材料。既定はどれも「線の内側」
   New-Item -ItemType Directory -Path $tmp -Force | Out-Null
   $dtd = Make 'core/DTD.fs' @'
-writer.WriteStartElement("bulletml")
-writer.WriteStartElement("action")
-writer.WriteStartElement("vanish")
+sink.Start("bulletml")
+sink.Start("action")
+sink.Start("vanish")
 '@
   $proj = Make 'core/Core.fsproj' '<Project><ItemGroup><Compile Include="DTD.fs" /></ItemGroup></Project>'
   # 線の内側の html。**SRI と CSP が在り、中身の在るインライン script は無い**

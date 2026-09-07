@@ -47,6 +47,8 @@
     <Compile Include="Diagnosis.fs" />
     <Compile Include="References.fs" />
     <Compile Include="SourceReader.fs" />
+    <!-- 書く口。**読む口の対**（v1.4 で足した。それまで書けたのは XML だけ） -->
+    <Compile Include="SourceWriter.fs" />
   </ItemGroup>
   <ItemGroup>
     <!--

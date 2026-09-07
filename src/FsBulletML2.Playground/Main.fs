@@ -15,7 +15,7 @@ open FsBulletML2.LanguageService
 
 /// 起動時に載せる弾幕。**同梱カタログの CE が正本。**
 ///
-/// 欄に出す XML は `ToIndentedXmlString` で焼く —— html に直書きすると、
+/// 欄に出す XML は `BulletmlWriter.toIndentedXml` で焼く —— html に直書きすると、
 /// 弾幕を差し替えたとき字だけが古びる（走るのは CE、見えるのは古い XML）。
 ///
 /// **一覧の番号で指さない。** 並びが動くと黙って別の弾幕になる。
@@ -83,8 +83,13 @@ type PlaygroundHost() =
     field <- Playfield.Create env current
 
   /// 起動時に欄へ出す XML。**html に直書きしない。**
+  ///
+  /// **定数を畳まない側で焼く（v1.4）。** `Parser` の `ToIndentedXmlString` は
+  /// `foldConstants` を通すので `8` が `8.0000000000` になる ——
+  /// 表記を切り替えると、その字が sxml にも fsb にも CE にも伝播する。
+  /// **人が書いた式のまま見せる**ほうが正しい。
   [<JSInvokable>]
-  member _.InitialSource() : string = current.ToIndentedXmlString()
+  member _.InitialSource() : string = BulletmlWriter.toIndentedXml 4 current
 
   /// 補完の語彙。**起動時に 1 回 だけ。** 正本は Core の DTD.fs で、
   /// ここは reflection で読んだものを JSON にして渡すだけ。
@@ -125,7 +130,8 @@ type PlaygroundHost() =
         let next = Playfield.Create env info.Bulletml
         current <- info.Bulletml
         field <- next
-        info.Bulletml.ToIndentedXmlString()
+        // 畳まない側。理由は `InitialSource` と同じ
+        BulletmlWriter.toIndentedXml 4 info.Bulletml
     with ex -> "ERROR:" + ex.Message
 
   /// 右側の本文を読んで弾幕を差し替える。
@@ -187,6 +193,39 @@ type PlaygroundHost() =
     // 知らない字と、まだ読めない表記を分けない。**どちらも人には同じ** ——
     // 分けると「口は在るが読めない」を人に見せることになる
     | None -> failed [ Diagnosis.plain ("未対応: " + kind) ]
+
+  /// **本文を別の表記に書き直す。** 弾幕は差し替えない ——
+  /// 読んで書くだけで、走っているものは触らない。
+  ///
+  /// v1.4 まで「表記を変えても本文はそのまま」だった。**決めたのではなく、
+  /// XML 以外 を書く口が repo に無かった。**
+  ///
+  /// **いまの本文を変換する**（プルダウンの弾幕を読み直すのではない）——
+  /// 人が足した字が消えないし、Open したファイルや編集後でも効く。
+  /// 読めない本文のときは触らない（呼ぶ側が `ok:false` を見て何もしない）。
+  ///
+  ///     {"ok":true,"text":"…"}
+  ///     {"ok":false,"message":"…"}
+  [<JSInvokable>]
+  member _.Transcode(fromKind: string, toKind: string, text: string) : string =
+    let jstr (s: string) = JsonSerializer.Serialize s
+    let ng (message: string) = sprintf "{\"ok\":false,\"message\":%s}" (jstr message)
+    match SourceKind.tryParse fromKind |> Option.bind SourceReader.tryFind,
+          SourceKind.tryParse toKind |> Option.bind SourceWriter.tryFind with
+    | Some reader, Some writer ->
+      // **載せない。** `ApplySource` と違って、ここは字を作るだけ
+      let mutable got = None
+      match reader.Apply (fun b -> got <- Some b) text with
+      | Some failure -> ng failure.Message
+      | None ->
+        match got with
+        | None -> ng "読めたが弾幕が取れなかった"
+        | Some bulletml ->
+          match writer.Write bulletml with
+          | Result.Ok written -> sprintf "{\"ok\":true,\"text\":%s}" (jstr written)
+          | Result.Error why -> ng why
+    | None, _ -> ng ("未対応: " + fromKind)
+    | _, None -> ng ("未対応: " + toKind)
 
 /// 空の根。描画のあとで host を JS に渡す。
 type MyApp() =

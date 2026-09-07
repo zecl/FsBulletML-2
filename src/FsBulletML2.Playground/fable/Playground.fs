@@ -31,6 +31,9 @@ let private invokeAsync1 (dn: obj) (name: string) (arg: obj) : obj = jsNative
 [<Emit("$0.invokeMethodAsync($1, $2, $3)")>]
 let private invokeAsync2 (dn: obj) (name: string) (a: obj) (b: obj) : obj = jsNative
 
+[<Emit("$0.invokeMethodAsync($1, $2, $3, $4)")>]
+let private invokeAsync3 (dn: obj) (name: string) (a: obj) (b: obj) (c: obj) : obj = jsNative
+
 [<Emit("$0.then($1).catch($2)")>]
 let private thenCatch (p: obj) (ok: obj -> unit) (err: obj -> unit) : unit = jsNative
 
@@ -91,8 +94,10 @@ type Playground() as self =
   // host からもらう語彙。正本は Core の DTD.fs。**表記が変わっても同じ**
   let mutable vocabulary: Vocab = { Elements = []; Expressions = [] }
   // **同梱カタログは XML ダンプ。** `SelectPattern` が `ToIndentedXmlString` で
-  // 焼くので、選んだら表記も XML に戻す。ほかの表記では焼けない ——
-  // repo に**書く口が無い**（読むだけ。v0.9 の頭で測った）
+  // 焼くので、選んだら表記も XML に戻す。
+  //
+  // **選んだあと表記を変えれば、その表記になる**（v1.4 で書く口が 4 つ に
+  // 揃った）—— 変換するのは `setMode` の側で、ここは XML のまま
   let catalogLanguage: ISourceLanguage = Languages.Xml.XmlLanguage(fun () -> vocabulary)
   // 登録されている表記。**並びは `SourceKind.all` と同じ** ——
   // プルダウンも `Open` の accept もここから作るので、順が意味を持つ。
@@ -276,12 +281,42 @@ type Playground() as self =
       let id = (sel :?> HTMLSelectElement).value
       match languages |> List.tryFind (fun l -> l.Kind.Id = id) with
       | None -> setError ("知らない表記: " + id)
+      // 同じ表記を選び直しただけなら、本文を通さない
+      | Some lang when lang.Kind.Id = current.Kind.Id -> ()
       | Some lang ->
+        // **いまの本文をその表記へ書き直す（v1.4）。**
+        //
+        // v1.3 まで本文は触らなかった。「黙って変換すると人が書いた字が消える」
+        // と書いてあったが、**本当の理由は XML 以外 を書く口が repo に無かった**
+        // こと —— 口ができたので変換する。
+        //
+        // **プルダウンの弾幕を読み直すのではなく、いまの本文を変換する** ——
+        // 人が足した字が残るし、Open したファイルや編集後でも効く。
+        // 読めなければ触らずに理由を出す（下の `ok:false`）
+        let previous = current
+        let fromId = current.Kind.Id
+        let text = Monaco.getValue ()
         self.useLanguage lang
         // **印を下ろす。** 前の表記で引いた波線は、切り替えた時点で嘘になる
         markedAt <- false
         Monaco.clearMarks ()
         setError ""
+        if isNull dotNet then ()
+        else
+          thenCatch
+            (invokeAsync3 dotNet "Transcode" fromId lang.Kind.Id text)
+            (fun res ->
+              let r = jsonParse (string res)
+              if unbox<bool> r?ok then Monaco.setValue (string r?text)
+              else
+                // **表記も戻す。** 本文を触らないだけだと、
+                // 「sxml と名乗る fsb の本文」が残って色も Apply の理由も嘘になる
+                // —— 人には**別の間違い**に見える
+                self.useLanguage previous
+                setError (string r?message))
+            (fun err ->
+              self.useLanguage previous
+              setError (errText err))
 
   member _.fillPatterns() =
     let sel = el "pattern"

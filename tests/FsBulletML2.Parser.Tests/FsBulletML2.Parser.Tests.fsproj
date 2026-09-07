@@ -44,6 +44,8 @@
     <Compile Include="Usages.fs" />
     <!-- 直し方（v1.3）。同上 -->
     <Compile Include="QuickFix.fs" />
+    <!-- 表記を書き分ける（v1.4）。**4 表記 の往復が本体** -->
+    <Compile Include="Transcode.fs" />
   </ItemGroup>
   <ItemGroup>
     <!-- **CE の本文を試験の出力へ写す。** 期待値は `Bullets.Dsl` の値なので、

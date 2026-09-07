@@ -289,6 +289,26 @@ module DTD =
     member private t.ToStructuredDisplay = t.ToString()
     override t.ToString () = stringifyFullName t
 
+  /// **弾幕を字にするときの受け口。**
+  ///
+  /// 木を歩くのは 1 本（`BulletmlWriter.writeTo`）で、**歩きは表記を知らない。**
+  /// XML も S 式 も インデント記法 も「要素を開く / 属性 / 本文 / 閉じる」しか
+  /// 使わないので、違うのは**それをどう字にするか**だけ。
+  ///
+  /// **その表記で書ける字かどうかは、受け口が知っている** —— sxml の属性値に
+  /// 通せない文字も、fsb の本文に空白が入れられないことも、文法の側の話。
+  /// だから受け口は**その文法を読むパーサと同じところに置く**（片方 だけ直すのを防ぐ）。
+  ///
+  /// 深さは受け口が自分で数える（fsb の字下げに要る）。
+  type IBulletmlSink =
+    /// 要素を開く
+    abstract Start: name: string -> unit
+    /// 属性 1 つ。**開いた直後にだけ来る**
+    abstract Attr: name: string * value: string -> unit
+    /// 本文（#PCDATA）
+    abstract Text: value: string -> unit
+    /// いま開いている要素を閉じる
+    abstract End: unit -> unit
   /// BulletML を XML に書き戻す。
   ///
   /// **以前は走らせる木の型の member だった。** その型が公開の Bulletml と
@@ -300,14 +320,14 @@ module DTD =
   /// 同じ型に 2 つ 付くことになる。XML が要る側は toXmlString を呼ぶ。
   module internal BulletmlXml =
     /// BulletML 書き込み
-    let writeContentTo (writer: XmlWriter) (this: Bulletml) =
+    let writeContentTo (sink: IBulletmlSink) (this: Bulletml) =
       // 型が位置ごとに分かれたので、走査も位置ごとに分ける。
       // 各腕の中身は分ける前と同じ順で書く（往復の試験が順序まで見ている）。
       //
       // direction / speed / term / param は 4 か所 ずつ同じものを書いていたので
       // 関数に出した。出す順は変えていない
       let writeDirection (d: Direction) =
-        writer.WriteStartElement("direction")
+        sink.Start("direction")
         match d with
         | Direction (attrs, s) ->
           match attrs with
@@ -318,13 +338,13 @@ module DTD =
               | DirectionType.Absolute -> "absolute"
               | DirectionType.Relative -> "relative"
               | DirectionType.Sequence -> "sequence"
-            writer.WriteAttributeString("type", t)
+            sink.Attr("type", t)
           | None -> ()
-          writer.WriteString(Expr.NumExpr.text s)
-        writer.WriteEndElement()
+          sink.Text(Expr.NumExpr.text s)
+        sink.End()
 
       let writeSpeed (sp: Speed) =
-        writer.WriteStartElement("speed")
+        sink.Start("speed")
         match sp with
         | Speed (attrs, s) ->
           match attrs with
@@ -334,67 +354,67 @@ module DTD =
               | SpeedType.Absolute -> "absolute"
               | SpeedType.Relative -> "relative"
               | SpeedType.Sequence -> "sequence"
-            writer.WriteAttributeString("type", t)
+            sink.Attr("type", t)
           | None -> ()
-          writer.WriteString(Expr.NumExpr.text s)
-        writer.WriteEndElement()
+          sink.Text(Expr.NumExpr.text s)
+        sink.End()
 
       let writeTerm (Term s) =
-        writer.WriteStartElement("term")
-        writer.WriteString(Expr.NumExpr.text s)
-        writer.WriteEndElement()
+        sink.Start("term")
+        sink.Text(Expr.NumExpr.text s)
+        sink.End()
 
       let writeParams (prams: Params) =
         prams |> Seq.iter (fun s ->
-          writer.WriteStartElement("param")
-          writer.WriteString(s)
-          writer.WriteEndElement())
+          sink.Start("param")
+          sink.Text(s)
+          sink.End())
 
       let writeBulletBody (attrs: BulletAttrs) direction speed writeChildren =
-        writer.WriteStartElement("bullet")
+        sink.Start("bullet")
         match attrs.bulletLabel with
-        | Some v -> writer.WriteAttributeString("label", BulletLabel.text v)
+        | Some v -> sink.Attr("label", BulletLabel.text v)
         | None -> ()
         direction |> Option.iter writeDirection
         speed |> Option.iter writeSpeed
         writeChildren ()
-        writer.WriteEndElement()
+        sink.End()
 
       let writeFireBody (attrs: FireAttrs) direction speed writeChild =
-        writer.WriteStartElement("fire")
+        sink.Start("fire")
         match attrs.fireLabel with
-        | Some v -> writer.WriteAttributeString("label", FireLabel.text v)
+        | Some v -> sink.Attr("label", FireLabel.text v)
         | None -> ()
         direction |> Option.iter writeDirection
         speed |> Option.iter writeSpeed
         writeChild ()
-        writer.WriteEndElement()
+        sink.End()
 
       let writeActionBody (attrs: ActionAttrs) writeChildren =
-        writer.WriteStartElement("action")
+        sink.Start("action")
         match attrs.actionLabel with
-        | Some v -> writer.WriteAttributeString("label", ActionLabel.text v)
+        | Some v -> sink.Attr("label", ActionLabel.text v)
         | None -> ()
         writeChildren ()
-        writer.WriteEndElement()
+        sink.End()
 
       let rec writeCommand (c: Action) =
         match c with
         | Action.ChangeDirection (direction, term) ->
-          writer.WriteStartElement("changeDirection")
+          sink.Start("changeDirection")
           writeDirection direction
           writeTerm term
-          writer.WriteEndElement()
+          sink.End()
         | Action.ChangeSpeed (speed, term) ->
-          writer.WriteStartElement("changeSpeed")
+          sink.Start("changeSpeed")
           writeSpeed speed
           writeTerm term
-          writer.WriteEndElement()
+          sink.End()
         | Action.Accel (horizontal, vertical, term) ->
-          writer.WriteStartElement("accel")
+          sink.Start("accel")
           match horizontal with
           | Some (Horizontal.Horizontal(attrs, s)) ->
-            writer.WriteStartElement("horizontal")
+            sink.Start("horizontal")
             match attrs with
             | Some attrs ->
               let t =
@@ -402,14 +422,14 @@ module DTD =
                 | HorizontalType.Absolute -> "absolute"
                 | HorizontalType.Relative -> "relative"
                 | HorizontalType.Sequence -> "sequence"
-              writer.WriteAttributeString("type", t)
+              sink.Attr("type", t)
             | None -> ()
-            writer.WriteString(Expr.NumExpr.text s)
-            writer.WriteEndElement()
+            sink.Text(Expr.NumExpr.text s)
+            sink.End()
           | _ -> ()
           match vertical with
           | Some (Vertical.Vertical(attrs, s)) ->
-            writer.WriteStartElement("vertical")
+            sink.Start("vertical")
             match attrs with
             | Some attrs ->
               let t =
@@ -417,63 +437,63 @@ module DTD =
                 | VerticalType.Absolute -> "absolute"
                 | VerticalType.Relative -> "relative"
                 | VerticalType.Sequence -> "sequence"
-              writer.WriteAttributeString("type", t)
+              sink.Attr("type", t)
             | None -> ()
-            writer.WriteString(Expr.NumExpr.text s)
-            writer.WriteEndElement()
+            sink.Text(Expr.NumExpr.text s)
+            sink.End()
           | _ -> ()
           writeTerm term
-          writer.WriteEndElement()
+          sink.End()
         | Action.Wait s ->
-          writer.WriteStartElement("wait")
-          writer.WriteString(Expr.NumExpr.text s)
-          writer.WriteEndElement()
+          sink.Start("wait")
+          sink.Text(Expr.NumExpr.text s)
+          sink.End()
         | Action.Vanish ->
-          writer.WriteStartElement("vanish")
-          writer.WriteEndElement()
+          sink.Start("vanish")
+          sink.End()
         | Action.Repeat (times, child) ->
-          writer.WriteStartElement("repeat")
+          sink.Start("repeat")
           match times with
           | Times s ->
-            writer.WriteStartElement("times")
-            writer.WriteString(Expr.NumExpr.text s)
-            writer.WriteEndElement()
+            sink.Start("times")
+            sink.Text(Expr.NumExpr.text s)
+            sink.End()
           writeActionElm child
-          writer.WriteEndElement()
+          sink.End()
         | Action.Fire (attrs, direction, speed, child) ->
           writeFireBody attrs direction speed (fun () -> writeBulletElm child)
         | Action.FireRef (attrs, prams) ->
-          writer.WriteStartElement("fireRef")
-          writer.WriteAttributeString("label", FireLabel.text attrs.fireRefLabel)
+          sink.Start("fireRef")
+          sink.Attr("label", FireLabel.text attrs.fireRefLabel)
           writeParams prams
-          writer.WriteEndElement()
+          sink.End()
         | Action.Action (attrs, children) ->
           writeActionBody attrs (fun () -> children |> Seq.iter writeCommand)
         | Action.ActionRef (attrs, prams) ->
-          writer.WriteStartElement("actionRef")
-          writer.WriteAttributeString("label", ActionLabel.text attrs.actionRefLabel)
+          sink.Start("actionRef")
+          sink.Attr("label", ActionLabel.text attrs.actionRefLabel)
           writeParams prams
-          writer.WriteEndElement()
+          sink.End()
 
       and writeActionElm (a: ActionElm) =
         match a with
         | ActionElm.Action (attrs, children) ->
           writeActionBody attrs (fun () -> children |> Seq.iter writeCommand)
         | ActionElm.ActionRef (attrs, prams) ->
-          writer.WriteStartElement("actionRef")
-          writer.WriteAttributeString("label", ActionLabel.text attrs.actionRefLabel)
+          sink.Start("actionRef")
+          sink.Attr("label", ActionLabel.text attrs.actionRefLabel)
           writeParams prams
-          writer.WriteEndElement()
+          sink.End()
 
       and writeBulletElm (b: BulletElm) =
         match b with
         | BulletElm.Bullet (attrs, direction, speed, children) ->
           writeBulletBody attrs direction speed (fun () -> children |> Seq.iter writeActionElm)
         | BulletElm.BulletRef (attrs, prams) ->
-          writer.WriteStartElement("bulletRef")
-          writer.WriteAttributeString("label", BulletLabel.text attrs.bulletRefLabel)
+          sink.Start("bulletRef")
+          sink.Attr("label", BulletLabel.text attrs.bulletRefLabel)
           writeParams prams
-          writer.WriteEndElement()
+          sink.End()
 
       let writeTopElm (t: BulletmlElm) =
         match t with
@@ -486,9 +506,9 @@ module DTD =
 
       match this with
       | Bulletml.Bulletml (attrs, children) ->
-        writer.WriteStartElement("bulletml")
+        sink.Start("bulletml")
         match attrs.bulletmlXmlns with
-        | Some v -> writer.WriteAttributeString("xmlns", v)
+        | Some v -> sink.Attr("xmlns", v)
         | None -> ()
 
         match attrs.bulletmlType with
@@ -498,21 +518,30 @@ module DTD =
             | ShootingDirection.BulletNone -> "none"
             | ShootingDirection.BulletHorizontal -> "horizontal"
             | ShootingDirection.BulletVertical   -> "vertical"
-          writer.WriteAttributeString("type", t)
+          sink.Attr("type", t)
         | None -> ()
 
         // parser が読む属性は writer も書く。書かないと往復で消える。
         // 同梱の弾幕も type のうしろに name を置いている
         match attrs.bulletmlName with
-        | Some v -> writer.WriteAttributeString("name", v)
+        | Some v -> sink.Attr("name", v)
         | None -> ()
 
         match attrs.bulletmlDescription with
-        | Some v -> writer.WriteAttributeString("description", v)
+        | Some v -> sink.Attr("description", v)
         | None -> ()
 
         children |> Seq.iter writeTopElm
-        writer.WriteEndElement()
+        sink.End()
+
+    /// XML の受け口。**いままでの `XmlWriter` を包むだけ** ——
+    /// エスケープも字下げもあちらが持っている
+    type private XmlSink(writer: XmlWriter) =
+      interface IBulletmlSink with
+        member _.Start name = writer.WriteStartElement name
+        member _.Attr(name, value) = writer.WriteAttributeString(name, value)
+        member _.Text value = writer.WriteString value
+        member _.End() = writer.WriteEndElement()
 
     let getXmlString formatting (encdoc: EncodingAndDoctype) indentation (this: Bulletml) =
       let output = new StringBuilder()             
@@ -529,7 +558,7 @@ module DTD =
                  let sysid = "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml/bulletml.dtd"
                  writer.WriteDocType(docType, null, sysid, null)
 
-      writeContentTo writer this
+      writeContentTo (XmlSink(writer)) this
       output.ToString()
 
     let toXmlString (encodingAndDoctype: EncodingAndDoctype) (this: Bulletml) =
@@ -537,3 +566,25 @@ module DTD =
 
     let toIndentedXmlString (indentation: int) (encodingAndDoctype: EncodingAndDoctype) (this: Bulletml) =
       getXmlString Formatting.Indented encodingAndDoctype indentation this
+
+  /// **弾幕の木を歩いて、受け口へ流す 1 本。表記を知らない。**
+  ///
+  /// XML を書くのも S 式 を書くのも インデント記法 を書くのも、歩きはこれ 1 本。
+  /// 違うのは受け口だけ —— **表記が増えても、ここは増えない。**
+  ///
+  /// F# の CE だけはこの形に乗らない（要素名ではなく DSL の名前で書くので、
+  /// 木の形がそのまま字にならない）。あちらは別の口。
+  module BulletmlWriter =
+
+    let writeTo (sink: IBulletmlSink) (bulletml: Bulletml) = BulletmlXml.writeContentTo sink bulletml
+
+    /// XML の字にする。**定数を畳まない。**
+    ///
+    /// `Parser` の `Bulletml.ToIndentedXmlString` は `foldConstants` を通す ——
+    /// `8` が `8.0000000000` になる。**表記を行き来する用途ではそれが困る**
+    /// （`<wait>8</wait>` を sxml にして戻すと字が化ける）。
+    ///
+    /// 人が書いた字を保つ側が要るので、こちらを開けてある。
+    /// 同梱カタログを焼くのは畳む側のまま（v1.4 より前 からの挙動）。
+    let toIndentedXml (indentation: int) (bulletml: Bulletml) =
+      BulletmlXml.toIndentedXmlString indentation EncodingAndDoctype.Nothing bulletml
