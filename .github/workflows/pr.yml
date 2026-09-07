@@ -149,6 +149,31 @@ jobs:
 
       - run: dotnet build ${{ matrix.project.path }} -c Release
 
+      # **build が通ることと、publish した物が起動することは別だった。**
+      #
+      # SDK は publish のとき資産に指紋を付け、素の名前との対応をインラインの
+      # importmap で html に入れる。Playground の CSP は 'unsafe-inline' を
+      # 出していないのでそれが効かず、**publish 成果物だけが「起動待ち」で
+      # 止まっていた** —— build でも dev server でも出ない（dev は指紋を付けない）。
+      #
+      # ここまで来ないと出ないので、Playground のときだけ publish して見る。
+      #
+      # **step を割る。** 1 つ の `run:` に 3 行 並べると、pwsh は最後の
+      # exit code しか返さない —— 門が落ちても、後ろの校正が通れば緑になる
+      - name: publish する
+        if: matrix.project.label == 'Playground'
+        run: dotnet publish ${{ matrix.project.path }} -c Release -o ${{ runner.temp }}/pub
+
+      - name: publish した物が起動する形か
+        if: matrix.project.label == 'Playground'
+        shell: pwsh
+        run: ./.github/scripts/guard-published-boot.ps1 -PublishDir ${{ runner.temp }}/pub
+
+      - name: その門の校正
+        if: matrix.project.label == 'Playground'
+        shell: pwsh
+        run: ./.github/scripts/guard-published-boot.Tests.ps1 -PublishDir ${{ runner.temp }}/pub
+
   # 同梱 dll に対して Unity C# のソースを compile し直す。
   # **Unity が見るのと同じものを参照する** —— 焼き忘れると、ソースは新しい
   # 名前を指し dll は古い名前しか持たない状態になる（実際に 2 回 やっている）。

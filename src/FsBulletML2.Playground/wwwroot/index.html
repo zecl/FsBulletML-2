@@ -32,6 +32,14 @@
       form-action 'none'">
     <base href="/">
     <link rel="stylesheet" href="css/playground.css">
+    <!--
+      **空のまま。** SDK は資産に指紋を付けたときだけここへ対応表を書くが、
+      上の CSP は `'unsafe-inline'` を出していないので**書かれたら効かない**
+      —— publish した成果物だけが「起動待ち」で止まる。
+      指紋は csproj で止めてある（`WasmFingerprintAssets` の但し書き）。
+
+      中身が入っていないことは `guard-published-boot.ps1` が publish 成果物で見ている
+    -->
     <script type="importmap"></script>
   </head>
   <body>
@@ -174,7 +182,17 @@
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.56.0/min/vs/loader.js"
             integrity="sha384-jwxunh5pHKFzi60XobDcwOM7qnk4lSGpdBU/hNn9pUGp+ZUpaHJqadNLRF2k+jPu"
             crossorigin="anonymous"></script>
-    <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
+    <!--
+      **素の名前で書く。指紋（`#[.{fingerprint}]`）を付けない。**
+
+      付けると SDK が素の名前との対応を**インラインの importmap** で入れてくるが、
+      上の CSP は `'unsafe-inline'` を出していないので効かない ——
+      publish した成果物だけが「起動待ち」で止まる（実際に踏んだ。
+      顛末は csproj の `WasmFingerprintAssets` のところ）。
+
+      指紋は csproj で止めてあるので、publish 成果物にもこの名前で出る
+    -->
+    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
     <!--
       **ここにロジックを書かない。** 読み込むだけ。
       WASM を起こすのは Playground.js（Fable）の末尾 ——

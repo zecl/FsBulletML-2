@@ -14,7 +14,43 @@
       **trim を入れたら測り直すこと** —— そのときは本当に太る。
     -->
     <UseSystemResourceKeys>false</UseSystemResourceKeys>
-    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!--
+      **publish した成果物だけが起動しなかった。**
+
+      SDK は publish のとき資産に指紋を付け（`dotnet.<hash>.js`）、素の名前との
+      対応を **インラインの `<script type="importmap">`** で html に入れる。
+      この app の CSP は `script-src` に `'unsafe-inline'` を出していないので
+      **その importmap が効かない** —— boot が `_framework/dotnet.js` を素の名前で
+      取りに行って落ち、`#loop-error` が「起動待ち」のまま止まる。
+
+      **どこにも出なかった** —— dev server は指紋を付けないので素の名前で解決し、
+      CI は `dotnet publish` を 1 回 も走らせていない。門は**ソースの**
+      index.html を見ていて、しかも空の importmap は数えないと決めてあった。
+      **人が書く script は見ていたが、SDK が後から入れる script は見ていなかった。**
+
+      指紋を止めるのが、CSP を緩めずに済む道 —— hash は publish のたびに
+      変わるので html に焼けないし、nonce はリクエストごとに配るサーバが要る。
+
+      **2 つ 要る。** 1 つ では半端になる（clean publish で測った）——
+
+          WasmFingerprintAssets=false だけ    dotnet.js は素になるが
+                                             blazor.webassembly は指紋つきのまま
+          StaticWebAssetFingerprintingEnabled  同上（この app では効かない）
+          + BlazorFingerprintBlazorJs=false   **両方 素になり、importmap が空になる**
+
+      指紋を止めた時点で `#[.{fingerprint}]` の埋め込みも止まる（置換されずに
+      そのまま残る）ので、index.html は素の名前で書く。
+      `OverrideHtmlAssetPlaceholders` はそのための設定だったので一緒に落とした。
+
+      **incremental の成果物で判定しない。** 指紋つきで焼いた `obj` が残った
+      まま publish すると、置換済みの html が出てきて直ったように見える
+      （実際に一度 読み違えた）。門は clean からの publish に当てる。
+
+      publish した物が起動する形かは `guard-published-boot.ps1` が見ている
+      （CI の `Build · Playground` の中）。
+    -->
+    <WasmFingerprintAssets>false</WasmFingerprintAssets>
+    <BlazorFingerprintBlazorJs>false</BlazorFingerprintBlazorJs>
   </PropertyGroup>
   <!-- **語彙・補完・hover・診断はここに無い。** 器
        （FsBulletML2.LanguageService と .Host）へ移した。ここに残るのは
