@@ -32,6 +32,9 @@ let private registerCompletion (language: string) (fn: obj -> obj -> obj) (trigg
 [<Emit("globalThis.monaco.languages.registerHoverProvider($0, { provideHover: $1 })")>]
 let private registerHover (language: string) (fn: obj -> obj -> obj) : unit = jsNative
 
+[<Emit("globalThis.monaco.languages.registerCodeActionProvider($0, { provideCodeActions: $1 })")>]
+let private registerCodeAction (language: string) (fn: obj -> obj -> obj -> obj) : unit = jsNative
+
 [<Emit("globalThis.monaco.languages.registerRenameProvider($0, { resolveRenameLocation: $1, provideRenameEdits: $2 })")>]
 let private registerRename
   (language: string)
@@ -291,3 +294,51 @@ let registerRenameProvider
     createObj [ "edits" ==> edits ]
 
   registerRename language resolve provide
+
+/// 「こう直す」を出す口。**直し方を決めるのは言語モジュール** ——
+/// ここが知っているのは Monaco の形（アクションと WorkspaceEdit）だけ。
+///
+/// **`context.markers` を見ない。** 波線は 1 文字 打った時点で消えるので、
+/// marker を材料にすると **Apply の直後の窓でしか出ない**
+/// （v1.3 の頭で現物に当てた）。言語モジュールが本文から数え直す。
+///
+/// **`dispose` を返す。** Monaco は返り値の後片付けを呼ぶ ——
+/// 無いと、押した瞬間に落ちる。
+///
+/// 人が押すのは Ctrl+.。`editor.action.quickFix` という action は
+/// `getSupportedActions()` に出てこない（動かすのは
+/// `editor.contrib.codeActionController`）。**試験もそちらから叩く。**
+let registerCodeActionProvider
+  (language: string)
+  (fixes: string -> int -> FsBulletML2.LanguageService.SourceLanguage.Fix list)
+  =
+  let provide (model: obj) (range: obj) (_context: obj) : obj =
+    // 範囲の頭をカーソルとして読む。Monach は空の範囲（カーソルそのもの）で
+    // 呼んでくるので、頭と尻は同じことが多い
+    let position = createObj [ "lineNumber" ==> range?startLineNumber; "column" ==> range?startColumn ]
+    let found = fixes (getVal model) (offsetAt model position)
+    let actions =
+      found
+      |> List.map (fun f ->
+           createObj [
+             "title" ==> f.Title
+             // Monaco 側の分類。`quickfix` は波線の直し方という意味
+             "kind" ==> "quickfix"
+             // **1 つ のときだけ「これ」と言う。** 2 つ 以上 で立てると、
+             // Ctrl+. の一発適用がどちらかを勝手に選ぶ
+             "isPreferred" ==> (found.Length = 1)
+             "edit" ==> createObj [
+               "edits" ==> [| createObj [
+                 "resource" ==> modelUri model
+                 "versionId" ==> modelVersion model
+                 "textEdit" ==> createObj [
+                   "range" ==> createObj [
+                     "startLineNumber" ==> f.Line
+                     "endLineNumber" ==> f.Line
+                     "startColumn" ==> f.Column
+                     "endColumn" ==> f.EndColumn ]
+                   "text" ==> f.Text ] ] |] ] ])
+      |> List.toArray
+    createObj [ "actions" ==> actions; "dispose" ==> (fun () -> ()) ]
+
+  registerCodeAction language provide

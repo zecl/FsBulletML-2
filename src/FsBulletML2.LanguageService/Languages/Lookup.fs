@@ -168,6 +168,35 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
              { Line = a.Line; Column = a.Column; EndColumn = a.EndColumn; Text = a.Value })
     | _ -> []
 
+  /// カーソルの下の「無い参照」を、綴りの近い定義へ直す。**表記を知らない。**
+  ///
+  /// **波線に紐づけない。** 本文から数え直す（`Refs.missing`）——
+  /// 波線は 1 文字 打った時点で消えるので、紐づけると
+  /// **Apply の直後の窓でしか出ない**（v1.3 の頭で現物に当てた）。
+  ///
+  /// **近さは 1 まで。** コーパスで数えたら、候補が 2 個 以上 在る弾幕でも
+  /// 距離 1 以内 がちょうど 1 個 に絞れた（23 / 23）。0 個 になったものは
+  /// 無い。**2 まで広げる理由が測定に無い**（広げると無関係な名前が出る）。
+  ///
+  /// **候補が無ければ空。** 嘘の直し方を出さない。
+  member _.FixesAt(source: string, offset: int) : Fix list =
+    let v = vocabulary ()
+    let pairs =
+      Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
+    Refs.missing pairs (shape.Tags source)
+    // カーソルがその名前の上に在るものだけ。**本文の全部 を出さない** ——
+    // 直すのはいま見ているところで、他所の分は他所で押す
+    |> List.filter (fun m -> offset >= m.Hit.ValueStart && offset <= m.Hit.ValueStop)
+    |> List.collect (fun m ->
+         m.Defined
+         |> List.filter (fun d -> Distance.within1 m.Hit.Value d)
+         |> List.map (fun d ->
+              { Title = m.Hit.Value + " を " + d + " に直す"
+                Line = m.Hit.Line
+                Column = m.Hit.Column
+                EndColumn = m.Hit.EndColumn
+                Text = d }))
+
   interface ISourceLanguage with
     member _.Kind = shape.Kind
     member _.EditorLanguageId = shape.EditorLanguageId
@@ -175,3 +204,4 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
     member this.Complete source offset = this.Candidates(source, offset)
     member this.Hover source offset = this.HoverAt(source, offset)
     member this.Usages source offset = this.UsagesAt(source, offset)
+    member this.Fixes source offset = this.FixesAt(source, offset)

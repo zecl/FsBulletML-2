@@ -44,7 +44,9 @@
     <Compile Include="XmlScan.fs" />
     <Compile Include="SxmlScan.fs" />
     <Compile Include="FsbScan.fs" />
-    <!-- 参照の規則。**host の波線と ブラウザの rename が同じ 1 本 を引く** -->
+    <!-- 綴りの近さ。**数を返さない**（上限を字に出さない） -->
+    <Compile Include="Distance.fs" />
+    <!-- 参照の規則。**host の波線と ブラウザの rename / Quick Fix が同じ 1 本 を引く** -->
     <Compile Include="Refs.fs" />
     <Compile Include="SourceLanguage.fs" />
     <Compile Include="Languages/Lookup.fs" />

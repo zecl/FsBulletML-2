@@ -42,6 +42,8 @@
     <Compile Include="FsbCompletion.fs" />
     <!-- rename の材料（v1.2）。**表記を知らない側**なので 4 表記 を 1 本 で当てる -->
     <Compile Include="Usages.fs" />
+    <!-- 直し方（v1.3）。同上 -->
+    <Compile Include="QuickFix.fs" />
   </ItemGroup>
   <ItemGroup>
     <!-- **CE の本文を試験の出力へ写す。** 期待値は `Bullets.Dsl` の値なので、
