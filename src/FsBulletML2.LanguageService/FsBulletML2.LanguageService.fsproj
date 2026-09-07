@@ -47,5 +47,8 @@
     <Compile Include="Languages/Lookup.fs" />
     <Compile Include="Languages/Xml.fs" />
     <Compile Include="Languages/Sxml.fs" />
+    <!-- **`Lookup` に載っていない。** CE の語彙は DTD から引けないので、
+         候補と hover は空。理由はファイルの頭に書いてある -->
+    <Compile Include="Languages/Fsharp.fs" />
   </ItemGroup>
 </Project>

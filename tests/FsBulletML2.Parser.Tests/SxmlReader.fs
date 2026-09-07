@@ -137,16 +137,16 @@ type SxmlReader() =
 
   [<Test>]
   member _.``読める表記が 2 つ 登録されている``() =
-    SourceReader.all |> List.map (fun r -> r.Kind.Id) |> should equal [ "xml"; "sxml" ]
+    SourceReader.all |> List.map (fun r -> r.Kind.Id) |> should equal [ "xml"; "sxml"; "fsharp" ]
     (SourceReader.tryFind SourceKind.Xml).IsSome |> should be True
     (SourceReader.tryFind SourceKind.Sxml).IsSome |> should be True
+    (SourceReader.tryFind SourceKind.FSharpDsl).IsSome |> should be True
 
   [<Test>]
   member _.``まだ読めない表記は 引けない``() =
     // **`SourceKind.all` と揃っていない。** 揃っていないことを人へ見せるのは
     // `ApplySource` の側（`未対応: …`）
     (SourceReader.tryFind SourceKind.Fsb).IsNone |> should be True
-    (SourceReader.tryFind SourceKind.FSharpDsl).IsNone |> should be True
 
   [<Test>]
   member _.``拡張子は 表記ごとに違い、id から導けない``() =

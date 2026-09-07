@@ -91,6 +91,33 @@ module Diagnosis =
     |> Array.map (fun l -> l.Trim())
     |> Array.tryFind (fun l -> l.StartsWith("Expecting:", StringComparison.Ordinal))
 
+  /// F# の CE を読んで、載せる。**parse だけ**（型検査しない）。
+  ///
+  /// 層の分かれ方は XML / sxml と同じ ——
+  ///
+  ///     F# の構文        FCS の診断              行・桁 あり
+  ///     CE として読めない  知らない名前・知らない形  行・桁 あり
+  ///     木は組めない      Core の例外              位置なし
+  ///
+  /// **2 層 目 にも位置が在るのが、ほかの表記と違うところ。**
+  /// 歩いている最中に「どこで詰まったか」が分かるため。
+  let applyFsharp (build: Bulletml -> unit) (source: string) : Failure option =
+    try
+      match FsharpCe.read source with
+      // 位置の無い理由（`0` は `FsharpCe` 側の印）
+      | Error (0, _, message) -> Some(plain message)
+      | Error (line, column, message) ->
+        Some
+          { Line = max 1 line
+            Column = max 1 column
+            // 「そこで詰まった」しか言わないので、終わりは分からない
+            EndColumn = 0
+            Message = message }
+      | Ok bulletml ->
+        build bulletml
+        None
+    with ex -> Some(ofException ex)
+
   /// sxml を読んで、載せる。**`tryReadSxmlString` を使わない。**
   ///
   /// あちらは `Failure (_,_,_) -> None` で、**FParsec が持っている位置を

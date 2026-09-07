@@ -125,11 +125,11 @@ Check '.Compile 自身なら 1 本 だけ' `
 Write-Host '=== 少ないほう'
 
 # Dsl は src/Bullets.Dsl 経由でサンプル 4 つ と Playground に届く。
-# **試験は 1 本 だが build は 5 本 残る** —— 弾幕 DSL を変えると弾幕定義の
-# ほうが先に壊れるので
-Check 'Dsl だけなら試験は Dsl.Tests だけ、build は弾幕を使う 5 本' `
+# **試験は 2 本。** v1.0 で Parser.Tests が Bullets.Dsl を引くようになった ——
+# F# の CE を読む口の目盛りが、その弾幕の**値**を正本にしている
+Check 'Dsl だけなら試験は Dsl.Tests と Parser.Tests、build は弾幕を使う 5 本' `
   @('src/FsBulletML2.Dsl/BulletDsl.fs') `
-  @('FsBulletML2.Dsl.Tests') `
+  @('FsBulletML2.Dsl.Tests', 'FsBulletML2.Parser.Tests') `
   @('FsBulletML2.Playground',
     'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
     'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
@@ -164,7 +164,7 @@ Check 'サンプルの弾幕は Dsl.Tests が見ている' `
 
 Check '弾幕 DSL 版はサンプル 4 つ と Playground にも届く' `
   @('src/FsBulletML2.Bullets.Dsl/Dodonpachi.fs') `
-  @('FsBulletML2.Dsl.Tests') `
+  @('FsBulletML2.Dsl.Tests', 'FsBulletML2.Parser.Tests') `
   @('FsBulletML2.Playground',
     'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
     'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
