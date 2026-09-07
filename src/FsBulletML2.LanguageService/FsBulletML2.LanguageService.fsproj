@@ -40,6 +40,9 @@
     <!-- 順は依存の順。表記に依らない側（Scan / SourceLanguage / Lookup）が先で、
          表記ごとのもの（XmlScan / SxmlScan / Languages の下）が後 -->
     <Compile Include="SourceKind.fs" />
+    <!-- 共有リンクの組み立てと base64url。**圧縮はここに無い** ——
+         `CompressionStream` はブラウザにしか無く、ここは 2 つ の runtime で走る -->
+    <Compile Include="ShareLink.fs" />
     <Compile Include="Scan.fs" />
     <Compile Include="XmlScan.fs" />
     <Compile Include="SxmlScan.fs" />

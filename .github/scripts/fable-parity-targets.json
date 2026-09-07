@@ -27,5 +27,12 @@
     "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/SourceKind.js",
     "export": "SourceKindModule_describe",
     "args": [ "id" ]
+  },
+  {
+    "target": "ShareLink",
+    "note": "共有リンクの組み立てと base64url。リンクを作るのはブラウザ、読むのもブラウザだが、字の形は .NET でも走る 1 本 が決めている。base64 は runtime ごとに別の実装（btoa と Convert）へ落ちるので、答えが一致するかは走らせないと分からない",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/ShareLink.js",
+    "export": "ShareLinkModule_describe",
+    "args": [ "fragment" ]
   }
 ]

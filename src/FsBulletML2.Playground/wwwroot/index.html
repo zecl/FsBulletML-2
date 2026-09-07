@@ -83,9 +83,15 @@
         <!-- accept は Fable が入れる（登録されている表記の拡張子）。
              ここに書くと、表記を足したとき 2 か所 直すことになる -->
         <input id="open-file" type="file" hidden>
+        <!-- いまの本文を URL にする。行き先は fragment（# の後ろ）なので
+             サーバへは送られない。作るのは Fable（Share.fs と 器 の ShareLink） -->
+        <button type="button" id="share" title="いまの本文を URL にする">Share</button>
         <span>FPS: <span id="fps">0</span></span>
         <span>Bullets: <span id="bullet-count">0</span></span>
         <span class="error" id="loop-error">起動待ち</span>
+        <!-- 済んだことの知らせ。**error と別に置く** ——
+             同じところへ赤で出すと、コピーできたことが失敗に見える -->
+        <span class="done" id="share-note"></span>
       </div>
       <div id="main"></div>
     </div>
@@ -169,6 +175,12 @@
         <li>プルダウンで同梱の弾幕を選ぶと、その XML が欄に入る（<strong>表記も XML に戻る</strong>）</li>
         <li><strong>Open</strong> は名前で表記を決める。<code>.sxml</code> を開けば sxml、
             <code>.fsb</code> なら fsb、<code>.fsx</code> なら F# の CE に切り替わる</li>
+        <li><strong>Share</strong> は<strong>いまの本文をそのまま URL にする</strong>。
+            アドレス欄がその字になり、コピーもされる。
+            <strong>サーバへは送られない</strong>（<code>#</code> の後ろに載るので、
+            置いてあるところからは中身が見えない）。
+            表記も一緒に載るので、開いた側は同じ表記で読む。
+            <strong>版が違うリンクや壊れた字は「読めない」と出る</strong>（黙って空にしない）</li>
         <li><kbd>Ctrl</kbd>+<kbd>.</kbd> は<strong>綴りの直し方</strong>を出す。
             <code>actionRef label="tp"</code> のように指す先が無いとき、
             <strong>1 文字 違いの定義が在れば</strong>「tp を top に直す」が出る。

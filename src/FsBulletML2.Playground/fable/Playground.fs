@@ -66,10 +66,22 @@ let private showModal (dialog: obj) : unit = jsNative
 [<Emit("$0.close()")>]
 let private closeDialog (dialog: obj) : unit = jsNative
 
+// **無いことが在る。** http で開いた窓や、権限を落とした窓では
+// `navigator.clipboard` そのものが生えない —— そこで落とすと、
+// リンクは URL 欄 に入っているのに「作れなかった」に見える
+[<Emit("navigator.clipboard ? navigator.clipboard.writeText($0) : null")>]
+let private copyText (s: string) : obj = jsNative
+
 let private el (id: string) = document.getElementById id
 
 let private setError (msg: string) =
   let e = el "loop-error"
+  if not (isNull e) then e.textContent <- msg
+
+/// 済んだことの知らせ。**`setError` と別のところへ出す** ——
+/// 同じ場所へ赤で出すと、コピーできたことが失敗に見える
+let private setNote (msg: string) =
+  let e = el "share-note"
   if not (isNull e) then e.textContent <- msg
 
 let private heapF32 () : obj =
@@ -415,6 +427,57 @@ type Playground() as self =
       reader.onerror <- fun _ -> setError "ファイルを読めなかった"
       reader.readAsText (file :?> Blob) |> ignore
 
+  /// いまの本文を URL にする。**サーバを持たない。**
+  ///
+  /// 置くのは fragment（`#` の後ろ）—— **サーバへ送られない**ので、
+  /// 書いた弾幕がホスティングのログに残らない。クエリに置くと残る。
+  ///
+  /// **アドレス欄をそのまま共有する字にする。** こちらで別の欄を用意すると、
+  /// 貼るときにそこを見に行くことになる。コピーはついで
+  member _.share() =
+    setNote ""
+    thenCatch
+      (box (Share.encode current.Kind (Monaco.getValue ())))
+      (fun fragment ->
+        window.location.hash <- string fragment
+        setError ""
+        let p = copyText window.location.href
+        // **コピーできなくても、リンクはもう URL 欄 に在る。**
+        // そこを「失敗」と言うと、人は作り直しに行く
+        if isNull p then setNote "URL 欄 に入れた（この窓ではコピーできない）"
+        else
+          thenCatch
+            p
+            (fun _ -> setNote "リンクをコピーした")
+            (fun _ -> setNote "URL 欄 に入れた（コピーはできなかった）"))
+      (fun err -> setError (errText err))
+
+  /// URL に共有リンクが在れば、それを載せる。**無ければ何もしない。**
+  ///
+  /// **カタログは選ばない** —— 本文が上書きされるので、プルダウンが
+  /// 指しているものと欄の中身が食い違う（`apply` が空に戻す）。
+  ///
+  /// 読めなければ理由を出して、**本文も表記も触らない** ——
+  /// 起動時の弾幕がそのまま残るほうが、空の欄より読み解ける
+  member _.loadShared() =
+    let hash = window.location.hash
+    if isNull hash || hash = "" || hash = "#" then ()
+    else
+      thenCatch
+        (box (Share.decode hash))
+        (fun res ->
+          let r = unbox<Share.ShareRead> res
+          if not r.Ok then setError r.Message
+          else
+            match languages |> List.tryFind (fun l -> l.Kind.Id = r.KindId) with
+            | None -> setError ("知らない表記: " + r.KindId)
+            | Some lang ->
+              Monaco.setValue r.Text
+              self.useLanguage lang
+              setNote "リンクから読んだ"
+              self.apply ())
+        (fun err -> setError (errText err))
+
   /// Monaco を読んで `#source` に建てる。**ここが落ちてもループは回す。**
   ///
   /// 初期の本文は host が焼く（`InitialSource`）。**html に XML を置かない** ——
@@ -454,6 +517,10 @@ type Playground() as self =
                 markedAt <- false
                 Monaco.clearMarks ())
             self.showInitialInPatterns ()
+            // **同梱を載せたあとで上書きする。** 先に空で建てると、
+            // リンクが読めなかったときに空の欄だけが残る ——
+            // 起動時の弾幕が見えているほうが、何が起きたか読み解ける
+            self.loadShared ()
           with ex -> setError ("エディタ: " + string ex))
     with ex -> setError ("エディタ: " + string ex)
 
@@ -550,6 +617,7 @@ on "rate" "change" (fun () -> playground.setRate ())
 on "reset" "click" (fun () -> playground.call("Reset"))
 on "apply" "click" (fun () -> playground.apply ())
 on "open" "click" (fun () -> playground.``open``())
+on "share" "click" (fun () -> playground.share ())
 
 // **いちばん最後。** 上の配線が済んでから WASM を起こす ——
 // `onReady` はここから返ってくるので、先に起こすと受け口が無い。

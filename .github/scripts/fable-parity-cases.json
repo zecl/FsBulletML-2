@@ -48,5 +48,20 @@
   { "target": "SourceKind", "note": "大文字は通さない", "id": "XML" },
   { "target": "SourceKind", "note": "知らない字", "id": "nope" },
   { "target": "SourceKind", "note": "空の字", "id": "" },
-  { "target": "SourceKind", "note": "手前 に空白", "id": " xml" }
+  { "target": "SourceKind", "note": "手前 に空白", "id": " xml" },
+  { "target": "ShareLink", "note": "素のリンク", "fragment": "1.xml.AQID" },
+  { "target": "ShareLink", "note": "頭 の # は在ってもよい", "fragment": "#1.sxml.AQID" },
+  { "target": "ShareLink", "note": "余りが 2（= 2 つ を落とした形）", "fragment": "1.fsb.AQ" },
+  { "target": "ShareLink", "note": "余りが 3（= 1 つ を落とした形）", "fragment": "1.fsharp.AQI" },
+  { "target": "ShareLink", "note": "URL 用 の字（- と _）が素の base64 に戻る", "fragment": "1.xml.-_8" },
+  { "target": "ShareLink", "note": "版が違う", "fragment": "2.xml.AQID" },
+  { "target": "ShareLink", "note": "知らない表記", "fragment": "1.nope.AQID" },
+  { "target": "ShareLink", "note": "base64url に無い字", "fragment": "1.xml.AQ*D" },
+  { "target": "ShareLink", "note": "余りが 1 になる長さは base64 に無い", "fragment": "1.xml.AQIDA" },
+  { "target": "ShareLink", "note": "区切りが足りない", "fragment": "1.xml" },
+  { "target": "ShareLink", "note": "区切りが多い", "fragment": "1.xml.AQID.AQID" },
+  { "target": "ShareLink", "note": "中身が空", "fragment": "1.xml." },
+  { "target": "ShareLink", "note": "空の字", "fragment": "" },
+  { "target": "ShareLink", "note": "# だけ", "fragment": "#" },
+  { "target": "ShareLink", "note": "無い", "fragment": null }
 ]

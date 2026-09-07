@@ -265,6 +265,17 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-fable-parity.Tests.ps1
 
+      # **共有リンクの圧縮は片方 の runtime にしか無い。** `CompressionStream` は
+      # .NET に無いので、`dotnet test` を何本 増やしても 1 度 も通らない。
+      # 焼いた JS が此処に在るので、同じ job で走らせる
+      - name: 共有リンクの往復
+        shell: pwsh
+        run: ./.github/scripts/guard-share-roundtrip.ps1
+
+      - name: 往復の門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-share-roundtrip.Tests.ps1
+
   # 枝分かれした job をまとめて 1 つ の必須チェックにする。
   # **skipped を成功として数えない** —— 選ばれなかったのか、落ちて飛ばされたのかは
   # 別のことなので、select の結果を見て分ける

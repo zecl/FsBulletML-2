@@ -13,6 +13,9 @@
        VocabularyJson は [<Emit>]、Monaco と Playground はブラウザの API。 -->
   <ItemGroup>
     <Compile Include="VocabularyJson.fs" />
+    <!-- 圧縮。**組み立てと base64url はここに無い**（器の ShareLink）——
+         あちらは .NET でも走るので、突き合わせと .NET の試験が当たる -->
+    <Compile Include="Share.fs" />
     <Compile Include="Monaco.fs" />
     <Compile Include="Playground.fs" />
   </ItemGroup>
