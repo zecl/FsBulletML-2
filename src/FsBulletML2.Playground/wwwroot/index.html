@@ -104,12 +104,20 @@
       </p>
 
       <p>
-        <strong>表記</strong>のプルダウンで XML と sxml を切り替える。
-        <strong>語彙は同じ</strong>で、変わるのは書き方だけ ——
+        <strong>表記</strong>のプルダウンで XML・sxml・F# の CE を切り替える。
+        XML と sxml は<strong>語彙が同じ</strong>で、変わるのは書き方だけ ——
         XML の <code>&lt;fire label="a"&gt;</code> が sxml では
         <code>(fire (@ (label "a")))</code>。
         切り替えても<strong>本文はそのまま</strong>なので、書いたものが消えることはない
         （そのぶん、XML を書いたまま sxml にすると Apply は落ちる）。
+      </p>
+
+      <p>
+        <strong>F# の CE だけは候補も hover も出ない。</strong>
+        書くのは要素名ではなく DSL の名前（<code>top</code> / <code>defAction</code> /
+        <code>actionRef</code>）で、<strong>DTD には載っていない語彙</strong>だから。
+        色分けと括弧の対応は付く。Apply は同じように効いて、
+        読めなければ位置つきで理由が出る。
       </p>
 
       <table>
@@ -154,13 +162,14 @@
         <li>読めなければ Apply したときに下のバーへ理由が出て、分かる位置には波線が付く</li>
         <li><strong>Reset</strong> はいま載っている弾幕を最初から。<strong>欄の文字は触らない</strong></li>
         <li>プルダウンで同梱の弾幕を選ぶと、その XML が欄に入る（<strong>表記も XML に戻る</strong>）</li>
-        <li><strong>Open</strong> は名前で表記を決める。<code>.sxml</code> を開けば sxml に切り替わる</li>
+        <li><strong>Open</strong> は名前で表記を決める。<code>.sxml</code> を開けば sxml、
+            <code>.fsx</code> を開けば F# の CE に切り替わる</li>
         <li>折りたたみ・検索（<kbd>Ctrl</kbd>+<kbd>F</kbd>）・
             取り消し（<kbd>Ctrl</kbd>+<kbd>Z</kbd>）はエディタの標準機能</li>
       </ul>
 
       <p class="note">
-        いま書けるのは XML と sxml。fsb と F# の DSL は口だけ開けてある。
+        いま書けるのは XML と sxml と F# の CE。fsb は口だけ開けてある。
       </p>
 
       <button type="button" id="help-close">閉じる</button>

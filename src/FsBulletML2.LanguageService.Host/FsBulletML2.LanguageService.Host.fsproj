@@ -42,13 +42,38 @@
          SourceReader が Diagnosis と器のスキャナを束ねる -->
     <Compile Include="Spec.fs" />
     <Compile Include="Vocabulary.fs" />
+    <!-- FsharpCe は Dsl と FCS しか使わない。**Diagnosis より先** -->
+    <Compile Include="FsharpCe.fs" />
     <Compile Include="Diagnosis.fs" />
     <Compile Include="References.fs" />
     <Compile Include="SourceReader.fs" />
   </ItemGroup>
   <ItemGroup>
+    <!--
+      **F# の CE を読むために FCS を引く。** 型検査はしない（parse だけ）——
+      型検査まで通すには参照アセンブリをブラウザへ配ることになる。
+
+      **配る値段は測ってある**（v1.0 の頭）—— ブラウザが起動で受け取る
+      バイトが 9.27 MB -> 15.41 MB（うち FCS 5.99 MB）。publish 成果物の
+      ほうは brotli で 9.5 MB -> 15.7 MB（FCS 単体 6.12 MB）。
+      **軸が 2 つ ある** ——
+      置く値段ではなく、**使わなくても起動で払う値段**のほうが効く。
+
+      最初、ブラウザの resource timing で測って「起動では 1 度 も
+      取りに行かない」と読んだ。**あれは 250 件 で頭打ちになっていた**
+      （溢れは黙って落ちる）。数え直しは配る側の node でやった。
+
+      **版は FSharp.Core に合わせる。** ずれると NU1608 が 4 件 出る
+      （43.12.204 は FSharp.Core 10.1.204 を要るが、この repo は 10.1.400）。
+      **警告が出ること自体は走行に出ない**ので、上げるときは揃っているか見ること。
+    -->
+    <PackageReference Include="FSharp.Compiler.Service" Version="43.12.400" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />
     <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
     <ProjectReference Include="..\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
+    <!-- **CE の意味論は書き直さない。** 歩いたあとに呼ぶのはこの Dsl そのもの -->
+    <ProjectReference Include="..\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
   </ItemGroup>
 </Project>

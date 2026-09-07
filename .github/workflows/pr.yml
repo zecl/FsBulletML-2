@@ -78,6 +78,16 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-playground-boundaries.Tests.ps1
 
+      # **build も dotnet test も落ちない形。** wasm はスレッドが 1 本 しか
+      # 無いので、待つ書き方は押した瞬間に画面ごと止まる（v1.0 で踏んだ）
+      - name: ブラウザで止まる待ち方が無いか
+        shell: pwsh
+        run: ./.github/scripts/guard-wasm-blocking.ps1
+
+      - name: その門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-wasm-blocking.Tests.ps1
+
       - name: 変更から選ぶ
         id: pick
         shell: pwsh

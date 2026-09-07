@@ -47,9 +47,21 @@ module SourceReader =
   let xml = ofParts SourceKind.Xml Diagnosis.apply XmlScan.tags
   let sxml = ofParts SourceKind.Sxml Diagnosis.applySxml SxmlScan.tags
 
-  /// 読める表記。**`SourceKind.all` と揃っていない** —— fsb と F# CE は
-  /// まだ読む口を置いていない。揃っていないことを人へ見せるのは
+  /// F# の CE。**`Tags` は空。**
+  ///
+  /// 参照の欠けを本文の字から数える側（`References.missing`）が探すのは
+  /// 「要素名 + label 属性」の形。CE はそこが DSL の名前で書かれていて
+  /// （`defAction "x"` / `actionRef "x" []`）、**要素名とは別の語彙**になる。
+  ///
+  /// **空だと決めてある。** そのぶん CE では参照の波線が出ず、出るのは
+  /// 構文の位置と、Core が落ちた理由（位置なし）——
+  /// **黙って 0 件 になっているのではない**ことを
+  /// `Parser.Tests/FsharpCeCorpus.fs` が固定している
+  let fsharp = ofParts SourceKind.FSharpDsl Diagnosis.applyFsharp (fun _ -> [])
+
+  /// 読める表記。**`SourceKind.all` と揃っていない** —— fsb はまだ読む口を
+  /// 置いていない。揃っていないことを人へ見せるのは
   /// `ApplySource` の側（`未対応: …`）
-  let all: ISourceReader list = [ xml; sxml ]
+  let all: ISourceReader list = [ xml; sxml; fsharp ]
 
   let tryFind (kind: SourceKind) = all |> List.tryFind (fun r -> r.Kind = kind)

@@ -30,6 +30,17 @@
     <Compile Include="SxmlReferenceScan.fs" />
     <Compile Include="SxmlContext.fs" />
     <Compile Include="SxmlCompletion.fs" />
+    <!-- F# の CE（v1.0）。目盛りは同梱カタログの**値**そのもの -->
+    <Compile Include="FsharpCeCorpus.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- **CE の本文を試験の出力へ写す。** 期待値は `Bullets.Dsl` の値なので、
+         突き合わせるには「その値を組んだ本文」が要る。
+         **写せていなければ 0 本 で緑になる**ので、本数を先に見る点を置いてある -->
+    <Content Include="..\..\src\FsBulletML2.Bullets.Dsl\**\*.fs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>BulletsDsl\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\TestData\**\*">
@@ -61,5 +72,7 @@
     -->
     <ProjectReference Include="..\..\src\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.LanguageService.Host\FsBulletML2.LanguageService.Host.fsproj" />
+    <!-- **目盛りの正本。** F# コンパイラが組んだ 176 本 の値と突き合わせる -->
+    <ProjectReference Include="..\..\src\FsBulletML2.Bullets.Dsl\FsBulletML2.Bullets.Dsl.fsproj" />
   </ItemGroup>
 </Project>
