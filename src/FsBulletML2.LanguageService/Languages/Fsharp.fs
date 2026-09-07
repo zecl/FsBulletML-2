@@ -39,3 +39,10 @@ type FsharpLanguage() =
     member _.TriggerCharacters = []
     member _.Complete _ _ = []
     member _.Hover _ _ = None
+    /// **rename も出さない。** CE の label は DSL の名前で書かれていて
+    /// （`defAction "x"` / `actionRef "x" []`）、「要素名 + label 属性」の形では
+    /// ない —— 字から数える側（`Tags`）が最初から空。
+    ///
+    /// **黙って空なのではなく、ここで空だと決めている**
+    /// （`Parser.Tests/FsharpCeCorpus.fs` が字で固定している）
+    member _.Usages _ _ = []

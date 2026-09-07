@@ -32,6 +32,20 @@ let private registerCompletion (language: string) (fn: obj -> obj -> obj) (trigg
 [<Emit("globalThis.monaco.languages.registerHoverProvider($0, { provideHover: $1 })")>]
 let private registerHover (language: string) (fn: obj -> obj -> obj) : unit = jsNative
 
+[<Emit("globalThis.monaco.languages.registerRenameProvider($0, { resolveRenameLocation: $1, provideRenameEdits: $2 })")>]
+let private registerRename
+  (language: string)
+  (resolve: obj -> obj -> obj)
+  (provide: obj -> obj -> string -> obj)
+  : unit = jsNative
+
+// WorkspaceEdit は「どの model の、どの版に当てるか」を持つ
+[<Emit("$0.uri")>]
+let private modelUri (model: obj) : obj = jsNative
+
+[<Emit("$0.getVersionId()")>]
+let private modelVersion (model: obj) : int = jsNative
+
 [<Emit("globalThis.monaco.editor.setModelLanguage($0.getModel(), $1)")>]
 let private setModelLanguage (editor: obj) (language: string) : unit = jsNative
 
@@ -228,3 +242,52 @@ let registerHoverProvider (language: string) (hover: string -> int -> string opt
     | Some markdown -> createObj [ "contents" ==> [| createObj [ "value" ==> markdown ] |] ]
 
   registerHover language provide
+
+/// 名前を書き換える口。**書き換える場所を決めるのは言語モジュール** ——
+/// ここが知っているのは Monaco の形（範囲と WorkspaceEdit）だけ。
+///
+/// Monaco は 2 段 で呼ぶ（0.56 で現物に当てて確かめた）——
+///
+///     resolveRenameLocation   { range, text }。text が入力欄の初期値
+///     provideRenameEdits      { edits: [ { resource, versionId, textEdit } ] }
+///
+/// **1 段 目 で `null` を返してはいけない。** 返すと Monaco は自分で拾った
+/// 「語」を範囲にして**入力欄を開いてしまう**（ここも現物で踏んだ）——
+/// こちらは 2 段 目 で 0 件 を返すので何も起きないが、
+/// **人からは「名前を入れたのに何も変わらない」に見える。**
+///
+/// 名前の上に居ないときは `{ rejectReason }` を返す。**理由が字で出る。**
+let registerRenameProvider
+  (language: string)
+  (usages: string -> int -> FsBulletML2.LanguageService.SourceLanguage.Usage list)
+  =
+  let range (u: FsBulletML2.LanguageService.SourceLanguage.Usage) =
+    createObj [
+      "startLineNumber" ==> u.Line
+      "endLineNumber" ==> u.Line
+      "startColumn" ==> u.Column
+      "endColumn" ==> u.EndColumn ]
+
+  let resolve (model: obj) (position: obj) : obj =
+    let line: int = position?lineNumber
+    let column: int = position?column
+    // **カーソルを覆う 1 つ を返す。** 先頭を返すと、参照の上で始めた rename が
+    // 定義の側の範囲を書き換えることになる
+    usages (getVal model) (offsetAt model position)
+    |> List.tryFind (fun u -> u.Line = line && column >= u.Column && column <= u.EndColumn)
+    |> function
+       | None -> createObj [ "rejectReason" ==> "ここは名前ではない（label の値の上で押す）" ]
+       | Some u -> createObj [ "range" ==> range u; "text" ==> u.Text ]
+
+  let provide (model: obj) (position: obj) (newName: string) : obj =
+    let edits =
+      usages (getVal model) (offsetAt model position)
+      |> List.map (fun u ->
+           createObj [
+             "resource" ==> modelUri model
+             "versionId" ==> modelVersion model
+             "textEdit" ==> createObj [ "range" ==> range u; "text" ==> newName ] ])
+      |> List.toArray
+    createObj [ "edits" ==> edits ]
+
+  registerRename language resolve provide

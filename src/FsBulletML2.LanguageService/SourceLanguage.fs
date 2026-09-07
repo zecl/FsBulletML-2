@@ -65,6 +65,24 @@ module Completion =
   let plain (replace: int) (label: string) =
     { Label = label; Insert = label; Snippet = false; Replace = replace }
 
+/// 同じ名前が書いてある 1 か所。**位置は 1 起点**（Monaco の行桁と同じ）で、
+/// 指すのは名前の中身（引用符の内側）。
+///
+/// **rename ではなく「どこに書いてあるか」を返す。** 新しい名前をここへ
+/// 渡さないのは、**字を差し替えるのが言語の知識ではない**から ——
+/// 言語が知っているのは「同じ名前がここに在る」までで、
+/// そこへ何を書くかはエディタ側の話。
+///
+/// そのぶん、同じ並びを rename 以外（今いる名前を光らせる・参照を一覧する）
+/// にも使える。
+type Usage =
+  { Line: int
+    Column: int
+    EndColumn: int
+    /// いま書いてある字。**どの `Usage` でも同じ** ——
+    /// rename の入力欄の初期値に要るので、1 つ 拾えば済む形にしてある
+    Text: string }
+
 type ISourceLanguage =
   abstract Kind: SourceKind
   /// エディタ側の language id。表記と 1 対 1 とは限らないので別に持つ。
@@ -85,3 +103,11 @@ type ISourceLanguage =
   /// 何の上でもなければ `None`（**空の字を返さない** ——
   /// 空でも枠が浮くので、出ていないことと見分けがつかなくなる）
   abstract Hover: source: string -> offset: int -> string option
+  /// カーソルの下に在る名前が、本文のどこに書いてあるか。**全部。**
+  ///
+  /// **定義側からも参照側からも同じ並びが返る**（`action label="a"` の上でも
+  /// `actionRef label="a"` の上でも、その 2 つ が並ぶ）。
+  ///
+  /// 名前の上でなければ空。**空を「その名前が 1 か所 も無い」と読まない** ——
+  /// カーソルが名前の上に無いだけのことがある（呼ぶ側がそこを分ける）
+  abstract Usages: source: string -> offset: int -> Usage list

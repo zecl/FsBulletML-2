@@ -37,6 +37,7 @@ let shape: Shape =
     TriggerCharacters = [ "("; "\"" ]
     ContextAt = SxmlScan.contextAt
     TokenAt = SxmlScan.tokenAt
+    Tags = SxmlScan.tags
     // 括弧ごと入れて、引用符の中へカーソルを置く
     AttrSnippet = fun name -> "(" + name + " \"$0\")"
     AttrReplace = attrReplace

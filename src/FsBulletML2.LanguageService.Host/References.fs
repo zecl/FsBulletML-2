@@ -27,27 +27,23 @@ module References =
 
   // --- 走る先は語彙から引く -------------------------------------------------
 
-  /// 参照する要素 -> 参照される要素と、label の属性名。**表を持たない** ——
-  /// 語彙の中で名前が `Ref` で終わり、`Ref` を落とした名前も語彙に在り、
-  /// 両方 が同じ属性を持つものだけを対にする。
+  /// 参照する要素 -> 参照される要素と、label の属性名。**表を持たない。**
+  ///
+  /// **規則は `Refs.pairs`（器の側）に 1 本。** v1.2 で移した ——
+  /// ブラウザ側の rename が同じ規則を要るので、こちらに置いたままだと
+  /// 2 か所 になる。**片方 だけ直すと「波線は出るのに rename は当たらない」
+  /// という形になり、どちらも単独では正しく見える。**
+  ///
+  /// ここが持つのは、host の語彙をその規則に渡せる形へ落とすところだけ。
   ///
   /// **空なら呼ぶ側が何も挙げない**（reflection が効いていない印。
   /// `Parser.Tests` が 0 件 を赤にする）
   let pairs: (string * string * string)[] =
-    let byName =
-      Vocabulary.elements
-      |> Array.map (fun e -> e.Name, (e.Attrs |> Array.map (fun a -> a.Name)))
-      |> dict
     Vocabulary.elements
-    |> Array.choose (fun e ->
-        if not (e.Name.EndsWith("Ref", StringComparison.Ordinal)) then None
-        else
-          let def = e.Name.Substring(0, e.Name.Length - 3)
-          match byName.TryGetValue def with
-          | false, _ -> None
-          | true, defAttrs ->
-            e.Attrs
-            |> Array.tryPick (fun a -> if Array.contains a.Name defAttrs then Some(e.Name, def, a.Name) else None))
+    |> Array.toList
+    |> List.map (fun e -> e.Name, (e.Attrs |> Array.toList |> List.map (fun a -> a.Name)))
+    |> Refs.pairs
+    |> List.toArray
 
   // --- 定義に無い参照 -------------------------------------------------------
 
