@@ -20,6 +20,12 @@ type Shape =
     TriggerCharacters: string list
     ContextAt: string -> int -> Context
     TokenAt: string -> int -> Token
+    /// 本文の中の要素を全部。**カーソルを見ない側**で、
+    /// 「同じ名前がどこに在るか」を数えるのに要る（`Usages`）。
+    ///
+    /// **表記ごとの 1 本 は `XxxScan.tags`。** host 側の `ISourceReader.Tags` が
+    /// 同じものを指している —— 波線と rename が同じ数え方を見る
+    Tags: string -> TagHit list
     /// 属性を入れるときの字。`$0` がカーソルの置き場
     AttrSnippet: string -> string
     /// 属性を入れるとき、手前 何文字 を置き換えるか。
@@ -129,9 +135,43 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
                   else spec
                 this.Block(shape.AttrValueTitle a.Name value, spec, [])))
 
+  /// カーソルの下の名前が、本文のどこに書いてあるか。**表記を知らない。**
+  ///
+  /// 要るのは `TokenAt`（いま何の上に居るか）と `Tags`（本文に何が在るか）の
+  /// 2 本 だけで、**どちらも表記ごとの 1 本 を指しているだけ。**
+  /// v1.2 の頭で、3 表記 に同じ弾幕を通して**対象の数が完全に一致する**ことを
+  /// 測ってからこの形にした（`Plan_v1.2.md`）。
+  ///
+  /// 走る先の対は語彙から引く（`Refs.pairs`）。**host 側の波線と同じ 1 本。**
+  ///
+  /// **定義側からも参照側からも引ける。** `action label="a"` の上でも
+  /// `actionRef label="a"` の上でも、その 2 つ が並ぶ ——
+  /// 片方 だけだと「参照からしか直せない」ことになる。
+  member _.UsagesAt(source: string, offset: int) : Usage list =
+    match shape.TokenAt source offset with
+    | AttrValue (element, attr, value) ->
+      let v = vocabulary ()
+      let related =
+        Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
+        |> List.filter (fun (refName, defName, a) ->
+             a = attr && (refName = element || defName = element))
+      match related with
+      | [] -> []
+      | _ ->
+        let names = related |> List.collect (fun (r, d, _) -> [ r; d ]) |> Set.ofList
+        shape.Tags source
+        // **閉じ札を数えない。** XML だけが返すもので、属性を持たない
+        |> List.filter (fun t -> not t.Closing && names.Contains t.TagName)
+        |> List.collect (fun t ->
+             t.Attrs |> List.filter (fun a -> a.AttrName = attr && a.Value = value))
+        |> List.map (fun a ->
+             { Line = a.Line; Column = a.Column; EndColumn = a.EndColumn; Text = a.Value })
+    | _ -> []
+
   interface ISourceLanguage with
     member _.Kind = shape.Kind
     member _.EditorLanguageId = shape.EditorLanguageId
     member _.TriggerCharacters = shape.TriggerCharacters
     member this.Complete source offset = this.Candidates(source, offset)
     member this.Hover source offset = this.HoverAt(source, offset)
+    member this.Usages source offset = this.UsagesAt(source, offset)

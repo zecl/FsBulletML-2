@@ -34,6 +34,7 @@ let shape: Shape =
     TriggerCharacters = [ "\"" ]
     ContextAt = FsbScan.contextAt
     TokenAt = FsbScan.tokenAt
+    Tags = FsbScan.tags
     // XML と同じ。`=""` まで入れて引用符の中へカーソルを置く
     AttrSnippet = fun name -> name + "=\"$0\""
     // 属性名の手前 に括弧のような字は無い。名前のぶんだけ

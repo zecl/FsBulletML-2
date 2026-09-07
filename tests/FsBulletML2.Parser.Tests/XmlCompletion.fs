@@ -16,28 +16,6 @@ open FsBulletML2.LanguageService.Languages.Xml
 [<TestFixture>]
 type XmlCompletion() =
 
-  static let vocab: Vocab =
-    { Elements =
-        Vocabulary.elements
-        |> Array.toList
-        |> List.map (fun e ->
-             { Name = e.Name
-               Children = List.ofArray e.Children
-               Text = e.Text
-               Dtd = e.Dtd
-               Spec = e.Spec
-               Attrs =
-                 e.Attrs
-                 |> Array.toList
-                 |> List.map (fun a ->
-                      { Name = a.Name
-                        Values = List.ofArray a.Values
-                        Defaults = List.ofArray a.Defaults
-                        Dtd = a.Dtd
-                        Spec = a.Spec
-                        ValueSpecs = List.ofArray a.ValueSpecs }) })
-      Expressions = List.ofArray Vocabulary.expressions }
-
   static let lang = XmlLanguage(fun () -> vocab)
 
   /// `@` の位置をカーソルとして候補を出す
