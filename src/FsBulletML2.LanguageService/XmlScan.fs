@@ -2,66 +2,10 @@ namespace FsBulletML2.LanguageService
 
 open System
 open System.Text
-
-/// 開始タグの中の属性 1 つ。
-///
-/// `Line` / `Column` / `EndColumn` は**波線を引くための 1 起点**で、
-/// 指すのは値の中身（引用符の内側）。`*Start` / `*Stop` は
-/// **カーソルの下を当てるための 0 起点 の文字数**で、`Stop` は含まない。
-/// 2 通り 持っているのは、要る側が Monaco の行桁と本文の添字で違うため
-type AttrHit =
-  { AttrName: string
-    Value: string
-    Line: int
-    Column: int
-    EndColumn: int
-    NameStart: int
-    NameStop: int
-    ValueStart: int
-    ValueStop: int }
-
-/// タグ 1 つ。
-///
-/// **閉じ札も拾う。** 参照の欠けを数えるだけなら開始札で足りるが、
-/// カーソルの居場所を出すには「いま開いている要素」が要る。
-///
-/// 飛ばすもの（そもそも出てこない）: コメント / 宣言 / CDATA。
-type TagHit =
-  { TagName: string
-    Attrs: AttrHit list
-    /// `</foo>` か
-    Closing: bool
-    /// `<foo/>` か。**開始札として出したうえで旗を立てる** ——
-    /// 積まないことは使う側が決める
-    SelfClosing: bool
-    /// `<` の位置（0 起点 の文字数）
-    Start: int
-    /// `>` の位置。閉じていなければ本文の末尾
-    Stop: int
-    /// 要素名の範囲。`Stop` は含まない
-    NameStart: int
-    NameStop: int }
-
-/// カーソルの居場所
-type Context =
-  /// 本文。直近に開いている要素（無ければ根の外）
-  | InContent of string option
-  /// `<name ` の中。属性名を出す
-  | InStartTag of string
-  /// `<name attr="` の中。属性値を出す
-  | InAttrValue of string * string
-
-/// カーソルの**下**に在るもの。`Context` が「そこで何を打てるか」なのに対して、
-/// こちらは「いま何の上に居るか」。hover が引く
-type Token =
-  /// 要素名。開き札でも閉じ札でも同じ
-  | Element of string
-  /// 属性名（要素名, 属性名）
-  | Attribute of string * string
-  /// 属性値（要素名, 属性名, 値）
-  | AttrValue of string * string * string
-  /// 何の上でもない。本文・空白・引用符そのもの・コメントの中
-  | Nothing
+// **自分の名前空間を開き直す。** `Token` を `Scan.fs` へ移した時点で、
+// `Attribute` が名前空間の側に落ちて `System.Attribute` に負ける ——
+// 型が同じファイルに在るうちは勝っていたので、**移して初めて出る形**
+open FsBulletML2.LanguageService
 
 /// **XML の字を数える 1 本。**
 ///
@@ -73,23 +17,24 @@ type Token =
 /// **パーサは使わない。** 打っている途中の XML は必ず壊れているので、
 /// 頭から数えるだけにする。壊れた本文でも最後まで走る。
 ///
-/// このファイルは `fable/` に在るが**中身は純 F#**（`Fable.Core` に触らない）。
-/// Fable が焼き、host と `Parser.Tests` が `Link` で借りる。
-/// **`fable/` の外へ出すと、Fable の出力が `wwwroot/js/` の外へ落ちる**
-/// （`../XmlScan.fs` を引くと `wwwroot/XmlScan.js` になる。実測）。
+/// 返す型（`TagHit` / `Context` / `Token`）と、語の数え方（`Scan`）は
+/// **表記に依らない側**に置いてある。sxml の 2 本 目 が同じ型を返すので、
+/// その先（語彙の引き方・hover の組み立て・参照の数え方）は表記を知らない。
+///
+/// 飛ばすもの（そもそもタグとして出てこない）: コメント / 宣言 / CDATA。
 ///
 /// **internal にしない。** 門（`guard-fable-parity.ps1`）が .NET と node の
 /// 両方 から呼んで答えを突き合わせるので、外から見える必要がある
 module XmlScan =
-
-  let isNameChar (c: char) =
-    Char.IsLetterOrDigit c || c = '_' || c = '-' || c = '.' || c = ':'
 
   let private isSpace c = c = ' ' || c = '\t' || c = '\r' || c = '\n'
 
   /// タグを頭から全部 拾う。**木は組まない。**
   ///
   /// **引用符の中は名前も `>` も数えない** —— 属性値に `>` を書ける。
+  ///
+  /// **閉じ札も拾う。** 参照の欠けを数えるだけなら開始札で足りるが、
+  /// カーソルの居場所を出すには「いま開いている要素」が要る。
   let tags (src: string) : TagHit list =
     let hits = ResizeArray<TagHit>()
     let mutable i = 0
@@ -120,7 +65,7 @@ module XmlScan =
         let closing = i < src.Length && src.[i] = '/'
         if closing then advance ()
         let nameFrom = i
-        while i < src.Length && isNameChar src.[i] do advance ()
+        while i < src.Length && Scan.isNameChar src.[i] do advance ()
         let name = src.Substring(nameFrom, i - nameFrom)
         let nameStop = i
         let attrs = ResizeArray<AttrHit>()
@@ -132,9 +77,9 @@ module XmlScan =
             stop <- i
             advance ()
           elif Char.IsWhiteSpace src.[i] || src.[i] = '/' then advance ()
-          elif isNameChar src.[i] then
+          elif Scan.isNameChar src.[i] then
             let aFrom = i
-            while i < src.Length && isNameChar src.[i] do advance ()
+            while i < src.Length && Scan.isNameChar src.[i] do advance ()
             let aName = src.Substring(aFrom, i - aFrom)
             let aNameStop = i
             while i < src.Length && Char.IsWhiteSpace src.[i] do advance ()
@@ -268,92 +213,8 @@ module XmlScan =
             | Some a -> AttrValue(t.TagName, a.AttrName, a.Value)
             | None -> Nothing
 
-  /// カーソルの手前にある「いま打っている名前」の長さ。
-  /// **Monaco の語の定義に頼らない** —— 何が名前かを知っているのは言語のほう
-  let nameLenBefore (src: string) (offset: int) =
-    let mutable k = min offset src.Length
-    while k > 0 && isNameChar src.[k - 1] do
-      k <- k - 1
-    (min offset src.Length) - k
-
-  /// 式の候補を置き換える長さ。名前のぶんに、手前の `$` が在ればそれも足す。
-  /// **`$` を含めないと `$` + `$rand` で `$$rand` になる**
-  let exprLenBefore (src: string) (offset: int) =
-    let n = nameLenBefore src offset
-    let at = (min offset src.Length) - n
-    if at > 0 && src.[at - 1] = '$' then n + 1 else n
-
-  /// この 1 本 が出す答えを、全部 1 行 の字にする。
-  ///
-  /// **門（`guard-fable-parity.ps1`）のための口。** 同じソースが .NET と
-  /// node の 2 つ で走るので、両方 でこれを呼んで突き合わせる。
-  ///
-  /// **字にするところも 1 本 にしてある。** 突き合わせる側で組み立てると、
-  /// 組み方のほうが食い違って「中身は同じなのに赤」「違うのに緑」になる。
+  /// この 1 本 が出す答えを、全部 1 行 の字にする。**門のための口。**
+  /// 字にするところは `Scan.describe`（sxml の 2 本 目 と共通）
   let describe (src: string) (cursor: int) : string =
-    let sb = StringBuilder()
-    let add (s: string) = sb.Append s |> ignore
-    for t in tags src do
-      add t.TagName
-      if t.Closing then add "/close"
-      if t.SelfClosing then add "/self"
-      add "@"
-      add (string t.Start)
-      add "-"
-      add (string t.Stop)
-      for a in t.Attrs do
-        add " "
-        add a.AttrName
-        add "="
-        add a.Value
-        add "["
-        add (string a.Line)
-        add ":"
-        add (string a.Column)
-        add "-"
-        add (string a.EndColumn)
-        add "]"
-      add ";"
-    add " ctx="
-    match contextAt src cursor with
-    | InContent None -> add "content()"
-    | InContent (Some p) ->
-      add "content("
-      add p
-      add ")"
-    | InStartTag n ->
-      add "startTag("
-      add n
-      add ")"
-    | InAttrValue (e, a) ->
-      add "attrValue("
-      add e
-      add ","
-      add a
-      add ")"
-    add " token="
-    match tokenAt src cursor with
-    | Nothing -> add "nothing"
-    | Element n ->
-      add "element("
-      add n
-      add ")"
-    | Attribute (e, a) ->
-      add "attribute("
-      add e
-      add ","
-      add a
-      add ")"
-    | AttrValue (e, a, v) ->
-      add "attrValue("
-      add e
-      add ","
-      add a
-      add ","
-      add v
-      add ")"
-    add " nameLen="
-    add (string (nameLenBefore src cursor))
-    add " exprLen="
-    add (string (exprLenBefore src cursor))
-    sb.ToString()
+    Scan.describe (tags src) (contextAt src cursor) (tokenAt src cursor)
+                  (Scan.nameLenBefore src cursor) (Scan.exprLenBefore src cursor)

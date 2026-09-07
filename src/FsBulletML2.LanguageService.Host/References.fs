@@ -54,13 +54,20 @@ module References =
   /// 定義に無い参照を全部。**本文に出てくる順**で返す。
   ///
   /// 同じ名前を 2 回 参照していたら 2 本 引く —— どちらも直す先なので。
-  let missing (src: string) : Failure list =
+  ///
+  /// **字を数えるところは受け取る（v0.9）。** 前は `XmlScan.tags` を直に
+  /// 呼んでいて、**器が 2 つ に割れても host 側は XML を名指ししたまま**だった。
+  /// 名指しでも困らなかったのは実装が 1 本 しか無かったからで、
+  /// **実装が 1 本 のうちは、抽象が足りないことが分からない。**
+  ///
+  /// 受け取るのは `ISourceReader.Tags`。表記ごとの 1 本 はあちらに束ねてある
+  let missing (scan: string -> TagHit list) (src: string) : Failure list =
     if pairs.Length = 0 then []
     else
       // **開始札だけ見る。** 欲しいのは「どの名前でどの label を書いたか」で、
       // 木は要らない（`XmlScan` は閉じ札も返すが、それはカーソルの居場所を
-      // 出す側が使う）
-      let tags = XmlScan.tags src |> List.filter (fun t -> not t.Closing)
+      // 出す側が使う。sxml は括弧 1 組 なので閉じ札そのものが無い）
+      let tags = scan src |> List.filter (fun t -> not t.Closing)
       let value (t: TagHit) (attr: string) =
         t.Attrs |> List.tryFind (fun a -> a.AttrName = attr)
       [ for (refName, defName, attr) in pairs do
@@ -90,11 +97,11 @@ module References =
   ///
   /// `Main.fs` と `Parser.Tests` が同じこれを通る。**本番と別の組み合わせを
   /// 試験の側で組まない** —— 組むとそちらだけが緑になる。
-  let explain (failure: Failure option) (src: string) : Failure list =
+  let explain (scan: string -> TagHit list) (failure: Failure option) (src: string) : Failure list =
     match failure with
     | None -> []
     | Some f when f.Line > 0 -> [ f ]
     | Some f ->
-      match missing src with
+      match missing scan src with
       | [] -> [ f ]
       | ms -> ms

@@ -1,14 +1,24 @@
 [
   {
+    "_note": "export の綴りは焼く側の都合で動く。ファイルの中の top-level が module 1 つ だけなら素の名前、型が並ぶと接頭辞が付く（SourceKind がそう）。v0.9 で XmlScan から型を Scan.fs へ出したら XmlScan_describe が describe になった。古い名前に戻して回すと『XmlScan_describe が焼いた JS に無い』で落ちる（確かめた）",
     "target": "XmlScan",
-    "note": "字を数える 1 本。host（波線）と Fable（補完・hover）が同じソースを compile する",
+    "note": "XML の字を数える 1 本。host（波線）と Fable（補完・hover）が同じソースを compile する",
     "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/XmlScan.js",
-    "export": "XmlScan_describe"
+    "export": "describe",
+    "args": [ "src", "cursor" ]
+  },
+  {
+    "target": "SxmlScan",
+    "note": "S 式 の字を数える 1 本。XmlScan と同じ型を返し、字にするところも共通（Scan.describe）",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/SxmlScan.js",
+    "export": "describe",
+    "args": [ "src", "cursor" ]
   },
   {
     "target": "SourceKind",
-    "note": "表記の名前。host と ブラウザ側 が同じ 1 本 を引く",
+    "note": "表記の名前と拡張子。host と ブラウザ側 が同じ 1 本 を引く",
     "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/SourceKind.js",
-    "export": "SourceKindModule_describe"
+    "export": "SourceKindModule_describe",
+    "args": [ "id" ]
   }
 ]

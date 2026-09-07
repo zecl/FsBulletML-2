@@ -8,7 +8,9 @@
 //
 // 答えを組み立てるのは各 target の `describe`。node 側と同じ 1 本。
 #load "../../src/FsBulletML2.LanguageService/SourceKind.fs"
+#load "../../src/FsBulletML2.LanguageService/Scan.fs"
 #load "../../src/FsBulletML2.LanguageService/XmlScan.fs"
+#load "../../src/FsBulletML2.LanguageService/SxmlScan.fs"
 
 open System
 open System.IO
@@ -29,6 +31,8 @@ let answer (target: string) (c: JsonElement) =
   match target with
   | "XmlScan" ->
     XmlScan.describe (c.GetProperty("src").GetString()) (c.GetProperty("cursor").GetInt32())
+  | "SxmlScan" ->
+    SxmlScan.describe (c.GetProperty("src").GetString()) (c.GetProperty("cursor").GetInt32())
   | "SourceKind" ->
     SourceKind.describe (c.GetProperty("id").GetString())
   | t ->

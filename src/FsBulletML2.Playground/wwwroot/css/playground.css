@@ -97,14 +97,19 @@ button:disabled {
   cursor: default;
 }
 
-/* 速さ。バーの中に収める —— **枠を増やさない** */
-.rate {
+/* 速さ（バーの中）と表記（プルダウンの列）。**枠を増やさない。**
+   同じ見た目なので 1 つ の規則にまとめる —— 分けて書くと、
+   **後ろに書いたほうだけが直る**（CSS はソース順で勝つ） */
+.rate,
+.mode {
   display: flex;
   gap: 6px;
   align-items: center;
+  white-space: nowrap;
 }
 
-.rate select {
+.rate select,
+.mode select {
   background: #2a2a3a;
   color: #e8e8ee;
   border: 1px solid #555;

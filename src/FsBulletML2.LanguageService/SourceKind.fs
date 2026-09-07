@@ -14,13 +14,12 @@ open System.Text
 ///
 /// ここに 1 本 置いて、両方 が引く形にした。
 ///
-/// ## 表記そのものは、まだ 1 つ しか読めない
+/// ## 読める表記は、この並びより少ない
 ///
-/// 並びに 4 つ 在るのは、口を先に開けてあるため。`Parser` には
-/// `tryReadSxmlString` / `tryReadFsbString` が既に在り、載せるのは
-/// host 側に腕を 1 本 足すだけ。**ここは読める / 読めないを持たない** ——
-/// 持つと「どの表記か」と「いま読めるか」が同じ型に乗り、
-/// 読めるようになったときに両方 直すことになる。
+/// v0.9 で読めるのは xml と sxml。**ここは読める / 読めないを持たない** ——
+/// 持つと「どの表記か」と「いま読めるか」が同じ型に乗り、読めるように
+/// なったときに両方 直すことになる。読めるものの並びは
+/// `SourceReader.all`（host 側）と `Playground.fs` の `languages`。
 ///
 /// ## `Fable.Core` に依存しない
 ///
@@ -46,6 +45,16 @@ type SourceKind =
     | Sxml -> "sxml"
     | Fsb -> "fsb"
     | FSharpDsl -> "fsharp"
+
+  /// 開いたファイルの拡張子。**`Id` から作らない** —— 3 つ までは同じ字だが
+  /// F# の CE は `.fsx` で、**そこだけ静かにずれる**（`Id` は `"fsharp"`）。
+  /// 導ける形に見えるものほど、外れたときに誰も見ない
+  member this.FileExtension =
+    match this with
+    | Xml -> ".xml"
+    | Sxml -> ".sxml"
+    | Fsb -> ".fsb"
+    | FSharpDsl -> ".fsx"
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module SourceKind =
@@ -74,6 +83,10 @@ module SourceKind =
       add (string k)
       add "/"
       add k.Id
+      add "/"
+      add k.FileExtension
     add " all="
     add (all |> List.map (fun k -> k.Id) |> String.concat ",")
+    add " ext="
+    add (all |> List.map (fun k -> k.FileExtension) |> String.concat ",")
     sb.ToString()

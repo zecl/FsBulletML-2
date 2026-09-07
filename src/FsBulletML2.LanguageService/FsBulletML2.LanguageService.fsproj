@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    エディタの中身（語彙・補完・hover・診断）を置く器。**まだ器だけ。**
-    XML の実装を移すのは次の版。
+    エディタの中身（語彙・補完・hover）を置く器の、**2 つ の runtime で
+    走る側**。読む段と reflection は `FsBulletML2.LanguageService.Host`。
 
     ## 参照してよいもの
 
@@ -11,7 +11,8 @@
     した版で初めて分かる。門で見ている
     （`.github/scripts/guard-playground-boundaries.ps1` の 2 つ目）。
 
-    いまは何も参照していない。
+    いまは何も参照していない。**Parser も参照しない** —— FParsec は dll 参照で
+    F# ソースを含まないので、参照した瞬間に Fable が焼けなくなる（v0.8 で実測）。
 
     ## 2 つ の runtime で走る
 
@@ -36,10 +37,15 @@
     <AssemblyName>FsBulletML2.LanguageService</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <!-- 順は依存の順。SourceLanguage の型を Languages/Xml が引く -->
+    <!-- 順は依存の順。表記に依らない側（Scan / SourceLanguage / Lookup）が先で、
+         表記ごとのもの（XmlScan / SxmlScan / Languages の下）が後 -->
     <Compile Include="SourceKind.fs" />
+    <Compile Include="Scan.fs" />
     <Compile Include="XmlScan.fs" />
+    <Compile Include="SxmlScan.fs" />
     <Compile Include="SourceLanguage.fs" />
+    <Compile Include="Languages/Lookup.fs" />
     <Compile Include="Languages/Xml.fs" />
+    <Compile Include="Languages/Sxml.fs" />
   </ItemGroup>
 </Project>
