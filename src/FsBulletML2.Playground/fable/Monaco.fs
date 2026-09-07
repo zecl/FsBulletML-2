@@ -164,6 +164,12 @@ let create (hostId: string) (language: string) (initial: string) =
         // 弾幕は入れ子が深くて縦に長いので、縮小図のほうが効く
         "minimap" ==> createObj [ "enabled" ==> true ]
         "scrollBeyondLastLine" ==> false
+        // Ctrl を押しながらホイールで字の大きさを変える（VS Code と同じ）。
+        // **拡大率は載っている弾幕の一部ではない**ので、Apply でも Reset でも
+        // プルダウンでも戻さない（速さ・配色と同じ扱い）
+        "mouseWheelZoom" ==> true
+        // 起点の大きさ。**ここが Ctrl+ホイール の基準**で、
+        // 拡大率はここへ掛かる（`getOption fontSize` は掛けた後 の値を返す）
         "fontSize" ==> 12
         "tabSize" ==> 2 ])
 
