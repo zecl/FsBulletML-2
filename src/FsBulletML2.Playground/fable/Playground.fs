@@ -105,25 +105,27 @@ type Playground() as self =
   let mutable canvasCtx: CanvasRenderingContext2D = null
   // host からもらう語彙。正本は Core の DTD.fs。**表記が変わっても同じ**
   let mutable vocabulary: Vocab = { Elements = []; Expressions = [] }
-  // **同梱カタログは XML ダンプ。** `SelectPattern` が `ToIndentedXmlString` で
-  // 焼くので、選んだら表記も XML に戻す。
+  // **起動時の表記。** 欄に最初に出るのは host が焼く XML（`InitialSource`）。
   //
-  // **選んだあと表記を変えれば、その表記になる**（v1.4 で書く口が 4 つ に
-  // 揃った）—— 変換するのは `setMode` の側で、ここは XML のまま
-  let catalogLanguage: ISourceLanguage = Languages.Xml.XmlLanguage(fun () -> vocabulary)
+  // **同梱カタログを選ぶときの表記ではない**（v1.6）——
+  // あちらはいま選ばれている表記で host に書いてもらう
+  let initialLanguage: ISourceLanguage = Languages.Xml.XmlLanguage(fun () -> vocabulary)
   // 登録されている表記。**並びは `SourceKind.all` と同じ** ——
   // プルダウンも `Open` の accept もここから作るので、順が意味を持つ。
   // **F# の CE だけ候補と hover を出さない**（語彙が DTD から引けないため。
   // 理由は `Languages/Fsharp.fs`）が、書いて Apply する道は通っている
   let languages: ISourceLanguage list =
-    [ catalogLanguage
+    [ initialLanguage
       Languages.Sxml.SxmlLanguage(fun () -> vocabulary)
       Languages.Fsb.FsbLanguage(fun () -> vocabulary)
       Languages.Fsharp.FsharpLanguage() ]
   // いま欄に載っている表記
-  let mutable current = catalogLanguage
+  let mutable current = initialLanguage
   // 波線を付けたか。**印は文字に追随しない**ので、次の打鍵で消す
   let mutable markedAt = false
+  // 知らせを出したか。**波線と同じ扱い** —— 知らせは「いまの本文がどこから
+  // 来たか」の話なので、本文が変わった時点で嘘になる
+  let mutable noted = false
 
   member _.attach() =
     let c = el "stage"
@@ -356,16 +358,15 @@ type Playground() as self =
     elif isNull dotNet then setError "まだ起動していない"
     else
       let i = float (sel :?> HTMLSelectElement).value
+      // **いま選ばれている表記で書いてもらう。** 表記はこちらが決めるのではなく
+      // 人が決めているもので、弾幕を選び直しただけで動かしてはいけない
       thenCatch
-        (invokeAsync1 dotNet "SelectPattern" i)
-        (fun xml ->
-          let s = string xml
+        (invokeAsync2 dotNet "SelectPattern" i current.Kind.Id)
+        (fun text ->
+          let s = string text
           if s.StartsWith "ERROR:" then setError (s.Substring 6)
           else
             Monaco.setValue s
-            // **表記も戻す。** 返ってくるのは同梱カタログの XML ダンプなので、
-            // sxml のまま載せると Apply が落ちる
-            self.useLanguage catalogLanguage
             setError "")
         (fun err -> setError (errText err))
 
@@ -427,6 +428,13 @@ type Playground() as self =
       reader.onerror <- fun _ -> setError "ファイルを読めなかった"
       reader.readAsText (file :?> Blob) |> ignore
 
+  /// 知らせを出す。**波線と同じで、次の打鍵で消える** ——
+  /// 「いまの本文がどこから来たか」の話なので、打った時点で嘘になる。
+  /// 消すのは `onContentChanged` の側（出した札をここで立てておく）
+  member _.showNote(msg: string) =
+    noted <- msg <> ""
+    setNote msg
+
   /// いまの本文を URL にする。**サーバを持たない。**
   ///
   /// 置くのは fragment（`#` の後ろ）—— **サーバへ送られない**ので、
@@ -435,7 +443,7 @@ type Playground() as self =
   /// **アドレス欄をそのまま共有する字にする。** こちらで別の欄を用意すると、
   /// 貼るときにそこを見に行くことになる。コピーはついで
   member _.share() =
-    setNote ""
+    self.showNote ""
     thenCatch
       (box (Share.encode current.Kind (Monaco.getValue ())))
       (fun fragment ->
@@ -444,12 +452,12 @@ type Playground() as self =
         let p = copyText window.location.href
         // **コピーできなくても、リンクはもう URL 欄 に在る。**
         // そこを「失敗」と言うと、人は作り直しに行く
-        if isNull p then setNote "URL 欄 に入れた（この窓ではコピーできない）"
+        if isNull p then self.showNote "URL 欄 に入れた（この窓ではコピーできない）"
         else
           thenCatch
             p
-            (fun _ -> setNote "リンクをコピーした")
-            (fun _ -> setNote "URL 欄 に入れた（コピーはできなかった）"))
+            (fun _ -> self.showNote "リンクをコピーした")
+            (fun _ -> self.showNote "URL 欄 に入れた（コピーはできなかった）"))
       (fun err -> setError (errText err))
 
   /// URL に共有リンクが在れば、それを載せる。**無ければ何もしない。**
@@ -474,7 +482,7 @@ type Playground() as self =
             | Some lang ->
               Monaco.setValue r.Text
               self.useLanguage lang
-              setNote "リンクから読んだ"
+              self.showNote "リンクから読んだ"
               self.apply ())
         (fun err -> setError (errText err))
 
@@ -515,7 +523,10 @@ type Playground() as self =
             Monaco.onContentChanged (fun () ->
               if markedAt then
                 markedAt <- false
-                Monaco.clearMarks ())
+                Monaco.clearMarks ()
+              if noted then
+                noted <- false
+                setNote "")
             self.showInitialInPatterns ()
             // **同梱を載せたあとで上書きする。** 先に空で建てると、
             // リンクが読めなかったときに空の欄だけが残る ——

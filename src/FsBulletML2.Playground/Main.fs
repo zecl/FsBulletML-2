@@ -117,21 +117,40 @@ type PlaygroundHost() =
     |> Array.mapi (fun i info ->
          if System.String.IsNullOrEmpty info.Name then sprintf "#%d" i else info.Name)
 
-  /// 一覧の番号で差し替える。成功なら XML。失敗は `ERROR:` で始まる。
+  /// 一覧の番号で差し替える。**どの表記で欄に出すかを受け取る。**
+  /// 成功ならその表記の本文。失敗は `ERROR:` で始まる。
+  ///
+  /// v1.5 まで XML を返し、呼ぶ側が表記も XML に戻していた。
+  /// **選ぶのは弾幕であって書き方ではない** —— sxml で読んでいる人が
+  /// 別の弾幕を見たいだけで XML に戻されるのは、選んでいないものが動く。
+  ///
+  /// **読んでから書き直すのではない。** 木はもう在るので、その表記の
+  /// 書き手へ直に渡す（`Transcode` は本文の字から始まるので別の口）。
+  ///
+  /// 書けない表記が在れば `ERROR:`。**そのとき弾幕も差し替えない** ——
+  /// 欄と走っているものが食い違うほうが読み解けない
+  /// （同梱 176 本 が 4 表記 とも書けることは `Parser.Tests/Transcode.fs`）。
   [<JSInvokable>]
-  member _.SelectPattern(index: int) : string =
+  member _.SelectPattern(index: int, kind: string) : string =
     try
       let items = catalog.Value
       if index < 0 || index >= items.Length then "ERROR:範囲外"
       else
-        let info = items.[index]
-        // 建ててから差し替える（`ApplySource` と同じ理由。落ちたあとの
-        // `Reset` が `current` から建て直すので、進めてはいけない）
-        let next = Playfield.Create env info.Bulletml
-        current <- info.Bulletml
-        field <- next
-        // 畳まない側。理由は `InitialSource` と同じ
-        BulletmlWriter.toIndentedXml 4 info.Bulletml
+        match SourceKind.tryParse kind |> Option.bind SourceWriter.tryFind with
+        // 知らない字。`ApplySource` と同じ文面
+        | None -> "ERROR:未対応: " + kind
+        | Some writer ->
+          let info = items.[index]
+          // **字を先に作る。** 書けなかったときに走っているものを触らない
+          match writer.Write info.Bulletml with
+          | Result.Error why -> "ERROR:" + why
+          | Result.Ok text ->
+            // 建ててから差し替える（`ApplySource` と同じ理由。落ちたあとの
+            // `Reset` が `current` から建て直すので、進めてはいけない）
+            let next = Playfield.Create env info.Bulletml
+            current <- info.Bulletml
+            field <- next
+            text
     with ex -> "ERROR:" + ex.Message
 
   /// 右側の本文を読んで弾幕を差し替える。
