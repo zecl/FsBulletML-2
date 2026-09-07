@@ -219,3 +219,10 @@ button:disabled {
   color: #ff8080;
   margin-top: 8px;
 }
+
+/* 済んだことの知らせ。**`.error` と別の色** ——
+   同じところへ赤で出すと、コピーできたことが失敗に見える */
+.done {
+  color: #80d0a0;
+  margin-top: 8px;
+}

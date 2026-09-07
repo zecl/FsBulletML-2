@@ -8,6 +8,7 @@
 //
 // 答えを組み立てるのは各 target の `describe`。node 側と同じ 1 本。
 #load "../../src/FsBulletML2.LanguageService/SourceKind.fs"
+#load "../../src/FsBulletML2.LanguageService/ShareLink.fs"
 #load "../../src/FsBulletML2.LanguageService/Scan.fs"
 #load "../../src/FsBulletML2.LanguageService/XmlScan.fs"
 #load "../../src/FsBulletML2.LanguageService/SxmlScan.fs"
@@ -38,6 +39,8 @@ let answer (target: string) (c: JsonElement) =
     FsbScan.describe (c.GetProperty("src").GetString()) (c.GetProperty("cursor").GetInt32())
   | "SourceKind" ->
     SourceKind.describe (c.GetProperty("id").GetString())
+  | "ShareLink" ->
+    ShareLink.describe (c.GetProperty("fragment").GetString())
   | t ->
     eprintfn "表に知らない target が在る: %s" t
     exit 4

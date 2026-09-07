@@ -46,6 +46,9 @@
     <Compile Include="QuickFix.fs" />
     <!-- 表記を書き分ける（v1.4）。**4 表記 の往復が本体** -->
     <Compile Include="Transcode.fs" />
+    <!-- 共有リンク（v1.5）。**圧縮はここに来ない**（ブラウザにしか無い）——
+         当てるのは base64url と、版・表記の組み立て -->
+    <Compile Include="ShareLink.fs" />
   </ItemGroup>
   <ItemGroup>
     <!-- **CE の本文を試験の出力へ写す。** 期待値は `Bullets.Dsl` の値なので、
