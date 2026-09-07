@@ -1,5 +1,6 @@
 namespace FsBulletML2.Parser.Tests
 
+open System.Reflection
 open NUnit.Framework
 open FsUnit
 open FsBulletML2.LanguageService
@@ -71,6 +72,31 @@ type SpecCoverage() =
       if not extra.IsEmpty then
         yield sprintf "%s: 散文が在って語彙に無い -> %s" name (String.concat ", " extra) ]
 
+  /// `FsBulletML2.Dsl` の CE の名前。**reflection で舐める** ——
+  /// 表と突き合わせる相手を手で書くと、突き合わせにならない。
+  ///
+  /// 2 通り 在る —— module の公開 `let`（`fire` / `defAction` …）と、
+  /// builder の `[<CustomOperation>]`（`aim` / `speedSeq` …）。
+  /// **どちらも CE の中で打つ字**なので、hover の当てる先はこの和集合
+  static let ceKeys =
+    let asm = typeof<FsBulletML2.Dsl.BulletmlBuilder>.Assembly
+    let dslModule = asm.GetTypes() |> Array.find (fun t -> t.FullName = "FsBulletML2.Dsl")
+    let lets =
+      dslModule.GetMembers(BindingFlags.Public ||| BindingFlags.Static)
+      |> Array.choose (fun m ->
+           match m with
+           | :? MethodInfo as mi when not mi.IsSpecialName -> Some mi.Name
+           | :? PropertyInfo as pi -> Some pi.Name
+           | _ -> None)
+    let ops =
+      asm.GetTypes()
+      |> Array.collect (fun t -> t.GetMethods(BindingFlags.Public ||| BindingFlags.Instance))
+      |> Array.choose (fun m ->
+           m.GetCustomAttributes(typeof<CustomOperationAttribute>, false)
+           |> Array.tryHead
+           |> Option.map (fun a -> (a :?> CustomOperationAttribute).Name))
+    Array.append lets ops |> Set.ofArray
+
   [<Test>]
   member _.``語彙も散文も空でない``() =
     // どちらかが空だと、下の突き合わせは「両方 空で緑」になる
@@ -92,6 +118,57 @@ type SpecCoverage() =
   [<Test>]
   member _.``属性値が 過不足なく 一致する``() =
     both "属性値" attrValueKeys Spec.attrValues |> should be Empty
+
+  // --- F# の CE の表 --------------------------------------------------------
+  //
+  // ここは**散文の表ではなく対応の表**（CE の名前 -> 要素・属性値）。
+  // 散文は上の 3 つ から引くので、当てるのは 2 つ ——
+  // 名前が `Dsl` を過不足なく覆うことと、指す先が語彙に在ること。
+
+  [<Test>]
+  member _.``CE の名前も表も空でない``() =
+    // どちらかが空だと、下の突き合わせは「両方 空で緑」になる
+    ceKeys.Count |> should greaterThan 0
+    Spec.ce.Length |> should greaterThan 0
+
+  [<Test>]
+  member _.``CE の名前が 過不足なく 一致する``() =
+    // **`Dsl` は配る package。** 名前が増えたときに hover が黙って
+    // 出なくなる（表に無い名前は `None`）のを、ここで赤にする
+    let fromTable = Spec.ce |> List.map (fun (n, _, _, _) -> n) |> Set.ofList
+    let missing = Set.difference ceKeys fromTable |> Set.toList
+    let extra = Set.difference fromTable ceKeys |> Set.toList
+    [ if not missing.IsEmpty then
+        yield sprintf "Dsl に在って表が無い -> %s" (String.concat ", " missing)
+      if not extra.IsEmpty then
+        yield sprintf "表が在って Dsl に無い -> %s" (String.concat ", " extra) ]
+    |> should be Empty
+
+  [<Test>]
+  member _.``CE の指す先が 語彙に在る``() =
+    // 要素名を打ち間違えても hover が黙って出なくなるだけなので、字で見る
+    [ for (name, element, attr, value) in Spec.ce do
+        if not (elementKeys.Contains element) then
+          yield sprintf "%s: 要素 %s が語彙に無い" name element
+        elif attr <> "" then
+          let key = sprintf "%s/@%s=%s" element attr value
+          if not (attrValueKeys.Contains key) then
+            yield sprintf "%s: %s が語彙に無い" name key ]
+    |> should be Empty
+
+  [<Test>]
+  member _.``CE の属性と値は 揃って書く``() =
+    // 片方 だけだと `Token` を組めない（`Attribute` は CE の hover に出さない）
+    [ for (name, _, attr, value) in Spec.ce do
+        if (attr = "") <> (value = "") then
+          yield sprintf "%s: attr=%s value=%s" name attr value ]
+    |> should be Empty
+
+  [<Test>]
+  member _.``CE の行が重なっていない``() =
+    // 同じ名前が何行 在ってもよいが、**同じ行が 2 度 在ってはいけない** ——
+    // hover に同じ塊が 2 つ 並ぶ
+    Spec.ce |> List.countBy id |> List.filter (fun (_, n) -> n > 1) |> should be Empty
 
   [<Test>]
   member _.``散文が空でない``() =

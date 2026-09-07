@@ -33,11 +33,21 @@ let private strings (arr: obj) : string list =
 /// **形が食い違ったら候補が出なくなるだけ**なので、呼ぶ側が空を赤にする
 let parseVocabulary (json: string) : Vocab =
   let root = jsonParse json
-  if isNull root then { Elements = []; Expressions = [] }
+  if isNull root then { Elements = []; Expressions = []; Ce = [] }
   else
     let els = root?elements
     let len: int = if isNull els then 0 else els?length
+    let ces = root?ce
+    let clen: int = if isNull ces then 0 else ces?length
     { Expressions = strings root?expressions
+      // **F# の CE の名前。** 同じ名前が何個 在ってもよい（読む側が全部 拾う）
+      Ce =
+        [ for i in 0 .. clen - 1 ->
+            let c = item ces i
+            { Name = string c?name
+              Element = text c?element
+              Attr = text c?attr
+              Value = text c?value } ]
       Elements =
         [ for i in 0 .. len - 1 ->
             let e = item els i

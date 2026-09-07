@@ -124,11 +124,22 @@
       </p>
 
       <p>
-        <strong>F# の CE だけは候補も hover も出ない。</strong>
+        <strong>F# の CE だけは候補が出ない。</strong>
         書くのは要素名ではなく DSL の名前（<code>top</code> / <code>defAction</code> /
-        <code>actionRef</code>）で、<strong>DTD には載っていない語彙</strong>だから。
+        <code>actionRef</code>）で、<strong>置ける場所が入れ子の型で決まる</strong>から。
         色分けと括弧の対応は付く。Apply は同じように効いて、
         読めなければ位置つきで理由が出る。
+      </p>
+
+      <p>
+        <strong>hover は CE でも出る。</strong> 名前の上に置くと、
+        それが <strong>BulletML の何を作るか</strong>と、その仕様が出る ——
+        <code>defAction</code> なら <code>&lt;action&gt;</code>、
+        <code>aim</code> なら <code>&lt;direction&gt;</code> と
+        <code>type="aim"</code> の 2 つ。
+        <code>vertical</code> のように<strong>2 つ の意味を持つ名前は両方</strong>出る
+        （根の画面の向きと、<code>accel</code> の中の縦の加速度）。
+        文字列やコメントの中では出ない。
       </p>
 
       <table>
@@ -205,8 +216,8 @@
       </ul>
 
       <p class="note">
-        4 つ の表記が全部 書ける。候補・hover・<kbd>F2</kbd>・<kbd>Ctrl</kbd>+<kbd>.</kbd>
-        が出ないのは F# の CE だけ。
+        4 つ の表記が全部 書けて、hover は 4 つ とも出る。
+        候補・<kbd>F2</kbd>・<kbd>Ctrl</kbd>+<kbd>.</kbd> が出ないのは F# の CE だけ。
       </p>
 
       <button type="button" id="help-close">閉じる</button>

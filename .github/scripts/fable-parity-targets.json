@@ -22,6 +22,13 @@
     "args": [ "src", "cursor" ]
   },
   {
+    "target": "FsharpScan",
+    "note": "F# の CE の字を数える 1 本。ほかの 3 本 と違って返すのは名前だけ。文字列とコメントの外だけを数えるので、逃がしと入れ子の扱いが 2 つ の runtime で一致している必要がある",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsharpScan.js",
+    "export": "describe",
+    "args": [ "src", "cursor" ]
+  },
+  {
     "target": "SourceKind",
     "note": "表記の名前と拡張子。host と ブラウザ側 が同じ 1 本 を引く",
     "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/SourceKind.js",

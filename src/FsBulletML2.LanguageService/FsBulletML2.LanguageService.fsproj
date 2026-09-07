@@ -47,6 +47,8 @@
     <Compile Include="XmlScan.fs" />
     <Compile Include="SxmlScan.fs" />
     <Compile Include="FsbScan.fs" />
+    <!-- F# の CE の字を数える 1 本。**返すのは名前だけ**（要素・属性の形が無い） -->
+    <Compile Include="FsharpScan.fs" />
     <!-- 綴りの近さ。**数を返さない**（上限を字に出さない） -->
     <Compile Include="Distance.fs" />
     <!-- 参照の規則。**host の波線と ブラウザの rename / Quick Fix が同じ 1 本 を引く** -->

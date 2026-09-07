@@ -28,7 +28,7 @@ type Usages() =
   static let xml = Languages.Xml.XmlLanguage(fun () -> vocab) :> ISourceLanguage
   static let sxml = Languages.Sxml.SxmlLanguage(fun () -> vocab) :> ISourceLanguage
   static let fsb = Languages.Fsb.FsbLanguage(fun () -> vocab) :> ISourceLanguage
-  static let fsharp = Languages.Fsharp.FsharpLanguage() :> ISourceLanguage
+  static let fsharp = Languages.Fsharp.FsharpLanguage(fun () -> vocab) :> ISourceLanguage
 
   /// `|` の位置をカーソルとして引く
   let at (lang: ISourceLanguage) (marked: string) =

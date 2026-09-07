@@ -104,7 +104,7 @@ type Playground() as self =
   let mutable canvas: HTMLCanvasElement = null
   let mutable canvasCtx: CanvasRenderingContext2D = null
   // host からもらう語彙。正本は Core の DTD.fs。**表記が変わっても同じ**
-  let mutable vocabulary: Vocab = { Elements = []; Expressions = [] }
+  let mutable vocabulary: Vocab = { Elements = []; Expressions = []; Ce = [] }
   // **起動時の表記。** 欄に最初に出るのは host が焼く XML（`InitialSource`）。
   //
   // **同梱カタログを選ぶときの表記ではない**（v1.6）——
@@ -118,7 +118,7 @@ type Playground() as self =
     [ initialLanguage
       Languages.Sxml.SxmlLanguage(fun () -> vocabulary)
       Languages.Fsb.FsbLanguage(fun () -> vocabulary)
-      Languages.Fsharp.FsharpLanguage() ]
+      Languages.Fsharp.FsharpLanguage(fun () -> vocabulary) ]
   // いま欄に載っている表記
   let mutable current = initialLanguage
   // 波線を付けたか。**印は文字に追随しない**ので、次の打鍵で消す

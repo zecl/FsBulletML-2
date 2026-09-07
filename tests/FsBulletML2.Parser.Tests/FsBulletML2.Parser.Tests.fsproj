@@ -34,6 +34,8 @@
     <Compile Include="SxmlCompletion.fs" />
     <!-- F# の CE（v1.0）。目盛りは同梱カタログの**値**そのもの -->
     <Compile Include="FsharpCeCorpus.fs" />
+    <!-- CE の hover（v1.6）。**HoverMarkdown（XML 側）と対** -->
+    <Compile Include="FsharpHover.fs" />
     <!-- インデント記法（v1.1）。sxml と同じ 5 本 で、名前が対応している -->
     <Compile Include="FsbReader.fs" />
     <Compile Include="FsbToken.fs" />

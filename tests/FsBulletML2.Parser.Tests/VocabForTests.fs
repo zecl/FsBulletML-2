@@ -35,4 +35,9 @@ module VocabForTests =
                         Dtd = a.Dtd
                         Spec = a.Spec
                         ValueSpecs = List.ofArray a.ValueSpecs }) })
-      Expressions = List.ofArray Vocabulary.expressions }
+      Expressions = List.ofArray Vocabulary.expressions
+      // **F# の CE の名前。** 本番も同じ表（`Spec.ce`）が JSON を通って届く
+      Ce =
+        Spec.ce
+        |> List.map (fun (name, element, attr, value) ->
+             { Name = name; Element = element; Attr = attr; Value = value }) }

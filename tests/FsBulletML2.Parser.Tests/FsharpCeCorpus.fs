@@ -130,15 +130,17 @@ type FsharpCeCorpus() =
   // --- いま出さないと決めたもの ---------------------------------------------
 
   [<Test>]
-  member _.``CE は候補も hover も出さない（語彙が DTD から引けないため）``() =
+  member _.``CE は候補を出さない（置ける場所が入れ子の型で決まるため）``() =
     // **黙って空なのではなく、ここで空だと決めている。**
-    // `Dsl` を reflection で舐める版を置いたら、この点が赤くなる —— そこで外す
-    let lang = Languages.Fsharp.FsharpLanguage() :> SourceLanguage.ISourceLanguage
+    //
+    // v1.6 まで hover もここで空だった。**その点は位置を外していた** ——
+    // 当てていた添字が引用符の上で、名前の上ではなかったので、
+    // hover を実装しても緑のまま通った。hover の点は `FsharpHover` へ移した
+    let lang = Languages.Fsharp.FsharpLanguage(fun () -> vocab) :> SourceLanguage.ISourceLanguage
     lang.Kind |> should equal SourceKind.FSharpDsl
     lang.EditorLanguageId |> should equal "fsharp"
     lang.TriggerCharacters |> should be Empty
     lang.Complete "let x =\n  untyped \"a\" {\n    top {\n      w" 40 |> should be Empty
-    lang.Hover "let x =\n  untyped \"a\" { top { wait \"1\" } }" 20 |> should equal None
 
   [<Test>]
   member _.``CE は参照の波線を出さない（嘘の位置を引かない）``() =

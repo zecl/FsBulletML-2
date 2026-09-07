@@ -315,5 +315,20 @@ module Vocabulary =
         sb.Append "]}" |> ignore)
     sb.Append "],\"expressions\":" |> ignore
     arr expressions
-    sb.Append "}" |> ignore
+    // **F# の CE の名前。** ここは reflection ではなく手で書いた表（`Spec.ce`）。
+    // 名前が `Dsl` を過不足なく覆うことは `SpecCoverage` が見ている
+    sb.Append ",\"ce\":[" |> ignore
+    Spec.ce
+    |> List.iteri (fun i (name, element, attr, value) ->
+        if i > 0 then sb.Append ',' |> ignore
+        sb.Append "{\"name\":" |> ignore
+        str name
+        sb.Append ",\"element\":" |> ignore
+        str element
+        sb.Append ",\"attr\":" |> ignore
+        str attr
+        sb.Append ",\"value\":" |> ignore
+        str value
+        sb.Append '}' |> ignore)
+    sb.Append "]}" |> ignore
     sb.ToString()
