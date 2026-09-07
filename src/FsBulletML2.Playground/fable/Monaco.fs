@@ -157,7 +157,12 @@ let create (hostId: string) (language: string) (initial: string) =
         // 「自前のほうが確かめやすい」は成り立たなかった。
         // 動く実績のある側を残し、測れないものを増やさない
         "automaticLayout" ==> true
-        "minimap" ==> createObj [ "enabled" ==> false ]
+        // 右の縮小図。**素の値のまま出す** —— VS Code と同じ見え方にする
+        // （字を描く / つまみは重ねたときだけ / 幅は欄に比例）。
+        //
+        // 幅を持っていくが、測ると欄の 1 割・上限 80px だった。
+        // 弾幕は入れ子が深くて縦に長いので、縮小図のほうが効く
+        "minimap" ==> createObj [ "enabled" ==> true ]
         "scrollBeyondLastLine" ==> false
         "fontSize" ==> 12
         "tabSize" ==> 2 ])
