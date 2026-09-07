@@ -1,5 +1,6 @@
 namespace FsBulletML2.LanguageService
 
+open System.Text
 open FSharp.Compiler.CodeAnalysis
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text
@@ -306,6 +307,15 @@ module FsharpCe =
     | Some "horizontalXmlns", [ xmlns; name; blk ] -> build (Dsl.horizontalXmlns (str xmlns) (str name)) blk
     | Some "noneXmlns", [ xmlns; name; blk ] -> build (Dsl.noneXmlns (str xmlns) (str name)) blk
     | Some "untypedXmlns", [ xmlns; name; blk ] -> build (Dsl.untypedXmlns (str xmlns) (str name)) blk
+    // **名前を書かない根**（v1.4）。本家の弾幕はこちらが普通
+    | Some "verticalAnon", [ blk ] -> build Dsl.verticalAnon blk
+    | Some "horizontalAnon", [ blk ] -> build Dsl.horizontalAnon blk
+    | Some "noneAnon", [ blk ] -> build Dsl.noneAnon blk
+    | Some "untypedAnon", [ blk ] -> build Dsl.untypedAnon blk
+    | Some "verticalXmlnsAnon", [ xmlns; blk ] -> build (Dsl.verticalXmlnsAnon (str xmlns)) blk
+    | Some "horizontalXmlnsAnon", [ xmlns; blk ] -> build (Dsl.horizontalXmlnsAnon (str xmlns)) blk
+    | Some "noneXmlnsAnon", [ xmlns; blk ] -> build (Dsl.noneXmlnsAnon (str xmlns)) blk
+    | Some "untypedXmlnsAnon", [ xmlns; blk ] -> build (Dsl.untypedXmlnsAnon (str xmlns)) blk
     | Some n, _ -> fail e.Range (sprintf "弾幕の根に書けない: %s" n)
     | None, _ -> fail e.Range "弾幕の根に書けない形"
 
@@ -390,3 +400,248 @@ module FsharpCe =
       with
       | CannotRead (line, col, message) -> Error(line, col, message)
       | ex -> Error(0, 0, ex.Message)
+
+  // --- 書く ------------------------------------------------------------------
+  //
+  // **`read` の隣に置く。** 名前の対応（`Bulletml` の形 <-> DSL の名前）は
+  // ここ 1 か所 にしか無い —— 離すと、片方 だけ直したときに
+  // 「読めるのに書けない」（逆も）になり、どちらも単独では正しく見える。
+  //
+  // **`read` は同じ形に複数 の名前を許す**（`top` と `defAction "top"` など）。
+  // 書く側は 1 つ 選ぶ —— 選び方が合っているかは、書いて読み直して
+  // 値が一致するかで見る（`Parser.Tests` の往復）。
+
+  /// F# の字にするときの逃がし。**改行も逃がす** ——
+  /// 式の中に改行が入っている弾幕が同梱に 1 本 在る
+  let private quote (s: string) =
+    // **改行を `\n` に揃える。** XML も sxml も fsb も、読む側が `\r\n` を
+    // `\n` に正規化する（`System.Xml` も FParsec もそうする）。CE だけ `\r` を
+    // 保つと、**表記を変えたときにその 1 本 だけ値が動く** ——
+    // 同梱カタログに 1 本 在って、それで気づいた
+    let s = s.Replace("\r\n", "\n").Replace("\r", "\n")
+    let b = StringBuilder()
+    b.Append '"' |> ignore
+    for c in s do
+      match c with
+      | '\\' -> b.Append "\\\\" |> ignore
+      | '"' -> b.Append "\\\"" |> ignore
+      | '\n' -> b.Append "\\n" |> ignore
+      | '\r' -> b.Append "\\r" |> ignore
+      | '\t' -> b.Append "\\t" |> ignore
+      | c -> b.Append c |> ignore
+    b.Append('"').ToString()
+
+  let private plist (ps: Params) =
+    "[ " + (ps |> List.map quote |> String.concat "; ") + " ]"
+
+  /// 弾幕を F# の CE の字にする。
+  ///
+  /// **書けないものは `Error`。** `description` を CE で書く口が `Dsl` に無い
+  /// （同梱カタログには 1 件 も無いが、XML から持ってくれば在りうる）
+  let write (bulletml: Bulletml) : Result<string, string> =
+    let sb = StringBuilder()
+    let bad = ResizeArray<string>()
+    let line (depth: int) (text: string) =
+      sb.Append(String.replicate (depth * 2) " ").Append(text).Append("\n") |> ignore
+
+    let exprText (e: Expr.NumExpr) = Expr.NumExpr.text e
+
+    /// **空の `{ }` は書けない。** F# は `x { }` の中身を CE として読まない
+    /// （記録式に見える）ので、`read` の `block` が `None` になって
+    /// 「`{ }` が要る」で落ちる。
+    ///
+    /// 中身が空なら `()` を 1 つ 置く —— `statements` が `Const Unit` を
+    /// 空の並びとして読むので、値は変わらない。
+    ///
+    /// **入れ子でも効く** —— 内側が空でも `()` を書いた時点で字が増えるので、
+    /// 外側は「空ではない」と見る。
+    let bodyOrUnit (depth: int) (write: unit -> unit) =
+      let before = sb.Length
+      write ()
+      if sb.Length = before then line depth "()"
+
+    /// direction は type ごとに名前が違う。**型を書かない形が `dir`**
+    let dirCall (Direction (attrs, e)) =
+      let name =
+        match attrs with
+        | None -> "dir"
+        | Some a ->
+          match a.directionType with
+          | DirectionType.Aim -> "aim"
+          | DirectionType.Absolute -> "absolute"
+          | DirectionType.Relative -> "relative"
+          | DirectionType.Sequence -> "sequence"
+      name + " " + quote (exprText e)
+
+    let speedCall (Speed (attrs, e)) =
+      let name =
+        match attrs with
+        | None -> "speed"
+        | Some a ->
+          match a.speedType with
+          | SpeedType.Absolute -> "speedAbs"
+          | SpeedType.Relative -> "speedRel"
+          | SpeedType.Sequence -> "speedSeq"
+      name + " " + quote (exprText e)
+
+    /// `plain` は「何も書いていない弾」。**そこだけ名前が 1 語**
+    let isPlain (b: BulletElm) =
+      match b with
+      | BulletElm.Bullet (attrs, None, None, []) -> attrs.bulletLabel.IsNone
+      | _ -> false
+
+    let rec writeActions (depth: int) (xs: Action list) =
+      for a in xs do
+        match a with
+        | Action.Wait e -> line depth ("wait " + quote (exprText e))
+        | Action.Vanish -> line depth "vanish"
+        | Action.ChangeDirection (Direction (attrs, e), Term t) ->
+          let name =
+            match attrs with
+            | None -> "changeDirection"
+            | Some a ->
+              match a.directionType with
+              | DirectionType.Aim -> "changeDirectionAim"
+              | DirectionType.Absolute -> "changeDirectionAbs"
+              | DirectionType.Relative -> "changeDirectionRel"
+              | DirectionType.Sequence -> "changeDirectionSeq"
+          line depth (name + " " + quote (exprText e) + " " + quote (exprText t))
+        | Action.ChangeSpeed (Speed (attrs, e), Term t) ->
+          let name =
+            match attrs with
+            | None -> "changeSpeed"
+            | Some a ->
+              match a.speedType with
+              | SpeedType.Absolute -> "changeSpeedAbs"
+              | SpeedType.Relative -> "changeSpeedRel"
+              | SpeedType.Sequence -> "changeSpeedSeq"
+          line depth (name + " " + quote (exprText e) + " " + quote (exprText t))
+        | Action.Accel (h, v, Term t) ->
+          line depth ("accel " + quote (exprText t) + " {")
+          // horizontal も vertical も無い accel が在りうる。空の `{ }` は書けない
+          if h.IsNone && v.IsNone then line (depth + 1) "()"
+          match h with
+          | Some (Horizontal.Horizontal (attrs, e)) ->
+            let name =
+              match attrs with
+              | None -> "horizontal"
+              | Some a ->
+                match a.horizontalType with
+                | HorizontalType.Absolute -> "horizontalAbs"
+                | HorizontalType.Relative -> "horizontalRel"
+                | HorizontalType.Sequence -> "horizontalSeq"
+            line (depth + 1) (name + " " + quote (exprText e))
+          | None -> ()
+          match v with
+          | Some (Vertical.Vertical (attrs, e)) ->
+            let name =
+              match attrs with
+              | None -> "vertical"
+              | Some a ->
+                match a.verticalType with
+                | VerticalType.Absolute -> "verticalAbs"
+                | VerticalType.Relative -> "verticalRel"
+                | VerticalType.Sequence -> "verticalSeq"
+            line (depth + 1) (name + " " + quote (exprText e))
+          | None -> ()
+          line depth "}"
+        | Action.Repeat (Times t, child) ->
+          match child with
+          | ActionElm.ActionRef (attrs, ps) ->
+            line depth ("repeatRef " + quote (exprText t) + " " + quote (ActionLabel.text attrs.actionRefLabel) + " " + plist ps)
+          | ActionElm.Action (attrs, inner) ->
+            match attrs.actionLabel with
+            | None -> line depth ("repeat " + quote (exprText t) + " {")
+            | Some l -> line depth ("repeatAs " + quote (exprText t) + " " + quote (ActionLabel.text l) + " {")
+            bodyOrUnit (depth + 1) (fun () -> writeActions (depth + 1) inner)
+            line depth "}"
+        | Action.Fire (attrs, d, s, bullet) ->
+          match attrs.fireLabel with
+          | None -> line depth "fire {"
+          | Some l -> line depth ("fireAs " + quote (FireLabel.text l) + " {")
+          bodyOrUnit (depth + 1) (fun () -> writeFireBody (depth + 1) d s bullet)
+          line depth "}"
+        | Action.FireRef (attrs, ps) ->
+          line depth ("fireRef " + quote (FireLabel.text attrs.fireRefLabel) + " " + plist ps)
+        | Action.Action (attrs, inner) ->
+          match attrs.actionLabel with
+          | None -> line depth "nest {"
+          | Some l -> line depth ("nestAs " + quote (ActionLabel.text l) + " {")
+          bodyOrUnit (depth + 1) (fun () -> writeActions (depth + 1) inner)
+          line depth "}"
+        | Action.ActionRef (attrs, ps) ->
+          line depth ("actionRef " + quote (ActionLabel.text attrs.actionRefLabel) + " " + plist ps)
+
+    and writeFireBody depth d s (bullet: BulletElm) =
+      d |> Option.iter (fun x -> line depth (dirCall x))
+      s |> Option.iter (fun x -> line depth (speedCall x))
+      if isPlain bullet then line depth "plain"
+      else
+        match bullet with
+        | BulletElm.BulletRef (attrs, ps) ->
+          line depth ("refBullet " + quote (BulletLabel.text attrs.bulletRefLabel) + " " + plist ps)
+        | BulletElm.Bullet (attrs, bd, bs, children) ->
+          match attrs.bulletLabel with
+          | None -> line depth "ofBullet (bulletAnon {"
+          | Some l -> line depth ("ofBullet (bullet " + quote (BulletLabel.text l) + " {")
+          bodyOrUnit (depth + 1) (fun () -> writeBulletBody (depth + 1) bd bs children)
+          line depth "})"
+
+    and writeBulletBody depth d s (children: ActionElm list) =
+      d |> Option.iter (fun x -> line depth (dirCall x))
+      s |> Option.iter (fun x -> line depth (speedCall x))
+      for c in children do
+        match c with
+        | ActionElm.ActionRef (attrs, ps) ->
+          line depth ("refActs " + quote (ActionLabel.text attrs.actionRefLabel) + " " + plist ps)
+        | ActionElm.Action (attrs, inner) ->
+          match attrs.actionLabel with
+          | None -> line depth "doActs (body {"
+          | Some l -> line depth ("doActs (bodyAs " + quote (ActionLabel.text l) + " {")
+          bodyOrUnit (depth + 1) (fun () -> writeActions (depth + 1) inner)
+          line depth "})"
+
+    let writeRoot depth (e: BulletmlElm) =
+      match e with
+      | BulletmlElm.Action (attrs, xs) ->
+        match attrs.actionLabel with
+        | Some l when ActionLabel.text l = "top" -> line depth "top {"
+        | Some l -> line depth ("defAction " + quote (ActionLabel.text l) + " {")
+        | None -> line depth "defActionAnon {"
+        bodyOrUnit (depth + 1) (fun () -> writeActions (depth + 1) xs)
+        line depth "}"
+      | BulletmlElm.Bullet (attrs, d, s, children) ->
+        match attrs.bulletLabel with
+        | Some l -> line depth ("defBullet " + quote (BulletLabel.text l) + " {")
+        | None -> line depth "defBulletAnon {"
+        bodyOrUnit (depth + 1) (fun () -> writeBulletBody (depth + 1) d s children)
+        line depth "}"
+      | BulletmlElm.Fire (attrs, d, s, bullet) ->
+        match attrs.fireLabel with
+        | Some l -> line depth ("topFireAs " + quote (FireLabel.text l) + " {")
+        | None -> line depth "topFire {"
+        bodyOrUnit (depth + 1) (fun () -> writeFireBody (depth + 1) d s bullet)
+        line depth "}"
+
+    match bulletml with
+    | Bulletml.Bulletml (attrs, children) ->
+      if attrs.bulletmlDescription.IsSome then
+        bad.Add "description を書く口が Dsl に無い（CE では書けない）"
+      let baseName =
+        match attrs.bulletmlType with
+        | Some ShootingDirection.BulletVertical -> "vertical"
+        | Some ShootingDirection.BulletHorizontal -> "horizontal"
+        | Some ShootingDirection.BulletNone -> "none"
+        | None -> "untyped"
+      // **名前は省ける。** 本家の弾幕は `name` を持たないのが普通で、
+      // そちらは `…Anon` の入口を通る（v1.4 で `Dsl` に足した）
+      let head =
+        match attrs.bulletmlXmlns, attrs.bulletmlName with
+        | Some x, Some n -> baseName + "Xmlns " + quote x + " " + quote n
+        | Some x, None -> baseName + "XmlnsAnon " + quote x
+        | None, Some n -> baseName + " " + quote n
+        | None, None -> baseName + "Anon"
+      line 0 (head + " {")
+      bodyOrUnit 1 (fun () -> children |> List.iter (writeRoot 1))
+      line 0 "}"
+    if bad.Count = 0 then Ok(sb.ToString()) else Error(String.concat "\n" (List.ofSeq bad))

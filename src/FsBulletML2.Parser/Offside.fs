@@ -121,3 +121,68 @@ module Offside =
     use sr = new StreamReader((sxmlFile:string), Encoding.GetEncoding("UTF-8"))
     let input = sr.ReadToEnd()
     parse input
+
+  // --- 書く ----------------------------------------------------------------
+  //
+  // **読む口と同じファイルに置く。** 通せる字を決めているのは上の
+  // `pBodyValue` / `pattrValue` / `ptagName` で、書く側が別のところに居ると、
+  // 文法を直したときに置いていかれる —— **読めるものは読めるままなので気づかない。**
+
+  /// 本文に通せる字。**上の `pBodyValue` と対。** 片方 を直したらこちらも直す
+  let private bodyOk (c: char) =
+    System.Char.IsLetterOrDigit c || "()$+-*/.%".IndexOf c >= 0
+
+  /// インデント記法の受け口。
+  ///
+  ///     name attr="値"
+  ///         子
+  ///         name:"本文"
+  ///
+  /// **入れ子は行頭の空白だけ**（閉じる印が無いので、`End` は深さを戻すだけ）。
+  ///
+  /// **本文からは空白を落とす。** `pBodyValue` は空白を通さないので、
+  /// XML の側が出す `90 * $rand` はそのままでは書けない。
+  /// **落として語がくっつく形は、同梱カタログの本文 1,194 種類 で 0 件**
+  /// （v1.4 の頭で測った）—— くっつけば意味が変わるので、門で見ている。
+  type private FsbSink() =
+    let sb = StringBuilder()
+    let bad = ResizeArray<string>()
+    let mutable depth = 0
+
+    member _.Problems = List.ofSeq bad
+    member _.Text = sb.ToString()
+
+    interface IBulletmlSink with
+      member _.Start name =
+        if depth > 0 then sb.Append("\n") |> ignore
+        sb.Append(String.replicate (depth * 4) " ").Append(name) |> ignore
+        depth <- depth + 1
+
+      member _.Attr(name, value) =
+        if value.IndexOf '"' >= 0 then
+          bad.Add(sprintf "%s の値に引用符が在る: %s" name value)
+        sb.Append(" ").Append(name).Append("=\"").Append(value).Append("\"") |> ignore
+
+      member _.Text value =
+        let squashed = System.String(value.ToCharArray() |> Array.filter (fun c -> not (System.Char.IsWhiteSpace c)))
+        if squashed = "" then
+          // 空の本文を書くと、読み直したときに**子が 1 つ も無い形**になって消える
+          bad.Add(sprintf "本文が空のものはインデント記法では書けない: %s" value)
+        let ng = squashed |> Seq.filter (bodyOk >> not) |> Seq.distinct |> Seq.toList
+        if not ng.IsEmpty then
+          bad.Add(sprintf "本文にインデント記法で書けない字が在る（%s）: %s" (System.String(List.toArray ng)) value)
+        sb.Append(":\"").Append(squashed).Append("\"") |> ignore
+
+      member _.End() = depth <- depth - 1
+
+  /// 弾幕をインデント記法の字にする。
+  ///
+  /// **書けないものは `Error`。** 黙って落とすと、読み直したときに値が変わる
+  [<CompiledName "Write">]
+  let write (bulletml: Bulletml) : Result<string, string> =
+    let sink = FsbSink()
+    BulletmlWriter.writeTo sink bulletml
+    match sink.Problems with
+    // **`Ok` / `Error` は FParsec の `ReplyStatus` とぶつかる。** 型名で修飾する
+    | [] -> Result.Ok(sink.Text + "\n")
+    | problems -> Result.Error(String.concat "\n" problems)

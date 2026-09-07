@@ -1,4 +1,4 @@
-namespace FsBulletML2
+﻿namespace FsBulletML2
 
 /// BulletML 0.21 の書く側を、コンピュテーション式にしたもの。
 /// 出る値は公開 DU（`Bulletml` / `Action` / `BulletElm`）で、エンジンは触らない。
@@ -344,6 +344,28 @@ module Dsl =
     BulletmlBuilder(Some ShootingDirection.BulletNone, Some name, Some xmlns, None)
 
   let untypedXmlns xmlns name = BulletmlBuilder(None, Some name, Some xmlns, None)
+
+  /// 名前を書かない根。**本家の弾幕はこちらが普通** ——
+  /// `name` はこのエンジンが足した属性で、同梱の TestData 173 本 は
+  /// **1 本 も持っていない**（v1.4 で数えた）。
+  ///
+  /// 上の短い入口が名前を要るので、**名前を省いた弾幕は `bulletmlOf` でしか
+  /// 書けなかった** —— あちらは option を直に渡す一般形で、CE の字としては
+  /// 人が読む物ではない。よく使う形なので短い入口を置く。
+  let verticalAnon = BulletmlBuilder(Some ShootingDirection.BulletVertical, None, None, None)
+  let horizontalAnon = BulletmlBuilder(Some ShootingDirection.BulletHorizontal, None, None, None)
+  let noneAnon = BulletmlBuilder(Some ShootingDirection.BulletNone, None, None, None)
+  let untypedAnon = BulletmlBuilder(None, None, None, None)
+
+  let verticalXmlnsAnon xmlns =
+    BulletmlBuilder(Some ShootingDirection.BulletVertical, None, Some xmlns, None)
+
+  let horizontalXmlnsAnon xmlns =
+    BulletmlBuilder(Some ShootingDirection.BulletHorizontal, None, Some xmlns, None)
+
+  let noneXmlnsAnon xmlns = BulletmlBuilder(Some ShootingDirection.BulletNone, None, Some xmlns, None)
+
+  let untypedXmlnsAnon xmlns = BulletmlBuilder(None, None, Some xmlns, None)
 
   /// ビルダが DTD の書く側を全部受けられることの見本。走らせる門ではない。
   module Examples =

@@ -1,4 +1,4 @@
-#requires -Version 7
+﻿#requires -Version 7
 <#
 .SYNOPSIS
   Playground が守ると決めた線を、機械で見る。
@@ -23,7 +23,7 @@
 
   3. ブラウザ側に BulletML の要素名が書かれていない
      語彙は host が `Core/DTD.fs` から焼いて渡す。**当てる名前は
-     `WriteStartElement(...)` から引く** —— 門の中に表を持たない
+     `sink.Start(...)` から引く** —— 門の中に表を持たない
 
      当てる先は Fable のソースと `$ServiceDir`。**v0.8 で `languages/Xml.fs` が
      `$fableDir` から器へ移った** —— 走査先を伸ばさないと、移した先で要素名を
@@ -150,7 +150,10 @@ foreach ($proj in (@($CoreProj) + $serviceProjs)) {
 # 表だけが古びる
 $names = @()
 if (Test-Path -LiteralPath $DtdSource) {
-  $names = @(Select-String -LiteralPath $DtdSource -Pattern 'WriteStartElement\("([^"]+)"' -AllMatches |
+  # **sink.Start(...) から引く。** v1.4 まで WriteStartElement(...) だった ——
+  # 書き手を表記ごとに分けたとき、歩きが XmlWriter を名指ししなくなった。
+  # **その付け替えでここが 0 件 になり、この門が落ちて気づいた**（0 件 を緑にしない側が効いた）
+  $names = @(Select-String -LiteralPath $DtdSource -Pattern 'sink\.Start\("([^"]+)"' -AllMatches |
              ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
 }
 if ($names.Count -eq 0) {
