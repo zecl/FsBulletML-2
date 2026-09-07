@@ -151,3 +151,35 @@ module Diagnosis =
           build bulletml
           None
     with ex -> Some(ofException ex)
+
+  /// インデント記法（fsb）を読んで、載せる。**`tryReadFsbString` を使わない。**
+  ///
+  /// あちらも `Failure (_,_,_) -> None` で**位置を捨てている**
+  /// （v1.1 の頭で測った。sxml と同じ形だった）。
+  ///
+  /// **読む筋そのものは `tryReadFsbString` と同じ**（`Offside.parse` して
+  /// `tryBulletmlFromXmlNode`）。2 本 書いていることになるので、
+  /// **コーパスで答えが一致することを門で見ている**
+  /// （`Parser.Tests/FsbReader.fs`）。
+  let applyFsb (build: Bulletml -> unit) (fsb: string) : Failure option =
+    try
+      match Offside.parse fsb with
+      | FParsec.CharParsers.Failure (message, error, _) ->
+        let where = "インデント記法として読めなかった"
+        Some
+          { // 空文字を読ませても 1 起点 で返ってくるが、**丸めておく**
+            Line = max 1 (int error.Position.Line)
+            Column = max 1 (int error.Position.Column)
+            // 「そこから先が読めない」しか言わないので、終わりは分からない
+            EndColumn = 0
+            Message =
+              match expectation message with
+              | Some e -> where + "。" + e
+              | None -> where }
+      | FParsec.CharParsers.Success (node, _, _) ->
+        match BulletmlRead.tryBulletmlFromXmlNode node with
+        | None -> Some(plain "BulletML として読めなかった")
+        | Some bulletml ->
+          build bulletml
+          None
+    with ex -> Some(ofException ex)

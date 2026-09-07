@@ -136,17 +136,22 @@ type SxmlReader() =
   // --- 束ねている側 ---------------------------------------------------------
 
   [<Test>]
-  member _.``読める表記が 2 つ 登録されている``() =
-    SourceReader.all |> List.map (fun r -> r.Kind.Id) |> should equal [ "xml"; "sxml"; "fsharp" ]
-    (SourceReader.tryFind SourceKind.Xml).IsSome |> should be True
-    (SourceReader.tryFind SourceKind.Sxml).IsSome |> should be True
-    (SourceReader.tryFind SourceKind.FSharpDsl).IsSome |> should be True
+  member _.``表記が全部 読める``() =
+    // **並びは `SourceKind.all` と同じ順。** 揃えておかないと、
+    // 「どちらの並びを見た数か」で数え方が割れる
+    SourceReader.all |> List.map (fun r -> r.Kind.Id)
+    |> should equal (SourceKind.all |> List.map (fun k -> k.Id))
+    SourceReader.all |> List.map (fun r -> r.Kind.Id)
+    |> should equal [ "xml"; "sxml"; "fsb"; "fsharp" ]
+    for kind in SourceKind.all do
+      (SourceReader.tryFind kind).IsSome |> should be True
 
   [<Test>]
-  member _.``まだ読めない表記は 引けない``() =
-    // **`SourceKind.all` と揃っていない。** 揃っていないことを人へ見せるのは
-    // `ApplySource` の側（`未対応: …`）
-    (SourceReader.tryFind SourceKind.Fsb).IsNone |> should be True
+  member _.``知らない字は 断る``() =
+    // v1.1 で全部 揃ったが、**2 つ の並びを 1 本 にはしない** ——
+    // 次の表記を足すとき、また割れる（読めない状態を必ず通る）。
+    // 人へ見せる口は `ApplySource` の側（`未対応: …`）に残してある
+    (SourceKind.tryParse "nope").IsNone |> should be True
 
   [<Test>]
   member _.``拡張子は 表記ごとに違い、id から導けない``() =

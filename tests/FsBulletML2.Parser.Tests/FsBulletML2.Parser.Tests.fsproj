@@ -32,6 +32,12 @@
     <Compile Include="SxmlCompletion.fs" />
     <!-- F# の CE（v1.0）。目盛りは同梱カタログの**値**そのもの -->
     <Compile Include="FsharpCeCorpus.fs" />
+    <!-- インデント記法（v1.1）。sxml と同じ 5 本 で、名前が対応している -->
+    <Compile Include="FsbReader.fs" />
+    <Compile Include="FsbToken.fs" />
+    <Compile Include="FsbReferenceScan.fs" />
+    <Compile Include="FsbContext.fs" />
+    <Compile Include="FsbCompletion.fs" />
   </ItemGroup>
   <ItemGroup>
     <!-- **CE の本文を試験の出力へ写す。** 期待値は `Bullets.Dsl` の値なので、

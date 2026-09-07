@@ -15,6 +15,13 @@
     "args": [ "src", "cursor" ]
   },
   {
+    "target": "FsbScan",
+    "note": "インデント記法の字を数える 1 本。入れ子が行頭の空白で決まるので、行の切り方が両方 で一致している必要がある（改行の扱いは runtime ごとに違う）",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsbScan.js",
+    "export": "describe",
+    "args": [ "src", "cursor" ]
+  },
+  {
     "target": "SourceKind",
     "note": "表記の名前と拡張子。host と ブラウザ側 が同じ 1 本 を引く",
     "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/SourceKind.js",

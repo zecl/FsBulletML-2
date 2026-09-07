@@ -43,10 +43,12 @@
     <Compile Include="Scan.fs" />
     <Compile Include="XmlScan.fs" />
     <Compile Include="SxmlScan.fs" />
+    <Compile Include="FsbScan.fs" />
     <Compile Include="SourceLanguage.fs" />
     <Compile Include="Languages/Lookup.fs" />
     <Compile Include="Languages/Xml.fs" />
     <Compile Include="Languages/Sxml.fs" />
+    <Compile Include="Languages/Fsb.fs" />
     <!-- **`Lookup` に載っていない。** CE の語彙は DTD から引けないので、
          候補と hover は空。理由はファイルの頭に書いてある -->
     <Compile Include="Languages/Fsharp.fs" />

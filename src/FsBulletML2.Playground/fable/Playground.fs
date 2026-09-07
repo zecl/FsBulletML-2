@@ -94,13 +94,14 @@ type Playground() as self =
   // 焼くので、選んだら表記も XML に戻す。ほかの表記では焼けない ——
   // repo に**書く口が無い**（読むだけ。v0.9 の頭で測った）
   let catalogLanguage: ISourceLanguage = Languages.Xml.XmlLanguage(fun () -> vocabulary)
-  // 登録されている表記。次の表記はここに 1 個 足して、host の
-  // `SourceReader` に 1 行 足すだけ。
+  // 登録されている表記。**並びは `SourceKind.all` と同じ** ——
+  // プルダウンも `Open` の accept もここから作るので、順が意味を持つ。
   // **F# の CE だけ候補と hover を出さない**（語彙が DTD から引けないため。
   // 理由は `Languages/Fsharp.fs`）が、書いて Apply する道は通っている
   let languages: ISourceLanguage list =
     [ catalogLanguage
       Languages.Sxml.SxmlLanguage(fun () -> vocabulary)
+      Languages.Fsb.FsbLanguage(fun () -> vocabulary)
       Languages.Fsharp.FsharpLanguage() ]
   // いま欄に載っている表記
   let mutable current = catalogLanguage

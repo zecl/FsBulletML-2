@@ -58,10 +58,16 @@ module SourceReader =
   /// **黙って 0 件 になっているのではない**ことを
   /// `Parser.Tests/FsharpCeCorpus.fs` が固定している
   let fsharp = ofParts SourceKind.FSharpDsl Diagnosis.applyFsharp (fun _ -> [])
+  let fsb = ofParts SourceKind.Fsb Diagnosis.applyFsb FsbScan.tags
 
-  /// 読める表記。**`SourceKind.all` と揃っていない** —— fsb はまだ読む口を
-  /// 置いていない。揃っていないことを人へ見せるのは
-  /// `ApplySource` の側（`未対応: …`）
-  let all: ISourceReader list = [ xml; sxml; fsharp ]
+  /// 読める表記。**`SourceKind.all` と全部 揃った**（v1.1）。
+  ///
+  /// **揃ったからといって、この 2 本 を 1 本 にしない。** あちらは「どの表記か」で、
+  /// こちらは「読む口が在るか」—— 次に表記を足すとき、また割れる。
+  /// 揃っていない状態を人へ見せる口は `ApplySource` の側に残してある
+  /// （`未対応: …`）
+  /// 並びは `SourceKind.all` と同じ。**揃えておかないと、
+  /// 「どちらの並びを見た数か」で数え方が割れる**
+  let all: ISourceReader list = [ xml; sxml; fsb; fsharp ]
 
   let tryFind (kind: SourceKind) = all |> List.tryFind (fun r -> r.Kind = kind)

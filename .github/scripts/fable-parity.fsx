@@ -11,6 +11,7 @@
 #load "../../src/FsBulletML2.LanguageService/Scan.fs"
 #load "../../src/FsBulletML2.LanguageService/XmlScan.fs"
 #load "../../src/FsBulletML2.LanguageService/SxmlScan.fs"
+#load "../../src/FsBulletML2.LanguageService/FsbScan.fs"
 
 open System
 open System.IO
@@ -33,6 +34,8 @@ let answer (target: string) (c: JsonElement) =
     XmlScan.describe (c.GetProperty("src").GetString()) (c.GetProperty("cursor").GetInt32())
   | "SxmlScan" ->
     SxmlScan.describe (c.GetProperty("src").GetString()) (c.GetProperty("cursor").GetInt32())
+  | "FsbScan" ->
+    FsbScan.describe (c.GetProperty("src").GetString()) (c.GetProperty("cursor").GetInt32())
   | "SourceKind" ->
     SourceKind.describe (c.GetProperty("id").GetString())
   | t ->
