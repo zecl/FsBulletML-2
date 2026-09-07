@@ -26,6 +26,10 @@ let private amdRequire (id: string) (cb: unit -> unit) : unit = jsNative
 [<Emit("globalThis.monaco.editor.create($0, $1)")>]
 let private createEditor (host: obj) (opts: obj) : obj = jsNative
 
+// 配色は editor ごとではなく **Monaco 全体**に掛かる。だから引数に editor が要らない
+[<Emit("globalThis.monaco.editor.setTheme($0)")>]
+let private applyTheme (id: string) : unit = jsNative
+
 [<Emit("globalThis.monaco.languages.registerCompletionItemProvider($0, { triggerCharacters: $2, provideCompletionItems: $1 })")>]
 let private registerCompletion (language: string) (fn: obj -> obj -> obj) (triggers: string[]) : unit = jsNative
 
@@ -94,6 +98,49 @@ let load (vsBase: string) (onLoaded: unit -> unit) =
   amdConfig vsBase
   amdRequire "vs/editor/editor.main" onLoaded
 
+/// エディタの配色。**Monaco が素で持っているものだけ。**
+///
+/// 名前は Monaco 固有なので、ここ以外 に書かない（器はどのエディタに
+/// 載るかを知らない）。表を持つ理由は下の `setTheme` に書いてある。
+type Theme =
+  { /// Monaco へ渡す字
+    Id: string
+    /// 人へ見せる名。**`Id` から作れない** —— `vs` が明るいほうで、
+    /// `vs-dark` が暗いほう、という対応は字から読めない
+    Label: string }
+
+/// 素で在る 4 本。**測って決めた**（0.56 で当てた）——
+/// `vs` / `vs-dark` / `hc-black` / `hc-light` 以外 は 1 つ も効かなかった。
+///
+/// 並びは 暗い / 明るい を対にして、高コントラスト（`HC`）を後ろへ。
+///
+/// **名は短く。** `select` の幅はいちばん長い選択肢で決まり、そこが太ると
+/// プルダウンの列が折り返して欄の縦を食う。「明るい（高コントラスト）」と
+/// 書くと 193px、`HC` に詰めると 97px、素の id なら 83px ——
+/// **素の id は 14px しか縮まず、折り返す幅も同じ**だったので、読めるほうを取った。
+let themes =
+  [ { Id = "vs-dark"; Label = "暗い" }
+    { Id = "vs"; Label = "明るい" }
+    { Id = "hc-black"; Label = "暗い HC" }
+    { Id = "hc-light"; Label = "明るい HC" } ]
+
+/// 起動時の配色。**`create` と プルダウンの初期値が同じ 1 本 を引く** ——
+/// 2 か所 に書くと、片方 だけ変えても落ちず、
+/// 「プルダウンは暗いと言っているのに明るい」になる
+let defaultTheme = "vs-dark"
+
+/// 配色を替える。**知らない字なら false を返して何もしない。**
+///
+/// `monaco.editor.setTheme` は知らない名前で**落ちない** ——
+/// 黙って `vs`（明るいほう）に倒れる。`dark` も `VS-DARK` も、
+/// 綴りの間違いも全部 そこへ行く（測った）。
+/// だから当てるのはこちらで、渡すのは表に在る字だけにする。
+let setTheme (id: string) : bool =
+  if themes |> List.exists (fun t -> t.Id = id) then
+    applyTheme id
+    true
+  else false
+
 let create (hostId: string) (language: string) (initial: string) =
   let host = document.getElementById hostId
   if isNull host then failwith ("要素が無い: " + hostId)
@@ -103,7 +150,7 @@ let create (hostId: string) (language: string) (initial: string) =
       (createObj [
         "value" ==> initial
         "language" ==> language
-        "theme" ==> "vs-dark"
+        "theme" ==> defaultTheme
         // 入れ物の大きさへの追随は Monaco 自身に任せる。
         // **自前の ResizeObserver に替えかけたが戻した** —— 背面タブでは
         // どちらも発火しない（layout / paint の流れが回らない）ので、

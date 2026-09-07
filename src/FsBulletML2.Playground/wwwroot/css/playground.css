@@ -116,11 +116,13 @@ button:disabled {
   padding: 5px 6px;
 }
 
-/* プルダウンと ? を横に並べる。余りはプルダウンが取る */
+/* プルダウンと ? を横に並べる。余りは弾幕のプルダウンが取る。
+   **折り返す** —— 表記と配色が並ぶので、狭いと 1 行 に収まらない */
 .picker {
   display: flex;
   gap: 8px;
   flex: none;
+  flex-wrap: wrap;
 }
 
 #pattern {
