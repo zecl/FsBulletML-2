@@ -83,6 +83,21 @@ type Usage =
     /// rename の入力欄の初期値に要るので、1 つ 拾えば済む形にしてある
     Text: string }
 
+/// 直し方 1 つ。**位置は 1 起点**（Monaco の行桁と同じ）で、
+/// 置き換えるのは名前の中身（引用符の内側）。
+///
+/// **波線に紐づけない。** 波線は 1 文字 打った時点で消える（印は文字に
+/// 追随しないので、そこで下ろすのが正しい）—— 紐づけると、直し方が
+/// **Apply の直後の窓でしか出ない。** 本文から数え直せば、いつでも出る。
+type Fix =
+  { /// メニューに出す字
+    Title: string
+    Line: int
+    Column: int
+    EndColumn: int
+    /// そこへ書く字
+    Text: string }
+
 type ISourceLanguage =
   abstract Kind: SourceKind
   /// エディタ側の language id。表記と 1 対 1 とは限らないので別に持つ。
@@ -111,3 +126,8 @@ type ISourceLanguage =
   /// 名前の上でなければ空。**空を「その名前が 1 か所 も無い」と読まない** ——
   /// カーソルが名前の上に無いだけのことがある（呼ぶ側がそこを分ける）
   abstract Usages: source: string -> offset: int -> Usage list
+  /// カーソルの下に在る「無い参照」を、どう直せるか。
+  ///
+  /// **候補が無ければ空。** 嘘の直し方を出さない —— 出すと、押した人は
+  /// 直ったと思って、別の名前に化けた本文を持つことになる
+  abstract Fixes: source: string -> offset: int -> Fix list

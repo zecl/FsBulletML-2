@@ -409,6 +409,9 @@ type Playground() as self =
               Monaco.registerRenameProvider
                 lang.EditorLanguageId
                 (fun src offset -> lang.Usages src offset)
+              Monaco.registerCodeActionProvider
+                lang.EditorLanguageId
+                (fun src offset -> lang.Fixes src offset)
             // **印は文字に追随しない。** 1 文字 打った時点で場所が嘘になるので、
             // そこで消す。付けていないときは何もしない（毎打鍵の空振りを避ける）
             Monaco.onContentChanged (fun () ->

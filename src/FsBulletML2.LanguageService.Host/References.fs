@@ -57,32 +57,20 @@ module References =
   /// **実装が 1 本 のうちは、抽象が足りないことが分からない。**
   ///
   /// 受け取るのは `ISourceReader.Tags`。表記ごとの 1 本 はあちらに束ねてある
+  ///
+  /// **数えるところは `Refs.missing`（器の側）に 1 本。** v1.3 で移した ——
+  /// ブラウザ側の Quick Fix が同じ数え方を要る。ここが持つのは
+  /// **人へ見せる文面**だけで、あちらは文面を持たない
+  /// （持たせると波線と直し方で文面が割れ、どちらも単独では正しく見える）。
   let missing (scan: string -> TagHit list) (src: string) : Failure list =
     if pairs.Length = 0 then []
     else
-      // **開始札だけ見る。** 欲しいのは「どの名前でどの label を書いたか」で、
-      // 木は要らない（`XmlScan` は閉じ札も返すが、それはカーソルの居場所を
-      // 出す側が使う。sxml は括弧 1 組 なので閉じ札そのものが無い）
-      let tags = scan src |> List.filter (fun t -> not t.Closing)
-      let value (t: TagHit) (attr: string) =
-        t.Attrs |> List.tryFind (fun a -> a.AttrName = attr)
-      [ for (refName, defName, attr) in pairs do
-          let defined =
-            tags
-            |> List.choose (fun t -> if t.TagName = defName then value t attr else None)
-            |> List.map (fun a -> a.Value)
-            |> Set.ofList
-          for t in tags do
-            if t.TagName = refName then
-              match value t attr with
-              | Some a when not (defined.Contains a.Value) ->
-                yield
-                  { Line = a.Line
-                    Column = a.Column
-                    EndColumn = a.EndColumn
-                    Message = sprintf "%s が指す %s が無い: %s" refName defName a.Value }
-              | _ -> () ]
-      |> List.sortBy (fun f -> f.Line, f.Column)
+      Refs.missing (List.ofArray pairs) (scan src)
+      |> List.map (fun m ->
+           { Line = m.Hit.Line
+             Column = m.Hit.Column
+             EndColumn = m.Hit.EndColumn
+             Message = sprintf "%s が指す %s が無い: %s" m.RefName m.DefName m.Hit.Value })
 
   /// Apply の答えを、波線にできる形へ。**Core の判定が真。**
   ///

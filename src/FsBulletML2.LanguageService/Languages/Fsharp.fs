@@ -46,3 +46,6 @@ type FsharpLanguage() =
     /// **黙って空なのではなく、ここで空だと決めている**
     /// （`Parser.Tests/FsharpCeCorpus.fs` が字で固定している）
     member _.Usages _ _ = []
+    /// **直し方も出さない。** 数え直す材料（`Tags`）が最初から空なので、
+    /// 「無い参照」が 1 件 も見つからない
+    member _.Fixes _ _ = []
