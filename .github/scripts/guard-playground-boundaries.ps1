@@ -299,7 +299,12 @@ if ($html -notmatch 'http-equiv="Content-Security-Policy"') {
 }
 # **インラインの script を置かない。** CSP に 'unsafe-inline' を出していないので
 # 黙って弾かれる（実際に踏んだ。エラーは出ず「起動待ち」のまま止まる）。
-# 空の importmap は中身が無いので数えない
+# 空の importmap は中身が無いので数えない。
+#
+# **ここが見ているのはソースの html だけ。** publish のとき SDK が指紋の対応表を
+# その空の importmap へ書き込み、**publish 成果物だけが同じ止まり方をした** ——
+# 人が書く script は見ていたが、後から入る script は見ていなかった。
+# publish 成果物の側は `guard-published-boot.ps1`
 $inline = @([regex]::Matches($html, '<script(?![^>]*\ssrc=)[^>]*>(?<body>[\s\S]*?)</script>') |
             Where-Object { $_.Groups['body'].Value.Trim() -ne '' } |
             ForEach-Object { $_.Value.Split("`n")[0].Trim() })
