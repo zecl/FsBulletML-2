@@ -35,7 +35,11 @@ Set-StrictMode -Version Latest
 if (-not $RepoRoot) { $RepoRoot = (git rev-parse --show-toplevel) }
 $RepoRoot = $RepoRoot -replace '\\', '/'
 
-$BinaryExt = @('.xnb', '.png', '.dll', '.wav', '.mp3', '.psd')
+# **`.jpg` は v2.1 で足した。** 画面の写しを `docs/images/` へ置いたら、
+# この門が赤くなった —— 上の但し書きが言っているとおり「新しい binary が
+# 増えたときは赤くなる」で、そこは足す側。
+# `.jpeg` も一緒に入れてある（同じ物の別の綴りで、次に踏むまで気づけない）
+$BinaryExt = @('.xnb', '.png', '.jpg', '.jpeg', '.dll', '.wav', '.mp3', '.psd')
 
 $C0 = @(
   'NUL', 'SOH', 'STX', 'ETX', 'EOT', 'ENQ', 'ACK', 'BEL',
