@@ -1076,11 +1076,14 @@ type Playground() as self =
               Monaco.registerCodeActionProvider
                 lang.EditorLanguageId
                 (fun src offset -> lang.Fixes src offset)
-              // アウトライン（Ctrl+Shift+O）と折りたたみ（v2.4）。
+              // アウトライン（Ctrl+Shift+O / Alt+O）と折りたたみ（v2.4）。
               // **どちらも同じ 1 本 の上**（`Outline.build`）
               Monaco.registerStructureProviders
                 lang.EditorLanguageId
                 (fun src -> lang.Outline src)
+            // **割り当てはエディタに付く**（言語 id ではない）ので、
+            // 上の for の外。中に置くと同じ規則が 4 本 積み上がる
+            Monaco.addOutlineAltKey ()
             // **印は文字に追随しない。** 1 文字 打った時点で場所が嘘になるので、
             // そこで消す。付けていないときは何もしない（毎打鍵の空振りを避ける）
             Monaco.onContentChanged (fun () ->

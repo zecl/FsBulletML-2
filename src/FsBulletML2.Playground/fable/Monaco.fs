@@ -42,6 +42,9 @@ let private registerSymbols (language: string) (fn: obj -> obj) : unit = jsNativ
 [<Emit("globalThis.monaco.languages.registerFoldingRangeProvider($0, { provideFoldingRanges: $1 })")>]
 let private registerFolding (language: string) (fn: obj -> obj) : unit = jsNative
 
+[<Emit("globalThis.monaco.editor.addKeybindingRule({ keybinding: globalThis.monaco.KeyMod.Alt | globalThis.monaco.KeyCode[$0], command: $1 })")>]
+let private addAltBinding (keyName: string) (command: string) : unit = jsNative
+
 [<Emit("globalThis.monaco.languages.registerCodeActionProvider($0, { provideCodeActions: $1 })")>]
 let private registerCodeAction (language: string) (fn: obj -> obj -> obj -> obj) : unit = jsNative
 
@@ -648,3 +651,17 @@ let registerStructureProviders
 
   registerSymbols language symbols
   registerFolding language folding
+
+/// アウトラインを **Alt+O でも**出せるようにする（v2.4）。
+///
+/// Monaco が素で持っている割り当ては <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>
+/// で、**それは Chrome の「ブックマーク マネージャ」と同じ組み合わせ。**
+/// ブラウザが先に取ると、ページには keydown が届かないので
+/// **エディタ側では何も起きない**（押した人からは「効いていない」に見える）。
+///
+/// **消さずに足す。** Ctrl+Shift+O が通る環境では、そちらも今までどおり効く
+/// —— どちらが通るかは browser と OS の側の話で、こちらからは見えない。
+///
+/// **`language` を取らない。** 割り当ては言語 id ではなくエディタに付くので、
+/// 表記ごとに呼ぶと同じ規則が 4 本 積み上がる
+let addOutlineAltKey () = addAltBinding "KeyO" "editor.action.quickOutline"
