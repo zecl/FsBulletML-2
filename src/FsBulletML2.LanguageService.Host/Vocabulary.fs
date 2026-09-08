@@ -488,7 +488,43 @@ module Vocabulary =
         sb.Append '}' |> ignore)
     // 根から走る定義の名前の頭。**綴りは Core が持っている** ——
     // 器に書き写すと、あちらを変えたときに黙って割れる（Semantics の但し書き）
+    // 根から走る定義の名前の頭。**綴りは Core が持っている**
     sb.Append "],\"topPrefix\":" |> ignore
     str topPrefix
-    sb.Append '}' |> ignore
+    // 雛形（v2.6）。**骨は要素名の木**なので、器に書くと
+    // 「ブラウザ側に要素名を書かない」線を越える —— 語彙と同じ経路で渡す
+    sb.Append ",\"frames\":[" |> ignore
+    let rec writeFrame (f: SourceLanguage.Frame) =
+      sb.Append "{\"element\":" |> ignore
+      str f.Element
+      sb.Append ",\"text\":" |> ignore
+      str f.Text
+      sb.Append ",\"attrs\":[" |> ignore
+      f.Attrs
+      |> List.iteri (fun i (k, v) ->
+          if i > 0 then sb.Append ',' |> ignore
+          sb.Append "{\"name\":" |> ignore
+          str k
+          sb.Append ",\"value\":" |> ignore
+          str v
+          sb.Append '}' |> ignore)
+      sb.Append "],\"children\":[" |> ignore
+      f.Children
+      |> List.iteri (fun i c ->
+          if i > 0 then sb.Append ',' |> ignore
+          writeFrame c)
+      sb.Append "]}" |> ignore
+    Frames.all
+    |> List.iteri (fun i s ->
+        if i > 0 then sb.Append ',' |> ignore
+        sb.Append "{\"label\":" |> ignore
+        str s.Label
+        sb.Append ",\"detail\":" |> ignore
+        str s.Detail
+        sb.Append ",\"in\":" |> ignore
+        arr (List.toArray s.In)
+        sb.Append ",\"frame\":" |> ignore
+        writeFrame s.Frame
+        sb.Append '}' |> ignore)
+    sb.Append "]}" |> ignore
     sb.ToString()

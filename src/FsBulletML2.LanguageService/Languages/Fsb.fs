@@ -33,6 +33,19 @@ let private definitionAt (source: string) (defName: string) (attr: string) (valu
     let head = if source.Length > 0 && source.[source.Length - 1] <> '\n' then "\n" else ""
     Some(source.Length, head + pad + defName + " " + attr + "=\"" + value + "\"\n")
 
+/// 雛形をその表記の字にする（v2.6）。**閉じ札が無い** ——
+/// 入れ子は字下げだけで表す。値は `:"…"` で名前に続ける
+/// （`Offside.write` がそう書く。`FrameWrite.Tests` が見る）。
+///
+/// 字下げは 4 —— こちらも `Offside.write` と揃える
+let rec private writeFrame (indent: int) (f: Frame) =
+  let pad = System.String(' ', indent)
+  let attrs =
+    f.Attrs |> List.map (fun (k, v) -> " " + k + "=\"" + v + "\"") |> String.concat ""
+  let head = pad + f.Element + attrs + (if f.Text = "" then "" else ":\"" + f.Text + "\"")
+  if List.isEmpty f.Children then head
+  else head + "\n" + (f.Children |> List.map (writeFrame (indent + 4)) |> String.concat "\n")
+
 let shape: Shape =
   { Kind = SourceKind.Fsb
     // **Monaco に fsb は無い。** 組み込み 91 本 に本文を通して測った
@@ -56,6 +69,7 @@ let shape: Shape =
     Tags = FsbScan.tags
     // XML と同じ。`=""` まで入れて引用符の中へカーソルを置く
     AttrSnippet = fun name -> name + "=\"$0\""
+    WriteFrame = writeFrame 0
     // 属性名の手前 に括弧のような字は無い。名前のぶんだけ
     AttrReplace = Scan.nameLenBefore
     // 札にも括弧にもならない。**その表記で打つ字そのもの**

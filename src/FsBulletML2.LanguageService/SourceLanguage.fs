@@ -19,6 +19,32 @@ module FsBulletML2.LanguageService.SourceLanguage
 
 /// 語彙の写し。**正本は Core の DTD.fs**（host が JSON にして渡す）。
 /// ここは受け取った形をそのまま持つだけで、表を書かない
+/// 雛形の骨（v2.6）。**値も属性もここが持つ。**
+///
+/// 値は Monaco の snippet の穴（`$1` `$2` …。`$0` が最後にカーソルを置く場所）。
+///
+/// **表記を知らない。** どう字にするかは `Shape.WriteFrame` の側で、
+/// 骨は 3 表記 で 1 つ —— 雛形を増やしても表記ごとの手は増えない。
+type Frame =
+  { Element: string
+    Attrs: (string * string) list
+    /// 中身の字。**子が在れば空**（BulletML の要素は、値か子のどちらか）
+    Text: string
+    Children: Frame list }
+
+/// 雛形 1 つ（v2.6）。**host が渡す** ——
+/// 骨は要素名の木なので、器に書くと「ブラウザ側に要素名を書かない」線を越える
+/// （`guard-playground-boundaries` が実際に落とした）。
+/// 語彙と同じ経路で、`Core/DTD.fs` を見ている側から渡ってくる
+type FrameSnippet =
+  { /// 候補に出す名前。**要素名は既に候補に出ている**ので、ここに並ぶのは形の名前
+    Label: string
+    /// どの要素の中で出すか。**空 は出さない**
+    In: string list
+    /// 何本 が使っているか。候補の脇に出す
+    Detail: string
+    Frame: Frame }
+
 type VocabAttr =
   { Name: string
     Values: string list
@@ -102,7 +128,10 @@ type Vocab =
   { Elements: VocabElement list
     /// 式の中で使える字
     Expressions: string list
-    /// F# の CE の名前。**この表記でだけ引く** ——
+      /// 雛形（v2.6）。**host が焼いて渡す** —— 骨は要素名の木なので、
+    /// 器に書くと「ブラウザ側に要素名を書かない」線を越える
+    Frames: FrameSnippet list
+  /// F# の CE の名前。**この表記でだけ引く** ——
     /// ほかの 3 つ は要素名をそのまま打つので要らない
     Ce: VocabCe list
     /// CE の名前が載せる label。同上
@@ -127,12 +156,18 @@ type Completion =
     /// 入れる字。`Snippet` なら Monaco の記法（`$0` がカーソル）
     Insert: string
     Snippet: bool
+    /// 雛形か（v2.6）。**`Snippet` と別に持つ** —— 属性の候補も
+    /// snippet 記法で入るので、あちらでは「形の候補」と分けられない。
+    ///
+    /// 分ける先は 2 つ ある —— エディタ側の見た目（Monaco の kind）と、
+    /// **「その場所に置ける要素」を数える試験**
+    IsFrame: bool
     /// カーソルの手前 何文字 を置き換えるか
     Replace: int }
 
 module Completion =
   let plain (replace: int) (label: string) =
-    { Label = label; Insert = label; Snippet = false; Replace = replace }
+    { Label = label; Insert = label; Snippet = false; IsFrame = false; Replace = replace }
 
 /// 同じ名前が書いてある 1 か所。**位置は 1 起点**（Monaco の行桁と同じ）で、
 /// 指すのは名前の中身（引用符の内側）。

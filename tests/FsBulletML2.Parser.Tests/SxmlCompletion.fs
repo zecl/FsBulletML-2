@@ -26,7 +26,13 @@ type SxmlCompletion() =
   let complete (marked: string) =
     lang.Candidates(marked.Replace("|", ""), marked.IndexOf '|')
 
-  let labels marked = complete marked |> List.map (fun c -> c.Label) |> List.sort
+  let labels marked =
+    complete marked
+    // **雛形（v2.6）は外す。** ここが数えているのは「その場所に置ける要素」で、
+    // 形の候補はその上に載る別の並び（`Frames.fs` が持ち、`Frames` が当てる）
+    |> List.filter (fun c -> not c.IsFrame)
+    |> List.map (fun c -> c.Label)
+    |> List.sort
 
   let hover (marked: string) =
     lang.HoverAt(marked.Replace("|", ""), marked.IndexOf '|')
@@ -50,6 +56,9 @@ type SxmlCompletion() =
     let asXml =
       FsBulletML2.LanguageService.Languages.Xml.XmlLanguage(fun () -> vocab)
         .Candidates("<bulletml>\n\n</bulletml>", 11)
+      // **比べる相手も揃える。** `labels` は雛形を外しているので、
+      // ここだけ入れると「表記が割れた」でなく「絞り方が割れた」で赤くなる
+      |> List.filter (fun c -> not c.IsFrame)
       |> List.map (fun c -> c.Label)
       |> List.sort
     labels "(bulletml\n|\n)" |> should equal asXml

@@ -48,6 +48,23 @@ let private definitionAt (source: string) (defName: string) (attr: string) (valu
       then Some(Scan.lineStart source close.Start, body)
       else Some(close.Start, "\n" + body)
 
+/// 雛形をその表記の字にする（v2.6）。**子が在れば入れ子、無ければ 1 行。**
+///
+/// 字下げは 4 —— `BulletmlWriter.toIndentedXml 4` と揃える
+/// （`FrameWrite.Tests` が両方 を突き合わせる）
+let rec private writeFrame (indent: int) (f: Frame) =
+  let pad = System.String(' ', indent)
+  let attrs =
+    f.Attrs |> List.map (fun (k, v) -> " " + k + "=\"" + v + "\"") |> String.concat ""
+  if List.isEmpty f.Children && f.Text = "" then
+    pad + "<" + f.Element + attrs + " />"
+  elif List.isEmpty f.Children then
+    pad + "<" + f.Element + attrs + ">" + f.Text + "</" + f.Element + ">"
+  else
+    pad + "<" + f.Element + attrs + ">\n"
+    + (f.Children |> List.map (writeFrame (indent + 4)) |> String.concat "\n")
+    + "\n" + pad + "</" + f.Element + ">"
+
 let shape: Shape =
   { Kind = SourceKind.Xml
     EditorLanguageId = "xml"
@@ -61,6 +78,7 @@ let shape: Shape =
     // **`=""` まで入れて、引用符の中へカーソルを置く。**
     // 名前だけ入れると、必ず手で 3 文字 足すことになる
     AttrSnippet = fun name -> name + "=\"$0\""
+    WriteFrame = writeFrame 0
     // 属性名の手前 に括弧のような字は無い。名前のぶんだけ
     AttrReplace = Scan.nameLenBefore
     ElementTitle = fun name -> "<" + name + ">"

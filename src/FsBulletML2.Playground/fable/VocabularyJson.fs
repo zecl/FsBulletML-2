@@ -34,7 +34,7 @@ let private strings (arr: obj) : string list =
 let parseVocabulary (json: string) : Vocab =
   let root = jsonParse json
   if isNull root then
-    { Elements = []; Expressions = []; Ce = []; CeLabels = []; CePlaces = []; TopPrefix = "" }
+    { Elements = []; Expressions = []; Ce = []; CeLabels = []; CePlaces = []; Frames = []; TopPrefix = "" }
   else
     let els = root?elements
     let len: int = if isNull els then 0 else els?length
@@ -44,6 +44,18 @@ let parseVocabulary (json: string) : Vocab =
     let llen: int = if isNull labels then 0 else labels?length
     let plcs = root?cePlaces
     let plen: int = if isNull plcs then 0 else plcs?length
+    let frms = root?frames
+    let flen: int = if isNull frms then 0 else frms?length
+    // 雛形の骨（v2.6）。**再帰で読む** —— 子の並びは同じ形が入れ子になる
+    let rec readFrame (f: obj) : Frame =
+      let attrs = f?attrs
+      let alen: int = if isNull attrs then 0 else attrs?length
+      let kids = f?children
+      let klen: int = if isNull kids then 0 else kids?length
+      { Element = string f?element
+        Text = text f?text
+        Attrs = [ for i in 0 .. alen - 1 -> let a = item attrs i in string a?name, text a?value ]
+        Children = [ for i in 0 .. klen - 1 -> readFrame (item kids i) ] }
     { Expressions = strings root?expressions
       // 根から走る定義の名前の頭。**綴りは Core が持つ**（host が埋める）——
       // 読めなければ空で、そのとき意味の検査は 	op の話を出さない
@@ -72,6 +84,15 @@ let parseVocabulary (json: string) : Vocab =
             { Name = string c?name
               In = text c?``in``
               Opens = text c?opens } ]
+      // 雛形（v2.6）。**host が焼いて渡す** —— 骨は要素名の木なので、
+      // 器に書くと「ブラウザ側に要素名を書かない」線を越える
+      Frames =
+        [ for i in 0 .. flen - 1 ->
+            let s = item frms i
+            { Label = string s?label
+              Detail = text s?detail
+              In = strings s?``in``
+              Frame = readFrame s?frame } ]
       Elements =
         [ for i in 0 .. len - 1 ->
             let e = item els i

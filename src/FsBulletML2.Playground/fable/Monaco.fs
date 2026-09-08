@@ -412,8 +412,10 @@ let registerCompletionProvider
            let o =
              createObj [
                "label" ==> c.Label
-               // 1 = Keyword。数を名前で書けないのは Monaco 側の enum なので
-               "kind" ==> 1
+               // 1 = Keyword、27 = Snippet。数を名前で書けないのは Monaco 側の
+               // enum なので。**雛形は分ける**（v2.6）—— 候補の並びで「形」と
+               // 「置ける要素」が同じ顔をしていると、打ち始めた人に区別が付かない
+               "kind" ==> (if c.IsFrame then 27 else 1)
                "insertText" ==> c.Insert
                "range" ==> range ]
            // 4 = InsertAsSnippet。`$0` をカーソルの置き場として読ませる

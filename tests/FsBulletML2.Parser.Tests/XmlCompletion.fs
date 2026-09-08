@@ -22,7 +22,13 @@ type XmlCompletion() =
   let complete (marked: string) =
     lang.Candidates(marked.Replace("@", ""), marked.IndexOf '@')
 
-  let labels marked = complete marked |> List.map (fun c -> c.Label) |> List.sort
+  let labels marked =
+    complete marked
+    // **雛形（v2.6）は外す。** ここが数えているのは「その場所に置ける要素」で、
+    // 形の候補はその上に載る別の並び（`Frames.fs` が持ち、`Frames` が当てる）
+    |> List.filter (fun c -> not c.IsFrame)
+    |> List.map (fun c -> c.Label)
+    |> List.sort
 
   [<Test>]
   member _.``本文では置ける子要素``() =

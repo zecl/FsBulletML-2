@@ -28,6 +28,13 @@ type Shape =
     Tags: string -> TagHit list
     /// 属性を入れるときの字。`$0` がカーソルの置き場
     AttrSnippet: string -> string
+    /// 雛形をその表記の字にする（v2.6）。**字下げは 0 段 から** ——
+    /// 入れる場所の桁は Monaco が合わせる（snippet は行頭を揃える）。
+    ///
+    /// **`SourceWriter` と 2 か所 になる。** 骨から字を作る手が、
+    /// 焼く側とここに 1 つ ずつ在る形なので、**門で突き合わせる**
+    /// （`FrameWrite.Tests`）—— 片方 だけ直すのを止める
+    WriteFrame: Frame -> string
     /// 属性を入れるとき、手前 何文字 を置き換えるか。
     ///
     /// **XML は名前のぶんだけ。sxml は手前の `(` も食う** —— 食わないと
@@ -218,11 +225,23 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
       | None -> []
       | Some e ->
         let children = e.Children |> List.map plain
+        // 雛形（v2.6）。**要素名の候補の前 に出す** —— 書き始めで止まるのは
+        // 「何が置けるか」ではなく「どう書くか」のほうなので、
+        // 形が先に見えるほうがよい
+        let frames =
+          (vocabulary ()).Frames
+          |> List.filter (fun s -> List.contains parent s.In)
+          |> List.map (fun s ->
+               { Label = s.Label
+                 Insert = shape.WriteFrame s.Frame
+                 Snippet = true
+                 IsFrame = true
+                 Replace = Scan.nameLenBefore source offset })
         // #PCDATA を取る要素の中では式も書ける
-        if not e.Text then children
+        if not e.Text then frames @ children
         else
           let exprLen = Scan.exprLenBefore source offset
-          children @ ((vocabulary ()).Expressions |> List.map (Completion.plain exprLen))
+          frames @ children @ ((vocabulary ()).Expressions |> List.map (Completion.plain exprLen))
     | InStartTag element ->
       match find element with
       | None -> []
@@ -235,6 +254,7 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
              { Label = a.Name
                Insert = shape.AttrSnippet a.Name
                Snippet = true
+               IsFrame = false
                Replace = replace })
     | InAttrValue (element, attr) ->
       match find element with
