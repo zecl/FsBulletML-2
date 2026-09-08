@@ -83,6 +83,21 @@ type VocabCeLabel =
     /// 要素だけでは選べない
     Root: bool }
 
+/// F# の CE の名前 1 つ が、**どこに置けて、何を開くか。**
+///
+/// v1.9 の頭で測って決めた形 —— **置ける先は要素ではなく「入れ物の種類」。**
+/// `repeat` の中に置けるものは `action` の中と同じ（どちらも `ActionBuilder`）で、
+/// 要素（`<repeat>` と `<action>`）で分けると `repeat` の中で候補が 0 個 になる。
+///
+/// 正本は host の `Vocabulary.cePlaces`。**表ではなく `Dsl` から reflection で
+/// 引いている** —— 手で書いた表は 107 行 になり、DSL が動くと黙って古びる。
+type VocabCePlace =
+  { Name: string
+    /// 置ける入れ物の種類。**空 は「どこにも置けない」**
+    In: string
+    /// この名前が開く `{ }` の種類。**開かないなら空**
+    Opens: string }
+
 type Vocab =
   { Elements: VocabElement list
     /// 式の中で使える字
@@ -91,7 +106,9 @@ type Vocab =
     /// ほかの 3 つ は要素名をそのまま打つので要らない
     Ce: VocabCe list
     /// CE の名前が載せる label。同上
-    CeLabels: VocabCeLabel list }
+    CeLabels: VocabCeLabel list
+    /// CE の名前を、どこに置けるか。**候補（`Complete`）がこれで決まる**
+    CePlaces: VocabCePlace list }
 
 /// 候補 1 つ。
 ///

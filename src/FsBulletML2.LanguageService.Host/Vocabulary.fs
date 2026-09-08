@@ -2,6 +2,7 @@ namespace FsBulletML2.LanguageService
 
 open System
 open System.Collections.Generic
+open System.Reflection
 open System.Text
 open Microsoft.FSharp.Reflection
 open FsBulletML2
@@ -253,6 +254,118 @@ module Vocabulary =
   /// `NeedRand` / `NeedRank` が立つこと）。綴りが動けば赤になる。
   let expressions = [| "$rand"; "$rank" |]
 
+  // --- F# の CE を「どこに置けるか」 -----------------------------------------
+
+  /// 入れ物の種類。**要素ではない。**
+  ///
+  /// v1.9 の頭で数えて分かったこと —— `repeat` の中に置けるものは
+  /// `action` の中と**同じ**。どちらも `ActionBuilder` だから。
+  /// 要素（`<repeat>` と `<action>`）で分けると、`repeat` の中で
+  /// 候補が 1 つ も出なくなる。
+  ///
+  /// 綴りは要素名と重ならないものを使う（**器へ渡すので、要素名を
+  /// そのまま流すと線を越える**）。
+  /// いちばん外（まだ `{ }` の中に居ない）。**根の builder はここに置く**
+  [<Literal>]
+  let private SlotOuter = "outer"
+
+  /// 根の `{ }` の中
+  [<Literal>]
+  let private SlotRoot = "root"
+
+  [<Literal>]
+  let private SlotAction = "acts"
+
+  [<Literal>]
+  let private SlotFire = "shot"
+
+  [<Literal>]
+  let private SlotBullet = "ammo"
+
+  [<Literal>]
+  let private SlotAccel = "push"
+
+  /// 型の名前 -> 入れ物。**表はこの 1 か所 だけ**（残りは reflection）。
+  ///
+  /// `ActionBuilder<'T>` のような builder は「`{ }` を開く」側で、
+  /// **置ける先は `'T` のほう** —— `body` は `ActionElm` を返すので
+  /// `bullet` の中、`nest` は `Action` を返すので `action` の中。
+  let private slotOfType (name: string) =
+    match name with
+    | "BulletmlElm" -> Some SlotRoot
+    | "Action" -> Some SlotAction
+    | "ActionElm" -> Some SlotBullet
+    | "BulletElm" -> Some SlotFire
+    | "Horizontal"
+    | "Vertical" -> Some SlotAccel
+    | _ -> None
+
+  /// builder の型 -> それが開く `{ }` の種類
+  let private slotOfBuilder (name: string) =
+    if name.StartsWith "ActionBuilder" then Some SlotAction
+    elif name.StartsWith "FireBuilder" then Some SlotFire
+    elif name.StartsWith "BulletBuilder" then Some SlotBullet
+    elif name.StartsWith "AccelBuilder" then Some SlotAccel
+    elif name.StartsWith "BulletmlBuilder" then Some SlotRoot
+    else None
+
+  let rec private resultOf (t: Type) : Type =
+    if t.Name.StartsWith "FSharpFunc" then resultOf (t.GetGenericArguments().[1]) else t
+
+  /// CE の名前が「どこに置けて」「何を開くか」。**表ではなく `Dsl` から引く。**
+  ///
+  /// v1.9 の頭で reflection を測ったら、`ActionBuilder` と `BulletmlBuilder` の
+  /// CustomOperation は **0 個** だった —— あの 2 つ の中身は module の
+  /// 公開 `let` で、`[<CustomOperation>]` では引けない。
+  /// **だから両方 を舐める。**
+  ///
+  ///     (CE の名前, 置ける入れ物, 開く `{ }` の種類。開かないなら空)
+  let cePlaces : (string * string * string)[] =
+    let asm = typeof<FsBulletML2.Dsl.BulletmlBuilder>.Assembly
+    let dslModule = asm.GetTypes() |> Array.find (fun t -> t.FullName = "FsBulletML2.Dsl")
+    // module の公開 let。**戻り値の型が置ける先を決める**
+    let lets =
+      dslModule.GetMembers(BindingFlags.Public ||| BindingFlags.Static)
+      |> Array.choose (fun m ->
+           match m with
+           | :? MethodInfo as mi when not mi.IsSpecialName -> Some(mi.Name, mi.ReturnType)
+           | :? PropertyInfo as pi -> Some(pi.Name, pi.PropertyType)
+           | _ -> None)
+      |> Array.choose (fun (name, t) ->
+           let r = resultOf t
+           let opens = slotOfBuilder r.Name
+           let place =
+             match opens with
+             // **根の builder はまだ `{ }` の中に居ない。** いちばん外に置く
+             | Some s when s = SlotRoot -> Some SlotOuter
+             // accel は `{ }` を開くが、それ自身は action の中に置く
+             | Some s when s = SlotAccel -> Some SlotAction
+             // ほかの builder は `'T` の中に置ける ——
+             // `body` は `ActionElm` を返すので bullet の中、
+             // `nest` は `Action` を返すので action の中
+             | Some _ when r.IsGenericType ->
+               r.GetGenericArguments() |> Array.tryHead |> Option.bind (fun a -> slotOfType a.Name)
+             | Some _ -> None
+             | None -> slotOfType r.Name
+           match place with
+           | None -> None
+           | Some p -> Some(name, p, defaultArg opens ""))
+    // builder の CustomOperation。**置ける先はその builder が開く `{ }`**
+    let ops =
+      asm.GetTypes()
+      |> Array.collect (fun t ->
+           match slotOfBuilder t.Name with
+           | None -> [||]
+           | Some slot ->
+             t.GetMethods(BindingFlags.Public ||| BindingFlags.Instance)
+             |> Array.choose (fun m ->
+                  m.GetCustomAttributes(typeof<CustomOperationAttribute>, false)
+                  |> Array.tryHead
+                  |> Option.map (fun a -> (a :?> CustomOperationAttribute).Name, slot, "")))
+    Array.append lets ops
+    |> Array.distinctBy (fun (n, p, o) -> n, p, o)
+    |> Array.sortBy (fun (n, _, _) -> n)
+
   let private escape (s: string) =
     let sb = StringBuilder()
     for ch in s do
@@ -346,6 +459,18 @@ module Vocabulary =
         str fixedName
         sb.Append ",\"root\":" |> ignore
         sb.Append(if root then "true" else "false") |> ignore
+        sb.Append '}' |> ignore)
+    // **どこに置けて、何を開くか。** 表ではなく `Dsl` から reflection で引いたもの
+    sb.Append "],\"cePlaces\":[" |> ignore
+    cePlaces
+    |> Array.iteri (fun i (name, place, opens) ->
+        if i > 0 then sb.Append ',' |> ignore
+        sb.Append "{\"name\":" |> ignore
+        str name
+        sb.Append ",\"in\":" |> ignore
+        str place
+        sb.Append ",\"opens\":" |> ignore
+        str opens
         sb.Append '}' |> ignore)
     sb.Append "]}" |> ignore
     sb.ToString()

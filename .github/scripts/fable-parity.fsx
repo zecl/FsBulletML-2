@@ -55,6 +55,8 @@ let answer (target: string) (c: JsonElement) =
            a.[0].GetString(), a.[1].GetString(), a.[2].GetInt32(), a.[3].GetString())
       |> Seq.toArray
     FsharpScan.describeTags labels (c.GetProperty("attr").GetString()) (c.GetProperty("src").GetString())
+  | "FsharpBlocks" ->
+    FsharpScan.describeBlocks (c.GetProperty("src").GetString())
   | t ->
     eprintfn "表に知らない target が在る: %s" t
     exit 4

@@ -149,7 +149,8 @@ type FsharpUsages() =
     | [ f ] ->
       // 見出しは**その表記で打つ字**。要素名ではない
       f.Title |> should equal "loop の defAction を作る"
-      f.Text |> should equal "    defAction \"loop\" {\n    }\n"
+      // **中身を空にできない。** F# の CE は `{ }` の中に何か要る
+      f.Text |> should equal "    defAction \"loop\" {\n        ()\n    }\n"
     | other -> failwithf "1 件 のはずが %d 件" other.Length
 
   [<Test>]
@@ -165,6 +166,27 @@ type FsharpUsages() =
       let found = fsharp.Usages after (after.IndexOf "\"loop\"" + 2)
       found.Length |> should equal 2
       found |> List.filter (fun u -> u.IsDefinition) |> List.length |> should equal 1
+    | other -> failwithf "1 件 のはずが %d 件" other.Length
+
+  [<Test>]
+  member _.``作った定義を当てた本文が 読める``() =
+    // **数だけ見ていると出ない。** 参照が埋まっても、その字が読めるとは
+    // 限らない —— CE は `{ }` の中に何か要るので、空の定義は読めない
+    // （ブラウザで Apply して初めて出た）
+    let src = "let x =\n  vertical \"n\" {\n    top {\n      actionRef \"loop\" []\n    }\n  }\n"
+    match fsharp.Fixes src (src.IndexOf "\"loop\"" + 2) |> List.filter (fun f -> f.EndColumn = f.Column) with
+    | [ f ] ->
+      let lines = src.Replace("\r\n", "\n").Split('\n')
+      let line = lines.[f.Line - 1]
+      lines.[f.Line - 1] <- line.Substring(0, f.Column - 1) + f.Text + line.Substring(f.EndColumn - 1)
+      let after = System.String.Join("\n", lines)
+      let reader = (SourceReader.tryFind SourceKind.FSharpDsl).Value
+      let mutable got = false
+      // 当てる前は読める（**読めない本文と比べていない**）
+      reader.Apply (fun _ -> ()) src |> should equal None
+      match reader.Apply (fun _ -> got <- true) after with
+      | Some failure -> failwithf "当てた本文が読めない: %s" failure.Message
+      | None -> got |> should equal true
     | other -> failwithf "1 件 のはずが %d 件" other.Length
 
   [<Test>]

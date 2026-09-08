@@ -119,8 +119,14 @@ type FsharpLanguage(vocabulary: unit -> Vocab) =
       | Some at ->
         let indent = FsharpScan.rootChildIndent source
         let pad = System.String(' ', indent)
-        // 中身は空。**入れる字を増やさない** —— 何を書くかは人が決めること
-        let body = pad + c.Name + " \"" + value + "\" {\n" + pad + "}\n"
+        // **中身を空にできない。** ほかの 3 表記 は空の定義がそのまま読めるが、
+        // F# の CE は `{ }` の中に何か要る（`defAction には { } が要る`）——
+        // ブラウザで当てて Apply して初めて出た。
+        //
+        // `()` は「中身が空」をこの DSL で書く形（根の builder の但し書きと同じ）。
+        // **入れる字はこれ以上 増やさない** —— 何を書くかは人が決めること
+        let body =
+          pad + c.Name + " \"" + value + "\" {\n" + pad + pad + "()\n" + pad + "}\n"
         if Scan.blankBefore source at
         then Some(Scan.lineStart source at, body)
         else Some(at, "\n" + body)
@@ -138,9 +144,57 @@ type FsharpLanguage(vocabulary: unit -> Vocab) =
   interface ISourceLanguage with
     member _.Kind = SourceKind.FSharpDsl
     member _.EditorLanguageId = "fsharp"
-    /// **空。** 候補を出さないので、打った瞬間に出す字も無い
+    /// **空のまま。** 名前は語の頭から打つので、Monaco が自分で出す
+    /// （`Ctrl+Space` と 1 文字 目 で開く）—— XML の `<` や sxml の `(` に
+    /// 当たる「語ではないが直後に候補が要る字」が CE には無い
     member _.TriggerCharacters = []
-    member _.Complete _ _ = []
+
+    /// その場所に置ける CE の名前。
+    ///
+    /// v1.6 まで空だった。理由は「置ける場所が入れ子の型で決まるので、
+    /// 字の数え方では出せない」と書いてあった。**入れ子の型は `{ }` の対で
+    /// 出せる** —— 版の頭で数えたら、`{` の手前 に名前が無いものは
+    /// 同梱 3259 個 中 0 個 だった。**FCS は要らない。**
+    ///
+    /// 置ける先は要素ではなく**入れ物の種類**（`Vocab.CePlaces`）——
+    /// `repeat` の中に置けるものは `action` の中と同じ。
+    ///
+    /// **知らない入れ物なら空。** 打っている途中で `{` の手前 が
+    /// CE でない字のことは在る（`let x = seq {` など）
+    member _.Complete source offset =
+      let v = vocabulary ()
+      // **同じ綴りが 2 つ の意味を持つことが在る。** `vertical` は根の
+      // builder（`vertical "名" { }`）でもあり、`accel` の中の操作でもある ——
+      // `{ }` の手前 に在るのだから、**開く側を採る**
+      let opensOf name =
+        let rows = v.CePlaces |> List.filter (fun p -> p.Name = name)
+        match rows |> List.tryFind (fun p -> p.Opens <> "") with
+        | Some p -> Some p.Opens
+        | None -> rows |> List.tryHead |> Option.map (fun p -> p.Opens)
+      // **いちばん外は「誰も開かない入れ物」。** 綴りをここに書かない ——
+      // 入れ物の名前は host が決めていて、器はその字を知らないでよい
+      let outerSlot () =
+        let opened =
+          v.CePlaces |> List.map (fun p -> p.Opens) |> List.filter (fun s -> s <> "") |> Set.ofList
+        v.CePlaces
+        |> List.map (fun p -> p.In)
+        |> List.filter (fun s -> s <> "" && not (opened.Contains s))
+        |> List.tryHead
+      // いま開いている入れ物の種類。**どこにも入っていなければ「いちばん外」**
+      let slot =
+        match FsharpScan.blockAt source offset with
+        | None -> outerSlot ()
+        | Some name -> opensOf name
+      match slot with
+      | None -> []
+      | Some "" -> []
+      | Some slot ->
+        let replace = Scan.nameLenBefore source offset
+        v.CePlaces
+        |> List.filter (fun p -> p.In = slot)
+        |> List.map (fun p -> p.Name)
+        |> List.distinct
+        |> List.map (Completion.plain replace)
 
     /// カーソルの下の名前を引く。**知らない名前なら `None`** ——
     /// 本文には CE でない字も混ざる（`let` も `[]` も F# の一部）ので、

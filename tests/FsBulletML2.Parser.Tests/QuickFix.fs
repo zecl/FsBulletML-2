@@ -227,6 +227,30 @@ type QuickFix() =
       | other -> failwithf "%s: 1 件 のはずが %d 件" lang.Kind.Id other.Length
 
   [<Test>]
+  member _.``作った定義を当てた本文が 読める``() =
+    // **数だけ見ていると出ない。** 参照が埋まっても、その字が読めるとは
+    // 限らない —— F# の CE ではそこで落ちていた（`FsharpUsages`）。
+    // ここは残る 3 表記 を同じ形で当てる
+    let cases =
+      [ SourceKind.Xml, xml,
+        "<bulletml type=\"vertical\" xmlns=\"http://www.asahi-net.or.jp/~cs8k-cyu/bulletml\">\n    <action label=\"top\"><actionRef label=\"loop\"/></action>\n</bulletml>"
+        SourceKind.Sxml, sxml,
+        "(bulletml (@ (xmlns \"http://www.asahi-net.or.jp/~cs8k-cyu/bulletml\") (type \"vertical\"))\n    (action (@ (label \"top\")) (actionRef (@ (label \"loop\"))))\n)"
+        SourceKind.Fsb, fsb,
+        "bulletml xmlns=\"http://www.asahi-net.or.jp/~cs8k-cyu/bulletml\" type=\"vertical\"\n    action label=\"top\"\n        actionRef label=\"loop\"\n" ]
+    for (kind, lang: ISourceLanguage, src) in cases do
+      let reader = (SourceReader.tryFind kind).Value
+      // 当てる前は読める。**読めない本文と比べていない**
+      reader.Apply (fun _ -> ()) src |> should equal None
+      match lang.Fixes src (src.IndexOf "\"loop\"" + 2) |> List.filter (fun f -> f.EndColumn = f.Column) with
+      | [ f ] ->
+        let after = applied src f
+        match reader.Apply (fun _ -> ()) after with
+        | Some failure -> failwithf "%s: 当てた本文が読めない: %s" kind.Id failure.Message
+        | None -> ()
+      | other -> failwithf "%s: 1 件 のはずが %d 件" kind.Id other.Length
+
+  [<Test>]
   member _.``sxml と fsb でも 参照が埋まる``() =
     let cases =
       [ sxml, SxmlScan.tags, "(bulletml\n    (actionRef (@ (label \"top\")))\n)"

@@ -49,4 +49,9 @@ module VocabForTests =
                Element = element
                LabelArg = labelArg
                Fixed = fixedName
-               Root = root }) }
+               Root = root })
+      // どこに置けて、何を開くか。**表ではなく `Dsl` から reflection で引く**
+      CePlaces =
+        Vocabulary.cePlaces
+        |> Array.toList
+        |> List.map (fun (name, place, opens) -> { Name = name; In = place; Opens = opens }) }

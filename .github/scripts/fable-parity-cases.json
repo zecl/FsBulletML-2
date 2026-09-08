@@ -130,5 +130,16 @@
     "labels": [["defAction","action",0,""]], "src": "" },
   { "target": "FsharpTags", "note": "三重引用符", "attr": "label",
     "labels": [["defAction","action",0,""]],
-    "src": "let x =\n  untyped \"\"\"defAction \"a\"\"\" {\n    defAction \"b\" { wait \"1\" }\n  }\n" }
+    "src": "let x =\n  untyped \"\"\"defAction \"a\"\"\" {\n    defAction \"b\" { wait \"1\" }\n  }\n" },
+
+  { "target": "FsharpBlocks", "note": "入れ子を降りて上がる", "src": "vertical \"n\" {\n  top {\n    repeat \"4\" {\n      fire { plain }\n    }\n  }\n}\n" },
+  { "target": "FsharpBlocks", "note": "根の外", "src": "let x =\n  1\n" },
+  { "target": "FsharpBlocks", "note": "閉じが多い", "src": "top {\n  wait \"1\"\n}\n}\n}\n" },
+  { "target": "FsharpBlocks", "note": "閉じていない", "src": "vertical \"n\" {\n  top {\n    wait \"1\"\n" },
+  { "target": "FsharpBlocks", "note": "文字列の中の波括弧", "src": "untyped \"a { b } c\" {\n  top { wait \"1\" }\n}\n" },
+  { "target": "FsharpBlocks", "note": "コメントの中の波括弧", "src": "// top {\n untyped \"n\" {\n  (* fire { *)\n  top { wait \"1\" }\n}\n" },
+  { "target": "FsharpBlocks", "note": "名前の直後に波括弧", "src": "top{wait \"1\"}\n" },
+  { "target": "FsharpBlocks", "note": "名前が無い波括弧", "src": "let x = {\n  a = 1\n}\n" },
+  { "target": "FsharpBlocks", "note": "空の本文", "src": "" },
+  { "target": "FsharpBlocks", "note": "波括弧だけ", "src": "{}" }
 ]

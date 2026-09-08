@@ -141,11 +141,11 @@
       </p>
 
       <p>
-        <strong>F# の CE だけは候補が出ない。</strong>
+        <strong>F# の CE でも 4 表記 と同じものが出る。</strong>
         書くのは要素名ではなく DSL の名前（<code>top</code> / <code>defAction</code> /
-        <code>actionRef</code>）で、<strong>置ける場所が入れ子の型で決まる</strong>から。
-        色分けと括弧の対応は付く。Apply は同じように効いて、
-        読めなければ位置つきで理由が出る。
+        <code>actionRef</code>）で、<strong>置ける場所が入れ子で決まる</strong> ——
+        候補はその場所に置けるものだけを出す。
+        <code>repeat</code> の中は <code>action</code> の中と同じものが置ける。
       </p>
 
       <p>
@@ -258,7 +258,7 @@
 
       <p class="note">
         4 つ の表記が全部 書けて、hover は 4 つ とも出る。
-        候補・<kbd>F2</kbd>・<kbd>F12</kbd>・<kbd>Ctrl</kbd>+<kbd>.</kbd> が出ないのは F# の CE だけ。
+        候補・<kbd>F2</kbd>・<kbd>F12</kbd>・<kbd>Ctrl</kbd>+<kbd>.</kbd> は 4 表記 とも出る。
       </p>
 
       <button type="button" id="help-close">閉じる</button>

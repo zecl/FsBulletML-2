@@ -55,5 +55,12 @@
     "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsharpScan.js",
     "export": "describeTags",
     "args": [ "labels", "attr", "src" ]
+  },
+  {
+    "target": "FsharpBlocks",
+    "note": "F# の CE で「いまどの { } の中に居るか」（v1.9）。**候補がここに載る。** 本文の全部 の位置で数えるので、数え方が 1 文字 でもずれれば出る",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsharpScan.js",
+    "export": "describeBlocks",
+    "args": [ "src" ]
   }
 ]

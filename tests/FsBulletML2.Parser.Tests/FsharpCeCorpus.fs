@@ -130,17 +130,18 @@ type FsharpCeCorpus() =
   // --- いま出さないと決めたもの ---------------------------------------------
 
   [<Test>]
-  member _.``CE は候補を出さない（置ける場所が入れ子の型で決まるため）``() =
-    // **黙って空なのではなく、ここで空だと決めている。**
+  member _.``CE の口の形``() =
+    // v1.6 まで候補も空だった。「置ける場所が入れ子の型で決まるので、字の
+    // 数え方では出せない」と書いてあったが、**入れ子の型は `{ }` の対で出せる**
+    // （v1.9。詳しくは `FsharpComplete`）。
     //
-    // v1.6 まで hover もここで空だった。**その点は位置を外していた** ——
-    // 当てていた添字が引用符の上で、名前の上ではなかったので、
-    // hover を実装しても緑のまま通った。hover の点は `FsharpHover` へ移した
+    // **打った瞬間に出す字だけは無いまま** —— XML の `<` や sxml の `(` に
+    // 当たるものが CE には無く、名前は語の頭から打つので Monaco が自分で出す
     let lang = Languages.Fsharp.FsharpLanguage(fun () -> vocab) :> SourceLanguage.ISourceLanguage
     lang.Kind |> should equal SourceKind.FSharpDsl
     lang.EditorLanguageId |> should equal "fsharp"
     lang.TriggerCharacters |> should be Empty
-    lang.Complete "let x =\n  untyped \"a\" {\n    top {\n      w" 40 |> should be Empty
+    lang.Complete "let x =\n  untyped \"a\" {\n    top {\n      w" 40 |> should not' (be Empty)
 
   [<Test>]
   member _.``CE も参照の波線を出す（v1.9）``() =
