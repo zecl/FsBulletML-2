@@ -14,6 +14,25 @@ open FsBulletML2.LanguageService.Languages.Lookup
 
 let contextAt = FsbScan.contextAt
 
+/// 無い定義を根の直下 に作る。**挿す先は本文の末尾。**
+///
+/// 閉じ札も閉じ括弧も無く、**入れ子は行頭の空白だけで決まる** ——
+/// 根の直下 の字下げで 1 行 足せば、それがどこに在っても根の子になる。
+/// だから XML / sxml のような「閉じていない本文」の心配も無い。
+let private definitionAt (source: string) (defName: string) (attr: string) (value: string) =
+  let tags = FsbScan.tags source
+  match tags with
+  | [] -> None
+  | root :: rest ->
+    let indent =
+      // 字下げは根の直下 に既に在る行に合わせる。無ければ書き手と同じ 2
+      match rest |> List.tryFind (fun t -> Scan.columnOf source t.Start > Scan.columnOf source root.Start) with
+      | Some t -> Scan.columnOf source t.Start
+      | None -> 2
+    let pad = System.String(' ', indent)
+    let head = if source.Length > 0 && source.[source.Length - 1] <> '\n' then "\n" else ""
+    Some(source.Length, head + pad + defName + " " + attr + "=\"" + value + "\"\n")
+
 let shape: Shape =
   { Kind = SourceKind.Fsb
     // **Monaco に fsb は無い。** 組み込み 91 本 に本文を通して測った
@@ -41,7 +60,8 @@ let shape: Shape =
     AttrReplace = Scan.nameLenBefore
     // 札にも括弧にもならない。**その表記で打つ字そのもの**
     ElementTitle = fun name -> name
-    AttrValueTitle = fun attr value -> attr + "=\"" + value + "\"" }
+    AttrValueTitle = fun attr value -> attr + "=\"" + value + "\""
+    DefinitionAt = definitionAt }
 
 type FsbLanguage(vocabulary: unit -> Vocab) =
   inherit VocabularyLanguage(shape, vocabulary)

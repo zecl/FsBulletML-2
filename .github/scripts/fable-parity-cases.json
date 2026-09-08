@@ -78,5 +78,19 @@
   { "target": "ShareLink", "note": "中身が空", "fragment": "1.xml." },
   { "target": "ShareLink", "note": "空の字", "fragment": "" },
   { "target": "ShareLink", "note": "# だけ", "fragment": "#" },
-  { "target": "ShareLink", "note": "無い", "fragment": null }
+  { "target": "ShareLink", "note": "無い", "fragment": null },
+
+  { "target": "Scan", "note": "頭", "cursor": 0, "src": "<bulletml>\n    <action/>\n</bulletml>" },
+  { "target": "Scan", "note": "改行の直後（行の頭）", "cursor": 11, "src": "<bulletml>\n    <action/>\n</bulletml>" },
+  { "target": "Scan", "note": "字下げの途中は手前が空白だけ", "cursor": 13, "src": "<bulletml>\n    <action/>\n</bulletml>" },
+  { "target": "Scan", "note": "字の上は手前が空白でない", "cursor": 16, "src": "<bulletml>\n    <action/>\n</bulletml>" },
+  { "target": "Scan", "note": "改行そのものの上", "cursor": 10, "src": "<bulletml>\n    <action/>\n</bulletml>" },
+  { "target": "Scan", "note": "末尾", "cursor": 35, "src": "<bulletml>\n    <action/>\n</bulletml>" },
+  { "target": "Scan", "note": "末尾より先（丸める）", "cursor": 999, "src": "<bulletml>\n    <action/>\n</bulletml>" },
+  { "target": "Scan", "note": "負（丸める）", "cursor": -5, "src": "<bulletml>\n    <action/>\n</bulletml>" },
+  { "target": "Scan", "note": "空の本文", "cursor": 0, "src": "" },
+  { "target": "Scan", "note": "改行 1 文字 だけ", "cursor": 1, "src": "\n" },
+  { "target": "Scan", "note": "行末が CRLF", "cursor": 12, "src": "<bulletml>\r\n    <action/>\r\n</bulletml>" },
+  { "target": "Scan", "note": "タブの字下げ", "cursor": 12, "src": "<bulletml>\n\t<action/>\n</bulletml>" },
+  { "target": "Scan", "note": "改行が無い 1 行", "cursor": 5, "src": "<bulletml/>" }
 ]

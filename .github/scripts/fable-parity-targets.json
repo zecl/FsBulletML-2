@@ -41,5 +41,12 @@
     "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/ShareLink.js",
     "export": "ShareLinkModule_describe",
     "args": [ "fragment" ]
+  },
+  {
+    "target": "Scan",
+    "note": "位置まわり（行の頭・桁・行と桁・手前が空白だけか）。**「定義を作る」が挿す場所をここから作る。** LastIndexOf(char, int) の向きのように runtime ごとに割れうるものが混ざっていて、割れても片方 では正しく動く",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/Scan.js",
+    "export": "Scan_describePosition",
+    "args": [ "src", "cursor" ]
   }
 ]
