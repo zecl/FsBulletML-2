@@ -662,19 +662,36 @@ type Playground() as self =
     if isNull sel || isNull dotNet then ()
     else
       let names = invoke0 dotNet "ListPatterns"
+      let len: int = names?length
+      // **境目は host が返す**（v2.4.1）。同梱と公式配布のサンプルは
+      // 別の集合なので、1 本 の並びに繋いだうえで見出しで割る。
+      // **本数を此処に書かない** —— 書くと片方 だけ古びる
+      let officialFrom = int (string (invoke0 dotNet "OfficialFrom"))
+      /// 見出し 1 つ ぶんを足す。番号は並びの位置そのもの
+      let group (target: HTMLElement) (label: string) (from: int) (until: int) =
+        // **1 件 も無ければ見出しも出さない**（空の見出しは押せる口に見える）
+        if until > from then
+          let g = document.createElement "optgroup"
+          g?label <- label
+          let mutable i = from
+          while i < until do
+            let o = document.createElement "option" :?> HTMLOptionElement
+            o.value <- string i
+            o.textContent <- string (jsItem names i)
+            g.appendChild o |> ignore
+            i <- i + 1
+          target.appendChild g |> ignore
+      /// 同梱 -> 公式 の順に流す。**両方 の面で同じ 1 本 を使う**
+      let fill (target: HTMLElement) =
+        let bundled = if officialFrom < 0 || officialFrom > len then len else officialFrom
+        group target "同梱" 0 bundled
+        group target "BulletML 公式配布のサンプル" bundled len
       sel.innerHTML <- ""
       let blank = document.createElement "option" :?> HTMLOptionElement
       blank.value <- ""
       blank.textContent <- "（編集 / Open）"
       sel.appendChild blank |> ignore
-      let len: int = names?length
-      let mutable i = 0
-      while i < len do
-        let o = document.createElement "option" :?> HTMLOptionElement
-        o.value <- string i
-        o.textContent <- string (jsItem names i)
-        sel.appendChild o |> ignore
-        i <- i + 1
+      fill sel
       // 2 つ 目 の面の並びも同じ 1 本 から。**html にも別の口にも書かない**
       let sel2 = el "pattern2"
       if not (isNull sel2) then
@@ -683,13 +700,7 @@ type Playground() as self =
         none.value <- ""
         none.textContent <- "なし"
         sel2.appendChild none |> ignore
-        let mutable j = 0
-        while j < len do
-          let o = document.createElement "option" :?> HTMLOptionElement
-          o.value <- string j
-          o.textContent <- string (jsItem names j)
-          sel2.appendChild o |> ignore
-          j <- j + 1
+        fill sel2
 
   /// 2 つ 目 の面に載せる弾幕を選ぶ（v2.1）。**「なし」で 1 面 に戻る。**
   ///

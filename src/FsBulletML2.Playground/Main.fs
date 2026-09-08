@@ -113,7 +113,12 @@ type PlaygroundHost() =
   // 2 つ 目 の `[n2; ptr2; width2; height2]` を足した 11 数。
   // **2 つ 目 が無ければ `n2` は -1**（0 は「弾が 1 つ も無い面」で別の意味）
   let ret = Array.zeroCreate<float> 11
-  let catalog = lazy (All.bullets |> List.toArray)
+  /// プルダウンに出す並び。**同梱のあとに公式配布のサンプルを繋ぐ**（v2.4.1）。
+  ///
+  /// 番号で引く口（`SelectPattern` / `InitialIndex`）が在るので、
+  /// **公式は後ろに足す** —— 前や間に入れると、同梱の番号が全部 動く。
+  /// 境目は `OfficialFrom` が返す
+  let catalog = lazy (List.append All.bullets All.official |> List.toArray)
 
   /// `[n; ptr; frame; playerX; playerY; width; height]`。
   /// Apply で配列が差し替わるので ptr は毎コマ返す。
@@ -298,11 +303,25 @@ type PlaygroundHost() =
     |> Option.defaultValue -1
 
   /// 同梱 CE の名前。初回だけ木を組む。
+  ///
+  /// **同梱（176 本）のあとに公式配布のサンプル（17 本）が続く。**
+  /// 境目は `OfficialFrom` で、呼ぶ側がそこで並びを 2 つ に割って出す
   [<JSInvokable>]
   member _.ListPatterns() : string[] =
     catalog.Value
     |> Array.mapi (fun i info ->
          if System.String.IsNullOrEmpty info.Name then sprintf "#%d" i else info.Name)
+
+  /// 一覧の何番目から公式配布のサンプルか（v2.4.1）。
+  ///
+  /// **`All.bullets` と `All.official` は別の集合。** あちらは白い弾幕くん
+  /// 由来で、測った数（`$rank` を使う 173 本 / 狙いを使う 103 本 /
+  /// 横画面 9 本 …）が全部 その集合に紐づいている。混ぜないまま
+  /// **プルダウンだけ 1 本 に繋いで、境目をここで教える。**
+  ///
+  /// **数を JS 側に書かない** —— 本数が変わったときに片方 だけ古びる
+  [<JSInvokable>]
+  member _.OfficialFrom() : int = List.length All.bullets
 
   /// 一覧の番号で差し替える。**どの表記で欄に出すかを受け取る。**
   /// 成功ならその表記の本文。失敗は `ERROR:` で始まる。
