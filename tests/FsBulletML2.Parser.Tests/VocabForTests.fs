@@ -40,4 +40,18 @@ module VocabForTests =
       Ce =
         Spec.ce
         |> List.map (fun (name, element, attr, value) ->
-             { Name = name; Element = element; Attr = attr; Value = value }) }
+             { Name = name; Element = element; Attr = attr; Value = value })
+      // CE の名前が載せる label。**上と別の表**（あちらは「作る要素」）
+      CeLabels =
+        Spec.ceLabels
+        |> List.map (fun (name, element, labelArg, fixedName, root) ->
+             { Name = name
+               Element = element
+               LabelArg = labelArg
+               Fixed = fixedName
+               Root = root })
+      // どこに置けて、何を開くか。**表ではなく `Dsl` から reflection で引く**
+      CePlaces =
+        Vocabulary.cePlaces
+        |> Array.toList
+        |> List.map (fun (name, place, opens) -> { Name = name; In = place; Opens = opens }) }

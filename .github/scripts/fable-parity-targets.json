@@ -48,5 +48,19 @@
     "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/Scan.js",
     "export": "Scan_describePosition",
     "args": [ "src", "cursor" ]
+  },
+  {
+    "target": "FsharpTags",
+    "note": "F# の CE の名前を数える 1 本（v1.9）。rename・参照・直し方・波線がここに載る。**表は case に在る** —— 器に要素名を書けないので、当てる表を器の中で作れない。配列で渡すのは、F# の list が焼くと連結リストになるから",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsharpScan.js",
+    "export": "describeTags",
+    "args": [ "labels", "attr", "src" ]
+  },
+  {
+    "target": "FsharpBlocks",
+    "note": "F# の CE で「いまどの { } の中に居るか」（v1.9）。**候補がここに載る。** 本文の全部 の位置で数えるので、数え方が 1 文字 でもずれれば出る",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsharpScan.js",
+    "export": "describeBlocks",
+    "args": [ "src" ]
   }
 ]

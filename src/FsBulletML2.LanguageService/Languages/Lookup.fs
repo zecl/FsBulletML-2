@@ -97,6 +97,102 @@ let hover (v: Vocab) (title: Token -> string) (token: Token) : string option =
                 else spec
               block spec []))
 
+/// 同じ名前が本文のどこに書いてあるか。**表記を知らない 1 本。**
+///
+/// 要るのは「いま何の上に居るか」（`token`）と「本文に何が在るか」（`tags`）の
+/// 2 つ だけ。**どちらも表記ごとの数え方が作る**が、そこから先は共通 ——
+/// v1.2 の頭で 3 表記 に同じ弾幕を通し、**対象の数が完全に一致する**ことを
+/// 測ってからこの形にした。
+///
+/// v1.9 で **F# の CE も同じ 1 本 を通る**ようになった。あちらは要素名を
+/// 打たないので `Tags` が空だったが、**無いのは要素名であって名前ではない**
+/// （`defAction "x"` の `x` は `<action label="x">` の `x` そのもの）。
+///
+/// 走る先の対は語彙から引く（`Refs.pairs`）。**host 側の波線と同じ 1 本。**
+///
+/// **定義側からも参照側からも引ける。** 片方 だけだと
+/// 「参照からしか直せない」ことになる。
+let usages (v: Vocab) (tags: string -> TagHit list) (source: string) (token: Token) : Usage list =
+  match token with
+  | AttrValue (element, attr, value) ->
+    let related =
+      Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
+      |> List.filter (fun (refName, defName, a) ->
+           a = attr && (refName = element || defName = element))
+    match related with
+    | [] -> []
+    | _ ->
+      let names = related |> List.collect (fun (r, d, _) -> [ r; d ]) |> Set.ofList
+      // **定義側の要素名。** 参照側と重ならないことは測ってある
+      // （`Usage.IsDefinition` の但し書き）—— 重なっていたら、
+      // 札の名前だけではどちら側か言えない
+      let defs = related |> List.map (fun (_, d, _) -> d) |> Set.ofList
+      tags source
+      // **閉じ札を数えない。** XML だけが返すもので、属性を持たない
+      |> List.filter (fun t -> not t.Closing && names.Contains t.TagName)
+      |> List.collect (fun t ->
+           t.Attrs
+           |> List.filter (fun a -> a.AttrName = attr && a.Value = value)
+           |> List.map (fun a -> t.TagName, a))
+      |> List.map (fun (tagName, a) ->
+           { Line = a.Line
+             Column = a.Column
+             EndColumn = a.EndColumn
+             Text = a.Value
+             IsDefinition = defs.Contains tagName })
+  | _ -> []
+
+/// カーソルの下の「無い参照」を、どう直せるか。**表記を知らない 1 本。**
+///
+/// **波線に紐づけない。** 本文から数え直す（`Refs.missing`）——
+/// 波線は 1 文字 打った時点で消えるので、紐づけると
+/// **Apply の直後の窓でしか出ない**（v1.3 の頭で現物に当てた）。
+///
+/// **近さは 1 まで。** コーパスで数えたら、候補が 2 個 以上 在る弾幕でも
+/// 距離 1 以内 がちょうど 1 個 に絞れた（23 / 23）。
+///
+/// 表記ごとに渡すのは 2 つ だけ —— 定義を作る場所（`definitionAt`）と、
+/// 見出しの書き方（`elementTitle`）。**作れない表記は `None` を返す。**
+let fixes
+  (v: Vocab)
+  (tags: string -> TagHit list)
+  (definitionAt: string -> string -> string -> string -> (int * string) option)
+  (elementTitle: string -> string)
+  (source: string)
+  (offset: int)
+  : Fix list =
+  let pairs =
+    Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
+  Refs.missing pairs (tags source)
+  // カーソルがその名前の上に在るものだけ。**本文の全部 を出さない** ——
+  // 直すのはいま見ているところで、他所の分は他所で押す
+  |> List.filter (fun m -> offset >= m.Hit.ValueStart && offset <= m.Hit.ValueStop)
+  |> List.collect (fun m ->
+       let renames =
+         m.Defined
+         |> List.filter (fun d -> Distance.within1 m.Hit.Value d)
+         |> List.map (fun d ->
+              { Title = m.Hit.Value + " を " + d + " に直す"
+                Line = m.Hit.Line
+                Column = m.Hit.Column
+                EndColumn = m.Hit.EndColumn
+                Text = d })
+       // **綴りの直しが在っても出す。** 近い名前が在ることと、
+       // その名前を使いたいことは別 —— 打ち間違いではなく
+       // 「まだ書いていない」ことのほうが多い
+       let create =
+         match definitionAt source m.DefName m.AttrName m.Hit.Value with
+         | None -> []
+         | Some (at, text) ->
+           let struct (line, column) = Scan.lineColumn source at
+           [ { Title = m.Hit.Value + " の " + elementTitle m.DefName + " を作る"
+               Line = line
+               Column = column
+               // **幅 0。** 置き換えではなく挿し込み
+               EndColumn = column
+               Text = text } ]
+       renames @ create)
+
 /// 語彙を引いて候補を出す。**語彙は引数で受け取る** ——
 /// このクラスが host を知らないので、次の表記も同じ形で書ける
 type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
@@ -162,93 +258,20 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
   member this.HoverAt(source: string, offset: int) : string option =
     hover (vocabulary ()) this.Title (shape.TokenAt source offset)
 
-  /// カーソルの下の名前が、本文のどこに書いてあるか。**表記を知らない。**
+  /// カーソルの下の名前が、本文のどこに書いてあるか。
+  /// **中身は `Lookup.usages` の 1 本**（表記を知らない）。
   ///
-  /// 要るのは `TokenAt`（いま何の上に居るか）と `Tags`（本文に何が在るか）の
-  /// 2 本 だけで、**どちらも表記ごとの 1 本 を指しているだけ。**
-  /// v1.2 の頭で、3 表記 に同じ弾幕を通して**対象の数が完全に一致する**ことを
-  /// 測ってからこの形にした（`Plan_v1.2.md`）。
-  ///
-  /// 走る先の対は語彙から引く（`Refs.pairs`）。**host 側の波線と同じ 1 本。**
-  ///
-  /// **定義側からも参照側からも引ける。** `action label="a"` の上でも
-  /// `actionRef label="a"` の上でも、その 2 つ が並ぶ ——
-  /// 片方 だけだと「参照からしか直せない」ことになる。
+  /// ここが渡すのは `TokenAt`（いま何の上に居るか）と `Tags`（本文に何が
+  /// 在るか）の 2 つ だけ —— **どちらも表記ごとの 1 本 を指しているだけ。**
   member _.UsagesAt(source: string, offset: int) : Usage list =
-    match shape.TokenAt source offset with
-    | AttrValue (element, attr, value) ->
-      let v = vocabulary ()
-      let related =
-        Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
-        |> List.filter (fun (refName, defName, a) ->
-             a = attr && (refName = element || defName = element))
-      match related with
-      | [] -> []
-      | _ ->
-        let names = related |> List.collect (fun (r, d, _) -> [ r; d ]) |> Set.ofList
-        // **定義側の要素名。** 参照側と重ならないことは測ってある
-        // （`Usage.IsDefinition` の但し書き）—— 重なっていたら、
-        // 札の名前だけではどちら側か言えない
-        let defs = related |> List.map (fun (_, d, _) -> d) |> Set.ofList
-        shape.Tags source
-        // **閉じ札を数えない。** XML だけが返すもので、属性を持たない
-        |> List.filter (fun t -> not t.Closing && names.Contains t.TagName)
-        |> List.collect (fun t ->
-             t.Attrs
-             |> List.filter (fun a -> a.AttrName = attr && a.Value = value)
-             |> List.map (fun a -> t.TagName, a))
-        |> List.map (fun (tagName, a) ->
-             { Line = a.Line
-               Column = a.Column
-               EndColumn = a.EndColumn
-               Text = a.Value
-               IsDefinition = defs.Contains tagName })
-    | _ -> []
+    usages (vocabulary ()) shape.Tags source (shape.TokenAt source offset)
 
-  /// カーソルの下の「無い参照」を、綴りの近い定義へ直す。**表記を知らない。**
+  /// カーソルの下の「無い参照」を、どう直せるか。
+  /// **中身は `Lookup.fixes` の 1 本**（表記を知らない）。
   ///
-  /// **波線に紐づけない。** 本文から数え直す（`Refs.missing`）——
-  /// 波線は 1 文字 打った時点で消えるので、紐づけると
-  /// **Apply の直後の窓でしか出ない**（v1.3 の頭で現物に当てた）。
-  ///
-  /// **近さは 1 まで。** コーパスで数えたら、候補が 2 個 以上 在る弾幕でも
-  /// 距離 1 以内 がちょうど 1 個 に絞れた（23 / 23）。0 個 になったものは
-  /// 無い。**2 まで広げる理由が測定に無い**（広げると無関係な名前が出る）。
-  ///
-  /// **候補が無ければ空。** 嘘の直し方を出さない。
+  /// 表記ごとに渡すのは、定義を作る場所と見出しの書き方の 2 つ。
   member _.FixesAt(source: string, offset: int) : Fix list =
-    let v = vocabulary ()
-    let pairs =
-      Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
-    Refs.missing pairs (shape.Tags source)
-    // カーソルがその名前の上に在るものだけ。**本文の全部 を出さない** ——
-    // 直すのはいま見ているところで、他所の分は他所で押す
-    |> List.filter (fun m -> offset >= m.Hit.ValueStart && offset <= m.Hit.ValueStop)
-    |> List.collect (fun m ->
-         let renames =
-           m.Defined
-           |> List.filter (fun d -> Distance.within1 m.Hit.Value d)
-           |> List.map (fun d ->
-                { Title = m.Hit.Value + " を " + d + " に直す"
-                  Line = m.Hit.Line
-                  Column = m.Hit.Column
-                  EndColumn = m.Hit.EndColumn
-                  Text = d })
-         // **綴りの直しが在っても出す。** 近い名前が在ることと、
-         // その名前を使いたいことは別 —— 打ち間違いではなく
-         // 「まだ書いていない」ことのほうが多い
-         let create =
-           match shape.DefinitionAt source m.DefName m.AttrName m.Hit.Value with
-           | None -> []
-           | Some (offset, text) ->
-             let struct (line, column) = Scan.lineColumn source offset
-             [ { Title = m.Hit.Value + " の " + shape.ElementTitle m.DefName + " を作る"
-                 Line = line
-                 Column = column
-                 // **幅 0。** 置き換えではなく挿し込み
-                 EndColumn = column
-                 Text = text } ]
-         renames @ create)
+    fixes (vocabulary ()) shape.Tags shape.DefinitionAt shape.ElementTitle source offset
 
   interface ISourceLanguage with
     member _.Kind = shape.Kind

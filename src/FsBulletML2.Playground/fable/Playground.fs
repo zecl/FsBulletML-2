@@ -127,7 +127,7 @@ type Playground() as self =
   let mutable canvas: HTMLCanvasElement = null
   let mutable canvasCtx: CanvasRenderingContext2D = null
   // host からもらう語彙。正本は Core の DTD.fs。**表記が変わっても同じ**
-  let mutable vocabulary: Vocab = { Elements = []; Expressions = []; Ce = [] }
+  let mutable vocabulary: Vocab = { Elements = []; Expressions = []; Ce = []; CeLabels = []; CePlaces = [] }
   // **起動時の表記。** 欄に最初に出るのは host が焼く XML（`InitialSource`）。
   //
   // **同梱カタログを選ぶときの表記ではない**（v1.6）——
@@ -135,8 +135,8 @@ type Playground() as self =
   let initialLanguage: ISourceLanguage = Languages.Xml.XmlLanguage(fun () -> vocabulary)
   // 登録されている表記。**並びは `SourceKind.all` と同じ** ——
   // プルダウンも `Open` の accept もここから作るので、順が意味を持つ。
-  // **F# の CE だけ候補と hover を出さない**（語彙が DTD から引けないため。
-  // 理由は `Languages/Fsharp.fs`）が、書いて Apply する道は通っている
+  // **v1.9 で 4 表記 が揃った。** F# の CE も候補・hover・rename・
+  // 定義へ移動・直し方・波線を出す（`Languages/Fsharp.fs`）
   let languages: ISourceLanguage list =
     [ initialLanguage
       Languages.Sxml.SxmlLanguage(fun () -> vocabulary)

@@ -170,6 +170,61 @@ type SpecCoverage() =
     // hover に同じ塊が 2 つ 並ぶ
     Spec.ce |> List.countBy id |> List.filter (fun (_, n) -> n > 1) |> should be Empty
 
+  // --- CE の名前が載せる label（v1.9）--------------------------------------
+
+  [<Test>]
+  member _.``label の表も空でない``() =
+    // 空だと、下の点は全部「1 行 も回さずに緑」になる
+    Spec.ceLabels |> should not' (be Empty)
+
+  [<Test>]
+  member _.``label の表の名前は CE の表にも在る``() =
+    // **2 つ の表は同じ名前の集合の上に載る。** 片方 にしか無い名前が在ると、
+    // 「rename は当たるのに hover が出ない」（逆も）になる
+    let ceNames = Spec.ce |> List.map (fun (n, _, _, _) -> n) |> Set.ofList
+    [ for (name, _, _, _, _) in Spec.ceLabels do
+        if not (ceNames.Contains name) then yield name ]
+    |> should be Empty
+
+  [<Test>]
+  member _.``label の付く要素は 参照の対に在る``() =
+    // 定義側は `action` / `bullet` / `fire`、参照側は `Ref` の付いたほう。
+    // **対に無い要素を書くと、名前を数えても誰も引かない**
+    let refNames = References.pairs |> Array.map (fun (r, _, _) -> r) |> Set.ofArray
+    let defNames = References.pairs |> Array.map (fun (_, d, _) -> d) |> Set.ofArray
+    let known = Set.union refNames defNames
+    [ for (name, element, _, _, _) in Spec.ceLabels do
+        if not (known.Contains element) then yield name + " -> " + element ]
+    |> should be Empty
+    known |> should not' (be Empty)
+
+  [<Test>]
+  member _.``定義側の要素には 根の直下 に書く名前が 1 つ 在る``() =
+    // **「定義を作る」がこれで選ぶ。** 無いとその要素の定義を作れない
+    let defNames = References.pairs |> Array.map (fun (_, d, _) -> d) |> Set.ofArray
+    [ for element in defNames do
+        let roots =
+          Spec.ceLabels
+          |> List.filter (fun (_, e, arg, _, root) -> e = element && root && arg >= 0)
+        if roots.Length <> 1 then yield sprintf "%s: %d 個" element roots.Length ]
+    |> should be Empty
+
+  [<Test>]
+  member _.``label の表の行が重なっていない``() =
+    // 同じ名前を 2 度 書くと、先に見つかったほうだけが効く
+    Spec.ceLabels
+    |> List.countBy (fun (n, _, _, _, _) -> n)
+    |> List.filter (fun (_, n) -> n > 1)
+    |> should be Empty
+
+  [<Test>]
+  member _.``名前を取らないのは 固定の名前を持つものだけ``() =
+    // `-1` は「引数を取らない」の印。**そのときは名前が要る**
+    [ for (name, _, arg, fixedName, _) in Spec.ceLabels do
+        if (arg < 0) <> (fixedName <> "") then
+          yield sprintf "%s: arg=%d fixed=%s" name arg fixedName ]
+    |> should be Empty
+
   [<Test>]
   member _.``散文が空でない``() =
     // 鍵だけ足して中身を書き忘れると、上の突き合わせは緑のまま通る

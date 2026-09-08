@@ -61,13 +61,54 @@ type VocabCe =
     /// 固定する値。同上
     Value: string }
 
+/// F# の CE の名前 1 つ が、どの要素の label を載せるか。
+///
+/// **`VocabCe` と別に持つ。** あちらは「その名前が何を作るか」で、
+/// こちらは「その名前が名前を決めるか、使うか」——
+/// `repeatAs` は `<repeat>` を作るが、**名前が付くのは中の `<action>`**。
+///
+/// 正本は host の `Spec.ceLabels`
+type VocabCeLabel =
+  { Name: string
+    /// label の付く要素。**参照側は `Ref` の付いた要素名**
+    /// （`Refs.pairs` が対にするのと同じ綴り）
+    Element: string
+    /// 名前が、その CE 名 のあとに続く**何番目 の文字列リテラル**か（0 起点）。
+    /// **引数を取らないなら -1**
+    LabelArg: int
+    /// 引数を取らないときの名前。取るなら空
+    Fixed: string
+    /// 根の直下 に書ける名前か。**「定義を作る」がこれで選ぶ** ——
+    /// 同じ要素を作る名前が複数 在り、どこに置けるかで使い分けるので、
+    /// 要素だけでは選べない
+    Root: bool }
+
+/// F# の CE の名前 1 つ が、**どこに置けて、何を開くか。**
+///
+/// v1.9 の頭で測って決めた形 —— **置ける先は要素ではなく「入れ物の種類」。**
+/// `repeat` の中に置けるものは `action` の中と同じ（どちらも `ActionBuilder`）で、
+/// 要素（`<repeat>` と `<action>`）で分けると `repeat` の中で候補が 0 個 になる。
+///
+/// 正本は host の `Vocabulary.cePlaces`。**表ではなく `Dsl` から reflection で
+/// 引いている** —— 手で書いた表は 107 行 になり、DSL が動くと黙って古びる。
+type VocabCePlace =
+  { Name: string
+    /// 置ける入れ物の種類。**空 は「どこにも置けない」**
+    In: string
+    /// この名前が開く `{ }` の種類。**開かないなら空**
+    Opens: string }
+
 type Vocab =
   { Elements: VocabElement list
     /// 式の中で使える字
     Expressions: string list
     /// F# の CE の名前。**この表記でだけ引く** ——
     /// ほかの 3 つ は要素名をそのまま打つので要らない
-    Ce: VocabCe list }
+    Ce: VocabCe list
+    /// CE の名前が載せる label。同上
+    CeLabels: VocabCeLabel list
+    /// CE の名前を、どこに置けるか。**候補（`Complete`）がこれで決まる**
+    CePlaces: VocabCePlace list }
 
 /// 候補 1 つ。
 ///
