@@ -154,9 +154,26 @@ module DTD =
 
   type BulletmlAttrs = { bulletmlXmlns : string option; bulletmlType : ShootingDirection option; bulletmlName : string option; bulletmlDescription : string option }
   /// **省いたときに走るのは vertical。** 属性が無いとき Api が
-  /// BulletVertical を返す。bulletml の ATTLIST 行（下）は "none" と
-  /// 書き起こされているが、RELAX 定義に既定値は無いので出どころが辿れない。
-  /// **消さずに残してある** —— 実装と食い違っていること自体が手がかり
+  /// BulletVertical を返す。
+  ///
+  /// ### DTD の既定は "none"。**別の話として、どちらも正しい**
+  ///
+  /// 出どころが辿れないと書いてあったが、**辿れた**（v2.4.1）——
+  /// 公式配布に DTD が在り、`license/bulletml/relax/bulletml.dtd` に置いた。
+  ///
+  ///     <!ATTLIST bulletml type (none|vertical|horizontal) "none">
+  ///
+  /// **`[<BulletmlDefault>]` が指すのは「省いたときに走る値」**で、
+  /// DTD の既定値ではない（`Parser.Tests/AttributeDefaults.fs` が
+  /// **走りで**固定している。札を動かすとあの点が赤くなる）。
+  /// だから札はここに残す。
+  ///
+  /// **効果は公式と同じ。** 公式 Demo（`GameManager`）は
+  /// `equals("vertical")` と `equals("horizontal")` だけを見て、
+  /// **none も 属性なし も向きを変えない** —— 初期値のまま（縦）。
+  ///
+  /// 読む段は既定を焼き込まない（属性が無ければ `bulletmlType = None`）ので、
+  /// **書き戻しで属性が増えることも無い。**
   and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]ShootingDirection =
   | BulletNone
   | [<BulletmlDefault>] BulletVertical
@@ -208,11 +225,29 @@ module DTD =
       | FireKey l -> "fire:" + FireLabel.text l
       | BulletKey l -> "bullet:" + BulletLabel.text l
 
+  /// BulletML DTD
+  /// <!ELEMENT action (changeDirection | accel | vanish | changeSpeed | repeat | wait | (fire | fireRef) | (action | actionRef))*>
+  /// <!ATTLIST action label CDATA #IMPLIED>
   type ActionAttrs = { actionLabel : ActionLabel option }
+  /// BulletML DTD
+  /// <!ELEMENT actionRef (param*)>
+  /// <!ATTLIST actionRef label CDATA #REQUIRED>
   type ActionRefAttrs = { actionRefLabel : ActionLabel }
+  /// BulletML DTD
+  /// <!ELEMENT fire (direction?, speed?, (bullet | bulletRef))>
+  /// <!ATTLIST fire label CDATA #IMPLIED>
   type FireAttrs = { fireLabel : FireLabel option }
+  /// BulletML DTD
+  /// <!ELEMENT fireRef (param*)>
+  /// <!ATTLIST fireRef label CDATA #REQUIRED>
   type FireRefAttrs = { fireRefLabel : FireLabel }
+  /// BulletML DTD
+  /// <!ELEMENT bullet (direction?, speed?, (action | actionRef)*)>
+  /// <!ATTLIST bullet label CDATA #IMPLIED>
   type BulletAttrs = { bulletLabel : BulletLabel option }
+  /// BulletML DTD
+  /// <!ELEMENT bulletRef (param*)>
+  /// <!ATTLIST bulletRef label CDATA #REQUIRED>
   type BulletRefAttrs = { bulletRefLabel : BulletLabel }
 
   /// Innternal DSL
@@ -263,12 +298,18 @@ module DTD =
     member private t.ToStructuredDisplay = t.ToString()
     override t.ToString () = stringifyFullName t 
 
-  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]Action = 
+  and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]Action =
+  /// <!ELEMENT changeDirection (direction, term)>
   | ChangeDirection of Direction * Term
+  /// <!ELEMENT accel (horizontal?, vertical?, term)>
   | Accel of Horizontal option * Vertical option * Term
-  | Vanish 
+  /// <!ELEMENT vanish (#PCDATA)>
+  | Vanish
+  /// <!ELEMENT changeSpeed (speed, term)>
   | ChangeSpeed of Speed * Term
-  | Repeat of Times * ActionElm 
+  /// <!ELEMENT repeat (times, (action | actionRef))>
+  | Repeat of Times * ActionElm
+  /// <!ELEMENT wait (#PCDATA)>
   | Wait of Expr.NumExpr
   | Fire of FireAttrs * Direction option * Speed option * BulletElm 
   | FireRef of FireRefAttrs * Params

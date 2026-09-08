@@ -50,10 +50,11 @@ type BulletsEquivalence() =
   static let anchorPlain = FsBulletML2.Bullets.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
   static let anchorDsl = FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
 
-  /// 同梱の弾幕の数。**176 個 が BulletmlInfo、3 個 が Bulletml 直**
-  /// （Player.fs の 3 本 は createBulletmlInfo を通していない）
+  /// 両側のアセンブリに在る弾幕の数。**176 個 が同梱の BulletmlInfo、
+  /// 17 個 が公式配布のサンプル（v2.4.1 で足した。`All.official`）、
+  /// 3 個 が Bulletml 直**（Player.fs の 3 本 は createBulletmlInfo を通していない）
   [<Literal>]
-  static let Expected = 179
+  static let Expected = 196
 
   /// アセンブリの中の弾幕を「名前 -> 木」で集める。
   /// 名前は namespace の接頭辞を落としたもので、両側で同じ形になる
@@ -90,11 +91,11 @@ type BulletsEquivalence() =
     anchorPlain.Bulletml |> should equal anchorDsl.Bulletml
 
   [<Test>]
-  member _.``DU で書いた側の弾幕が 179 個 ある``() =
+  member _.``DU で書いた側の弾幕が 196 個 ある``() =
     plain.Value.Count |> should equal Expected
 
   [<Test>]
-  member _.``CE で書いた側の弾幕も 179 個 ある``() =
+  member _.``CE で書いた側の弾幕も 196 個 ある``() =
     dsl.Value.Count |> should equal Expected
 
   /// **名前の集合が一致する。** 数が同じでも中身がずれていれば、
@@ -107,7 +108,7 @@ type BulletsEquivalence() =
       Assert.Fail(
         sprintf "DU 側にしかない: %A\nCE 側にしかない: %A" onlyPlain onlyDsl)
 
-  /// **本体。** 179 個 すべてについて木が完全に一致することを見る。
+  /// **本体。** 196 個 すべてについて木が完全に一致することを見る。
   /// 落ちたときにどれが違うかが分かるよう、名前を並べて出す
   [<Test>]
   member _.``CE で書き直した弾幕が、元と同じ木になる``() =
