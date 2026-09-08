@@ -120,10 +120,12 @@ type Usages() =
     |> List.length |> should equal 2
 
   [<Test>]
-  member _.``F# の CE では 引かない``() =
-    // **黙って空なのではなく、ここで空だと決めている。**
-    // CE の label は DSL の名前で、「要素名 + label 属性」の形ではない
-    fsharp.Usages "let x =\n  untyped \"a\" { top { actionRef \"b\" [] } }" 30 |> should be Empty
+  member _.``F# の CE でも引く（名前は文字列の中）``() =
+    // v1.9 で引けるようになった。**CE の名前そのものの上では引かない** ——
+    // 名前は文字列の中に在る（詳しくは `FsharpUsages`）
+    let src = "let x =\n  untyped \"a\" { top { actionRef \"b\" [] } }"
+    fsharp.Usages src (src.IndexOf "actionRef") |> should be Empty
+    fsharp.Usages src (src.IndexOf "\"b\"" + 1) |> List.length |> should equal 1
 
   [<Test>]
   member _.``表記ごとに 字の数え方が違う``() =

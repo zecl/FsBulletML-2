@@ -127,7 +127,7 @@ type Playground() as self =
   let mutable canvas: HTMLCanvasElement = null
   let mutable canvasCtx: CanvasRenderingContext2D = null
   // host からもらう語彙。正本は Core の DTD.fs。**表記が変わっても同じ**
-  let mutable vocabulary: Vocab = { Elements = []; Expressions = []; Ce = [] }
+  let mutable vocabulary: Vocab = { Elements = []; Expressions = []; Ce = []; CeLabels = [] }
   // **起動時の表記。** 欄に最初に出るのは host が焼く XML（`InitialSource`）。
   //
   // **同梱カタログを選ぶときの表記ではない**（v1.6）——

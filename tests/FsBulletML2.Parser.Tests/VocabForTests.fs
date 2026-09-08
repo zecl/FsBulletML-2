@@ -40,4 +40,13 @@ module VocabForTests =
       Ce =
         Spec.ce
         |> List.map (fun (name, element, attr, value) ->
-             { Name = name; Element = element; Attr = attr; Value = value }) }
+             { Name = name; Element = element; Attr = attr; Value = value })
+      // CE の名前が載せる label。**上と別の表**（あちらは「作る要素」）
+      CeLabels =
+        Spec.ceLabels
+        |> List.map (fun (name, element, labelArg, fixedName, root) ->
+             { Name = name
+               Element = element
+               LabelArg = labelArg
+               Fixed = fixedName
+               Root = root }) }

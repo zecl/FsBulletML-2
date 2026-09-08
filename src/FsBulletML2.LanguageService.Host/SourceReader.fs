@@ -47,17 +47,30 @@ module SourceReader =
   let xml = ofParts SourceKind.Xml Diagnosis.apply XmlScan.tags
   let sxml = ofParts SourceKind.Sxml Diagnosis.applySxml SxmlScan.tags
 
-  /// F# の CE。**`Tags` は空。**
+  /// F# の CE。**v1.9 から `Tags` を返す。**
   ///
-  /// 参照の欠けを本文の字から数える側（`References.missing`）が探すのは
-  /// 「要素名 + label 属性」の形。CE はそこが DSL の名前で書かれていて
-  /// （`defAction "x"` / `actionRef "x" []`）、**要素名とは別の語彙**になる。
+  /// v1.6 まで空だった。理由は「参照を数える側が探すのは要素名 + label 属性で、
+  /// CE はそこが DSL の名前だから」と書いてあったが、**別なのは名前の載せ方で
+  /// あって名前ではない** —— `defAction "x"` の `x` は `<action label="x">` の
+  /// `x` そのもの。
   ///
-  /// **空だと決めてある。** そのぶん CE では参照の波線が出ず、出るのは
-  /// 構文の位置と、Core が落ちた理由（位置なし）——
-  /// **黙って 0 件 になっているのではない**ことを
-  /// `Parser.Tests/FsharpCeCorpus.fs` が固定している
-  let fsharp = ofParts SourceKind.FSharpDsl Diagnosis.applyFsharp (fun _ -> [])
+  /// **表はここに書かない。** どの CE 名 が何番目 の文字列に名前を載せるかは
+  /// `Spec.ceLabels`、名前を載せる属性は語彙から引いた対（`References.pairs`）。
+  ///
+  /// 対が 1 組 も無ければ空を返す（語彙が引けていない印）——
+  /// **そのときだけ v1.6 と同じ振る舞いになる。**
+  let private ceTags (source: string) =
+    match References.pairs |> Array.tryHead with
+    | None -> []
+    | Some (_, _, attr) ->
+      FsharpScan.tags
+        (Spec.ceLabels
+         |> List.map (fun (name, element, arg, fixedName, _) -> name, element, arg, fixedName)
+         |> List.toArray)
+        attr
+        source
+
+  let fsharp = ofParts SourceKind.FSharpDsl Diagnosis.applyFsharp ceTags
   let fsb = ofParts SourceKind.Fsb Diagnosis.applyFsb FsbScan.tags
 
   /// 読める表記。**`SourceKind.all` と全部 揃った**（v1.1）。

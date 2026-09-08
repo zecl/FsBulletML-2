@@ -36,6 +36,8 @@
     <Compile Include="FsharpCeCorpus.fs" />
     <!-- CE の hover（v1.6）。**HoverMarkdown（XML 側）と対** -->
     <Compile Include="FsharpHover.fs" />
+    <!-- CE の rename と直し方（v1.9）。**Usages / QuickFix（XML 側）と対** -->
+    <Compile Include="FsharpUsages.fs" />
     <!-- インデント記法（v1.1）。sxml と同じ 5 本 で、名前が対応している -->
     <Compile Include="FsbReader.fs" />
     <Compile Include="FsbToken.fs" />

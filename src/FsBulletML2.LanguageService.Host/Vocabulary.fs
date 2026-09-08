@@ -330,5 +330,22 @@ module Vocabulary =
         sb.Append ",\"value\":" |> ignore
         str value
         sb.Append '}' |> ignore)
+    // **CE の名前が載せる label。** 上の `ce` と別の表（`Spec.ceLabels`）——
+    // あちらは「作る要素」で、こちらは「名前を決めるか、使うか」
+    sb.Append "],\"ceLabels\":[" |> ignore
+    Spec.ceLabels
+    |> List.iteri (fun i (name, element, labelArg, fixedName, root) ->
+        if i > 0 then sb.Append ',' |> ignore
+        sb.Append "{\"name\":" |> ignore
+        str name
+        sb.Append ",\"element\":" |> ignore
+        str element
+        sb.Append ",\"labelArg\":" |> ignore
+        sb.Append(string labelArg) |> ignore
+        sb.Append ",\"fixed\":" |> ignore
+        str fixedName
+        sb.Append ",\"root\":" |> ignore
+        sb.Append(if root then "true" else "false") |> ignore
+        sb.Append '}' |> ignore)
     sb.Append "]}" |> ignore
     sb.ToString()

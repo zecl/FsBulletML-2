@@ -143,19 +143,30 @@ type FsharpCeCorpus() =
     lang.Complete "let x =\n  untyped \"a\" {\n    top {\n      w" 40 |> should be Empty
 
   [<Test>]
-  member _.``CE は参照の波線を出さない（嘘の位置を引かない）``() =
-    // 参照を数える側は「要素名 + label 属性」を探すが、CE はそこが DSL の名前。
-    // **`Tags` を空にしてあるので、字から数えた位置は出ない** ——
-    // 出るのは Core が落ちた理由（位置なし）だけ
+  member _.``CE も参照の波線を出す（v1.9）``() =
+    // v1.6 まで `Tags` が空で、出るのは Core が落ちた理由（位置なし）だけだった。
+    // **無いのは要素名であって名前ではない** —— いまは位置つきで出る
     let src =
       "let x =\n  untyped \"a\" {\n    top {\n      actionRef \"nope\" []\n    }\n  }\n"
-    SourceReader.fsharp.Tags src |> should be Empty
+    SourceReader.fsharp.Tags src |> should not' (be Empty)
     let build (b: Bulletml) = Runner.load (fun () -> 0.5f) 0.5f b |> ignore
     match References.explain SourceReader.fsharp.Tags (SourceReader.fsharp.Apply build src) src with
     | [ f ] ->
-      f.Message |> should not' (haveSubstring "が指す")
-      f.Line |> should equal 0
+      // 位置は名前そのもの（引用符の内側）
+      f.Line |> should equal 4
+      f.Column |> should equal 18
+      f.EndColumn |> should equal 22
     | other -> failwithf "1 本 のはずが %d 本" other.Length
+
+  [<Test>]
+  member _.``読める CE には波線を出さない``() =
+    // 上の点は「1 本 出る」ことしか見ていない。**出しすぎていないこと**を
+    // 別に置く —— 参照が埋まっている本文で 1 本 でも出たら、それは嘘
+    let src =
+      "let x =\n  untyped \"a\" {\n    top {\n      actionRef \"loop\" []\n    }\n    defAction \"loop\" { wait \"1\" }\n  }\n"
+    let build (b: Bulletml) = Runner.load (fun () -> 0.5f) 0.5f b |> ignore
+    References.explain SourceReader.fsharp.Tags (SourceReader.fsharp.Apply build src) src
+    |> should be Empty
 
   [<Test>]
   member _.``createBulletmlInfo が無くても読める``() =

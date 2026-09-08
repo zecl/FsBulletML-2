@@ -322,3 +322,53 @@ module Spec =
       "verticalRel", "vertical", "type", "relative"
       "verticalSeq", "vertical", "", ""
       "verticalSeq", "vertical", "type", "sequence" ]
+
+  /// **CE の名前が載せる label。** `ce` は「その名前が何を作るか」で、
+  /// こちらは「その名前が名前を決めるか、使うか」。
+  ///
+  ///     (CE の名前, label の付く要素, 名前が何番目 の文字列か,
+  ///      引数を取らないときの名前, 根の直下 に書けるか)
+  ///
+  /// 何番目 は**その名前のあとに続く文字列リテラルの番号**（0 起点）——
+  ///
+  ///     defAction "center" {          0 番目 が名前
+  ///     repeatRef "8" "center" [ ]    **1 番目**（手前 に回数が在る）
+  ///     top {                         引数を取らない。名前は固定の top
+  ///
+  /// **`ce` と別の表にする。** あちらは「作る要素」で、`repeatAs` は
+  /// `<repeat>` を作るが、**名前が付くのはその中の `<action>`** ——
+  /// 同じ欄に混ぜると、どちらの意味かが行から読めなくなる。
+  ///
+  /// 名前を持たない CE 名（`action` / `body` / `nest` / `fire` …）は
+  /// ここに書かない。**書かないことが「名前を持たない」の印。**
+  ///
+  /// 最後の欄は「定義を作る」が使う —— **同じ要素を作る名前が複数 在り、
+  /// どこに置けるかで使い分ける。** `defAction` は根の直下、`nestAs` は
+  /// `action` の中、`bodyAs` は `bullet` の中。要素だけでは選べない。
+  ///
+  /// --- 過不足は門で見る
+  ///
+  /// ここに書いた名前が `ce` にも在ること、要素が語彙に在ることを
+  /// `SpecCoverage` が当てる。**数そのもの**は、同梱 176 本 を CE と XML の
+  /// 両方 で書いて「定義と参照の数が一致する」ことで見る。
+  let ceLabels : (string * string * int * string * bool) list =
+    [ // --- 名前を決める側 ---------------------------------------------------
+      "top", "action", -1, "top", true
+      "defAction", "action", 0, "", true
+      "nestAs", "action", 0, "", false
+      "bodyAs", "action", 0, "", false
+      // `<repeat>` を作るが、名前が付くのは中の `<action>`
+      "repeatAs", "action", 1, "", false
+      "fireAs", "fire", 0, "", false
+      "topFireAs", "fire", 0, "", true
+      "bullet", "bullet", 0, "", false
+      "defBullet", "bullet", 0, "", true
+
+      // --- 名前を使う側 -----------------------------------------------------
+      "actionRef", "actionRef", 0, "", false
+      "bodyRef", "actionRef", 0, "", false
+      "refActs", "actionRef", 0, "", false
+      "repeatRef", "actionRef", 1, "", false
+      "fireRef", "fireRef", 0, "", false
+      "bulletRef", "bulletRef", 0, "", false
+      "refBullet", "bulletRef", 0, "", false ]

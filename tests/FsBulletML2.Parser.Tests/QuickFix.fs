@@ -240,9 +240,11 @@ type QuickFix() =
       | other -> failwithf "%s: 1 件 のはずが %d 件" lang.Kind.Id other.Length
 
   [<Test>]
-  member _.``F# の CE では 作らない``() =
-    // 札を数えられないので場所が出ない。**黙って空なのではなく、そう決めている**
-    fsharp.Fixes "let x =\n  untyped \"a\" { top { actionRef \"b\" [] } }" 30 |> should be Empty
+  member _.``F# の CE でも作る（v1.9）``() =
+    // v1.6 まで空だった。**カーソルが名前の上に無ければ空**なのは同じ
+    let src = "let x =\n  untyped \"a\" { top { actionRef \"b\" [] } }"
+    fsharp.Fixes src (src.IndexOf "actionRef") |> should be Empty
+    fsharp.Fixes src (src.IndexOf "\"b\"" + 1) |> should not' (be Empty)
 
   // --- 表記ごと -------------------------------------------------------------
 
@@ -258,9 +260,10 @@ type QuickFix() =
     |> should equal [ "tp を top に直す" ]
 
   [<Test>]
-  member _.``F# の CE では 出ない``() =
-    // **黙って空なのではなく、ここで空だと決めている**
-    fsharp.Fixes "let x =\n  untyped \"a\" { top { actionRef \"b\" [] } }" 30 |> should be Empty
+  member _.``F# の CE でも出る（v1.9）``() =
+    // 綴りの直しも同じ 1 本 を通る（詳しくは `FsharpUsages`）
+    titles fsharp "let x =\n  untyped \"a\" {\n    defAction \"loop\" { wait \"1\" }\n    nestAs \"z\" { actionRef \"l|op\" [] }\n  }\n"
+    |> should equal [ "lop を loop に直す" ]
 
   // --- コーパスと突き合わせる -----------------------------------------------
 

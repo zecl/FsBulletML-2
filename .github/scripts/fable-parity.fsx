@@ -46,6 +46,15 @@ let answer (target: string) (c: JsonElement) =
     ShareLink.describe (c.GetProperty("fragment").GetString())
   | "Scan" ->
     Scan.describePosition (c.GetProperty("src").GetString()) (c.GetProperty("cursor").GetInt32())
+  | "FsharpTags" ->
+    // 表は case に在る。**器に書けない**（要素名が入るので門が当たる）
+    let labels =
+      c.GetProperty("labels").EnumerateArray()
+      |> Seq.map (fun row ->
+           let a = row.EnumerateArray() |> Seq.toArray
+           a.[0].GetString(), a.[1].GetString(), a.[2].GetInt32(), a.[3].GetString())
+      |> Seq.toArray
+    FsharpScan.describeTags labels (c.GetProperty("attr").GetString()) (c.GetProperty("src").GetString())
   | t ->
     eprintfn "表に知らない target が在る: %s" t
     exit 4

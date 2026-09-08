@@ -9,11 +9,14 @@ namespace FsBulletML2.LanguageService
 /// だからここが返すのは**名前 1 つ だけ**。それが BulletML の何を作るかは
 /// 語彙の側（`Vocab.Ce`。正本は host の `Spec.ce`）が持つ。
 ///
-/// ## `Tags` を持たない
+/// ## `tags` は持つ（v1.9）
 ///
-/// 参照を数える側（`Refs.missing`）が探すのは「要素名 + label 属性」で、
-/// CE はそこが DSL の名前（`defAction "x"` / `actionRef "x" []`）。
-/// **別の語彙なので当てない** —— rename も Quick Fix もこの表記では空のまま。
+/// v1.6 まで持っていなかった。**「CE には要素名が無いから」**と書いてあったが、
+/// **無いのは要素名であって名前ではない** —— `defAction "x"` の `x` は
+/// `<action label="x">` の `x` そのもので、数え方が違うだけだった。
+///
+/// だから `tags` は**ほかの 3 表記 と同じ `TagHit` を返す。** 違うのは
+/// 「どの CE 名 が、何番目 の文字列に名前を載せるか」を表で受け取ることだけ。
 ///
 /// ## 名前の字を ASCII で書く
 ///
@@ -108,6 +111,166 @@ module FsharpScan =
         if src.[s] >= '0' && src.[s] <= '9' then None
         else Some(src.Substring(s, e - s + 1))
 
+  /// その位置を含む行と桁（1 起点）。**`Scan.lineColumn` の 1 本 を引く**
+  let private lineColumn (src: string) (offset: int) = Scan.lineColumn src offset
+
+  /// 名前を載せている CE の並び。**ほかの 3 表記 と同じ `TagHit` を返す。**
+  ///
+  /// v1.6 まで、この表記だけ `Tags` が空だった。**「CE には要素名が無いから」**
+  /// と書いてあったが、**無いのは要素名であって名前ではない** ——
+  /// `defAction "x"` の `x` は `<action label="x">` の `x` そのもので、
+  /// 数え方が違うだけだった。
+  ///
+  /// 受け取るのは表（`Vocab.CeLabels` を落としたもの）——
+  ///
+  ///     (CE の名前, label の付く要素, 名前が何番目 の文字列か, 引数を取らないときの名前)
+  ///
+  /// **要素名も属性名もここに書かない**（門が見ている）。どちらも引数で来る。
+  ///
+  /// 返す `TagHit` は「その要素が 1 つ 在る」ことだけを言う ——
+  /// `Start` / `Stop` は CE の名前の範囲で、**子を覆わない**
+  /// （fsb と同じ。参照を数える側は入れ子を見ない）。
+  ///
+  /// **引数の文字列は `outside` が false の側に在る。** 名前のあとから
+  /// 走って、`{` か行の終わりまでに出てくる文字列を数える ——
+  /// `[ "$1"; "$2" ]` の中身も文字列なので、**番号で選ぶ**
+  let tags
+    (labels: (string * string * int * string)[])
+    (attrName: string)
+    (src: string)
+    : TagHit list =
+    if isNull src || src.Length = 0 then []
+    else
+      let n = src.Length
+      let ok = outside src
+      // `outside` は**引用符ごと** false にする（コメントも同じ側に居る）。
+      // だから塊の頭の字で見分けて、両端の引用符を落とす。
+      // 返すのは (値, 値の始まり, 値の終わり, 塊の次)
+      let readString (from: int) =
+        let mutable e = from
+        while e < n && not ok.[e] do
+          e <- e + 1
+        let vs = from + 1
+        let ve = max vs (e - 1)
+        src.Substring(vs, ve - vs), vs, ve, e
+      let hits = ResizeArray<TagHit>()
+      let mutable i = 0
+      while i < n do
+        if ok.[i] && isIdent src.[i] && (i = 0 || not (ok.[i - 1] && isIdent src.[i - 1])) then
+          let s = i
+          let mutable e = i
+          while e + 1 < n && ok.[e + 1] && isIdent src.[e + 1] do
+            e <- e + 1
+          let name = src.Substring(s, e - s + 1)
+          match labels |> Array.tryFind (fun (nm, _, _, _) -> nm = name) with
+          | Some (_, element, labelArg, fixedName) ->
+            let attrs =
+              if labelArg < 0 then
+                // 引数を取らない（`top`）。**位置は名前そのもの** ——
+                // 名前を書き換える先が無いので、rename はここを指す
+                let struct (line, col) = lineColumn src s
+                [ { AttrName = attrName
+                    Value = fixedName
+                    Line = line
+                    Column = col
+                    EndColumn = col + (e - s + 1)
+                    NameStart = s
+                    NameStop = e + 1
+                    ValueStart = s
+                    ValueStop = e + 1 } ]
+              else
+                // 名前のあとから、`{` か行の終わりまでの文字列を数える
+                let mutable j = e + 1
+                let mutable seen = 0
+                let mutable got = None
+                let mutable stop = false
+                while not stop && j < n do
+                  if ok.[j] && (src.[j] = '{' || src.[j] = '\n') then stop <- true
+                  // ok の false は文字列かコメント。**頭の字で見分ける**
+                  elif not ok.[j] && src.[j] = '"' then
+                    let (value, vs, ve, next) = readString j
+                    if seen = labelArg then
+                      got <- Some(value, vs, ve)
+                      stop <- true
+                    seen <- seen + 1
+                    j <- next
+                  elif not ok.[j] then
+                    // コメント。飛ばす
+                    let mutable e2 = j
+                    while e2 < n && not ok.[e2] do
+                      e2 <- e2 + 1
+                    j <- e2
+                  else j <- j + 1
+                match got with
+                | None -> []
+                | Some (value, vs, ve) ->
+                  let struct (line, col) = lineColumn src vs
+                  [ { AttrName = attrName
+                      Value = value
+                      Line = line
+                      Column = col
+                      EndColumn = col + (ve - vs)
+                      NameStart = s
+                      NameStop = e + 1
+                      ValueStart = vs
+                      ValueStop = ve } ]
+            if not attrs.IsEmpty then
+              hits.Add
+                { TagName = element
+                  Attrs = attrs
+                  // 閉じ札も自己閉じも無い（fsb と同じ）
+                  Closing = false
+                  SelfClosing = false
+                  Start = s
+                  Stop = e + 1
+                  NameStart = s
+                  NameStop = e + 1 }
+          | None -> ()
+          i <- e + 1
+        else i <- i + 1
+      List.ofSeq hits
+
+  /// いちばん外の `{ }` が閉じる位置（0 起点）。**閉じていなければ `None`。**
+  ///
+  /// ほかの 3 表記 の「根の閉じ札 / 閉じ括弧」に当たるもの ——
+  /// 打っている途中の本文はふつうに閉じていないので、そこで場所を
+  /// 決め打つと本文の外に出る。
+  let blockEnd (src: string) : int option =
+    if isNull src || src.Length = 0 then None
+    else
+      let ok = outside src
+      let mutable depth = 0
+      let mutable at = None
+      let mutable i = 0
+      while at.IsNone && i < src.Length do
+        if ok.[i] && src.[i] = '{' then depth <- depth + 1
+        elif ok.[i] && src.[i] = '}' then
+          depth <- depth - 1
+          if depth = 0 then at <- Some i
+        i <- i + 1
+      at
+
+  /// 根のブロックの直下 に在る行の字下げ。**無ければ書き手と同じ 4。**
+  ///
+  /// 本文から測るのはほかの 3 表記 と同じ理由 ——
+  /// 書き手が 4 で焼いても、人が 2 で書き直していることは在る。
+  let rootChildIndent (src: string) : int =
+    if isNull src || src.Length = 0 then 4
+    else
+      let ok = outside src
+      let mutable depth = 0
+      let mutable found = None
+      let mutable i = 0
+      while found.IsNone && i < src.Length do
+        if ok.[i] && src.[i] = '{' then depth <- depth + 1
+        elif ok.[i] && src.[i] = '}' then depth <- depth - 1
+        elif depth = 1 && ok.[i] && isIdent src.[i] && Scan.blankBefore src i then
+          found <- Some(Scan.columnOf src i)
+        i <- i + 1
+      match found with
+      | Some n when n > 0 -> n
+      | _ -> 4
+
   /// 2 つ の runtime で同じ答えが返ることを見る口。
   /// **組み立てはここ 1 か所**（`Scan.describe` と同じ理由）。
   ///
@@ -122,3 +285,44 @@ module FsharpScan =
       | Some w -> "word(" + w + ")"
       | None -> "nothing"
     word + " outside=" + string outsideCount + " len=" + string (if isNull src then 0 else src.Length)
+
+  /// 名前の数え方を突き合わせる口。**表は引数で来る** ——
+  /// 器に要素名を書けないので、ここで表を作ることはできない（門が見ている）。
+  ///
+  /// **配列で受ける。** F# の list は焼くと連結リストになり、
+  /// 表から素の配列を渡す道が無くなる
+  let describeTags
+    (labels: (string * string * int * string)[])
+    (attrName: string)
+    (src: string)
+    : string =
+    let sb = System.Text.StringBuilder()
+    let add (s: string) = sb.Append s |> ignore
+    for t in tags labels attrName src do
+      add t.TagName
+      add "@"
+      add (string t.Start)
+      add "-"
+      add (string t.Stop)
+      for a in t.Attrs do
+        add " "
+        add a.AttrName
+        add "="
+        add a.Value
+        add "["
+        add (string a.Line)
+        add ":"
+        add (string a.Column)
+        add "-"
+        add (string a.EndColumn)
+        add "/"
+        add (string a.ValueStart)
+        add "-"
+        add (string a.ValueStop)
+        add "]"
+      add ";"
+    add " end="
+    add (match blockEnd src with Some at -> string at | None -> "none")
+    add " indent="
+    add (string (rootChildIndent src))
+    sb.ToString()
