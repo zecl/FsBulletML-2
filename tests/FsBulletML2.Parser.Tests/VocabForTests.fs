@@ -16,7 +16,10 @@ open FsBulletML2.LanguageService.SourceLanguage
 module VocabForTests =
 
   let vocab: Vocab =
-    { Elements =
+    { // 雛形（v2.6）。**host の並びをそのまま借りる** ——
+      // 試験のために別の表を作ると、そちらだけが古びる
+      Frames = Frames.all
+      Elements =
         Vocabulary.elements
         |> Array.toList
         |> List.map (fun e ->

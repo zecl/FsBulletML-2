@@ -46,6 +46,25 @@ let private definitionAt (source: string) (defName: string) (attr: string) (valu
     then Some(Scan.lineStart source root.Stop, body)
     else Some(root.Stop, "\n" + body)
 
+/// 雛形をその表記の字にする（v2.6）。**閉じ括弧は最後の子の行に寄せる** ——
+/// `Sxml.write` がそう書くので、そこへ合わせる（`FrameWrite.Tests` が見る）。
+///
+/// 字下げは 2 —— こちらも `Sxml.write` と揃える
+let rec private writeFrame (indent: int) (f: Frame) =
+  let pad = System.String(' ', indent)
+  let attrs =
+    if List.isEmpty f.Attrs then ""
+    else
+      " (@ "
+      + (f.Attrs |> List.map (fun (k, v) -> "(" + k + " \"" + v + "\")") |> String.concat " ")
+      + ")"
+  if List.isEmpty f.Children then
+    pad + "(" + f.Element + attrs + (if f.Text = "" then "" else " \"" + f.Text + "\"") + ")"
+  else
+    pad + "(" + f.Element + attrs + "\n"
+    + (f.Children |> List.map (writeFrame (indent + 2)) |> String.concat "\n")
+    + ")"
+
 let shape: Shape =
   { Kind = SourceKind.Sxml
     // **Monaco に sxml は無い。** いちばん近い組み込みが `scheme` で、
@@ -63,6 +82,7 @@ let shape: Shape =
     Tags = SxmlScan.tags
     // 括弧ごと入れて、引用符の中へカーソルを置く
     AttrSnippet = fun name -> "(" + name + " \"$0\")"
+    WriteFrame = writeFrame 0
     AttrReplace = attrReplace
     ElementTitle = fun name -> "(" + name + ")"
     AttrValueTitle = fun attr value -> "(" + attr + " \"" + value + "\")"

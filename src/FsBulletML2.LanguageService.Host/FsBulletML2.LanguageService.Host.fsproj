@@ -41,6 +41,7 @@
     <!-- 順は依存の順。Vocabulary が Spec を引き、References が Vocabulary を引き、
          SourceReader が Diagnosis と器のスキャナを束ねる -->
     <Compile Include="Spec.fs" />
+    <Compile Include="Frames.fs" />
     <Compile Include="Vocabulary.fs" />
     <!-- FsharpCe は Dsl と FCS しか使わない。**Diagnosis より先** -->
     <Compile Include="FsharpCe.fs" />
