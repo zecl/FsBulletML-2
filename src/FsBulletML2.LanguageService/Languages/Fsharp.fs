@@ -245,3 +245,14 @@ type FsharpLanguage(vocabulary: unit -> Vocab) =
            | Some c -> c.Name
            | None -> element
       Lookup.fixes v (tagsOf v) (definitionAt v) elementTitle source offset
+
+    /// 読めて・組めても走らないもの（v2.3）。
+    ///
+    /// **ほかの 3 表記 と同じ 1 本 を通る**（`Semantics.findings`）——
+    /// 渡す `Tags` が CE の名前を数える側になるだけ。
+    /// 対も `top` の綴りも語彙から引くので、ここには何も書かない
+    member _.Findings source =
+      let v = vocabulary ()
+      let pairs =
+        Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
+      Semantics.findings pairs v.TopPrefix (tagsOf v source)

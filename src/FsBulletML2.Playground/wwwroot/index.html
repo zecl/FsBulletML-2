@@ -235,6 +235,19 @@
         <li><strong>Apply</strong> を押すと、書いたものが弾幕に反映される。
             打つたびには反映しない（見ている弾幕が最初に戻ってしまうため）</li>
         <li>読めなければ Apply したときに下のバーへ理由が出て、分かる位置には波線が付く</li>
+        <li><strong>読めて・組めても走らないものは、打った時点で波線が付く</strong>
+            （Apply を待たない）。字から数えているので、
+            <strong>いちばん長い弾幕でも 0.5 ミリ秒</strong>。3 種類 出る。
+            <ul>
+              <li><strong>赤</strong> —— <code>top</code> で始まる名前の定義が 1 つ も無い。
+                  <strong>読めて・組めて、黙って何も起きない</strong>（走らせる側が
+                  <code>top</code> で始まる名前を探すので）</li>
+              <li><strong>黄</strong> —— <code>◯◯Ref</code> が指す名前の定義が無い。
+                  <strong>Apply は通る</strong> —— 解けない参照は黙って無視されるだけなので、
+                  書いたつもりのものが出ない</li>
+              <li><strong>青</strong> —— どこからも呼ばれていない定義。
+                  <strong>走りには影響しない</strong>（同梱 176 本 にも 6 件 在る）</li>
+            </ul></li>
         <li><strong>Reset</strong> はいま載っている弾幕を最初から。<strong>欄の文字は触らない</strong></li>
         <li><strong>Frame</strong> は載せてから進めたコマ数。Apply や Reset、
             弾幕の選び直しで 0 に戻る</li>

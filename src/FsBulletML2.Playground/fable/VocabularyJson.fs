@@ -33,7 +33,8 @@ let private strings (arr: obj) : string list =
 /// **形が食い違ったら候補が出なくなるだけ**なので、呼ぶ側が空を赤にする
 let parseVocabulary (json: string) : Vocab =
   let root = jsonParse json
-  if isNull root then { Elements = []; Expressions = []; Ce = []; CeLabels = []; CePlaces = [] }
+  if isNull root then
+    { Elements = []; Expressions = []; Ce = []; CeLabels = []; CePlaces = []; TopPrefix = "" }
   else
     let els = root?elements
     let len: int = if isNull els then 0 else els?length
@@ -44,6 +45,9 @@ let parseVocabulary (json: string) : Vocab =
     let plcs = root?cePlaces
     let plen: int = if isNull plcs then 0 else plcs?length
     { Expressions = strings root?expressions
+      // 根から走る定義の名前の頭。**綴りは Core が持つ**（host が埋める）——
+      // 読めなければ空で、そのとき意味の検査は 	op の話を出さない
+      TopPrefix = if isNull root?topPrefix then "" else string root?topPrefix
       // **F# の CE の名前。** 同じ名前が何個 在ってもよい（読む側が全部 拾う）
       Ce =
         [ for i in 0 .. clen - 1 ->

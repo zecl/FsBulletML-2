@@ -145,5 +145,17 @@
   { "target": "FsharpBlocks", "note": "名前の直後に波括弧", "src": "top{wait \"1\"}\n" },
   { "target": "FsharpBlocks", "note": "名前が無い波括弧", "src": "let x = {\n  a = 1\n}\n" },
   { "target": "FsharpBlocks", "note": "空の本文", "src": "" },
-  { "target": "FsharpBlocks", "note": "波括弧だけ", "src": "{}" }
+  { "target": "FsharpBlocks", "note": "波括弧だけ", "src": "{}" },
+  { "target": "Semantics", "note": "入口が在る（何も出ない）", "src": "<r><a label=\"top\"/></r>" },
+  { "target": "Semantics", "note": "入口が無い", "src": "<r><a label=\"fan\"/></r>" },
+  { "target": "Semantics", "note": "top で始まればよい（StartsWith）", "src": "<r><a label=\"top2\"/></r>" },
+  { "target": "Semantics", "note": "呼ばれない定義", "src": "<r><a label=\"top\"><aRef label=\"u\"/></a><a label=\"u\"/><a label=\"dead\"/></r>" },
+  { "target": "Semantics", "note": "2 つ の対が混ざる（本文の順で返る）", "src": "<r><a label=\"top\"/><b label=\"b1\"/><a label=\"a1\"/><b label=\"b2\"/></r>" },
+  { "target": "Semantics", "note": "定義が 1 つ も無い", "src": "<r><wait>1</wait></r>" },
+  { "target": "Semantics", "note": "同じ名前を 2 回 定義", "src": "<r><a label=\"top\"/><a label=\"d\"/><a label=\"d\"/></r>" },
+  { "target": "Semantics", "note": "参照だけ在って定義が無い", "src": "<r><a label=\"top\"><aRef label=\"nope\"/></a></r>" },
+  { "target": "Semantics", "note": "空の本文", "src": "" },
+  { "target": "Semantics", "note": "改行をまたぐ（行と桁）", "src": "<r>\n  <a label=\"top\"/>\n  <a label=\"dead\"/>\n</r>" },
+  { "target": "Semantics", "note": "label が空", "src": "<r><a label=\"\"/></r>" },
+  { "target": "Semantics", "note": "top そのものが定義名（StartsWith の端）", "src": "<r><a label=\"to\"/></r>" }
 ]

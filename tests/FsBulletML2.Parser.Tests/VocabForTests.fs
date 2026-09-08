@@ -54,4 +54,6 @@ module VocabForTests =
       CePlaces =
         Vocabulary.cePlaces
         |> Array.toList
-        |> List.map (fun (name, place, opens) -> { Name = name; In = place; Opens = opens }) }
+        |> List.map (fun (name, place, opens) -> { Name = name; In = place; Opens = opens })
+      // 根から走る定義の名前の頭。**本番と同じ 1 本 を引く**
+      TopPrefix = Vocabulary.topPrefix }
