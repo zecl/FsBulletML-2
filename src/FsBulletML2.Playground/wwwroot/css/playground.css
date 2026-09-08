@@ -108,12 +108,19 @@ button:disabled {
   white-space: nowrap;
 }
 
+/* **同じ規則にまとめる。** 分けて書くと後ろに書いたほうだけが直る */
 .rate select,
-.mode select {
+.mode select,
+.rate input[type="number"] {
   background: #2a2a3a;
   color: #e8e8ee;
   border: 1px solid #555;
   padding: 5px 6px;
+}
+
+/* 飛び先。**幅を字数で持つ** —— px だと桁が増えたとき数が見えなくなる */
+#seek-to {
+  width: 6ch;
 }
 
 /* プルダウンと ? を横に並べる。余りは弾幕のプルダウンが取る。
