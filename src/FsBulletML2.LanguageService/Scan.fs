@@ -89,6 +89,44 @@ module Scan =
       k <- k - 1
     (min offset src.Length) - k
 
+  /// その位置を含む行の頭（0 起点 の文字数）。
+  ///
+  /// **`\r` を気にしない。** 行の頭を出すだけなので、行末が `\r\n` でも
+  /// 頭の位置は変わらない
+  let lineStart (src: string) (offset: int) =
+    let at = max 0 (min offset src.Length)
+    src.LastIndexOf('\n', max 0 (at - 1)) + 1
+
+  /// 行頭からの桁（0 起点）。**字下げを測るのに使う**
+  let columnOf (src: string) (offset: int) =
+    let at = max 0 (min offset src.Length)
+    at - lineStart src at
+
+  /// 0 起点 の文字数を、**1 起点 の行と桁**にする（Monaco の行桁）。
+  ///
+  /// 波線や直し方の位置は表記ごとの数え方が既に持っているが、
+  /// **本文へ何かを挿す位置**はそこに無い —— 札の位置（0 起点）からここで作る
+  let lineColumn (src: string) (offset: int) : struct (int * int) =
+    let at = max 0 (min offset src.Length)
+    let mutable line = 1
+    let mutable i = 0
+    while i < at do
+      if src.[i] = '\n' then line <- line + 1
+      i <- i + 1
+    struct (line, at - lineStart src at + 1)
+
+  /// その位置より手前 が、その行では空白しか無いか。
+  /// **行の頭に挿してよいか**の判定に使う
+  let blankBefore (src: string) (offset: int) =
+    let at = max 0 (min offset src.Length)
+    let head = lineStart src at
+    let mutable i = head
+    let mutable ok = true
+    while i < at do
+      if src.[i] <> ' ' && src.[i] <> '\t' then ok <- false
+      i <- i + 1
+    ok
+
   /// 式の候補を置き換える長さ。名前のぶんに、手前の `$` が在ればそれも足す。
   /// **`$` を含めないと `$` + `$rand` で `$$rand` になる**
   let exprLenBefore (src: string) (offset: int) =
@@ -109,6 +147,24 @@ module Scan =
     | Element name -> "element(" + name + ")"
     | Attribute (element, attr) -> "attribute(" + element + "," + attr + ")"
     | AttrValue (element, attr, value) -> "attrValue(" + element + "," + attr + "," + value + ")"
+
+  /// 位置まわりの答えを 1 行 の字にする。**門（`guard-fable-parity.ps1`）のための口。**
+  ///
+  /// ここだけ別に出すのは、**`LastIndexOf(char, int)` の向き**のように
+  /// runtime ごとに割れうるものが混ざっているから ——
+  /// 割れても片方 では正しく動くので、走らせて突き合わせないと出ない。
+  let describePosition (src: string) (offset: int) : string =
+    let struct (line, column) = lineColumn src offset
+    "lineStart="
+    + string (lineStart src offset)
+    + " columnOf="
+    + string (columnOf src offset)
+    + " line="
+    + string line
+    + " column="
+    + string column
+    + " blankBefore="
+    + (if blankBefore src offset then "1" else "0")
 
   /// スキャナ 1 本 が出す答えを、全部 1 行 の字にする。
   ///

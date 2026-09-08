@@ -23,6 +23,29 @@ let attrReplace (src: string) (offset: int) =
   let at = (min offset src.Length) - n
   if at > 0 && src.[at - 1] = '(' then n + 1 else n
 
+/// 無い定義を根の直下 に作る。**挿す先は根の閉じ括弧の行の頭。**
+///
+/// XML と違って閉じ札が別に無い —— `Stop` がその括弧の `)` を指している
+/// （閉じていなければ本文の末尾を指すので、そこは作らない）。
+let private definitionAt (source: string) (defName: string) (attr: string) (value: string) =
+  let tags = SxmlScan.tags source
+  match tags |> List.tryHead with
+  | None -> None
+  // 閉じていない。`Stop` が本文の末尾を指しているので場所にならない
+  | Some root when root.Stop >= source.Length -> None
+  | Some root ->
+    let indent =
+      tags
+      |> List.tryFind (fun t -> t.Start > root.Start && t.Start < root.Stop)
+      |> function
+         | Some t -> Scan.columnOf source t.Start
+         | None -> 4
+    let pad = System.String(' ', indent)
+    let body = pad + "(" + defName + " (@ (" + attr + " \"" + value + "\")))\n"
+    if Scan.blankBefore source root.Stop
+    then Some(Scan.lineStart source root.Stop, body)
+    else Some(root.Stop, "\n" + body)
+
 let shape: Shape =
   { Kind = SourceKind.Sxml
     // **Monaco に sxml は無い。** いちばん近い組み込みが `scheme` で、
@@ -42,7 +65,8 @@ let shape: Shape =
     AttrSnippet = fun name -> "(" + name + " \"$0\")"
     AttrReplace = attrReplace
     ElementTitle = fun name -> "(" + name + ")"
-    AttrValueTitle = fun attr value -> "(" + attr + " \"" + value + "\")" }
+    AttrValueTitle = fun attr value -> "(" + attr + " \"" + value + "\")"
+    DefinitionAt = definitionAt }
 
 type SxmlLanguage(vocabulary: unit -> Vocab) =
   inherit VocabularyLanguage(shape, vocabulary)

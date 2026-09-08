@@ -135,6 +135,59 @@ type Usages() =
     xml.Usages src cursor |> should be Empty
     sxml.Usages src cursor |> should be Empty
 
+  // --- どちら側か（定義へ移動 / 参照）---------------------------------------
+
+  [<Test>]
+  member _.``定義側と参照側を 1 欄 で分ける``() =
+    // 定義へ移動（F12）はこの欄だけで決まる。**口を足していない**
+    let src = "<bulletml><action label=\"a\"/><actionRef label=\"a\"/></bulletml>"
+    let found = xml.Usages src (src.IndexOf "actionRef label=\"a\"" + 17)
+    found |> List.filter (fun u -> u.IsDefinition) |> List.length |> should equal 1
+    found |> List.filter (fun u -> not u.IsDefinition) |> List.length |> should equal 1
+    // 定義のほうが手前に在る。**並びは本文の順**
+    (List.head found).IsDefinition |> should equal true
+
+  [<Test>]
+  member _.``定義が無ければ どれも定義ではない``() =
+    // 参照だけ在る本文はふつうに書ける（そこは波線と Quick Fix の担当）。
+    // **飛び先が無いことを、空で言う**
+    let src = "<bulletml><actionRef label=\"a\"/></bulletml>"
+    let found = xml.Usages src (src.IndexOf "label=\"a\"" + 7)
+    found |> List.length |> should equal 1
+    found |> List.filter (fun u -> u.IsDefinition) |> should be Empty
+
+  [<Test>]
+  member _.``定義が 2 つ 在ることも在る``() =
+    // 同じ label の定義を 2 つ 書ける。**1 つ に決まると思ってはいけない**
+    let src =
+      "<bulletml><action label=\"a\"/><action label=\"a\"/><actionRef label=\"a\"/></bulletml>"
+    xml.Usages src (src.IndexOf "actionRef label=\"a\"" + 17)
+    |> List.filter (fun u -> u.IsDefinition)
+    |> List.length
+    |> should equal 2
+
+  [<Test>]
+  member _.``4 表記 とも 同じ分け方``() =
+    // 分けているのは表記を知らない側の 1 本。**表記ごとに割れていない**
+    at sxml "(bulletml (action (@ (label \"a\"))) (actionRef (@ (label \"|a\"))))"
+    |> List.map (fun u -> u.IsDefinition)
+    |> should equal [ true; false ]
+    at fsb "bulletml\n    action label=\"a\"\n    actionRef label=\"|a\"\n"
+    |> List.map (fun u -> u.IsDefinition)
+    |> should equal [ true; false ]
+
+  [<Test>]
+  member _.``定義側と参照側の要素名は重ならない``() =
+    // **これが崩れると 1 欄 では足りない** —— 札の名前だけでは
+    // どちら側か言えなくなるので、口を足すことになる
+    let pairs =
+      Refs.pairs (vocab.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
+    let refNames = pairs |> List.map (fun (r, _, _) -> r) |> Set.ofList
+    let defNames = pairs |> List.map (fun (_, d, _) -> d) |> Set.ofList
+    Set.intersect refNames defNames |> should be Empty
+    // 0 組 なら上は「空と空が交わらない」だけ
+    pairs |> should not' (be Empty)
+
   // --- 規則が 1 本 であること -----------------------------------------------
 
   [<Test>]

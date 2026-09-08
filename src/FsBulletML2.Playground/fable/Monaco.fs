@@ -39,6 +39,12 @@ let private registerHover (language: string) (fn: obj -> obj -> obj) : unit = js
 [<Emit("globalThis.monaco.languages.registerCodeActionProvider($0, { provideCodeActions: $1 })")>]
 let private registerCodeAction (language: string) (fn: obj -> obj -> obj -> obj) : unit = jsNative
 
+[<Emit("globalThis.monaco.languages.registerDefinitionProvider($0, { provideDefinition: $1 })")>]
+let private registerDefinition (language: string) (fn: obj -> obj -> obj) : unit = jsNative
+
+[<Emit("globalThis.monaco.languages.registerReferenceProvider($0, { provideReferences: $1 })")>]
+let private registerReferences (language: string) (fn: obj -> obj -> obj -> obj) : unit = jsNative
+
 [<Emit("globalThis.monaco.languages.registerRenameProvider($0, { resolveRenameLocation: $1, provideRenameEdits: $2 })")>]
 let private registerRename
   (language: string)
@@ -352,6 +358,54 @@ let registerRenameProvider
     createObj [ "edits" ==> edits ]
 
   registerRename language resolve provide
+
+/// 定義へ移動（F12）と、参照を出す（Shift+F12）。
+///
+/// **どちらも `Usages` の 1 本 の上に載る。** 名前が書いてある場所は
+/// rename と同じ並びで、**違うのはそこから何を選ぶか**だけ ——
+///
+///     定義へ移動   `IsDefinition` の側だけ
+///     参照         全部（定義も参照も）
+///
+/// **口を足していない。** `Usage` に 1 欄 足りた ——
+/// 語彙から引いた対の定義側と参照側は要素名が 1 つ も重ならないので、
+/// どちら側かは札の名前で言える（測ってから決めた）。
+///
+/// **定義が 0 件 のことが在る。** 参照だけ在って定義が無い本文はふつうに書ける
+/// （そこは波線と Quick Fix の担当）—— そのときは空を返す。
+/// **カーソルの位置へ飛ばさない** —— 飛ばすと「定義が在った」に見える。
+///
+/// Monaco が要る形は `{ uri, range }`（の並び）。`uri` は同じ本文なので
+/// いま開いているモデルのもの。
+let registerNavigationProviders
+  (language: string)
+  (usages: string -> int -> FsBulletML2.LanguageService.SourceLanguage.Usage list)
+  =
+  let location (model: obj) (u: FsBulletML2.LanguageService.SourceLanguage.Usage) =
+    createObj [
+      "uri" ==> modelUri model
+      "range" ==>
+        createObj [
+          "startLineNumber" ==> u.Line
+          "endLineNumber" ==> u.Line
+          "startColumn" ==> u.Column
+          "endColumn" ==> u.EndColumn ] ]
+
+  let definition (model: obj) (position: obj) : obj =
+    usages (getVal model) (offsetAt model position)
+    |> List.filter (fun u -> u.IsDefinition)
+    |> List.map (location model)
+    |> List.toArray
+    |> box
+
+  let references (model: obj) (position: obj) (_context: obj) : obj =
+    usages (getVal model) (offsetAt model position)
+    |> List.map (location model)
+    |> List.toArray
+    |> box
+
+  registerDefinition language definition
+  registerReferences language references
 
 /// 「こう直す」を出す口。**直し方を決めるのは言語モジュール** ——
 /// ここが知っているのは Monaco の形（アクションと WorkspaceEdit）だけ。

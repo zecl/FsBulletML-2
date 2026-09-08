@@ -44,6 +44,8 @@ let answer (target: string) (c: JsonElement) =
     SourceKind.describe (c.GetProperty("id").GetString())
   | "ShareLink" ->
     ShareLink.describe (c.GetProperty("fragment").GetString())
+  | "Scan" ->
+    Scan.describePosition (c.GetProperty("src").GetString()) (c.GetProperty("cursor").GetInt32())
   | t ->
     eprintfn "表に知らない target が在る: %s" t
     exit 4

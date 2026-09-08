@@ -91,6 +91,12 @@
         <button type="button" id="reset">Reset</button>
         <button type="button" id="apply">Apply</button>
         <button type="button" id="open">Open</button>
+        <!-- 落とす先の名前と拡張子は Fable が表記から組む。**html に書かない** ——
+             書くと、表記を足したとき 2 か所 直すことになる -->
+        <button type="button" id="save" title="いまの本文をファイルに落とす">Save</button>
+        <!-- 読んで同じ表記で書き直す。**口は Transcode の行き先を同じにするだけ**。
+             字が変わるときは 1 回 目 で知らせて、もう一度 押すと入れ替える -->
+        <button type="button" id="format" title="読んで書き直す（コメントは残らない）">整形</button>
         <!-- accept は Fable が入れる（登録されている表記の拡張子）。
              ここに書くと、表記を足したとき 2 か所 直すことになる -->
         <input id="open-file" type="file" hidden>
@@ -218,6 +224,14 @@
             その高コントラスト版（<strong>HC</strong>）</li>
         <li><strong>Open</strong> は名前で表記を決める。<code>.sxml</code> を開けば sxml、
             <code>.fsb</code> なら fsb、<code>.fsx</code> なら F# の CE に切り替わる</li>
+        <li><strong>Save</strong> はその対。<strong>いま欄に在る字をそのまま落とす</strong> ——
+            読めない書きかけでも落とせる。拡張子は表記から付くので、
+            落としたものを Open すると同じ表記に戻る</li>
+        <li><strong>整形</strong> は読んで同じ表記で書き直す。
+            <strong>コメントは残らない</strong>（木がコメントを持たないので、
+            読んだ時点で落ちる）。だから<strong>字が変わるときは 1 回 目 で知らせて、
+            もう一度 押すと入れ替える</strong>。
+            知らせたあとに打つと、待っているものは消える</li>
         <li><strong>Share</strong> は<strong>いまの本文をそのまま URL にする</strong>。
             アドレス欄がその字になり、コピーもされる。
             <strong>サーバへは送られない</strong>（<code>#</code> の後ろに載るので、
@@ -233,13 +247,18 @@
             <code>action label="a"</code> の上でも <code>actionRef label="a"</code> の上でも、
             その名前の書いてあるところが全部 変わる。
             <code>action</code> と <code>bullet</code> のように<strong>別の種類は巻き込まない</strong></li>
+        <li><kbd>F12</kbd> は <strong>その名前を決めているところへ飛ぶ</strong>。
+            <kbd>Shift</kbd>+<kbd>F12</kbd> は<strong>書いてあるところを全部 並べる</strong>。
+            どちらも <kbd>F2</kbd> と同じ 1 本 の上に載っている ——
+            <strong>決めているところが無ければ飛ばない</strong>（そこは波線と
+            <kbd>Ctrl</kbd>+<kbd>.</kbd> の担当）</li>
         <li>折りたたみ・検索（<kbd>Ctrl</kbd>+<kbd>F</kbd>）・
             取り消し（<kbd>Ctrl</kbd>+<kbd>Z</kbd>）はエディタの標準機能</li>
       </ul>
 
       <p class="note">
         4 つ の表記が全部 書けて、hover は 4 つ とも出る。
-        候補・<kbd>F2</kbd>・<kbd>Ctrl</kbd>+<kbd>.</kbd> が出ないのは F# の CE だけ。
+        候補・<kbd>F2</kbd>・<kbd>F12</kbd>・<kbd>Ctrl</kbd>+<kbd>.</kbd> が出ないのは F# の CE だけ。
       </p>
 
       <button type="button" id="help-close">閉じる</button>

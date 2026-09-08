@@ -18,6 +18,36 @@ open FsBulletML2.LanguageService.Languages.Lookup
 /// 表記のモジュールだけを見ていれば済むようにするため
 let contextAt = XmlScan.contextAt
 
+/// 無い定義を根の直下 に作る。**挿す先は根の閉じ札の行の頭。**
+///
+/// 閉じ札が無ければ作らない —— 打っている途中の本文はふつうに閉じていない。
+///
+/// 中身は空にする。**入れる字を増やさない** —— 何を書くかは人が決めることで、
+/// ここが決めると「消してから書く」ことになる
+let private definitionAt (source: string) (defName: string) (attr: string) (value: string) =
+  let tags = XmlScan.tags source
+  match tags |> List.tryFind (fun t -> not t.Closing) with
+  | None -> None
+  | Some root ->
+    match tags |> List.filter (fun t -> t.Closing && t.TagName = root.TagName) |> List.tryLast with
+    | None -> None
+    | Some close ->
+      // 字下げは根の直下 に既に在る札に合わせる。無ければ書き手と同じ 4
+      let indent =
+        tags
+        |> List.tryFind (fun t -> not t.Closing && t.Start > root.Stop && t.Start < close.Start)
+        |> function
+           | Some t -> Scan.columnOf source t.Start
+           | None -> 4
+      let pad = System.String(' ', indent)
+      let body =
+        pad + "<" + defName + " " + attr + "=\"" + value + "\">\n"
+        + pad + "</" + defName + ">\n"
+      // 閉じ札の手前 に字が在れば（1 行 で書いてある本文）改行から始める
+      if Scan.blankBefore source close.Start
+      then Some(Scan.lineStart source close.Start, body)
+      else Some(close.Start, "\n" + body)
+
 let shape: Shape =
   { Kind = SourceKind.Xml
     EditorLanguageId = "xml"
@@ -34,7 +64,8 @@ let shape: Shape =
     // 属性名の手前 に括弧のような字は無い。名前のぶんだけ
     AttrReplace = Scan.nameLenBefore
     ElementTitle = fun name -> "<" + name + ">"
-    AttrValueTitle = fun attr value -> attr + "=\"" + value + "\"" }
+    AttrValueTitle = fun attr value -> attr + "=\"" + value + "\""
+    DefinitionAt = definitionAt }
 
 type XmlLanguage(vocabulary: unit -> Vocab) =
   inherit VocabularyLanguage(shape, vocabulary)

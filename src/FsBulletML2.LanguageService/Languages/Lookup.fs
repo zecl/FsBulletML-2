@@ -37,7 +37,22 @@ type Shape =
     /// hover の見出し（要素）。その表記の書き方で
     ElementTitle: string -> string
     /// hover の見出し（属性値）。同上
-    AttrValueTitle: string -> string -> string }
+    AttrValueTitle: string -> string -> string
+    /// 無い定義を**根の直下**に作る。受け取るのは
+    /// (本文, 作る要素名, 名前の属性名, 名前)。
+    ///
+    /// 返すのは **(挿す位置（0 起点 の文字数）, そこへ入れる字)**。
+    /// 置き換えではなく挿し込みなので、範囲は幅 0。
+    ///
+    /// **根が閉じていなければ `None`。** 打っている途中の本文はふつうに
+    /// 閉じていないので、そこで場所を決め打つと本文の外に出る。
+    ///
+    /// **字下げは本文から測る。** 根の直下 に既に在る札の桁に合わせる ——
+    /// 書き手が 4 で焼いても、人が 2 で書き直していることは在る。
+    ///
+    /// 挿す先を根の直下 にしたのは、**同梱 176 本 の定義 767 個 のうち
+    /// 766 個 がそこに在る**から（v1.8 の頭で数えた）
+    DefinitionAt: string -> string -> string -> string -> (int * string) option }
 
 /// hover に出す markdown を組む 1 本。**`Token` から先は表記を知らない。**
 ///
@@ -171,13 +186,23 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
       | [] -> []
       | _ ->
         let names = related |> List.collect (fun (r, d, _) -> [ r; d ]) |> Set.ofList
+        // **定義側の要素名。** 参照側と重ならないことは測ってある
+        // （`Usage.IsDefinition` の但し書き）—— 重なっていたら、
+        // 札の名前だけではどちら側か言えない
+        let defs = related |> List.map (fun (_, d, _) -> d) |> Set.ofList
         shape.Tags source
         // **閉じ札を数えない。** XML だけが返すもので、属性を持たない
         |> List.filter (fun t -> not t.Closing && names.Contains t.TagName)
         |> List.collect (fun t ->
-             t.Attrs |> List.filter (fun a -> a.AttrName = attr && a.Value = value))
-        |> List.map (fun a ->
-             { Line = a.Line; Column = a.Column; EndColumn = a.EndColumn; Text = a.Value })
+             t.Attrs
+             |> List.filter (fun a -> a.AttrName = attr && a.Value = value)
+             |> List.map (fun a -> t.TagName, a))
+        |> List.map (fun (tagName, a) ->
+             { Line = a.Line
+               Column = a.Column
+               EndColumn = a.EndColumn
+               Text = a.Value
+               IsDefinition = defs.Contains tagName })
     | _ -> []
 
   /// カーソルの下の「無い参照」を、綴りの近い定義へ直す。**表記を知らない。**
@@ -200,14 +225,30 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
     // 直すのはいま見ているところで、他所の分は他所で押す
     |> List.filter (fun m -> offset >= m.Hit.ValueStart && offset <= m.Hit.ValueStop)
     |> List.collect (fun m ->
-         m.Defined
-         |> List.filter (fun d -> Distance.within1 m.Hit.Value d)
-         |> List.map (fun d ->
-              { Title = m.Hit.Value + " を " + d + " に直す"
-                Line = m.Hit.Line
-                Column = m.Hit.Column
-                EndColumn = m.Hit.EndColumn
-                Text = d }))
+         let renames =
+           m.Defined
+           |> List.filter (fun d -> Distance.within1 m.Hit.Value d)
+           |> List.map (fun d ->
+                { Title = m.Hit.Value + " を " + d + " に直す"
+                  Line = m.Hit.Line
+                  Column = m.Hit.Column
+                  EndColumn = m.Hit.EndColumn
+                  Text = d })
+         // **綴りの直しが在っても出す。** 近い名前が在ることと、
+         // その名前を使いたいことは別 —— 打ち間違いではなく
+         // 「まだ書いていない」ことのほうが多い
+         let create =
+           match shape.DefinitionAt source m.DefName m.AttrName m.Hit.Value with
+           | None -> []
+           | Some (offset, text) ->
+             let struct (line, column) = Scan.lineColumn source offset
+             [ { Title = m.Hit.Value + " の " + shape.ElementTitle m.DefName + " を作る"
+                 Line = line
+                 Column = column
+                 // **幅 0。** 置き換えではなく挿し込み
+                 EndColumn = column
+                 Text = text } ]
+         renames @ create)
 
   interface ISourceLanguage with
     member _.Kind = shape.Kind
