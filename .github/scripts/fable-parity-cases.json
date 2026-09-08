@@ -168,5 +168,65 @@
   { "target": "Outline", "note": "自己閉じだけ", "src": "<r/>" },
   { "target": "Outline", "note": "label が無い要素", "src": "<r>\n  <fire>\n    <speed>2</speed>\n  </fire>\n</r>" },
   { "target": "Outline", "note": "根が閉じていない", "src": "<r>\n  <a label=\"q\">" },
-  { "target": "Outline", "note": "行末に CRLF", "src": "<r>\r\n  <a label=\"c\"/>\r\n</r>" }
+  { "target": "Outline", "note": "行末に CRLF", "src": "<r>\r\n  <a label=\"c\"/>\r\n</r>" },
+  {
+    "target": "OutlineEnclosing",
+    "note": "節の中の行。内から外へ並ぶ",
+    "src": "<r>\n  <a label=\"top\">\n    <f/>\n  </a>\n</r>",
+    "line": 3
+  },
+  {
+    "target": "OutlineEnclosing",
+    "note": "節の先頭の行。**自分が先頭に来る**",
+    "src": "<r>\n  <a label=\"top\">\n    <f/>\n  </a>\n</r>",
+    "line": 2
+  },
+  {
+    "target": "OutlineEnclosing",
+    "note": "節の最後の行（閉じ札）。**まだ自分の中**",
+    "src": "<r>\n  <a label=\"top\">\n    <f/>\n  </a>\n</r>",
+    "line": 4
+  },
+  {
+    "target": "OutlineEnclosing",
+    "note": "根の外の行。宣言はどの節にも入らない",
+    "src": "<?xml version=\"1.0\" ?>\n<r>\n  <a/>\n</r>",
+    "line": 1
+  },
+  {
+    "target": "OutlineEnclosing",
+    "note": "兄弟の片方。**もう片方 は混ざらない**",
+    "src": "<r>\n  <a label=\"x\"/>\n  <a label=\"y\"/>\n</r>",
+    "line": 3
+  },
+  {
+    "target": "OutlineEnclosing",
+    "note": "深い入れ子。段が 5 つ",
+    "src": "<r>\n  <a>\n    <b>\n      <c>\n        <d/>\n      </c>\n    </b>\n  </a>\n</r>",
+    "line": 5
+  },
+  {
+    "target": "OutlineEnclosing",
+    "note": "1 行 に収まる要素。**版の頭で数えたら 60.6% がこれ**",
+    "src": "<r>\n  <a>\n    <speed>2</speed>\n  </a>\n</r>",
+    "line": 3
+  },
+  {
+    "target": "OutlineEnclosing",
+    "note": "本文が空。**囲みが無いときの字を突き合わせる**",
+    "src": "",
+    "line": 1
+  },
+  {
+    "target": "OutlineEnclosing",
+    "note": "本文の外の行番号。**範囲を超えたときに落ちない**",
+    "src": "<r>\n  <a/>\n</r>",
+    "line": 99
+  },
+  {
+    "target": "OutlineEnclosing",
+    "note": "0 行 目。**1 起点 なので、どの節にも入らない**",
+    "src": "<r>\n  <a/>\n</r>",
+    "line": 0
+  }
 ]

@@ -76,5 +76,12 @@
     "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsharpScan.js",
     "export": "describeBlocks",
     "args": [ "src" ]
+  },
+  {
+    "target": "OutlineEnclosing",
+    "note": "その行を囲む節の列（v2.4.5）。「囲む要素を選ぶ」がこの上に載る。**行だけで見る** —— 版の頭で数えたら、同じ行に節の始まりが 2 つ 以上 在る行は 3 表記 とも 0 件（13121 行）だった。だから割れるとしたら桁ではなく行の数え方で、Outline と同じ木を別の切り口で読む",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/Outline.js",
+    "export": "describeEnclosing",
+    "args": [ "src", "line" ]
   }
 ]

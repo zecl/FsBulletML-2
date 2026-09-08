@@ -214,3 +214,73 @@ type Outline() =
   member _.``describe は並びを字にする``() =
     // `guard-fable-parity` が両側で突き合わせる口。**形をここで固定する**
     Outline.describe "<a><b/></a>" |> should equal "a@1-1, b@1-1"
+
+  // --- 囲む要素（v2.4.5）------------------------------------------------------
+  //
+  // 較正（当てた変異と、赤くなった点の数）——
+  //
+  //   `n.Line <= line` を `n.Line < line` に        4 点（節の先頭の行で自分が出ない）
+  //   `line <= n.EndLine` を `line < n.EndLine` に  4 点（節の最後の行で自分が出ない）
+  //   `sortByDescending` を `sortBy` に             7 点（内と外が逆になる）
+
+  [<Test>]
+  member _.``囲みは内から外へ``() =
+    // 5 行 目 は `<speed>2</speed>`。囲みは speed -> fire -> action -> bulletml
+    let ns = Outline.enclosing (xmlNodes sample) 5
+    ns |> List.map (fun n -> n.Name) |> should equal [ "speed"; "fire"; "action"; "bulletml" ]
+
+  [<Test>]
+  member _.``深さは内から外へ減る``() =
+    let ds = Outline.enclosing (xmlNodes sample) 5 |> List.map (fun n -> n.Depth)
+    ds |> should equal (List.sortDescending ds)
+
+  [<Test>]
+  member _.``節の先頭の行では、その節も囲みに入る``() =
+    // 4 行 目 は `<fire>` の開き札そのもの。**自分が先頭に来る**
+    let ns = Outline.enclosing (xmlNodes sample) 4
+    ns |> List.map (fun n -> n.Name) |> should equal [ "fire"; "action"; "bulletml" ]
+
+  [<Test>]
+  member _.``節の最後の行でも、その節は囲みに入る``() =
+    // 7 行 目 は `</fire>`。`fire` の EndLine がそこ
+    let ns = Outline.enclosing (xmlNodes sample) 7
+    ns |> List.map (fun n -> n.Name) |> should equal [ "fire"; "action"; "bulletml" ]
+
+  [<Test>]
+  member _.``根の外の行では空``() =
+    // 1 行 目 は宣言。**どの節にも入っていない**
+    Outline.enclosing (xmlNodes sample) 1 |> should be Empty
+
+  [<Test>]
+  member _.``兄弟は混ざらない``() =
+    // 11 行 目 は `bullet b1` の中。**`action top` の側は出ない**
+    let ns = Outline.enclosing (xmlNodes sample) 11
+    ns |> List.map (fun n -> n.Name) |> should equal [ "speed"; "bullet"; "bulletml" ]
+    ns |> List.filter (fun n -> n.Detail = "top") |> should be Empty
+
+  [<Test>]
+  member _.``describeEnclosing は同じ並びを字にする``() =
+    Outline.describeEnclosing sample 5
+    |> should equal "speed@5-5>fire@4-7>action@3-9>bulletml@2-13"
+
+  [<Test>]
+  member _.``囲みが無ければ - を出す``() =
+    // **空の字を返さない** —— 突き合わせで「読めなかった」と区別が付かなくなる
+    Outline.describeEnclosing sample 1 |> should equal "-"
+
+  [<Test>]
+  member _.``同梱 176 本 で、囲みの並びは必ず深さの降順``() =
+    let mutable checkedLines = 0
+    for info in Bullets.Dsl.All.bullets do
+      match writeAs SourceKind.Xml info.Bulletml with
+      | None -> ()
+      | Some src ->
+        let nodes = xmlNodes src
+        let last = nodes |> List.map (fun n -> n.EndLine) |> List.max
+        // **全部 の行を見る**（端も含む）
+        for line in 1 .. last do
+          let ds = Outline.enclosing nodes line |> List.map (fun n -> n.Depth)
+          ds |> should equal (List.sortDescending ds)
+          checkedLines <- checkedLines + 1
+    // **0 行 で緑にしない**
+    checkedLines |> should greaterThan 1000
