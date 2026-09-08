@@ -285,3 +285,21 @@ button:disabled {
   color: #80d0a0;
   margin-top: 8px;
 }
+
+/* フォーカスの見え方（v2.4.3）。**キーで来たときだけ出す** ——
+   `:focus` だとクリックでも立つので、押した口が光ったままになる。
+
+   **既定に任せない。** `outline` を消している規則は 1 本 も無いので
+   ブラウザ既定のリングは出るが、色が配色に固定されておらず
+   （既定は文字色由来の白）、`#2a2a3a` の口の上では縁と見分けが付きにくい。
+
+   **`outline` で描く。** `border` を太らせると隣の口がずれ、
+   `box-shadow` は `overflow: hidden` の中で切れる。
+   `outline-offset` は `.bar` の `gap: 12px` より小さくする —— 隣と重なる */
+.row :focus-visible,
+.picker :focus-visible,
+.bar :focus-visible,
+.help :focus-visible {
+  outline: 2px solid #7cc7ff;
+  outline-offset: 2px;
+}

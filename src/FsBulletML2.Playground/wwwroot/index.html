@@ -58,7 +58,11 @@
              **並べ替えだけなら、直すのは README の表 1 か所。** -->
         <div class="picker">
           <!-- 本文。**字が変わる側** -->
-          <select id="pattern">
+          <!-- **名前を `aria-label` で持つ**（v2.4.3）。ほかの口は
+               `<label class="mode">配色<select …></label>` のように包まれていて、
+               包む label も名前になる。ここだけは横に字を置く場所が無い ——
+               プルダウン自体が弾幕の名前を出すので、ラベルを足すと 2 つ 名前が並ぶ -->
+          <select id="pattern" aria-label="弾幕">
             <option value="">（編集 / Open）</option>
           </select>
           <!-- 中身は空。**表記の表を html に書かない** —— 登録されている
@@ -383,6 +387,23 @@
             1 行 に収まっているものは畳む先が無いので出ない</li>
         <li>検索（<kbd>Ctrl</kbd>+<kbd>F</kbd>）・
             取り消し（<kbd>Ctrl</kbd>+<kbd>Z</kbd>）はエディタの標準機能</li>
+      </ul>
+
+      <h3>キーだけで動かす</h3>
+      <ul>
+        <li><kbd>Tab</kbd> で操作を順に回る。<strong>24 か所 が輪に入っていて、
+            そのうち 23 か所 が口</strong>（残り 1 つ が下の欄）。
+            並びは画面のとおり —— 上の列 6 個 -> 欄 -> 下の列 17 個</li>
+        <li><strong><kbd>Tab</kbd> を 7 回 押すと欄に入り、そこで止まる。</strong>
+            欄の中では <kbd>Tab</kbd> が字下げになるので、
+            <strong>下の列 17 個 へは <kbd>Tab</kbd> だけでは進めない</strong>。
+            <kbd>Ctrl</kbd>+<kbd>M</kbd> を 1 回 押すと <kbd>Tab</kbd> が
+            外へ抜ける側に切り替わる。もう一度 押すと字下げに戻る</li>
+        <li><kbd>Esc</kbd> は<strong>出ている窓を閉じる</strong>（候補・検索・名前の変更）。
+            <strong>欄からは出ない</strong> —— 出るのは上の <kbd>Ctrl</kbd>+<kbd>M</kbd>。
+            この窓も <kbd>Esc</kbd> で閉じる</li>
+        <li>いまどこに居るかは<strong>青い枠</strong>で出る。
+            <strong>キーで来たときだけ</strong>光り、クリックでは光らない</li>
       </ul>
 
       <p class="note">
