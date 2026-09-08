@@ -273,6 +273,17 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
   member _.FixesAt(source: string, offset: int) : Fix list =
     fixes (vocabulary ()) shape.Tags shape.DefinitionAt shape.ElementTitle source offset
 
+  /// 読めて・組めても走らないもの（v2.3）。
+  /// **中身は `Semantics.findings` の 1 本**（表記を知らない）。
+  ///
+  /// 表記ごとに渡すのは `Tags` だけ。対も `top` の綴りも語彙から引く ——
+  /// **どちらも書き写さない**（対は `Refs.pairs`、綴りは Core が持つ）
+  member _.FindingsIn(source: string) : Semantics.Finding list =
+    let v = vocabulary ()
+    let pairs =
+      Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
+    Semantics.findings pairs v.TopPrefix (shape.Tags source)
+
   interface ISourceLanguage with
     member _.Kind = shape.Kind
     member _.EditorLanguageId = shape.EditorLanguageId
@@ -281,3 +292,4 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
     member this.Hover source offset = this.HoverAt(source, offset)
     member this.Usages source offset = this.UsagesAt(source, offset)
     member this.Fixes source offset = this.FixesAt(source, offset)
+    member this.Findings source = this.FindingsIn source

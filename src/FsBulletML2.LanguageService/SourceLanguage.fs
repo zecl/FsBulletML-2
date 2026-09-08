@@ -108,7 +108,14 @@ type Vocab =
     /// CE の名前が載せる label。同上
     CeLabels: VocabCeLabel list
     /// CE の名前を、どこに置けるか。**候補（`Complete`）がこれで決まる**
-    CePlaces: VocabCePlace list }
+    CePlaces: VocabCePlace list
+    /// 根から走る定義の名前の頭（`top`）。**この綴りは Core が持っている** ——
+    /// 走らせる側が `label.StartsWith` で選ぶだけなので、器に書き写すと
+    /// あちらを変えたときに黙って割れる。host が Core を見て埋める。
+    ///
+    /// **空なら、意味の検査は `top` の話を何も出さない**（`Semantics`）——
+    /// 語彙が引けていないときに「走らない」と言うほうが害が大きい
+    TopPrefix: string }
 
 /// 候補 1 つ。
 ///
@@ -207,3 +214,9 @@ type ISourceLanguage =
   /// **候補が無ければ空。** 嘘の直し方を出さない —— 出すと、押した人は
   /// 直ったと思って、別の名前に化けた本文を持つことになる
   abstract Fixes: source: string -> offset: int -> Fix list
+  /// 読めて・組めても走らないもの（v2.3）。**カーソルを見ない** ——
+  /// 本文ぜんぶ の話なので、位置ではなく本文だけを受け取る。
+  ///
+  /// **字から出るので WASM へ行かない。** 打鍵ごとに引き直せる
+  /// （いちばん長い本 29,190 字 で 0.488 ms / 回。実測）
+  abstract Findings: source: string -> Semantics.Finding list

@@ -312,6 +312,20 @@ module Vocabulary =
   let rec private resultOf (t: Type) : Type =
     if t.Name.StartsWith "FSharpFunc" then resultOf (t.GetGenericArguments().[1]) else t
 
+  /// 根から走る定義の名前の頭。
+  ///
+  /// **Core の `Api.fs` が持っている綴り。** あちらは top* の並びを
+  /// `label.StartsWith "top"` で選んでいて、そこが真。
+  /// **reflection では引けない**（字の比較であって型ではない）ので、
+  /// Core を見ているこの層が写す —— 器（`Semantics`）に書くと、
+  /// Core を変えたときに黙って割れる。
+  ///
+  /// 変えるときは `Core/Api.fs` の `StartsWith` と対で。割れたら
+  /// `Parser.Tests` の意味の検査が赤くなる（同梱 176 本 が 1 本 も
+  /// 入口を持たないことになるので）
+  [<Literal>]
+  let topPrefix = "top"
+
   /// CE の名前が「どこに置けて」「何を開くか」。**表ではなく `Dsl` から引く。**
   ///
   /// v1.9 の頭で reflection を測ったら、`ActionBuilder` と `BulletmlBuilder` の
@@ -472,5 +486,9 @@ module Vocabulary =
         sb.Append ",\"opens\":" |> ignore
         str opens
         sb.Append '}' |> ignore)
-    sb.Append "]}" |> ignore
+    // 根から走る定義の名前の頭。**綴りは Core が持っている** ——
+    // 器に書き写すと、あちらを変えたときに黙って割れる（Semantics の但し書き）
+    sb.Append "],\"topPrefix\":" |> ignore
+    str topPrefix
+    sb.Append '}' |> ignore
     sb.ToString()

@@ -291,7 +291,34 @@ type Mark =
   { Line: int
     Column: int
     EndColumn: int
-    Message: string }
+    Message: string
+    /// Monaco の severity。**数で書く**（あちらの enum なので）——
+    /// 8 = Error / 4 = Warning / 2 = Info / 1 = Hint。
+    ///
+    /// **強さを持つのはこの型から。** v2.3 で意味の層が入って、
+    /// 「走らない」（Error）と「走りには影響しない」（Info）を
+    /// 同じ画に並べることになった
+    Severity: int }
+
+/// 強さの名前。**数を呼ぶ側に書かせない** —— 書かせると、
+/// 4 と 8 を取り違えても型が通る（どちらも int）
+module Severity =
+  [<Literal>]
+  let Error = 8
+
+  [<Literal>]
+  let Warning = 4
+
+  [<Literal>]
+  let Info = 2
+
+/// **印の持ち主を 2 つ に分ける。**
+///
+/// Monaco の `setModelMarkers` は owner ごとに丸ごと置き換えるので、
+/// 1 つ に混ぜると**片方 を書くたびにもう片方 が消える** ——
+/// Apply の波線（往復して出る）と、打鍵ごとの波線（字から出る）は
+/// 出る間隔が桁で違うので、必ずどちらかが消える。
+let private semanticOwner = markerOwner + "-semantic"
 
 /// 波線を引き直す。**渡した並びで丸ごと置き換える** ——
 /// 足す口にすると、前に付けた印が残って場所が嘘になる。
@@ -302,7 +329,7 @@ type Mark =
 ///
 /// 行が本文より下を指していたら最後の行に丸める。**範囲が本文の外へ出ると
 /// Monaco は何も描かない** —— 出ないのを「印が付いていない」と読むことになる
-let markAll (marks: Mark list) =
+let private markWith (owner: string) (marks: Mark list) =
   if not (isNull editor) then
     let items =
       marks
@@ -318,12 +345,20 @@ let markAll (marks: Mark list) =
             "startColumn" ==> startCol
             "endColumn" ==> endCol
             "message" ==> mk.Message
-            // 8 = Error。Monaco 側の enum なので数で書く
-            "severity" ==> 8 ])
+            "severity" ==> mk.Severity ])
       |> List.toArray
-    setMarkers editor markerOwner items
+    setMarkers editor owner items
+
+let markAll (marks: Mark list) = markWith markerOwner marks
 
 let clearMarks () = if not (isNull editor) then setMarkers editor markerOwner [||]
+
+/// 意味の層の波線（v2.3）。**Apply の波線とは持ち主が別。**
+///
+/// こちらは字から出るので、**打鍵ごとに引き直す**（WASM へ行かない）。
+/// 引き直しは丸ごと置き換えなので、消す口が別に要らない ——
+/// 空を渡せば消える
+let markSemantic (marks: Mark list) = markWith semanticOwner marks
 
 /// 本文が変わったら呼ぶ。**印は文字に追随しない** ——
 /// 1 文字 打った時点で場所が嘘になるので、そこで消す側が要る

@@ -151,7 +151,7 @@ type Playground() as self =
   let mutable enemyX2 = 240.
   let mutable enemyY2 = 80.
   // host からもらう語彙。正本は Core の DTD.fs。**表記が変わっても同じ**
-  let mutable vocabulary: Vocab = { Elements = []; Expressions = []; Ce = []; CeLabels = []; CePlaces = [] }
+  let mutable vocabulary: Vocab = { Elements = []; Expressions = []; Ce = []; CeLabels = []; CePlaces = []; TopPrefix = "" }
   // **起動時の表記。** 欄に最初に出るのは host が焼く XML（`InitialSource`）。
   //
   // **同梱カタログを選ぶときの表記ではない**（v1.6）——
@@ -415,11 +415,61 @@ type Playground() as self =
                   { Monaco.Line = int (unbox<float> m?line)
                     Monaco.Column = int (unbox<float> m?column)
                     Monaco.EndColumn = int (unbox<float> m?endColumn)
-                    Monaco.Message = string m?message })
+                    Monaco.Message = string m?message
+                    // Apply が返すのは「読めない」。**そこは走らない側**
+                    Monaco.Severity = Monaco.Severity.Error })
               |> Array.toList
               |> Monaco.markAll
               markedAt <- true)
         (fun err -> setError (errText err))
+
+  /// 意味の層を引き直す（v2.3）。**打鍵ごとに呼ぶ。**
+  ///
+  /// 読めて・組めても走らないものが在る —— `top` で始まる定義が 1 つ も
+  /// 無い本は、**読めて・組めて・黙って何も起きない。**
+  ///
+  /// **WASM へ行かない。** 字から数えるので、Apply を待たずに出せる
+  /// （v1.8 で未決にした「打鍵ごとの波線」がここで実現する）。
+  /// いちばん長い本 29,190 字 で 0.488 ms / 回（実測）。
+  ///
+  /// **文面はここで組む。** 器（`Semantics`）は持たない ——
+  /// 持たせると、波線と別の出口で文面が割れて、どちらも単独では正しく見える
+  member _.refreshFindings() =
+    if not (Monaco.ready ()) then ()
+    else
+      let marks =
+        current.Findings(Monaco.getValue ())
+        |> List.map (fun f ->
+            match f.Kind with
+            | Semantics.NoEntryPoint ->
+              { Monaco.Line = f.Line
+                Monaco.Column = f.Column
+                Monaco.EndColumn = f.EndColumn
+                // **綴りを字に出す。** 「top で始まる」は Core が決めていて、
+                // 語彙から来る（`vocabulary` の `TopPrefix`）
+                Monaco.Message =
+                  "走らせる入口が無い（"
+                  + vocabulary.TopPrefix
+                  + " で始まる名前の定義が 1 つ も無いので、読めても何も起きない）"
+                Monaco.Severity = Monaco.Severity.Error }
+            | Semantics.UnusedDefinition ->
+              { Monaco.Line = f.Line
+                Monaco.Column = f.Column
+                Monaco.EndColumn = f.EndColumn
+                Monaco.Message = f.Element + " " + f.Name + " はどこからも呼ばれていない"
+                // **走りには影響しない。** 同梱 176 本 にも 6 件 在る ——
+                // 警告にすると、正しい弾幕を開いた人が毎回 赤を見る
+                Monaco.Severity = Monaco.Severity.Info }
+            | Semantics.MissingRef ->
+              { Monaco.Line = f.Line
+                Monaco.Column = f.Column
+                Monaco.EndColumn = f.EndColumn
+                Monaco.Message = f.Element + " が指す " + f.Name + " が無い"
+                // **走るが、書いたものが出ない。** Apply は通る（実測）——
+                // 解けない参照は黙って無視されるだけなので、
+                // 「読めない」（Error）とは別の強さ
+                Monaco.Severity = Monaco.Severity.Warning })
+      Monaco.markSemantic marks
 
   /// 表記を差し替える。**本文は触らない。**
   ///
@@ -1034,7 +1084,14 @@ type Playground() as self =
                 Monaco.clearMarks ()
               if noted then
                 noted <- false
-                setNote "")
+                setNote ""
+              // **意味の層は逆に、打鍵ごとに引き直す**（v2.3）——
+              // 字から出るので往復が要らない。上の 2 つ は「往復して出た
+              // ものが古びる」ので消す側で、こちらは持ち主が別
+              self.refreshFindings ())
+            // 起動時に 1 回。**打鍵を待たない** —— リンクから開いた本文や
+            // 同梱の弾幕にも、その場で波線が要る
+            self.refreshFindings ()
             self.showInitialInPatterns ()
             // **同梱を載せたあとで上書きする。** 先に空で建てると、
             // リンクが読めなかったときに空の欄だけが残る ——

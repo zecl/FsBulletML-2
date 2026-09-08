@@ -57,6 +57,13 @@
     "args": [ "labels", "attr", "src" ]
   },
   {
+    "target": "Semantics",
+    "note": "意味の層（v2.3）。**打鍵ごとに回るのはブラウザ側**なので、答えが .NET と一致していないと『手元では出るのに本番では出ない』（逆も）になる。StartsWith は runtime ごとに別の実装へ落ちるので、走らせないと分からない",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/Semantics.js",
+    "export": "describe",
+    "args": [ "src" ]
+  },
+  {
     "target": "FsharpBlocks",
     "note": "F# の CE で「いまどの { } の中に居るか」（v1.9）。**候補がここに載る。** 本文の全部 の位置で数えるので、数え方が 1 文字 でもずれれば出る",
     "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsharpScan.js",
