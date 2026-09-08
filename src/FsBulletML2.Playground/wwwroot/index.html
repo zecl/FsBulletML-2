@@ -47,11 +47,17 @@
       <h1>FsBulletML2 Playground</h1>
       <div class="row">
         <canvas id="stage" width="480" height="640"></canvas>
+        <!-- 2 つ 目 の面（v2.1）。**同じコマを進む** ——
+             乱数は面ごとに分けてあるので、1 面 で見たときと同じ絵が出る -->
+        <canvas id="stage2" width="480" height="640" hidden></canvas>
         <div class="editor">
         <div class="picker">
           <select id="pattern">
             <option value="">（編集 / Open）</option>
           </select>
+          <!-- 2 つ 目 の面に載せる弾幕（v2.1）。中身は空 ——
+               並びは `#pattern` と同じ 1 本 から Fable が作る -->
+          <label class="mode">2 面<select id="pattern2"><option value="">なし</option></select></label>
           <!-- 中身は空。**表記の表を html に書かない** —— 登録されている
                並び（Playground.fs の languages）から Fable が作る -->
           <label class="mode">表記<select id="mode"></select></label>
@@ -264,6 +270,12 @@
             塗り重ねる先は面ぜんぶなので、<strong>自機の跡も残る</strong></li>
         <li>プルダウンで同梱の弾幕を選ぶと、その弾幕が欄に入る。
             <strong>表記は変わらない</strong> —— sxml で読んでいれば sxml で入る</li>
+        <li><strong>2 面</strong>で、もう 1 つ の弾幕を隣に並べて<strong>同じコマで走らせる</strong>。
+            難度・種・自機は 2 つ で共通なので、<strong>違うのは弾幕だけ</strong>。
+            <strong>乱数は面ごとに分けてある</strong>ので、
+            並べても 1 面 で見たときと同じ絵になる（並べたら絵が変わる、では比べられない）。
+            弾数は <code>1 面 / 2 面</code> の形で出る。
+            <strong>面の向きは弾幕ごと</strong>なので、片方 だけ横長になることがある</li>
         <li><kbd>Ctrl</kbd>＋ホイールで<strong>欄の字が拡大縮小する</strong>（VS Code と同じ）。
             拡大率は Apply でも Reset でも戻らない</li>
         <li><strong>配色</strong>は欄の見た目だけを替える。

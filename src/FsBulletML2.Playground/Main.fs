@@ -30,7 +30,18 @@ module private Initial =
 type PlaygroundHost() =
 
   let env = BrowserEnv()
+  /// 2 つ 目 の面の env。**乱数を分ける。**
+  ///
+  /// 1 個 を共有すると、2 つ の面が並びを取り合って**どちらも決定的でなくなる**
+  /// —— 片方 の弾数が変われば、もう片方 が引く値がずれる。
+  /// 「同じ種なら同じ走り」の契約は 1 面 で見たときと 2 面 で見たときの
+  /// あいだにも要る（並べたら絵が変わる、では比べる道具にならない）。
+  ///
+  /// 難度・種・自機の動かし方は同じ値を配る（比べるのは弾幕であって走らせ方ではない）
+  let env2 = BrowserEnv()
   let mutable current = Initial.pattern.Bulletml
+  /// 2 つ 目 の弾幕。**無ければ 1 面。**
+  let mutable second : Bulletml option = None
 
   /// 面を建てる。**乱数の並びを頭へ戻してから。**
   ///
@@ -47,7 +58,24 @@ type PlaygroundHost() =
     env.SetField pf.Field
     pf
 
+  /// 2 つ 目 の面。**同じ手順を別の env で。** 1 本 にまとめられないのは
+  /// `env` が引数でなく閉包に居るからで、そこは 2 つ 目 の面の意味そのもの
+  let buildSecond (bulletml: Bulletml) =
+    env2.RestartRandom()
+    let pf = Playfield.Create env2 bulletml
+    env2.SetField pf.Field
+    pf
+
   let mutable field = build current
+  let mutable field2 : Playfield option = None
+
+  /// 走らせ方の軸が動いたときの建て直し。**両方 の面を、同じところで。**
+  ///
+  /// 片方 だけ建て直すと、並べている 2 つ が別のコマを指す ——
+  /// 「同じ時刻の 2 つ」でなくなった時点で、比べる道具ではなくなる
+  let rebuildAll () =
+    field <- build current
+    field2 <- second |> Option.map buildSecond
   // **開いた時点で走っている。** Play を押すまで止まっていると、
   // 弾幕を見に来た人が最初に見るのが静止画になる。止めたい人は Pause を
   // 押せばよく、そちらは 1 手 で戻せる。
@@ -74,7 +102,17 @@ type PlaygroundHost() =
     fun () ->
       env.AdvancePlayer field.Frame
       field.Tick()
-  let ret = Array.zeroCreate<float> 7
+      // **2 つ 目 も同じコマで進める。** 別々に進めると、並べている意味が
+      // 「同じ時刻の 2 つ」ではなくなる
+      match field2 with
+      | Some f2 ->
+        env2.AdvancePlayer f2.Frame
+        f2.Tick()
+      | None -> ()
+  // `[n; ptr; frame; playerX; playerY; width; height]` に、
+  // 2 つ 目 の `[n2; ptr2; width2; height2]` を足した 11 数。
+  // **2 つ 目 が無ければ `n2` は -1**（0 は「弾が 1 つ も無い面」で別の意味）
+  let ret = Array.zeroCreate<float> 11
   let catalog = lazy (All.bullets |> List.toArray)
 
   /// `[n; ptr; frame; playerX; playerY; width; height]`。
@@ -93,10 +131,12 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.StepFrame(_now: float, playerX: float, playerY: float) : float[] =
     env.SetPlayer (float32 playerX) (float32 playerY)
+    // **自機は 2 つ の面で同じ。** 比べるのは弾幕であって走らせ方ではない
+    env2.SetPlayer (float32 playerX) (float32 playerY)
     if Seek.isRunning seek then
       // 戻るには建て直すしかない（面は逆再生できない）。
       // **建ててから差し替える** —— ほかの差し替えと同じ理由
-      if Seek.needsRestart field.Frame seek then field <- build current
+      if Seek.needsRestart field.Frame seek then rebuildAll ()
       watch.Restart()
       let struct (_, next) = Seek.step field.Frame tick elapsed seek
       seek <- next
@@ -108,6 +148,18 @@ type PlaygroundHost() =
     ret.[4] <- float env.PlayerY
     ret.[5] <- float field.Field.Width
     ret.[6] <- float field.Field.Height
+    match field2 with
+    | Some f2 ->
+      ret.[7] <- float (f2.Pack())
+      ret.[8] <- f2.PackedPtr
+      ret.[9] <- float f2.Field.Width
+      ret.[10] <- float f2.Field.Height
+    | None ->
+      // **-1 は「2 つ 目 が無い」。** 0 は「弾が 1 つ も無い面」で別の意味
+      ret.[7] <- -1.0
+      ret.[8] <- 0.0
+      ret.[9] <- 0.0
+      ret.[10] <- 0.0
     ret
 
   /// **飛ぶのをやめる。** 飛んでいる最中の Play は「もう待たない」なので、
@@ -159,8 +211,9 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.SetRank(v: float) =
     env.SetRank(float32 v)
+    env2.SetRank(float32 v)
     seek <- Seek.idle
-    field <- build current
+    rebuildAll ()
 
   /// 乱数の種。**同じ種なら同じ走り。**
   ///
@@ -173,8 +226,9 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.SetSeed(n: int) =
     env.SetSeed n
+    env2.SetSeed n
     seek <- Seek.idle
-    field <- build current
+    rebuildAll ()
 
   /// いまの難度と種。**Share が読む。** `[rank; seed]`
   [<JSInvokable>]
@@ -184,7 +238,10 @@ type PlaygroundHost() =
   /// 難度や種と違って走りの一部ではないが、見る人の手の置き方なので、
   /// 弾幕を替えるたびに追う側へ戻されると邪魔になる
   [<JSInvokable>]
-  member _.SetPlayerMotion(n: int) = env.SetMotion(Player.ofInt n)
+  member _.SetPlayerMotion(n: int) =
+    let m = Player.ofInt n
+    env.SetMotion m
+    env2.SetMotion m
 
   /// 面の大きさ。**JS が canvas をこの大きさにする。**
   ///
@@ -197,15 +254,20 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.FieldSize() : float[] =
     let f = field.Field
+    // 2 つ 目 の敵も返す。**無ければ -1**（面の中に -1 は無い）
+    let struct (ex2, ey2) =
+      match field2 with
+      | Some f2 -> struct (float f2.Field.EnemyX, float f2.Field.EnemyY)
+      | None -> struct (-1.0, -1.0)
     [| float f.Width; float f.Height; float f.PlayerX; float f.PlayerY
-       float f.EnemyX; float f.EnemyY |]
+       float f.EnemyX; float f.EnemyY; ex2; ey2 |]
 
   /// **飛んでいる最中でも頭へ戻す。** 面を建て直すと `Frame` も 0 に戻るので、
   /// 飛び先を持ったままだとそこへ向かって走り直してしまう
   [<JSInvokable>]
   member _.Reset() =
     seek <- Seek.idle
-    field <- build current
+    rebuildAll ()
 
   /// 起動時に欄へ出す XML。**html に直書きしない。**
   ///
@@ -275,6 +337,8 @@ type PlaygroundHost() =
             let next = build info.Bulletml
             current <- info.Bulletml
             field <- next
+            // 2 つ 目 も頭から。**同じコマで並べる**
+            field2 <- second |> Option.map buildSecond
             // 別の弾幕に飛び先は引き継がない（`Reset` と同じ理由）
             seek <- Seek.idle
             text
@@ -299,6 +363,36 @@ type PlaygroundHost() =
         | Result.Error why -> "ERROR:" + why
         | Result.Ok text -> text
     with ex -> "ERROR:" + ex.Message
+
+  /// 2 つ 目 の面に、同梱の一覧から弾幕を載せる（v2.1）。
+  ///
+  /// **1 つ 目 も頭から建て直す。** 並べた 2 つ が別のコマを指していたら、
+  /// それは「同じ時刻の 2 つ」ではないので比べられない。
+  ///
+  /// **env を分けてある**（`env2`）—— 乱数の並びを共有すると、
+  /// 片方 の弾数が変わるたびにもう片方 の引く値がずれて、
+  /// **1 面 で見たときと 2 面 で見たときの絵が違う**ことになる。
+  ///
+  /// 失敗は `SelectPattern` と同じく `ERROR:` で始まる。空なら成功
+  [<JSInvokable>]
+  member _.SetSecond(index: int) : string =
+    try
+      let items = catalog.Value
+      if index < 0 || index >= items.Length then "ERROR:範囲外"
+      else
+        let info = items.[index]
+        second <- Some info.Bulletml
+        seek <- Seek.idle
+        rebuildAll ()
+        ""
+    with ex -> "ERROR:" + ex.Message
+
+  /// 2 つ 目 の面をやめる。**1 つ 目 も頭から**（`SetSecond` と同じ理由）
+  [<JSInvokable>]
+  member _.ClearSecond() =
+    second <- None
+    seek <- Seek.idle
+    rebuildAll ()
 
   /// 右側の本文を読んで弾幕を差し替える。
   ///
@@ -345,6 +439,8 @@ type PlaygroundHost() =
       let next = build bulletml
       current <- bulletml
       field <- next
+      // 2 つ 目 も頭から。**同じコマで並べる**（`SetSecond` の但し書き）
+      field2 <- second |> Option.map buildSecond
       // 別の本文に飛び先は引き継がない（`Reset` と同じ理由）
       seek <- Seek.idle
     // **字を直に書かない。** 送ってくるのは Fable 側の `SourceKind.Id` で、

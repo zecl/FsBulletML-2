@@ -56,6 +56,26 @@ h1 {
   min-width: 0;
 }
 
+/* 2 つ 目 の面（v2.1）。**1 つ 目 と同じ規則**で、幅の上限だけ狭める ——
+   2 面 出すと横を 2 つ 分 取るので、そのぶんエディタの取り分が減る。
+   `#stage` と別に書くのは、片方 だけ狭めたいのがここだから */
+#stage,
+#stage2 {
+  min-width: 0;
+}
+
+#stage2 {
+  background: #101018;
+  border: 1px solid #333;
+  display: block;
+  align-self: flex-start;
+  max-height: min(100%, 640px);
+  max-width: 480px;
+  height: auto;
+  width: auto;
+  flex: none;
+}
+
 .editor {
   flex: 1;
   display: flex;

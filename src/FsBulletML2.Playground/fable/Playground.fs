@@ -143,6 +143,13 @@ type Playground() as self =
   let mutable wipe = false
   let mutable canvas: HTMLCanvasElement = null
   let mutable canvasCtx: CanvasRenderingContext2D = null
+  // 2 つ 目 の面（v2.1）。**大きさも敵も別**（向きは弾幕ごとに決まる）
+  let mutable canvas2: HTMLCanvasElement = null
+  let mutable canvasCtx2: CanvasRenderingContext2D = null
+  let mutable field2W = 0.
+  let mutable field2H = 0.
+  let mutable enemyX2 = 240.
+  let mutable enemyY2 = 80.
   // host からもらう語彙。正本は Core の DTD.fs。**表記が変わっても同じ**
   let mutable vocabulary: Vocab = { Elements = []; Expressions = []; Ce = []; CeLabels = []; CePlaces = [] }
   // **起動時の表記。** 欄に最初に出るのは host が焼く XML（`InitialSource`）。
@@ -194,7 +201,10 @@ type Playground() as self =
           playerY <- homeY
       )
 
-  member _.hud(n: int, t: float, frame: int) =
+  /// **2 面 のときは弾数を分けて出す**（`n / n2`）——
+  /// 足してしまうと、並べて比べているのに「どちらが濃いか」が読めない。
+  /// `n2` が負なら 2 面 目 は無い（0 は「弾が 1 つ も無い面」で別の意味）
+  member _.hud(n: int, n2: int, t: float, frame: int) =
     frames <- frames + 1
     if t0 = 0. then t0 <- t
     let elapsed = t - t0
@@ -205,9 +215,12 @@ type Playground() as self =
       let fpsEl = el "fps"
       if not (isNull fpsEl) then fpsEl.textContent <- string (int fps)
     let b = el "bullet-count"
-    if not (isNull b) && n <> lastN then
-      lastN <- n
-      b.textContent <- string n
+    // **合わせた数で「変わったか」を見る。** 片方 だけ見ると、
+    // もう片方 だけが動いたコマで書き換わらない
+    let key = if n2 >= 0 then n * 100000 + n2 else n
+    if not (isNull b) && key <> lastN then
+      lastN <- key
+      b.textContent <- if n2 >= 0 then string n + " / " + string n2 else string n
     // **飛んでいる最中はここが速く動く。** 進んでいることの唯一の合図なので、
     // 弾数と同じく変わったときだけ書く（毎フレーム書くと DOM を無駄に触る）
     let f = el "frame-count"
@@ -228,7 +241,12 @@ type Playground() as self =
           homeX <- unbox<float> (jsItem v 2)
           homeY <- unbox<float> (jsItem v 3)
           enemyX <- unbox<float> (jsItem v 4)
-          enemyY <- unbox<float> (jsItem v 5))
+          enemyY <- unbox<float> (jsItem v 5)
+          // 2 つ 目 の敵。**無ければ -1** —— そのときは触らない
+          let ex2 = unbox<float> (jsItem v 6)
+          if ex2 >= 0. then
+            enemyX2 <- ex2
+            enemyY2 <- unbox<float> (jsItem v 7))
         (fun err -> setError (errText err))
 
   /// 毎コマ host から来る、自機と面の大きさ。
@@ -236,18 +254,36 @@ type Playground() as self =
   /// **大きさが変わったら canvas を建て直す。** 向きは弾幕が持っているので、
   /// 変わるのは弾幕が変わったとき —— 建て直す道は 8 本 以上 あるので、
   /// 「変わったら」で拾うほうが呼び忘れが起きない
-  member _.setView(px: float, py: float, w: float, h: float) =
+  member _.setView(px: float, py: float, w: float, h: float, w2: float, h2: float) =
     drawX <- px
     drawY <- py
+    let mutable changed = false
     if w > 0. && (w <> fieldW || h <> fieldH) then
       fieldW <- w
       fieldH <- h
+      changed <- true
       let c = el "stage"
       if not (isNull c) then
         let cv = c :?> HTMLCanvasElement
         cv.width <- int w
         cv.height <- int h
-      self.refreshPlaces ()
+    // 2 つ 目。**幅が 0 なら「2 面 目 は無い」** —— canvas ごと隠す
+    let c2 = el "stage2"
+    if not (isNull c2) then
+      if w2 <= 0. then
+        if not (c2.hasAttribute "hidden") then c2.setAttribute ("hidden", "")
+      else
+        if c2.hasAttribute "hidden" then c2.removeAttribute "hidden"
+        if w2 <> field2W || h2 <> field2H then
+          field2W <- w2
+          field2H <- h2
+          changed <- true
+          let cv2 = c2 :?> HTMLCanvasElement
+          cv2.width <- int w2
+          cv2.height <- int h2
+    // **どちらかが変わったら 1 回 だけ引く。** 置き場所は 1 本 の口が
+    // 両方 を返すので、面ごとに引くと往復が 2 倍 になる
+    if changed then self.refreshPlaces ()
 
   member _.ensureCtx() : CanvasRenderingContext2D =
     if not (isNull canvasCtx) then canvasCtx
@@ -259,37 +295,70 @@ type Playground() as self =
         canvasCtx <- getCtx canvas
         canvasCtx
 
+  /// 2 つ 目 の面の下地（v2.1）。**1 つ 目 と別に持つ** ——
+  /// `getContext` は同じ canvas なら同じ物を返すが、canvas が違えば別
+  member _.ensureCtx2() : CanvasRenderingContext2D =
+    if not (isNull canvasCtx2) then canvasCtx2
+    else
+      let c = el "stage2"
+      if isNull c then null
+      else
+        canvas2 <- c :?> HTMLCanvasElement
+        canvasCtx2 <- getCtx canvas2
+        canvasCtx2
+
+  /// 1 面 を塗る。**`draw` と `draw2` の中身はこれ 1 本。**
+  ///
+  /// 2 面 に増やしたときに写しを作らない —— 写すと、弾の描き方を変えたときに
+  /// 片方 だけ変わって「同じ弾幕なのに絵が違う」が作れてしまう。
+  ///
+  /// **軌跡を落とすのはここではない。** 2 面 とも塗ってから落とす
+  /// （ここで落とすと、1 面 目 で消えて 2 面 目 に効かない）
+  member _.paint
+    (c2d: CanvasRenderingContext2D)
+    (cv: HTMLCanvasElement)
+    (ex: float)
+    (ey: float)
+    (packed: obj)
+    (n: int)
+    : int =
+    let n = n ||| 0
+    // **軌跡は過去の位置を持たない。** 面を薄く塗るだけにすると、前のコマの
+    // 弾がそのまま残って尾に見える。確保は 0 バイト。
+    //
+    // 消さずに残す形にはしない —— 弾の多い弾幕だと数秒で面が真っ白になる。
+    // 薄く塗り重ねるほうは、放っておいても消えるので消す道が要らない
+    // （切り替えと弾幕の差し替えだけ、1 コマ 塗り潰す）
+    if trail && not wipe then c2d?fillStyle <- "rgba(16, 16, 24, 0.12)"
+    else c2d?fillStyle <- "#101018"
+    c2d.fillRect (0., 0., float cv.width, float cv.height)
+    c2d?fillStyle <- "#66ccff"
+    c2d.beginPath ()
+    c2d.arc (drawX, drawY, 5., 0., System.Math.PI * 2.)
+    c2d.fill ()
+    c2d?fillStyle <- "#ffffff"
+    if n <= 0 then
+      c2d.beginPath ()
+      c2d.arc (ex, ey, 6., 0., System.Math.PI * 2.)
+      c2d.fill ()
+      0
+    else
+      let mutable i = 0
+      while i < n do
+        c2d.fillRect (f32 packed (i * 2) - 2., f32 packed (i * 2 + 1) - 2., 4., 4.)
+        i <- i + 1
+      n
+
   member _.draw(packed: obj, n: int) : int =
     let c2d = self.ensureCtx ()
-    if isNull c2d then 0
+    if isNull c2d then 0 else self.paint c2d canvas enemyX enemyY packed n
+
+  /// 2 つ 目 の面。**`n` が負なら出さない**（0 は「弾が 1 つ も無い面」で別の意味）
+  member _.draw2(packed: obj, n: int) : int =
+    if n < 0 then 0
     else
-      let n = n ||| 0
-      // **軌跡は過去の位置を持たない。** 面を薄く塗るだけにすると、前のコマの
-      // 弾がそのまま残って尾に見える。確保は 0 バイト。
-      //
-      // 消さずに残す形にはしない —— 弾の多い弾幕だと数秒で面が真っ白になる。
-      // 薄く塗り重ねるほうは、放っておいても消えるので消す道が要らない
-      // （切り替えと弾幕の差し替えだけ、1 コマ 塗り潰す）
-      if trail && not wipe then c2d?fillStyle <- "rgba(16, 16, 24, 0.12)"
-      else c2d?fillStyle <- "#101018"
-      wipe <- false
-      c2d.fillRect (0., 0., float canvas.width, float canvas.height)
-      c2d?fillStyle <- "#66ccff"
-      c2d.beginPath ()
-      c2d.arc (drawX, drawY, 5., 0., System.Math.PI * 2.)
-      c2d.fill ()
-      c2d?fillStyle <- "#ffffff"
-      if n <= 0 then
-        c2d.beginPath ()
-        c2d.arc (enemyX, enemyY, 6., 0., System.Math.PI * 2.)
-        c2d.fill ()
-        0
-      else
-        let mutable i = 0
-        while i < n do
-          c2d.fillRect (f32 packed (i * 2) - 2., f32 packed (i * 2 + 1) - 2., 4., 4.)
-          i <- i + 1
-        n
+      let c2d = self.ensureCtx2 ()
+      if isNull c2d then 0 else self.paint c2d canvas2 enemyX2 enemyY2 packed n
 
   member _.call(name: string, ?arg: obj) =
     if isNull dotNet then setError "まだ起動していない"
@@ -556,6 +625,46 @@ type Playground() as self =
         o.textContent <- string (jsItem names i)
         sel.appendChild o |> ignore
         i <- i + 1
+      // 2 つ 目 の面の並びも同じ 1 本 から。**html にも別の口にも書かない**
+      let sel2 = el "pattern2"
+      if not (isNull sel2) then
+        sel2.innerHTML <- ""
+        let none = document.createElement "option" :?> HTMLOptionElement
+        none.value <- ""
+        none.textContent <- "なし"
+        sel2.appendChild none |> ignore
+        let mutable j = 0
+        while j < len do
+          let o = document.createElement "option" :?> HTMLOptionElement
+          o.value <- string j
+          o.textContent <- string (jsItem names j)
+          sel2.appendChild o |> ignore
+          j <- j + 1
+
+  /// 2 つ 目 の面に載せる弾幕を選ぶ（v2.1）。**「なし」で 1 面 に戻る。**
+  ///
+  /// 選ぶと**両方 の面が頭から**建て直る —— 並べた 2 つ が別のコマを
+  /// 指していたら、それは「同じ時刻の 2 つ」ではないので比べられない
+  member _.pickSecond() =
+    let sel = el "pattern2"
+    if isNull sel then ()
+    elif isNull dotNet then setError "まだ起動していない"
+    else
+      // 面が建て直る。**前の尾を残さない**（`apply` と同じ理由）
+      wipe <- true
+      let v = (sel :?> HTMLSelectElement).value
+      if v = "" then
+        thenCatch
+          (invokeAsync0 dotNet "ClearSecond")
+          (fun _ -> ())
+          (fun err -> setError (errText err))
+      else
+        thenCatch
+          (invokeAsync1 dotNet "SetSecond" (int (float v)))
+          (fun res ->
+            let why = string res
+            if why.StartsWith "ERROR:" then setError (why.Substring 6) else setError "")
+          (fun err -> setError (errText err))
 
   member _.pick() =
     let sel = el "pattern"
@@ -984,10 +1093,23 @@ type Playground() as self =
               unbox<float> (jsItem ret 3),
               unbox<float> (jsItem ret 4),
               unbox<float> (jsItem ret 5),
-              unbox<float> (jsItem ret 6)
+              unbox<float> (jsItem ret 6),
+              unbox<float> (jsItem ret 9),
+              unbox<float> (jsItem ret 10)
             )
             self.draw (packed, n) |> ignore
-            self.hud (n, t, int (unbox<float> (jsItem ret 2)))
+            // 2 つ 目 の面。**`n2` が負なら無い**（0 は「弾が 1 つ も無い面」）
+            let n2 = int (unbox<float> (jsItem ret 7))
+            let packed2 =
+              if n2 > 0 then
+                let off2 = int (unbox<float> (jsItem ret 8) / 4.)
+                subarray (heapF32 ()) off2 (off2 + n2 * 2)
+              else null
+            self.draw2 (packed2, n2) |> ignore
+            // **軌跡は 2 面 とも塗ってから落とす。** 先に落とすと、
+            // 1 面 目 で消えて 2 面 目 に効かない
+            wipe <- false
+            self.hud (n, n2, t, int (unbox<float> (jsItem ret 2)))
           with ex ->
             console.error ex
             setError (string ex)
@@ -1025,6 +1147,7 @@ let private on (id: string) (event: string) (handler: unit -> unit) =
   else node.addEventListener (event, fun _ -> handler ())
 
 on "pattern" "change" (fun () -> playground.pick ())
+on "pattern2" "change" (fun () -> playground.pickSecond ())
 on "mode" "change" (fun () -> playground.setMode ())
 on "theme" "change" (fun () -> playground.setTheme ())
 on "compare" "change" (fun () -> playground.setCompare ())
