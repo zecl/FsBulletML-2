@@ -52,6 +52,8 @@
     <Compile Include="StepFire.fs" />
     <Compile Include="StepTop.fs" />
     <Compile Include="RootAccel.fs" />
+    <!-- 公式 DTD との突き合わせ（v2.4.1）。**写した字と、既定値** -->
+    <Compile Include="OfficialDtd.fs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\TestData\**\*">

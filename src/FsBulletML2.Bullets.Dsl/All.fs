@@ -11,6 +11,9 @@ open FsBulletML2
 module All =
 
   /// 同梱の弾幕 176 個。**PlayerBullet の 3 本 は Bulletml を直に持つので入らない**
+  ///
+  /// **公式配布のサンプルは入らない**（下の official）—— 出自が違う集合を
+  /// 混ぜると、この数に紐づいた測定が何の集合の話か分からなくなる
   let bullets : BulletmlInfo list =
     [ EnemyBullet.Sdmkun.Bulletsmorph.aba_2
       EnemyBullet.Sdmkun.Bulletsmorph.aba_3
@@ -188,4 +191,27 @@ module All =
       EnemyBullet.Sdmkun.Xevious.garu_zakato
       EnemyBullet.Sdmkun.XiiStag.b3b
       EnemyBullet.Sdmkun.Xsoldier.b8_boss_main
+    ]
+
+  /// BulletML 公式配布（bulletml0_21）のサンプル 17 個。**同梱とは別の集合**
+  ///
+  /// v2.4.1 で足した。template.xml は入っていない（雛形なので）
+  let official : BulletmlInfo list =
+    [ EnemyBullet.Official.g1943_rolling_fire
+      EnemyBullet.Official.g_darius_homing_laser
+      EnemyBullet.Official.guwange_round_2_boss_circle_fire
+      EnemyBullet.Official.guwange_round_3_boss_fast_3way
+      EnemyBullet.Official.guwange_round_4_boss_eye_ball
+      EnemyBullet.Official.progear_round_1_boss_grow_bullets
+      EnemyBullet.Official.progear_round_2_boss_struggling
+      EnemyBullet.Official.progear_round_3_boss_back_burst
+      EnemyBullet.Official.progear_round_3_boss_wave_bullets
+      EnemyBullet.Official.progear_round_4_boss_fast_rocket
+      EnemyBullet.Official.progear_round_5_boss_last_round_wave
+      EnemyBullet.Official.progear_round_5_middle_boss_rockets
+      EnemyBullet.Official.progear_round_6_boss_parabola_shot
+      EnemyBullet.Official.psyvariar_x_a_boss_opening
+      EnemyBullet.Official.psyvariar_x_a_boss_winder
+      EnemyBullet.Official.psyvariar_x_b_colony_shape_satellite
+      EnemyBullet.Official.xevious_garu_zakato
     ]

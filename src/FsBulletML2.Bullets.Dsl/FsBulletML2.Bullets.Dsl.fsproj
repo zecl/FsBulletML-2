@@ -37,6 +37,8 @@
     <Compile Include="Xsoldier.fs" />
     <Compile Include="Others.fs" />
     <Compile Include="Player.fs" />
+    <!-- 公式配布のサンプル 17 本（v2.4.1）。**All.bullets には混ぜない** -->
+    <Compile Include="Official.fs" />
     <Compile Include="All.fs" />
   </ItemGroup>
   <ItemGroup>

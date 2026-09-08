@@ -311,7 +311,7 @@ let generateDu (p: Parsed) =
     for l in lines do w ("    " + l)
   out.ToString()
 
-let generateAll (names: string list) =
+let generateAll (bundled: string list) (official: string list) =
   let out = StringBuilder()
   let w (s: string) = out.Append(s).Append('\n') |> ignore
   w "// **このファイルは生成物。手で直すと次の焼き直しで消える。**"
@@ -326,13 +326,24 @@ let generateAll (names: string list) =
   w "[<RequireQualifiedAccess>]"
   w "module All ="
   w ""
-  w (sprintf "  /// 同梱の弾幕 %d 個。**PlayerBullet の 3 本 は Bulletml を直に持つので入らない**" names.Length)
+  let emit (xs: string list) =
+    xs
+    |> List.iteri (fun i n ->
+        let head = if i = 0 then "    [ " else "      "
+        w (head + n))
+    w "    ]"
+  w (sprintf "  /// 同梱の弾幕 %d 個。**PlayerBullet の 3 本 は Bulletml を直に持つので入らない**" bundled.Length)
+  w "  ///"
+  w "  /// **公式配布のサンプルは入らない**（下の official）—— 出自が違う集合を"
+  w "  /// 混ぜると、この数に紐づいた測定が何の集合の話か分からなくなる"
   w "  let bullets : BulletmlInfo list ="
-  names
-  |> List.iteri (fun i n ->
-      let head = if i = 0 then "    [ " else "      "
-      w (head + n))
-  w "    ]"
+  emit bundled
+  w ""
+  w (sprintf "  /// BulletML 公式配布（bulletml0_21）のサンプル %d 個。**同梱とは別の集合**" official.Length)
+  w "  ///"
+  w "  /// v2.4.1 で足した。template.xml は入っていない（雛形なので）"
+  w "  let official : BulletmlInfo list ="
+  emit official
   out.ToString()
 
 let files =
@@ -342,6 +353,7 @@ let files =
 
 let mutable total = 0
 let allInfos = ResizeArray<string>()
+let officialInfos = ResizeArray<string>()
 for f in files do
   let p = parseFile f
   total <- total + p.Entries.Length
@@ -350,15 +362,18 @@ for f in files do
     (generateDu p).Replace("\n", "\r\n"),
     UTF8Encoding(false))
   let shortNs = p.Namespace.Substring("FsBulletML2.Bullets.Dsl.".Length)
+  // **公式配布のサンプルは別の一覧へ。** 混ぜると、同梱 176 本 に紐づいた
+  // 測定（$rank を使う 173 本 …）が何の集合の話か分からなくなる
+  let sink = if p.ModuleName = "Official" then officialInfos else allInfos
   for e in p.Entries do
     match valueOf p.Namespace p.ModuleName e.Name with
-    | Choice1Of2 _ -> allInfos.Add(shortNs + "." + p.ModuleName + "." + e.Name)
+    | Choice1Of2 _ -> sink.Add(shortNs + "." + p.ModuleName + "." + e.Name)
     | Choice2Of2 _ -> ()
 
 File.WriteAllText(
   Path.Combine(dslDir, "All.fs"),
-  (generateAll (List.ofSeq allInfos)).Replace("\n", "\r\n"),
+  (generateAll (List.ofSeq allInfos) (List.ofSeq officialInfos)).Replace("\n", "\r\n"),
   UTF8Encoding(false))
 
 printfn "DU カタログ: %d ファイル / 値 %d 個" files.Length total
-printfn "All.fs に載せた BulletmlInfo: %d 個" allInfos.Count
+printfn "All.fs の bullets: %d 個 / official: %d 個" allInfos.Count officialInfos.Count
