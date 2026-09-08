@@ -42,6 +42,11 @@ let private registerSymbols (language: string) (fn: obj -> obj) : unit = jsNativ
 [<Emit("globalThis.monaco.languages.registerFoldingRangeProvider($0, { provideFoldingRanges: $1 })")>]
 let private registerFolding (language: string) (fn: obj -> obj) : unit = jsNative
 
+// 囲む要素を選ぶ（v2.4.5）。**位置ごとに 1 本 の列**を返す ——
+// 位置は配列で来る（複数カーソル）ので、返すのも配列の配列
+[<Emit("globalThis.monaco.languages.registerSelectionRangeProvider($0, { provideSelectionRanges: $1 })")>]
+let private registerSelectionRanges (language: string) (fn: obj -> obj -> obj) : unit = jsNative
+
 [<Emit("globalThis.monaco.editor.addKeybindingRule({ keybinding: globalThis.monaco.KeyMod.Alt | globalThis.monaco.KeyCode[$0], command: $1 })")>]
 let private addAltBinding (keyName: string) (command: string) : unit = jsNative
 
@@ -649,8 +654,34 @@ let registerStructureProviders
     |> List.toArray
     |> box
 
+  // 囲む要素を選ぶ（v2.4.5）。**同じ木の 3 つ 目 の出し先。**
+  //
+  // Monaco は「広げる」を押すたび、この列を 1 段 ずつ外へ進む。
+  // 列は器が作る（`Outline.enclosing`）—— **2 runtime で突き合わせている**
+  // ので、内から外への並びがブラウザ側だけ違うことにならない。
+  //
+  // **始まりは名前の桁から。** 行頭からにすると字下げまで選ぶ ——
+  // 版の頭で数えたら、1 行 に収まる要素の字下げは xml で平均 18 字 だった。
+  // 終わりは行末（`1000`）で、これは折りたたみと同じ扱い。
+  let selectionRanges (model: obj) (positions: obj) : obj =
+    let nodes = outline (getVal model)
+    positions
+    |> unbox<obj array>
+    |> Array.map (fun p ->
+         FsBulletML2.LanguageService.Outline.enclosing nodes (unbox<int> p?lineNumber)
+         |> List.map (fun n ->
+              createObj [
+                "range" ==> createObj [
+                  "startLineNumber" ==> n.Line
+                  "startColumn" ==> n.Column
+                  "endLineNumber" ==> n.EndLine
+                  "endColumn" ==> 1000 ] ])
+         |> List.toArray)
+    |> box
+
   registerSymbols language symbols
   registerFolding language folding
+  registerSelectionRanges language selectionRanges
 
 /// アウトラインを **Alt+O でも**出せるようにする（v2.4）。
 ///

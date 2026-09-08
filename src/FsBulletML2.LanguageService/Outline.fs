@@ -100,6 +100,22 @@ let build
             EndColumn = column + (t.NameStop - t.NameStart)
             EndLine = endLine } ]
 
+/// その行を囲む節を、**内側から外側へ**。
+///
+/// 「囲む要素を選ぶ」（v2.4.5）が読む。`registerSelectionRangeProvider` は
+/// この順で「広げる」を積む —— 先頭がいちばん内側で、末尾が根。
+///
+/// **行だけで見る。桁は見ない。** 版の頭で数えたら、同じ行に節の始まりが
+/// 2 つ 以上 在る行は 3 表記 とも **0 件**（13121 行）だった。
+/// だから行で選んでも隣の要素は飲まない。
+///
+/// **深さで並べる。** 範囲が重なるのは親子だけなので、深いほうが内側になる
+/// —— 兄弟は同じ行を共有しないので、同じ深さが 2 つ 出ることは無い。
+let enclosing (nodes: Node list) (line: int) : Node list =
+  nodes
+  |> List.filter (fun n -> n.Line <= line && line <= n.EndLine)
+  |> List.sortByDescending (fun n -> n.Depth)
+
 /// 2 つ の runtime で同じ答えが返ることを見る口（`guard-fable-parity`）。
 ///
 /// **組み立てはここ 1 か所。** 表記は XML で固定する ——
@@ -119,6 +135,27 @@ let describe (source: string) : string =
            add "("
            add n.Detail
            add ")"
+         add "@"
+         add (string n.Line)
+         add "-"
+         add (string n.EndLine))
+  sb.ToString()
+
+/// 囲みの列を字にする口（`guard-fable-parity`）。
+///
+/// **`describe` と分ける。** あちらは並び全部 を出すので、囲みを混ぜると
+/// 行が長くなり、割れたときにどちらが割れたか読めない。
+let describeEnclosing (source: string) (line: int) : string =
+  let sb = System.Text.StringBuilder()
+  let add (s: string) = sb.Append s |> ignore
+  let nodes = build "label" (Scan.lineColumn source) (XmlScan.tags source)
+  match enclosing nodes line with
+  | [] -> add "-"
+  | ns ->
+    ns
+    |> List.iteri (fun i n ->
+         if i > 0 then add ">"
+         add n.Name
          add "@"
          add (string n.Line)
          add "-"

@@ -54,6 +54,8 @@ let answer (target: string) (c: JsonElement) =
     Semantics.describe (c.GetProperty("src").GetString())
   | "Outline" ->
     Outline.describe (c.GetProperty("src").GetString())
+  | "OutlineEnclosing" ->
+    Outline.describeEnclosing (c.GetProperty("src").GetString()) (c.GetProperty("line").GetInt32())
   | "FsharpTags" ->
     // 表は case に在る。**器に書けない**（要素名が入るので門が当たる）
     let labels =
