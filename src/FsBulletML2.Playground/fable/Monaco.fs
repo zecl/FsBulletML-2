@@ -36,6 +36,12 @@ let private registerCompletion (language: string) (fn: obj -> obj -> obj) (trigg
 [<Emit("globalThis.monaco.languages.registerHoverProvider($0, { provideHover: $1 })")>]
 let private registerHover (language: string) (fn: obj -> obj -> obj) : unit = jsNative
 
+[<Emit("globalThis.monaco.languages.registerDocumentSymbolProvider($0, { provideDocumentSymbols: $1 })")>]
+let private registerSymbols (language: string) (fn: obj -> obj) : unit = jsNative
+
+[<Emit("globalThis.monaco.languages.registerFoldingRangeProvider($0, { provideFoldingRanges: $1 })")>]
+let private registerFolding (language: string) (fn: obj -> obj) : unit = jsNative
+
 [<Emit("globalThis.monaco.languages.registerCodeActionProvider($0, { provideCodeActions: $1 })")>]
 let private registerCodeAction (language: string) (fn: obj -> obj -> obj -> obj) : unit = jsNative
 
@@ -571,3 +577,74 @@ let registerCodeActionProvider
     createObj [ "actions" ==> actions; "dispose" ==> (fun () -> ()) ]
 
   registerCodeAction language provide
+
+/// アウトライン（Ctrl+Shift+O）と折りたたみ（v2.4）。
+///
+/// **どちらも同じ 1 本 の上に載る**（`Outline.build`）——
+/// 出す先が違うだけで、材料は「名前・深さ・行の範囲」の同じ並び。
+/// 別々に数えると、片方 だけが古い形を返しても**どちらも単独では正しく見える。**
+///
+/// ### 木にして渡す
+///
+/// Monaco の symbol provider は入れ子を `children` で受ける。器が返すのは
+/// **深さの付いた平らな並び**なので、ここで積み直す ——
+/// 器の側で木にしないのは、**2 runtime で突き合わせているのが並びのほう**
+/// だから（`Outline.describe`）。木が要るのはここ 1 か所 だけ。
+///
+/// ### 折りたたみは 1 行 のものを出さない
+///
+/// Monaco は `start = end` の範囲を黙って捨てるが、**捨てられたことは
+/// 出ない** —— こちらで落としておくほうが、数が合わないときに気づける。
+let registerStructureProviders
+  (language: string)
+  (outline: string -> FsBulletML2.LanguageService.Outline.Node list)
+  =
+  let symbols (model: obj) : obj =
+    let nodes = outline (getVal model) |> List.toArray
+    // **深さの並びから木を積む。** 親は「1 つ 手前 で、自分より浅いもの」
+    let childrenOf = Array.map (fun _ -> ResizeArray<obj>()) nodes
+    let roots = ResizeArray<obj>()
+    // 後ろから作ると子が先に揃う
+    let made = Array.zeroCreate<obj> nodes.Length
+    for i in nodes.Length - 1 .. -1 .. 0 do
+      let n = nodes.[i]
+      let range =
+        createObj [
+          "startLineNumber" ==> n.Line
+          "startColumn" ==> 1
+          "endLineNumber" ==> n.EndLine
+          // **行末まで。** 桁を持たないので大きい数を渡す（Monaco が丸める）
+          "endColumn" ==> 1000 ]
+      made.[i] <-
+        createObj [
+          "name" ==> (if n.Detail = "" then n.Name else n.Name + " " + n.Detail)
+          "detail" ==> n.Detail
+          // Monaco の SymbolKind。5 = Class 相当（要素を 1 つ の塊として出す）
+          "kind" ==> 5
+          "tags" ==> [||]
+          "range" ==> range
+          "selectionRange" ==>
+            createObj [
+              "startLineNumber" ==> n.Line
+              "startColumn" ==> n.Column
+              "endLineNumber" ==> n.Line
+              "endColumn" ==> n.EndColumn ]
+          "children" ==> (childrenOf.[i] |> Seq.toArray) ]
+      // 親を探す。**手前 に向かって、自分より浅い最初のもの**
+      let mutable p = i - 1
+      while p >= 0 && nodes.[p].Depth >= n.Depth do
+        p <- p - 1
+      if p >= 0 then childrenOf.[p].Insert(0, made.[i]) else roots.Insert(0, made.[i])
+    roots |> Seq.toArray |> box
+
+  let folding (model: obj) : obj =
+    outline (getVal model)
+    // **1 行 のものは出さない**（Monaco が黙って捨てる側を、こちらで落とす）
+    |> List.filter (fun n -> n.EndLine > n.Line)
+    |> List.map (fun n ->
+         createObj [ "start" ==> n.Line; "end" ==> n.EndLine ])
+    |> List.toArray
+    |> box
+
+  registerSymbols language symbols
+  registerFolding language folding

@@ -220,3 +220,11 @@ type ISourceLanguage =
   /// **字から出るので WASM へ行かない。** 打鍵ごとに引き直せる
   /// （いちばん長い本 29,190 字 で 0.488 ms / 回。実測）
   abstract Findings: source: string -> Semantics.Finding list
+  /// 本文の構造（v2.4）。アウトラインと折りたたみが載る。
+  ///
+  /// **入れ子の知り方は表記ごとに違うが、答えは同じ** ——
+  /// 同梱 176 本 を 3 表記 に通して (名前, 深さ) が 176 / 176 本 一致した
+  /// （F# の CE だけは `{ }` の段なので、要素の入れ子とは別物）。
+  ///
+  /// **カーソルを見ない。** 本文ぜんぶ の話
+  abstract Outline: source: string -> Outline.Node list

@@ -55,6 +55,8 @@
     <Compile Include="Refs.fs" />
     <!-- 意味の層（v2.3）。**字から数える** —— 打鍵ごとに回すので WASM へ行かない -->
     <Compile Include="Semantics.fs" />
+    <!-- 本文の構造（v2.4）。**深さの並びから木にする** -->
+    <Compile Include="Outline.fs" />
     <Compile Include="SourceLanguage.fs" />
     <Compile Include="Languages/Lookup.fs" />
     <Compile Include="Languages/Xml.fs" />

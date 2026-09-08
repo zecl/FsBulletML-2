@@ -47,7 +47,28 @@ type TagHit =
     Stop: int
     /// 要素名の範囲。`Stop` は含まない
     NameStart: int
-    NameStop: int }
+    NameStop: int
+    /// 入れ子の深さ。根が 0（v2.4）。**閉じ札は開いていた側と同じ数**。
+    ///
+    /// ### なぜ `Stop` を揃えずにこれを足したか
+    ///
+    /// 版の頭で測った。**`Stop` の意味を揃えると `contextAt` が壊れる** ——
+    /// あちらは `cursor <= t.Stop` で「開始札の中に居るか」を見ていて、
+    /// `Stop` が要素の終わり（子を含む）になると、中身に居るときも
+    /// 開始札の中と読むことになる。
+    ///
+    /// 一方、入れ子そのものは `TagHit` だけからは組めなかった ——
+    ///
+    ///     xml    開始/閉じ の対応で組める（深さ 6・要素 662 個・割れ 0）
+    ///     sxml   Start..Stop の包含で組める（176 / 176 本）
+    ///     fsb    **組めない**（`Stop` が行末なので、全部 が兄弟に見える）
+    ///     F# CE  **組めない**（名前しか返さない）
+    ///
+    /// **知り方は表記ごとに違うが、答えは 1 つ の数。** だから数のほうを
+    /// 持たせて、知り方はそれぞれの Scan に閉じる —— どの Scan も
+    /// 自分の入れ子はもう知っている（XML は `Closing`、sxml は括弧、
+    /// fsb は字下げ、CE は `{ }`）。
+    Depth: int }
 
 /// カーソルの居場所。**そこで何を打てるか。**
 type Context =
@@ -185,6 +206,11 @@ module Scan =
       add (string t.Start)
       add "-"
       add (string t.Stop)
+      // 入れ子の深さ（v2.4）。**知り方は表記ごとに違う**（XML は閉じ札、
+      // sxml は再帰、fsb は字下げ、CE は `{ }`）ので、2 つ の runtime で
+      // 割れうるところが 4 本 に増えた
+      add "^"
+      add (string t.Depth)
       for a in t.Attrs do
         add " "
         add a.AttrName

@@ -75,6 +75,13 @@ module FsbScan =
     let n = src.Length
     let mutable i = 0
     let mutable line = 1
+    // 入れ子の深さ（v2.4）。**字下げの幅を決め打たない** ——
+    // 書き手は 2 でも 4 でも書ける。開いている段の字下げを積んでおいて、
+    // 同じか浅い段を落としてから数える。
+    //
+    // `Stop` が行末なので、**包含では木にならない**（測った。全部 兄弟に見える）。
+    // fsb の入れ子はここにしか無い
+    let indents = ResizeArray<int>()
     while i <= n do
       let lineStart = i
       let mutable j = i
@@ -136,6 +143,11 @@ module FsbScan =
                     ValueStop = vStop }
           else p <- p + 1
 
+        // **同じか浅い段を落としてから数える。** 残った段の数が深さ
+        while indents.Count > 0 && indents.[indents.Count - 1] >= indent do
+          indents.RemoveAt(indents.Count - 1)
+        let depth = indents.Count
+        indents.Add indent
         out.Add
           { Hit =
               { TagName = src.Substring(nameFrom, nameStop - nameFrom)
@@ -148,7 +160,8 @@ module FsbScan =
                 // **行末。** 子は覆わない
                 Stop = lineStop
                 NameStart = nameFrom
-                NameStop = nameStop }
+                NameStop = nameStop
+                Depth = depth }
             Indent = indent
             LineStart = lineStart
             LineStop = lineStop

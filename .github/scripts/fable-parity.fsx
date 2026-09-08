@@ -17,6 +17,7 @@
 // 意味の層（v2.3）。**Refs を先に読む** —— Semantics は対の形を借りる
 #load "../../src/FsBulletML2.LanguageService/Refs.fs"
 #load "../../src/FsBulletML2.LanguageService/Semantics.fs"
+#load "../../src/FsBulletML2.LanguageService/Outline.fs"
 
 open System
 open System.IO
@@ -51,6 +52,8 @@ let answer (target: string) (c: JsonElement) =
     Scan.describePosition (c.GetProperty("src").GetString()) (c.GetProperty("cursor").GetInt32())
   | "Semantics" ->
     Semantics.describe (c.GetProperty("src").GetString())
+  | "Outline" ->
+    Outline.describe (c.GetProperty("src").GetString())
   | "FsharpTags" ->
     // 表は case に在る。**器に書けない**（要素名が入るので門が当たる）
     let labels =

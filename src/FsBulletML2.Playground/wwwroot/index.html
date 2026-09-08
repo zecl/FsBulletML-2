@@ -340,13 +340,30 @@
             どちらも <kbd>F2</kbd> と同じ 1 本 の上に載っている ——
             <strong>決めているところが無ければ飛ばない</strong>（そこは波線と
             <kbd>Ctrl</kbd>+<kbd>.</kbd> の担当）</li>
-        <li>折りたたみ・検索（<kbd>Ctrl</kbd>+<kbd>F</kbd>）・
+        <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> は<strong>どこに何が在るかを並べる</strong>。
+            打った字から数えるので Apply を待たない。
+            <strong>入れ子のまま</strong>出て、<code>label</code> の付いたものは名前も添う。
+            <ul>
+              <li>入れ子の知り方は表記ごとに違う（閉じ札・括弧の対・字下げ）が、
+                  <strong>同梱 176 本 とも 3 表記 で同じ木</strong>になった ——
+                  だから<strong>表記を切り替えても並びは変わらない</strong></li>
+              <li>F# の CE だけは <code>{ }</code> の段を見るので、別の木になる
+                  （176 本 中 145 本 で違う）。<strong>そちらが正しい</strong> ——
+                  見ているのが要素の入れ子ではなく CE の本文なので</li>
+            </ul></li>
+        <li><strong>折りたたみ</strong>も同じ木に載っている。
+            畳む範囲は<strong>その要素の中身が終わるところまで</strong> ——
+            閉じ札が在る表記ではその行まで、無い表記では中身の最後の行まで。
+            <strong>親の閉じ札は巻き込まない</strong>。
+            1 行 に収まっているものは畳む先が無いので出ない</li>
+        <li>検索（<kbd>Ctrl</kbd>+<kbd>F</kbd>）・
             取り消し（<kbd>Ctrl</kbd>+<kbd>Z</kbd>）はエディタの標準機能</li>
       </ul>
 
       <p class="note">
         4 つ の表記が全部 書けて、hover は 4 つ とも出る。
-        候補・<kbd>F2</kbd>・<kbd>F12</kbd>・<kbd>Ctrl</kbd>+<kbd>.</kbd> は 4 表記 とも出る。
+        候補・<kbd>F2</kbd>・<kbd>F12</kbd>・<kbd>Ctrl</kbd>+<kbd>.</kbd>・
+        アウトライン・折りたたみは 4 表記 とも出る。
       </p>
 
       <button type="button" id="help-close">閉じる</button>

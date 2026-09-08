@@ -284,6 +284,20 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
       Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
     Semantics.findings pairs v.TopPrefix (shape.Tags source)
 
+  /// 本文の構造（v2.4）。**中身は `Outline.build` の 1 本**（表記を知らない）。
+  ///
+  /// 表記ごとに渡すのは `Tags` だけ —— 入れ子は `TagHit.Depth` が持っていて、
+  /// その数え方はそれぞれの Scan に閉じている。
+  /// 添え字に使う属性も語彙から引く（`Refs.pairs`）
+  member _.OutlineOf(source: string) : Outline.Node list =
+    let v = vocabulary ()
+    let detailAttr =
+      Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
+      |> List.tryHead
+      |> Option.map (fun (_, _, attr) -> attr)
+      |> Option.defaultValue ""
+    Outline.build detailAttr (Scan.lineColumn source) (shape.Tags source)
+
   interface ISourceLanguage with
     member _.Kind = shape.Kind
     member _.EditorLanguageId = shape.EditorLanguageId
@@ -293,3 +307,4 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
     member this.Usages source offset = this.UsagesAt(source, offset)
     member this.Fixes source offset = this.FixesAt(source, offset)
     member this.Findings source = this.FindingsIn source
+    member this.Outline source = this.OutlineOf source

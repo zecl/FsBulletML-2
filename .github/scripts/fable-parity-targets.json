@@ -57,6 +57,13 @@
     "args": [ "labels", "attr", "src" ]
   },
   {
+    "target": "Outline",
+    "note": "本文の構造（v2.4）。深さの並びから木にする 1 本。**入れ子の数え方は表記ごとに違う**（XML は閉じ札、sxml は再帰、fsb は字下げ、CE は { }）ので、2 つ の runtime で割れうるところが 4 本 ある。アウトラインと折りたたみが両方 この上に載る",
+    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/Outline.js",
+    "export": "describe",
+    "args": [ "src" ]
+  },
+  {
     "target": "Semantics",
     "note": "意味の層（v2.3）。**打鍵ごとに回るのはブラウザ側**なので、答えが .NET と一致していないと『手元では出るのに本番では出ない』（逆も）になる。StartsWith は runtime ごとに別の実装へ落ちるので、走らせないと分からない",
     "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/Semantics.js",

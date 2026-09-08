@@ -155,7 +155,13 @@ module FsharpScan =
         src.Substring(vs, ve - vs), vs, ve, e
       let hits = ResizeArray<TagHit>()
       let mutable i = 0
+      // 入れ子の深さ（v2.4）。**`{ }` の積み** —— blockAt と同じ数え方で、
+      // あちらは名前を積み、こちらは数だけ数える。
+      // `}` が多すぎる本文（打っている途中）では 0 で止める
+      let mutable depth = 0
       while i < n do
+        if ok.[i] && src.[i] = '{' then depth <- depth + 1
+        elif ok.[i] && src.[i] = '}' then depth <- max 0 (depth - 1)
         if ok.[i] && isIdent src.[i] && (i = 0 || not (ok.[i - 1] && isIdent src.[i - 1])) then
           let s = i
           let mutable e = i
@@ -224,7 +230,10 @@ module FsharpScan =
                   Start = s
                   Stop = e + 1
                   NameStart = s
-                  NameStop = e + 1 }
+                  NameStop = e + 1
+                  // **名前は自分が開く `{` の手前 に在る。** だから
+                  // その名前の深さは、いま開いている段そのもの
+                  Depth = depth }
           | None -> ()
           i <- e + 1
         else i <- i + 1

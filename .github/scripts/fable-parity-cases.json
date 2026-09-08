@@ -157,5 +157,16 @@
   { "target": "Semantics", "note": "空の本文", "src": "" },
   { "target": "Semantics", "note": "改行をまたぐ（行と桁）", "src": "<r>\n  <a label=\"top\"/>\n  <a label=\"dead\"/>\n</r>" },
   { "target": "Semantics", "note": "label が空", "src": "<r><a label=\"\"/></r>" },
-  { "target": "Semantics", "note": "top そのものが定義名（StartsWith の端）", "src": "<r><a label=\"to\"/></r>" }
+  { "target": "Semantics", "note": "top そのものが定義名（StartsWith の端）", "src": "<r><a label=\"to\"/></r>" },
+  { "target": "Outline", "note": "素の入れ子", "src": "<r>\n  <a label=\"top\">\n    <f/>\n  </a>\n</r>" },
+  { "target": "Outline", "note": "兄弟が並ぶ", "src": "<r>\n  <a label=\"x\"/>\n  <a label=\"y\"/>\n</r>" },
+  { "target": "Outline", "note": "同じ行 に並ぶ（畳まない）", "src": "<r><a label=\"x\"/><a label=\"y\"/></r>" },
+  { "target": "Outline", "note": "深い入れ子", "src": "<r>\n <a>\n  <b>\n   <c>\n    <d/>\n   </c>\n  </b>\n </a>\n</r>" },
+  { "target": "Outline", "note": "最後の要素は本文の終わりまで", "src": "<r>\n  <a label=\"z\">\n    <f/>\n" },
+  { "target": "Outline", "note": "閉じ札が多い", "src": "</a>\n<r>\n  <b/>\n</r>" },
+  { "target": "Outline", "note": "空の本文", "src": "" },
+  { "target": "Outline", "note": "自己閉じだけ", "src": "<r/>" },
+  { "target": "Outline", "note": "label が無い要素", "src": "<r>\n  <fire>\n    <speed>2</speed>\n  </fire>\n</r>" },
+  { "target": "Outline", "note": "根が閉じていない", "src": "<r>\n  <a label=\"q\">" },
+  { "target": "Outline", "note": "行末に CRLF", "src": "<r>\r\n  <a label=\"c\"/>\r\n</r>" }
 ]

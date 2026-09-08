@@ -40,6 +40,10 @@ module XmlScan =
     let mutable i = 0
     let mutable line = 1
     let mutable lineStart = 0
+    // 入れ子の深さ（v2.4）。**開始札で増やし、閉じ札で減らす** ——
+    // XML はここが真で、包含（`Start`..`Stop`）では出せない
+    // （`Stop` は開始札の `>` なので、子を覆わない）
+    let mutable depth = 0
     // 1 起点 の桁。行頭からの差に 1 を足す
     let col p = p - lineStart + 1
     let advance () =
@@ -112,6 +116,12 @@ module XmlScan =
                   advance () // 閉じ引用符
           else advance ()
         if name <> "" then
+          // 入れ子の深さ（v2.4）。**閉じ札は開いていた側と同じ数**にする ——
+          // `</action>` は `<action>` と同じ深さに在るものとして読む。
+          //
+          // **閉じすぎても負にしない。** 本文は打っている途中なので、
+          // 閉じ札だけが先に在る形が普通に起きる
+          if closing then depth <- max 0 (depth - 1)
           hits.Add
             { TagName = name
               Attrs = List.ofSeq attrs
@@ -120,7 +130,9 @@ module XmlScan =
               Start = start
               Stop = if stop < 0 then src.Length else stop
               NameStart = nameFrom
-              NameStop = nameStop }
+              NameStop = nameStop
+              Depth = depth }
+          if not closing && not selfClosing then depth <- depth + 1
     List.ofSeq hits
 
   /// タグの中にカーソルが居るときの居場所。
