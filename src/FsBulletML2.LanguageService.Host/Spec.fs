@@ -163,3 +163,162 @@ module Spec =
       "bulletml/@type=horizontal", "横画面。" ]
     @ accelAxis "horizontal"
     @ accelAxis "vertical"
+
+  /// F# の CE の名前が、**BulletML の何を作るか。**
+  ///
+  /// --- 散文をここに書かない
+  ///
+  /// 上の 3 つ の表と違って、ここに在るのは対応だけ。**hover に出す字は
+  /// 上の表からそのまま引く** —— CE で書いていても読んでいるのは BulletML で、
+  /// `fire` の意味は表記が変わっても変わらない。
+  /// 書くと同じ説明が 2 か所 に在って、片方 だけ古びる。
+  ///
+  /// --- 形
+  ///
+  ///     (CE の名前, 要素, 固定する属性, 固定する値)
+  ///
+  /// 属性を固定しないものは `"" ""`。**同じ名前が何行 在ってもよい** ——
+  ///
+  ///     `changeDirectionAbs` は `<changeDirection>` を作り、
+  ///     その中の `<direction>` の型を `absolute` に固定する（2 行）
+  ///
+  ///     `vertical` は**名前が 2 つ の意味を持つ** —— 根の
+  ///     `<bulletml>` の型と、`accel` の中の `<vertical>`。
+  ///     どちらか に決められないので両方 出す
+  ///
+  /// **型を固定する名前にも、要素の行を書く。** 値の散文だけだと
+  /// 「どの要素の話か」「ほかにどんな属性が在るか」が hover から落ちる ——
+  /// `aim` が「自機のいる向き」とだけ出て、`<direction>` の DTD が出ない形。
+  /// 揃えないと、名前によって出る量が違う理由が読めない
+  ///
+  /// --- 過不足は門で見る
+  ///
+  /// `FsBulletML2.Dsl` を reflection で舐めた名前を**過不足なく覆うこと**と、
+  /// ここに書いた要素・属性・値が**語彙に在ること**を試験が当てている
+  /// （`SpecCoverage`）。名前が増えても消えても赤くなる。
+  let ce : (string * string * string * string) list =
+    [ // --- 根 -------------------------------------------------------------
+      "bulletmlOf", "bulletml", "", ""
+      "untyped", "bulletml", "", ""
+      "untypedAnon", "bulletml", "", ""
+      "untypedXmlns", "bulletml", "", ""
+      "untypedXmlnsAnon", "bulletml", "", ""
+      "vertical", "bulletml", "", ""
+      "vertical", "bulletml", "type", "vertical"
+      "verticalAnon", "bulletml", "", ""
+      "verticalAnon", "bulletml", "type", "vertical"
+      "verticalXmlns", "bulletml", "", ""
+      "verticalXmlns", "bulletml", "type", "vertical"
+      "verticalXmlnsAnon", "bulletml", "", ""
+      "verticalXmlnsAnon", "bulletml", "type", "vertical"
+      "horizontal", "bulletml", "", ""
+      "horizontal", "bulletml", "type", "horizontal"
+      "horizontalAnon", "bulletml", "", ""
+      "horizontalAnon", "bulletml", "type", "horizontal"
+      "horizontalXmlns", "bulletml", "", ""
+      "horizontalXmlns", "bulletml", "type", "horizontal"
+      "horizontalXmlnsAnon", "bulletml", "", ""
+      "horizontalXmlnsAnon", "bulletml", "type", "horizontal"
+      "none", "bulletml", "", ""
+      "none", "bulletml", "type", "none"
+      "noneAnon", "bulletml", "", ""
+      "noneAnon", "bulletml", "type", "none"
+      "noneXmlns", "bulletml", "", ""
+      "noneXmlns", "bulletml", "type", "none"
+      "noneXmlnsAnon", "bulletml", "", ""
+      "noneXmlnsAnon", "bulletml", "type", "none"
+
+      // --- action -----------------------------------------------------------
+      "action", "action", "", ""
+      "top", "action", "", ""
+      "defAction", "action", "", ""
+      "defActionAnon", "action", "", ""
+      "body", "action", "", ""
+      "bodyAs", "action", "", ""
+      "nest", "action", "", ""
+      "nestAs", "action", "", ""
+      "doActs", "action", "", ""
+      "actionRef", "actionRef", "", ""
+      "bodyRef", "actionRef", "", ""
+      "refActs", "actionRef", "", ""
+
+      // --- 動作 -------------------------------------------------------------
+      "wait", "wait", "", ""
+      "vanish", "vanish", "", ""
+      "repeat", "repeat", "", ""
+      "repeatAs", "repeat", "", ""
+      "repeatRef", "repeat", "", ""
+      "repeatRef", "actionRef", "", ""
+
+      "changeDirection", "changeDirection", "", ""
+      "changeDirectionAim", "changeDirection", "", ""
+      "changeDirectionAim", "direction", "type", "aim"
+      "changeDirectionAbs", "changeDirection", "", ""
+      "changeDirectionAbs", "direction", "type", "absolute"
+      "changeDirectionRel", "changeDirection", "", ""
+      "changeDirectionRel", "direction", "type", "relative"
+      "changeDirectionSeq", "changeDirection", "", ""
+      "changeDirectionSeq", "direction", "type", "sequence"
+
+      "changeSpeed", "changeSpeed", "", ""
+      "changeSpeedAbs", "changeSpeed", "", ""
+      "changeSpeedAbs", "speed", "type", "absolute"
+      "changeSpeedRel", "changeSpeed", "", ""
+      "changeSpeedRel", "speed", "type", "relative"
+      "changeSpeedSeq", "changeSpeed", "", ""
+      "changeSpeedSeq", "speed", "type", "sequence"
+
+      // --- 撃つ -------------------------------------------------------------
+      "fire", "fire", "", ""
+      "fireAs", "fire", "", ""
+      "topFire", "fire", "", ""
+      "topFireAs", "fire", "", ""
+      "fireRef", "fireRef", "", ""
+
+      "bullet", "bullet", "", ""
+      "bulletAnon", "bullet", "", ""
+      "defBullet", "bullet", "", ""
+      "defBulletAnon", "bullet", "", ""
+      "plain", "bullet", "", ""
+      "ofBullet", "bullet", "", ""
+      "bulletRef", "bulletRef", "", ""
+      "refBullet", "bulletRef", "", ""
+
+      // --- 向きと速さ（fire / bullet の中） ---------------------------------
+      "dir", "direction", "", ""
+      "aim", "direction", "", ""
+      "aim", "direction", "type", "aim"
+      "absolute", "direction", "", ""
+      "absolute", "direction", "type", "absolute"
+      "relative", "direction", "", ""
+      "relative", "direction", "type", "relative"
+      "sequence", "direction", "", ""
+      "sequence", "direction", "type", "sequence"
+
+      "speed", "speed", "", ""
+      "speedAbs", "speed", "", ""
+      "speedAbs", "speed", "type", "absolute"
+      "speedRel", "speed", "", ""
+      "speedRel", "speed", "type", "relative"
+      "speedSeq", "speed", "", ""
+      "speedSeq", "speed", "type", "sequence"
+
+      // --- accel の中 -------------------------------------------------------
+      //
+      // **`horizontal` と `vertical` は上にも在る。** あちらは根の型で、
+      // こちらは accel の中の要素。同じ綴りで別のもの
+      "accel", "accel", "", ""
+      "horizontal", "horizontal", "", ""
+      "horizontalAbs", "horizontal", "", ""
+      "horizontalAbs", "horizontal", "type", "absolute"
+      "horizontalRel", "horizontal", "", ""
+      "horizontalRel", "horizontal", "type", "relative"
+      "horizontalSeq", "horizontal", "", ""
+      "horizontalSeq", "horizontal", "type", "sequence"
+      "vertical", "vertical", "", ""
+      "verticalAbs", "vertical", "", ""
+      "verticalAbs", "vertical", "type", "absolute"
+      "verticalRel", "vertical", "", ""
+      "verticalRel", "vertical", "type", "relative"
+      "verticalSeq", "vertical", "", ""
+      "verticalSeq", "vertical", "type", "sequence" ]

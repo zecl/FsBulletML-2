@@ -43,10 +43,31 @@ type VocabElement =
     /// hover に出す散文
     Spec: string }
 
+/// F# の CE の名前 1 つ が、BulletML の何を作るか。
+///
+/// **散文を持たない。** 出す字は `Elements` の側から引く ——
+/// CE で書いていても読んでいるのは BulletML で、`fire` の意味は
+/// 表記が変わっても変わらない。持たせると同じ説明が 2 か所 に在る。
+///
+/// **同じ名前が何個 在ってもよい** —— `changeDirectionAbs` は要素と
+/// 属性値の 2 つ を、`vertical` は根の型と accel の中の要素という
+/// **別のもの 2 つ** を指す。正本は host の `Spec.ce`
+type VocabCe =
+  { Name: string
+    /// 作る要素
+    Element: string
+    /// 固定する属性。**固定しないなら空**
+    Attr: string
+    /// 固定する値。同上
+    Value: string }
+
 type Vocab =
   { Elements: VocabElement list
     /// 式の中で使える字
-    Expressions: string list }
+    Expressions: string list
+    /// F# の CE の名前。**この表記でだけ引く** ——
+    /// ほかの 3 つ は要素名をそのまま打つので要らない
+    Ce: VocabCe list }
 
 /// 候補 1 つ。
 ///

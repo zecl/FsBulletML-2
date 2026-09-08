@@ -104,7 +104,7 @@ type Playground() as self =
   let mutable canvas: HTMLCanvasElement = null
   let mutable canvasCtx: CanvasRenderingContext2D = null
   // host からもらう語彙。正本は Core の DTD.fs。**表記が変わっても同じ**
-  let mutable vocabulary: Vocab = { Elements = []; Expressions = [] }
+  let mutable vocabulary: Vocab = { Elements = []; Expressions = []; Ce = [] }
   // **起動時の表記。** 欄に最初に出るのは host が焼く XML（`InitialSource`）。
   //
   // **同梱カタログを選ぶときの表記ではない**（v1.6）——
@@ -118,7 +118,7 @@ type Playground() as self =
     [ initialLanguage
       Languages.Sxml.SxmlLanguage(fun () -> vocabulary)
       Languages.Fsb.FsbLanguage(fun () -> vocabulary)
-      Languages.Fsharp.FsharpLanguage() ]
+      Languages.Fsharp.FsharpLanguage(fun () -> vocabulary) ]
   // いま欄に載っている表記
   let mutable current = initialLanguage
   // 波線を付けたか。**印は文字に追随しない**ので、次の打鍵で消す
@@ -287,6 +287,36 @@ type Playground() as self =
         input.setAttribute (
           "accept",
           languages |> List.map (fun l -> l.Kind.FileExtension) |> String.concat ",")
+
+  /// 配色のプルダウンを、Monaco が素で持っている並びから作る。
+  /// **html に表を書かない**（表記のプルダウンと同じ扱い）。
+  ///
+  /// 名前を知っているのは `fable/Monaco.fs` だけ —— 器はどのエディタに
+  /// 載るかを知らないので、あちらへ置くと線を越える
+  member _.fillThemes() =
+    let sel = el "theme"
+    if isNull sel then ()
+    else
+      sel.innerHTML <- ""
+      for t in Monaco.themes do
+        let o = document.createElement "option" :?> HTMLOptionElement
+        o.value <- t.Id
+        o.textContent <- t.Label
+        sel.appendChild o |> ignore
+      (sel :?> HTMLSelectElement).value <- Monaco.defaultTheme
+
+  /// 配色を替える。**載っている弾幕にも本文にも触らない** ——
+  /// 見る側の都合であって、書いたものの一部ではない（速さと同じ扱い）。
+  ///
+  /// 知らない字は理由を出す。**Monaco は落ちずに明るいほうへ倒れる**ので、
+  /// ここで言わないと「選んだのに違う配色」になる
+  member _.setTheme() =
+    let sel = el "theme"
+    if isNull sel then ()
+    else
+      let id = (sel :?> HTMLSelectElement).value
+      if Monaco.setTheme id then setError ""
+      else setError ("知らない配色: " + id)
 
   member _.setMode() =
     let sel = el "mode"
@@ -501,6 +531,9 @@ type Playground() as self =
             Monaco.create "source" current.EditorLanguageId seed
             self.loadVocabulary ()
             self.fillModes ()
+            // **エディタが建ってから出す。** Monaco が読めなかったときに
+            // 配色のプルダウンだけ在るのは、押せるのに何も起きない口になる
+            self.fillThemes ()
             // **表記ごとに 1 回 ずつ、起動時に。** Monaco の provider は
             // language id に付くので、切り替えるたびに登録すると同じ id へ
             // 何本も積み上がり、候補が表記の数だけ重なる
@@ -619,6 +652,7 @@ let private on (id: string) (event: string) (handler: unit -> unit) =
 
 on "pattern" "change" (fun () -> playground.pick ())
 on "mode" "change" (fun () -> playground.setMode ())
+on "theme" "change" (fun () -> playground.setTheme ())
 on "help" "click" (fun () -> playground.help ())
 on "help-close" "click" (fun () -> playground.closeHelp ())
 on "play" "click" (fun () -> playground.call("Play"))

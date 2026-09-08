@@ -39,6 +39,49 @@ type Shape =
     /// hover の見出し（属性値）。同上
     AttrValueTitle: string -> string -> string }
 
+/// hover に出す markdown を組む 1 本。**`Token` から先は表記を知らない。**
+///
+/// **DTD の行は必ずコードフェンスに入れる。** markdown は `<` をタグとして
+/// 食うので、素で渡すと `<!ELEMENT ...>` が丸ごと消える。**消えても hover は
+/// 浮く**ので、目でも試験でも「出ていない」には見えない。
+///
+/// **フェンスの言語は表記に依らず `xml`。** 中に入るのは DTD の行で、
+/// それは sxml で書いても XML の DTD のまま（語彙の正本は `Core/DTD.fs`）。
+///
+/// 重複させない —— 「置ける子」も「取る値」も「既定」も、DTD の行が既に
+/// 言っている。属性値のときだけ「省いたときはこれ」を足す（あの行は
+/// 属性の hover にしか出ないので）。
+///
+/// **見出しだけ呼ぶ側が決める。** 表記ごとに書き方が違い、F# の CE では
+/// **要素名ですらない**（`aim` と打つと `<direction type="aim">` になる）。
+/// 組み立てを表記ごとに持つと、同じ語彙から出た同じ hover が表記の差に見える
+let hover (v: Vocab) (title: Token -> string) (token: Token) : string option =
+  let element name = v.Elements |> List.tryFind (fun e -> e.Name = name)
+  let attribute el at =
+    element el |> Option.bind (fun e -> e.Attrs |> List.tryFind (fun a -> a.Name = at))
+  let block (prose: string) (lines: string list) =
+    let head = "**`" + title token + "`**\n\n" + prose
+    match lines |> List.filter (fun l -> l <> "") with
+    | [] -> head
+    | ls -> head + "\n\n```xml\n" + String.concat "\n" ls + "\n```"
+  match token with
+  | Nothing -> None
+  | Element name ->
+    element name
+    |> Option.map (fun e -> block e.Spec (e.Dtd :: (e.Attrs |> List.map (fun a -> a.Dtd))))
+  | Attribute (el, at) -> attribute el at |> Option.map (fun a -> block a.Spec [ a.Dtd ])
+  | AttrValue (el, at, value) ->
+    attribute el at
+    |> Option.bind (fun a ->
+         a.ValueSpecs
+         |> List.tryFind (fun (v, _) -> v = value)
+         |> Option.map (fun (_, spec) ->
+              let spec =
+                if List.contains value a.Defaults
+                then spec + "\n\n**省いたときはこれ。**"
+                else spec
+              block spec []))
+
 /// 語彙を引いて候補を出す。**語彙は引数で受け取る** ——
 /// このクラスが host を知らないので、次の表記も同じ形で書ける
 type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
@@ -90,50 +133,19 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
         | Some a -> a.Values |> List.map plain
         | None -> []
 
-  /// hover に出す markdown を組む。
+  /// 見出しは表記ごと。**`Token` から先は `Lookup.hover` の 1 本。**
   ///
-  /// **DTD の行は必ずコードフェンスに入れる。** markdown は `<` をタグとして
-  /// 食うので、素で渡すと `<!ELEMENT ...>` が丸ごと消える。**消えても hover は
-  /// 浮く**ので、目でも試験でも「出ていない」には見えない。
-  ///
-  /// **フェンスの言語は表記に依らず `xml`。** 中に入るのは DTD の行で、
-  /// それは sxml で書いても XML の DTD のまま（語彙の正本は `Core/DTD.fs`）。
-  ///
-  /// 重複させない —— 「置ける子」も「取る値」も「既定」も、DTD の行が既に
-  /// 言っている。属性値のときだけ「省いたときはこれ」を足す（あの行は
-  /// 属性の hover にしか出ないので）
-  member private _.Block(title: string, prose: string, lines: string list) =
-    let head = "**`" + title + "`**\n\n" + prose
-    match lines |> List.filter (fun l -> l <> "") with
-    | [] -> head
-    | ls -> head + "\n\n```xml\n" + String.concat "\n" ls + "\n```"
+  /// 属性の見出しだけ表記に依らない —— `fire/@label` は道しるべであって、
+  /// その表記で打つ字ではない
+  member private _.Title(token: Token) =
+    match token with
+    | Element name -> shape.ElementTitle name
+    | Attribute (el, at) -> el + "/@" + at
+    | AttrValue (_, at, value) -> shape.AttrValueTitle at value
+    | Nothing -> ""
 
   member this.HoverAt(source: string, offset: int) : string option =
-    let v = vocabulary ()
-    let element name = v.Elements |> List.tryFind (fun e -> e.Name = name)
-    let attribute el at =
-      element el |> Option.bind (fun e -> e.Attrs |> List.tryFind (fun a -> a.Name = at))
-    match shape.TokenAt source offset with
-    | Nothing -> None
-    | Element name ->
-      element name
-      |> Option.map (fun e ->
-           this.Block(shape.ElementTitle e.Name, e.Spec, e.Dtd :: (e.Attrs |> List.map (fun a -> a.Dtd))))
-    | Attribute (el, at) ->
-      // **見出しは表記に依らない。** `fire/@label` は道しるべであって、
-      // その表記で打つ字ではない
-      attribute el at |> Option.map (fun a -> this.Block(el + "/@" + a.Name, a.Spec, [ a.Dtd ]))
-    | AttrValue (el, at, value) ->
-      attribute el at
-      |> Option.bind (fun a ->
-           a.ValueSpecs
-           |> List.tryFind (fun (v, _) -> v = value)
-           |> Option.map (fun (_, spec) ->
-                let spec =
-                  if List.contains value a.Defaults
-                  then spec + "\n\n**省いたときはこれ。**"
-                  else spec
-                this.Block(shape.AttrValueTitle a.Name value, spec, [])))
+    hover (vocabulary ()) this.Title (shape.TokenAt source offset)
 
   /// カーソルの下の名前が、本文のどこに書いてあるか。**表記を知らない。**
   ///
