@@ -21,7 +21,7 @@ type Live(run: BulletRun, x: float32, y: float32, isRoot: bool) =
 /// （`Driver.step` → Delta を足す → Spawn は次コマ → Finished なら restart）。
 /// **回している最中に `live.Add` しない。** 今コマの Spawn は溜めて、消しのあとで足す。
 [<Sealed>]
-type Playfield private (front: IFrontEnv, live: ResizeArray<Live>) =
+type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field) =
 
   let spawned = ResizeArray<Live>()
   let mutable frame = 0
@@ -35,11 +35,18 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>) =
   static member Create (front: IFrontEnv) (bulletml: Bulletml) =
     let script = Runner.load front.Rand front.Rank bulletml
     let run = Runner.newRoot BulletType.Enemy script
+    // **面の形は弾幕が決める。** 横画面と名乗る弾幕は、縦の面に置くと
+    // 弾が横へ抜けていく（`Stage.landscape` の但し書き）
+    let field = Stage.ofDirection script.ShootingDirection
     let live = ResizeArray<Live>()
-    live.Add(Live(run, Stage.EnemyX, Stage.EnemyY, true))
-    Playfield(front, live)
+    live.Add(Live(run, field.EnemyX, field.EnemyY, true))
+    Playfield(front, live, field)
 
   member _.Count = live.Count
+
+  /// この面の形。**建てたあとは変わらない** —— 向きは弾幕が決めるので、
+  /// 変わるときは弾幕が変わったとき、つまり建て直すとき
+  member _.Field = field
 
   /// 進めたコマ数。**この面を建ててから何回 `Tick` したか**であって、
   /// 弾幕の中の時間ではない。建て直せば 0 に戻る（Reset / Apply / 選び直し）。
@@ -70,8 +77,8 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>) =
       let dead =
         not it.IsRoot && (
           f.Vanished || f.Retired
-          || it.X < 0.0f || it.X > Stage.Width
-          || it.Y < 0.0f || it.Y > Stage.Height)
+          || it.X < 0.0f || it.X > field.Width
+          || it.Y < 0.0f || it.Y > field.Height)
       if dead then
         let last = live.Count - 1
         if i <> last then live.[i] <- live.[last]

@@ -116,8 +116,20 @@ let private heapF32 () : obj =
 /// Bolero の onclick / onReady と同じ名前で出す。
 [<AttachMembers>]
 type Playground() as self =
+  // マウスが指している場所。**これがそのまま自機とは限らない** ——
+  // 止めているときと回っているときは host が決める（`setView`）
   let mutable playerX = 240.
   let mutable playerY = 600.
+  // 描く自機と、面の形。**どれも host から毎コマ来る** ——
+  // ここに数を書き写すと、向きを足したときに 2 通り の真ができる
+  let mutable drawX = 240.
+  let mutable drawY = 600.
+  let mutable fieldW = 0.
+  let mutable fieldH = 0.
+  let mutable homeX = 240.
+  let mutable homeY = 600.
+  let mutable enemyX = 240.
+  let mutable enemyY = 80.
   let mutable running = false
   let mutable dotNet: obj = null
   let mutable frames = 0
@@ -178,8 +190,8 @@ type Playground() as self =
       c.addEventListener (
         "mouseleave",
         fun _ ->
-          playerX <- 240.
-          playerY <- 600.
+          playerX <- homeX
+          playerY <- homeY
       )
 
   member _.hud(n: int, t: float, frame: int) =
@@ -202,6 +214,40 @@ type Playground() as self =
     if not (isNull f) && frame <> lastFrame then
       lastFrame <- frame
       f.textContent <- string frame
+
+  /// 面の置き場所を host から引き直す。**大きさが変わったときだけ。**
+  ///
+  /// 敵と自機の定位置は向きで変わるので、ここで写す ——
+  /// JS 側に数を書くと、`Stage` と 2 通り の真ができる
+  member _.refreshPlaces() =
+    if isNull dotNet then ()
+    else
+      thenCatch
+        (invokeAsync0 dotNet "FieldSize")
+        (fun (v: obj) ->
+          homeX <- unbox<float> (jsItem v 2)
+          homeY <- unbox<float> (jsItem v 3)
+          enemyX <- unbox<float> (jsItem v 4)
+          enemyY <- unbox<float> (jsItem v 5))
+        (fun err -> setError (errText err))
+
+  /// 毎コマ host から来る、自機と面の大きさ。
+  ///
+  /// **大きさが変わったら canvas を建て直す。** 向きは弾幕が持っているので、
+  /// 変わるのは弾幕が変わったとき —— 建て直す道は 8 本 以上 あるので、
+  /// 「変わったら」で拾うほうが呼び忘れが起きない
+  member _.setView(px: float, py: float, w: float, h: float) =
+    drawX <- px
+    drawY <- py
+    if w > 0. && (w <> fieldW || h <> fieldH) then
+      fieldW <- w
+      fieldH <- h
+      let c = el "stage"
+      if not (isNull c) then
+        let cv = c :?> HTMLCanvasElement
+        cv.width <- int w
+        cv.height <- int h
+      self.refreshPlaces ()
 
   member _.ensureCtx() : CanvasRenderingContext2D =
     if not (isNull canvasCtx) then canvasCtx
@@ -230,12 +276,12 @@ type Playground() as self =
       c2d.fillRect (0., 0., float canvas.width, float canvas.height)
       c2d?fillStyle <- "#66ccff"
       c2d.beginPath ()
-      c2d.arc (playerX, playerY, 5., 0., System.Math.PI * 2.)
+      c2d.arc (drawX, drawY, 5., 0., System.Math.PI * 2.)
       c2d.fill ()
       c2d?fillStyle <- "#ffffff"
       if n <= 0 then
         c2d.beginPath ()
-        c2d.arc (240., 80., 6., 0., System.Math.PI * 2.)
+        c2d.arc (enemyX, enemyY, 6., 0., System.Math.PI * 2.)
         c2d.fill ()
         0
       else
@@ -603,6 +649,23 @@ type Playground() as self =
         (fun _ -> ())
         (fun err -> setError (errText err))
 
+  /// 自機の動かし方。**面を建て直さない** —— 難度や種と違って、
+  /// これは走っている面の途中からでも効く（狙いは毎コマ 引かれる）。
+  ///
+  /// 狙いを使う弾幕は 176 本 中 103 本（実測）——
+  /// つまり半分 以上 で、自機をどこに置くかが絵そのものを変える
+  member _.setPlayerMotion() =
+    let sel = el "player"
+    if isNull sel || isNull dotNet then ()
+    else
+      let mutable v = 0.0
+      let n =
+        if System.Double.TryParse((sel :?> HTMLSelectElement).value, &v) then int v else 0
+      thenCatch
+        (invokeAsync1 dotNet "SetPlayerMotion" n)
+        (fun _ -> ())
+        (fun err -> setError (errText err))
+
   /// 種を振り直す。**「別の走りが見たい」を 1 手 に**
   member _.rollSeed() =
     let box = el "seed"
@@ -829,6 +892,14 @@ type Playground() as self =
                 let off = int (unbox<float> (jsItem ret 1) / 4.)
                 subarray (heapF32 ()) off (off + n * 2)
               else null
+            // **自機と面の大きさは host が決める。** 送った座標をそのまま
+            // 描くと、止めているときと回っているときに絵と狙いが食い違う
+            self.setView (
+              unbox<float> (jsItem ret 3),
+              unbox<float> (jsItem ret 4),
+              unbox<float> (jsItem ret 5),
+              unbox<float> (jsItem ret 6)
+            )
             self.draw (packed, n) |> ignore
             self.hud (n, t, int (unbox<float> (jsItem ret 2)))
           with ex ->
@@ -884,6 +955,7 @@ on "seek" "click" (fun () -> playground.seek ())
 on "rank" "input" (fun () -> playground.setRank ())
 on "seed" "change" (fun () -> playground.setSeed ())
 on "seed-roll" "click" (fun () -> playground.rollSeed ())
+on "player" "change" (fun () -> playground.setPlayerMotion ())
 on "trail" "change" (fun () -> playground.setTrail ())
 on "apply" "click" (fun () -> playground.apply ())
 on "open" "click" (fun () -> playground.``open``())

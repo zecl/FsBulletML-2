@@ -33,21 +33,23 @@ h1 {
   min-height: 0;
 }
 
-/* **内部解像度は 480x640 のまま**（弾の座標がその面の上に在る）。
-   伸ばすのは CSS だけ。`attach()` が `cv.width / r.width` で換算するので、
-   拡大しても自機の位置はずれない */
+/* **内部解像度は弾幕が決める**（480x640 か 640x480。弾の座標がその面の
+   上に在る）。伸ばすのは CSS だけ。`attach()` が `cv.width / r.width` で
+   換算するので、拡大しても自機の位置はずれない */
 #stage {
   background: #101018;
   border: 1px solid #333;
   display: block;
-  /* 縦が足りなければ縮む。**足りていても 480x640 を超えて太らせない** ——
+  /* 縦が足りなければ縮む。**足りていても元の解像度を超えて太らせない** ——
      太らせるとエディタの取り分をそのぶん食う。
+     **上限は縦横 の両方 に要る。** 片方 だけだと、もう一方 の向きで
+     効かない（縦の面は高さで、横の面は幅で先に止まる）。
      **align-self が要る** —— 親の stretch は高さを埋めてしまい、
      max-width だけが効いて縦に伸びた面になる（自機の丸が楕円になる）。
      比は canvas の width / height 属性が持っているので書かない */
   align-self: flex-start;
-  max-height: 100%;
-  max-width: 480px;
+  max-height: min(100%, 640px);
+  max-width: 640px;
   height: auto;
   width: auto;
   flex: none;
