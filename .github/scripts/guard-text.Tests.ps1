@@ -71,6 +71,9 @@ try {
   Check '素のテキスト' @((Make 'clean.ps1' $clean)) $true ''
   Check '許す 3 文字（TAB / LF / CR）は通る' @((Make 'allowed.fs' $allowed)) $true ''
   Check 'binary の拡張子は見ない' @((Make 'art.png' $withNul)) $true ''
+  # **v2.1 で踏んだ側。** 画面の写しを `docs/images/` へ置いたら門が赤くなった
+  # （`.jpg` が除外に無かった）。踏んだ綴りを 1 点 残しておく
+  Check 'jpg も見ない' @((Make 'shot.jpg' $withNul)) $true ''
 
   Write-Host '=== 落ちる側'
   Check 'NUL' @((Make 'nul.ps1' $withNul)) $false 'NUL（U+0000）'
