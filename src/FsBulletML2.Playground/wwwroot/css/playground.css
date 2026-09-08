@@ -65,6 +65,13 @@ h1 {
   min-height: 0;
 }
 
+/* 並べて見るとき、欄と入れ替わる（v2.1）。**`hidden` を効かせる** ——
+   `.source` は `flex: 1` を持つので、素の `display: none` が
+   flex の配分に負けることがある。**両方 出ると縦が半分ずつになる** */
+[hidden] {
+  display: none !important;
+}
+
 /* Monaco の入れ物。**中身は Monaco が全部 持つ**ので、こちらは枠と大きさだけ。
    padding を残すと桁と行番号がずれる。overflow は Monaco 自身がやる */
 .source {

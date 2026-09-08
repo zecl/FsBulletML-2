@@ -187,6 +187,88 @@ let create (hostId: string) (language: string) (initial: string) =
 /// 大きさを引数で渡さないのは、渡すとそこで固定されて追随しなくなるから。
 let relayout () = if not (isNull editor) then layoutToContainer editor
 
+// --- 並べて見る（v2.1）------------------------------------------------------
+
+[<Emit("globalThis.monaco.editor.createDiffEditor($0, $1)")>]
+let private createDiff (host: obj) (opts: obj) : obj = jsNative
+
+[<Emit("globalThis.monaco.editor.createModel($0, $1)")>]
+let private createModel (text: string) (language: string) : obj = jsNative
+
+[<Emit("$0.setModel({ original: $1, modified: $2 })")>]
+let private setDiffModel (diff: obj) (original: obj) (modified: obj) : unit = jsNative
+
+[<Emit("$0.dispose()")>]
+let private disposeOf (x: obj) : unit = jsNative
+
+let mutable private diff: obj = null
+let mutable private diffOriginal: obj = null
+let mutable private diffModified: obj = null
+
+/// 並べて出しているか。**呼ぶ側はこれで「戻す」を決める**
+let diffShown () = not (isNull diff)
+
+/// 作った物を全部 捨てる。**model も捨てる** ——
+/// エディタだけ捨てると、model が `monaco.editor.getModels()` に残り続け、
+/// 開き直すたびに増える（言語 id で登録した provider は残った model にも効く）
+let hideDiff () =
+  if not (isNull diff) then
+    disposeOf diff
+    diff <- null
+  if not (isNull diffOriginal) then
+    disposeOf diffOriginal
+    diffOriginal <- null
+  if not (isNull diffModified) then
+    disposeOf diffModified
+    diffModified <- null
+
+/// 2 つ の本文を並べて出す。**両側 読むだけ。**
+///
+/// 直すのは元のエディタでやる —— ここは「何が違うか」を見る道具で、
+/// 2 か所 で編集できると「どちらが本文か」が人にも実装にも曖昧になる。
+///
+/// **model の言語 id は元のエディタと同じものを渡す。** provider は
+/// `monaco.languages.register*Provider(language, ...)` に**言語 id 単位**で
+/// 登録してあるので、それだけで両側に効く（測って確かめた）。
+/// ただし readOnly の側で Monaco が起こすのは hover と定義へ移動だけで、
+/// **補完・Quick Fix・rename は呼ばれもしない** —— ここでは読むだけなので、
+/// それがちょうどよい。
+///
+/// **言語は左右 別に受け取る。** 同じ表記どうしを比べるとは限らない ——
+/// 別の表記へ変換したものを左に置く道が在る（そちらは差分の色が
+/// 意味を持たず、並べて読むための出し方）。
+///
+/// 開き直すたびに作り直す。**使い回さない** —— 言語も本文も毎回 変わりうるので、
+/// 使い回すと「前の言語のまま」を作れてしまう。
+let showDiff
+  (hostId: string)
+  (originalLanguage: string)
+  (original: string)
+  (modifiedLanguage: string)
+  (modified: string)
+  =
+  let host = document.getElementById hostId
+  if isNull host then failwith ("要素が無い: " + hostId)
+  hideDiff ()
+  diffOriginal <- createModel original originalLanguage
+  diffModified <- createModel modified modifiedLanguage
+  diff <-
+    createDiff
+      host
+      (createObj [
+        "automaticLayout" ==> true
+        // 左右 に並べる。上下 に積むと、弾幕は縦に長いので同じ行が離れる
+        "renderSideBySide" ==> true
+        "readOnly" ==> true
+        "originalEditable" ==> false
+        // 元のエディタと同じ見え方に揃える（`create` の但し書きと同じ理由）
+        "minimap" ==> createObj [ "enabled" ==> true ]
+        "scrollBeyondLastLine" ==> false
+        "mouseWheelZoom" ==> true
+        "fontSize" ==> 12
+        "tabSize" ==> 2 ])
+  setDiffModel diff diffOriginal diffModified
+
 /// 印の持ち主。**1 つ に固定する** —— 名前が揺れると、前に付けた印を
 /// 自分で消せなくなる。
 /// 要素名と綴りを分ける。Fable 側に要素名を書かない線を、門が見ている

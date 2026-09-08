@@ -361,6 +361,10 @@ type Playground() as self =
     Monaco.setLanguage lang.EditorLanguageId
     let sel = el "mode"
     if not (isNull sel) then (sel :?> HTMLSelectElement).value <- lang.Kind.Id
+    // 比べる先の並びは**いまの表記で変わる**（自分とは比べられない）。
+    // 並べている最中なら、その中身も表記が変わった側に合わせて建て直す
+    self.fillCompare ()
+    if Monaco.diffShown () then self.setCompare ()
 
   /// 表記のプルダウンを、登録されている並びから作る。**html に表を書かない**
   member _.fillModes() =
@@ -380,6 +384,85 @@ type Playground() as self =
         input.setAttribute (
           "accept",
           languages |> List.map (fun l -> l.Kind.FileExtension) |> String.concat ",")
+
+  /// 比べる先のプルダウン。**html に表を書かない**（表記・配色と同じ扱い）。
+  ///
+  /// 並びは 2 種類。
+  ///
+  ///     走っている弾幕と    同じ表記どうし。**差分の色が意味を持つ**
+  ///     ほかの表記          いまの本文をそこへ変換したもの。色は全行 に付く
+  ///
+  /// 後ろは「差分を読む」道具ではなく、**同じ弾幕が別の書き方でどうなるかを
+  /// 並べて読む**ための出し方。いまの表記は入れない（自分とは比べられない）
+  member _.fillCompare() =
+    let sel = el "compare"
+    if isNull sel then ()
+    else
+      let keep = (sel :?> HTMLSelectElement).value
+      sel.innerHTML <- ""
+      let add (v: string) (t: string) =
+        let o = document.createElement "option" :?> HTMLOptionElement
+        o.value <- v
+        o.textContent <- t
+        sel.appendChild o |> ignore
+      add "" "しない"
+      add "applied" "走っている弾幕と"
+      for lang in languages do
+        if lang.Kind.Id <> current.Kind.Id then add lang.Kind.Id (lang.Kind.Id + " と")
+      // 選んでいたものが並びから消えていたら「しない」へ倒れる。
+      // **黙って別の先を選ばない** —— 表記を切り替えると自分自身が消える
+      (sel :?> HTMLSelectElement).value <- keep
+      if (sel :?> HTMLSelectElement).value <> keep then
+        (sel :?> HTMLSelectElement).value <- ""
+
+  /// 並べて出す / やめる。**欄と入れ替える** ——
+  /// 横に並べると、弾幕は縦に長いのでどちらも読めない幅になる
+  member _.setCompare() =
+    let sel = el "compare"
+    let src = el "source"
+    let dst = el "diff"
+    if isNull sel || isNull src || isNull dst then ()
+    else
+      let v = (sel :?> HTMLSelectElement).value
+      let stop () =
+        Monaco.hideDiff ()
+        dst.setAttribute ("hidden", "")
+        src.removeAttribute "hidden"
+        // **欄は隠れているあいだ大きさを測れていない。** 戻したら測り直す
+        Monaco.relayout ()
+      let start (leftLang: string) (left: string) =
+        src.setAttribute ("hidden", "")
+        dst.removeAttribute "hidden"
+        Monaco.showDiff "diff" leftLang left current.EditorLanguageId (Monaco.getValue ())
+      if v = "" then stop ()
+      elif isNull dotNet then setError "まだ起動していない"
+      elif v = "applied" then
+        // **「編集前」は host に聞く。** Fable 側に写しを持つと、
+        // 弾幕が差し替わる道のどれかで更新し忘れて、古い本文と比べてしまう
+        thenCatch
+          (invokeAsync1 dotNet "AppliedSource" current.Kind.Id)
+          (fun res ->
+            let text = string res
+            if text.StartsWith "ERROR:" then
+              stop ()
+              setError (text.Substring 6)
+            else start current.EditorLanguageId text)
+          (fun err -> setError (errText err))
+      else
+        match languages |> List.tryFind (fun l -> l.Kind.Id = v) with
+        | None ->
+          stop ()
+          setError ("知らない表記: " + v)
+        | Some target ->
+          thenCatch
+            (invokeAsync3 dotNet "Transcode" current.Kind.Id target.Kind.Id (Monaco.getValue ()))
+            (fun res ->
+              let r = jsonParse (string res)
+              if unbox<bool> r?ok then start target.EditorLanguageId (string r?text)
+              else
+                stop ()
+                setError (string r?message))
+            (fun err -> setError (errText err))
 
   /// 配色のプルダウンを、Monaco が素で持っている並びから作る。
   /// **html に表を書かない**（表記のプルダウンと同じ扱い）。
@@ -810,6 +893,9 @@ type Playground() as self =
             // **エディタが建ってから出す。** Monaco が読めなかったときに
             // 配色のプルダウンだけ在るのは、押せるのに何も起きない口になる
             self.fillThemes ()
+            // **比べる先も同じところで。** 並びは表記に依るので、
+            // `useLanguage` でも作り直す
+            self.fillCompare ()
             // **表記ごとに 1 回 ずつ、起動時に。** Monaco の provider は
             // language id に付くので、切り替えるたびに登録すると同じ id へ
             // 何本も積み上がり、候補が表記の数だけ重なる
@@ -941,6 +1027,7 @@ let private on (id: string) (event: string) (handler: unit -> unit) =
 on "pattern" "change" (fun () -> playground.pick ())
 on "mode" "change" (fun () -> playground.setMode ())
 on "theme" "change" (fun () -> playground.setTheme ())
+on "compare" "change" (fun () -> playground.setCompare ())
 on "help" "click" (fun () -> playground.help ())
 on "help-close" "click" (fun () -> playground.closeHelp ())
 on "play" "click" (fun () -> playground.call("Play"))

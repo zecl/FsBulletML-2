@@ -58,11 +58,18 @@
           <!-- 中身は空。**配色の表も html に書かない** —— Monaco が素で
                持っている並び（fable/Monaco.fs の themes）から Fable が作る -->
           <label class="mode">配色<select id="theme"></select></label>
+          <!-- 比べる先。**中身は空** —— 表記の並びは Fable が作る（`mode` と同じ理由）。
+               並べているあいだは**読むだけ**で、直すのは元の欄でやる -->
+          <label class="mode">比べる<select id="compare"></select></label>
           <button type="button" id="help" title="補完の使い方">?</button>
         </div>
         <!-- 中身は空。**XML を html に書かない** —— 起動時の本文は host が
              同梱カタログの CE から焼いて渡す（Main.fs の InitialSource） -->
         <div id="source" class="source"></div>
+        <!-- 並べて見るとき、`source` と入れ替わる（v2.1）。
+             **同じ場所に出す** —— 横に並べると、弾幕は縦に長いので
+             どちらも読めない幅になる -->
+        <div id="diff" class="source" hidden></div>
         </div>
       </div>
       <div class="bar">
@@ -263,6 +270,19 @@
             弾幕にも本文にも触らない（速さと同じで<strong>見る側の都合</strong>）。
             Monaco が素で持っている 4 本 —— 暗い・明るいと、
             その高コントラスト版（<strong>HC</strong>）</li>
+        <li><strong>比べる</strong>は、欄を 2 面 に入れ替えて並べる。
+            <strong>並べているあいだは読むだけ</strong>で、直すのは「しない」に
+            戻してから。左右 とも <kbd>F12</kbd> と hover は効く。
+            <ul>
+              <li><strong>走っている弾幕と</strong> —— 左がいま走っているもの、
+                  右が編集中の本文。<strong>Apply する前に何を変えたかが見える</strong>。
+                  同じ表記どうしなので、赤と緑が意味を持つ</li>
+              <li><strong>◯◯ と</strong> —— いまの本文をその表記へ変換したものが左。
+                  <strong>赤と緑は意味を持たない</strong>（書き方が違えば全行 が違う）——
+                  同じ弾幕が別の書き方でどう見えるかを、並べて読むための出し方</li>
+            </ul>
+            表記そのものを切り替えると、比べる先は<strong>「しない」に戻る</strong>
+            （自分とは比べられないので）</li>
         <li><strong>Open</strong> は名前で表記を決める。<code>.sxml</code> を開けば sxml、
             <code>.fsb</code> なら fsb、<code>.fsx</code> なら F# の CE に切り替わる</li>
         <li><strong>Save</strong> はその対。<strong>いま欄に在る字をそのまま落とす</strong> ——

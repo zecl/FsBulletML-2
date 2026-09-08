@@ -280,6 +280,26 @@ type PlaygroundHost() =
             text
     with ex -> "ERROR:" + ex.Message
 
+  /// いま走っている弾幕を、指定の表記で焼く。**「編集前」の正本はこちら。**
+  ///
+  /// 並べて見る側（v2.1）が、左に置く本文としてこれを引く。
+  /// **Fable 側に写しを持たない** —— 弾幕が差し替わる道は 8 本 以上 あり
+  /// （Apply / Reset / 選び直し / Open / リンク / 難度 / 種 / 起動）、
+  /// 写しを持てばそのどれかで更新し忘れて、**古い本文と比べていることに
+  /// 誰も気づけない**（差分が出るのが正常な道具なので、嘘の差分が嘘に見えない）。
+  ///
+  /// 失敗は `SelectPattern` と同じく `ERROR:` で始まる
+  [<JSInvokable>]
+  member _.AppliedSource(kind: string) : string =
+    try
+      match SourceKind.tryParse kind |> Option.bind SourceWriter.tryFind with
+      | None -> "ERROR:未対応: " + kind
+      | Some writer ->
+        match writer.Write current with
+        | Result.Error why -> "ERROR:" + why
+        | Result.Ok text -> text
+    with ex -> "ERROR:" + ex.Message
+
   /// 右側の本文を読んで弾幕を差し替える。
   ///
   /// **どの表記かを受け取る。** v0.9 で読めるのは xml と sxml。
