@@ -24,6 +24,7 @@ type Live(run: BulletRun, x: float32, y: float32, isRoot: bool) =
 type Playfield private (front: IFrontEnv, live: ResizeArray<Live>) =
 
   let spawned = ResizeArray<Live>()
+  let mutable frame = 0
   let mutable xs = Array.zeroCreate<float32> 256
   let mutable pin = Unchecked.defaultof<GCHandle>
 
@@ -39,6 +40,13 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>) =
     Playfield(front, live)
 
   member _.Count = live.Count
+
+  /// 進めたコマ数。**この面を建ててから何回 `Tick` したか**であって、
+  /// 弾幕の中の時間ではない。建て直せば 0 に戻る（Reset / Apply / 選び直し）。
+  ///
+  /// 面が持つのは、飛ぶ側（`Seek`）が「いまどこか」を要るから ——
+  /// 呼ぶ側で数えると、`Tick` を呼ぶ道が増えたときに数え漏れる。
+  member _.Frame = frame
 
   member _.Tick() =
     spawned.Clear()
@@ -70,6 +78,7 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>) =
         live.RemoveAt last
       else i <- i + 1
     live.AddRange spawned
+    frame <- frame + 1
 
   /// WASM ヒープ上の `float32[]`。JS は JSON せず `localHeapViewF32` で読む。
   member _.Pack() =

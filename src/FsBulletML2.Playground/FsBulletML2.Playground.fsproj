@@ -59,6 +59,7 @@
     <Compile Include="Stage.fs" />
     <Compile Include="BrowserEnv.fs" />
     <Compile Include="Pacing.fs" />
+    <Compile Include="Seek.fs" />
     <Compile Include="Playfield.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="Program.fs" />

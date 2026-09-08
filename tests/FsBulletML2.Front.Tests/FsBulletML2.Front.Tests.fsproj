@@ -22,8 +22,11 @@
     -->
     <Compile Include="..\..\src\FsBulletML2.Playground\Stage.fs" Link="Stage.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Pacing.fs" Link="Pacing.fs" />
+    <Compile Include="..\..\src\FsBulletML2.Playground\Seek.fs" Link="Seek.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Playfield.fs" Link="Playfield.fs" />
+    <Compile Include="DeterministicField.fs" />
     <Compile Include="StepPacing.fs" />
+    <Compile Include="SeekFrames.fs" />
   </ItemGroup>
   <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
        手のせいか版のせいかが割れない -->

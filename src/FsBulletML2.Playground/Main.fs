@@ -42,34 +42,67 @@ type PlaygroundHost() =
   // 判断をここへ書くと、Bolero を参照するこのファイルの中にしか無くなって
   // .NET で当てられなくなる
   let mutable pacing = Pacing.normal
+  // 飛び先。**進め方（Pacing）と別に持つ** —— 飛んでいるあいだは速さを見ない
+  // （速さは「見ながら進める」ための道具で、飛ぶのは着くまでの手段）
+  let mutable seek = Seek.idle
+  // 1 フレームの予算を測る。**1 個 だけ作って持ち回る**
+  let watch = System.Diagnostics.Stopwatch()
+  let elapsed = fun () -> watch.Elapsed.TotalMilliseconds
   // **1 個 だけ作って持ち回る。** 毎コマ `field.Tick` を関数値にすると、
   // 1 フレーム につき 1 個 の閉包がヒープに乗る。
   // `field` は Apply で差し替わるが、その都度 読み直すのでこれで足りる
   let tick = fun () -> field.Tick()
-  let ret = Array.zeroCreate<float> 2
+  let ret = Array.zeroCreate<float> 3
   let catalog = lazy (All.bullets |> List.toArray)
 
-  /// `[n; ptr]`。Apply で配列が差し替わるので ptr は毎コマ返す。
+  /// `[n; ptr; frame]`。Apply で配列が差し替わるので ptr は毎コマ返す。
+  ///
+  /// **飛んでいるあいだは Pacing を通さない。** 速さは「見ながら進める」ための
+  /// 道具で、飛ぶのは着くまでの手段 —— 混ぜると 1/4 速で飛べなくなる。
   [<JSInvokable>]
   member _.StepFrame(_now: float, playerX: float, playerY: float) : float[] =
     env.SetPlayer (float32 playerX) (float32 playerY)
-    if playing then pacing <- Pacing.step tick pacing
+    if Seek.isRunning seek then
+      // 戻るには建て直すしかない（面は逆再生できない）。
+      // **建ててから差し替える** —— ほかの差し替えと同じ理由
+      if Seek.needsRestart field.Frame seek then field <- Playfield.Create env current
+      watch.Restart()
+      let struct (_, next) = Seek.step field.Frame tick elapsed seek
+      seek <- next
+    elif playing then pacing <- Pacing.step tick pacing
     ret.[0] <- float (field.Pack())
     ret.[1] <- field.PackedPtr
+    ret.[2] <- float field.Frame
     ret
 
+  /// **飛ぶのをやめる。** 飛んでいる最中の Play は「もう待たない」なので、
+  /// 目的のコマを捨てていまの場所から走らせる
   [<JSInvokable>]
-  member _.Play() = playing <- true
+  member _.Play() =
+    seek <- Seek.idle
+    playing <- true
 
   [<JSInvokable>]
-  member _.Pause() = playing <- false
+  member _.Pause() =
+    seek <- Seek.idle
+    playing <- false
 
   /// 1 コマ だけ進める。**押した時点で止まる** ——
   /// 走っているまま 1 コマ 足しても、次のコマで流れてしまって見えない
   [<JSInvokable>]
   member _.StepOnce() =
+    seek <- Seek.idle
     playing <- false
     field.Tick()
+
+  /// そのコマへ飛ぶ。**着くまで何フレームか かかる**（`Seek` の但し書き）。
+  ///
+  /// 着いたら止まる —— 1 コマ送りと同じで、見たいコマで止まっていないと
+  /// 流れてしまって見えない
+  [<JSInvokable>]
+  member _.SeekTo(n: int) =
+    playing <- false
+    seek <- Seek.toFrame n
 
   /// 正なら倍速（1 フレームに n 回）、負ならスロー（-n フレームに 1 回）。
   ///
@@ -78,8 +111,11 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.SetRate(n: int) = pacing <- Pacing.withRate n
 
+  /// **飛んでいる最中でも頭へ戻す。** 面を建て直すと `Frame` も 0 に戻るので、
+  /// 飛び先を持ったままだとそこへ向かって走り直してしまう
   [<JSInvokable>]
   member _.Reset() =
+    seek <- Seek.idle
     field <- Playfield.Create env current
 
   /// 起動時に欄へ出す XML。**html に直書きしない。**
@@ -150,6 +186,8 @@ type PlaygroundHost() =
             let next = Playfield.Create env info.Bulletml
             current <- info.Bulletml
             field <- next
+            // 別の弾幕に飛び先は引き継がない（`Reset` と同じ理由）
+            seek <- Seek.idle
             text
     with ex -> "ERROR:" + ex.Message
 
@@ -198,6 +236,8 @@ type PlaygroundHost() =
       let next = Playfield.Create env bulletml
       current <- bulletml
       field <- next
+      // 別の本文に飛び先は引き継がない（`Reset` と同じ理由）
+      seek <- Seek.idle
     // **字を直に書かない。** 送ってくるのは Fable 側の `SourceKind.Id` で、
     // どちらも `LanguageService` の 1 本 を引く。
     //

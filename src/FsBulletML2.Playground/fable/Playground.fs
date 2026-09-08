@@ -101,6 +101,12 @@ type Playground() as self =
   let mutable frames = 0
   let mutable t0 = 0.
   let mutable lastN = -1
+  let mutable lastFrame = -1
+  // 軌跡。**過去の位置を貯めない** —— 面を消さずに薄く塗り重ねるだけなので、
+  // 確保は増えない（`draw` の但し書き）
+  let mutable trail = false
+  // 次の 1 コマ だけ面を全部 塗り潰す。軌跡が付いたまま別の弾幕へ行かない
+  let mutable wipe = false
   let mutable canvas: HTMLCanvasElement = null
   let mutable canvasCtx: CanvasRenderingContext2D = null
   // host からもらう語彙。正本は Core の DTD.fs。**表記が変わっても同じ**
@@ -151,7 +157,7 @@ type Playground() as self =
           playerY <- 600.
       )
 
-  member _.hud(n: int, t: float) =
+  member _.hud(n: int, t: float, frame: int) =
     frames <- frames + 1
     if t0 = 0. then t0 <- t
     let elapsed = t - t0
@@ -165,6 +171,12 @@ type Playground() as self =
     if not (isNull b) && n <> lastN then
       lastN <- n
       b.textContent <- string n
+    // **飛んでいる最中はここが速く動く。** 進んでいることの唯一の合図なので、
+    // 弾数と同じく変わったときだけ書く（毎フレーム書くと DOM を無駄に触る）
+    let f = el "frame-count"
+    if not (isNull f) && frame <> lastFrame then
+      lastFrame <- frame
+      f.textContent <- string frame
 
   member _.ensureCtx() : CanvasRenderingContext2D =
     if not (isNull canvasCtx) then canvasCtx
@@ -181,7 +193,15 @@ type Playground() as self =
     if isNull c2d then 0
     else
       let n = n ||| 0
-      c2d?fillStyle <- "#101018"
+      // **軌跡は過去の位置を持たない。** 面を薄く塗るだけにすると、前のコマの
+      // 弾がそのまま残って尾に見える。確保は 0 バイト。
+      //
+      // 消さずに残す形にはしない —— 弾の多い弾幕だと数秒で面が真っ白になる。
+      // 薄く塗り重ねるほうは、放っておいても消えるので消す道が要らない
+      // （切り替えと弾幕の差し替えだけ、1 コマ 塗り潰す）
+      if trail && not wipe then c2d?fillStyle <- "rgba(16, 16, 24, 0.12)"
+      else c2d?fillStyle <- "#101018"
+      wipe <- false
       c2d.fillRect (0., 0., float canvas.width, float canvas.height)
       c2d?fillStyle <- "#66ccff"
       c2d.beginPath ()
@@ -228,6 +248,8 @@ type Playground() as self =
   member _.apply() =
     let sel = el "pattern"
     if not (isNull sel) then (sel :?> HTMLSelectElement).value <- ""
+    // 面が建て直る。**前の尾を残さない** —— 残ると別の弾幕の線に見える
+    wipe <- true
     if isNull dotNet then setError "まだ起動していない"
     else
       thenCatch
@@ -388,6 +410,8 @@ type Playground() as self =
     elif isNull dotNet then setError "まだ起動していない"
     else
       let i = float (sel :?> HTMLSelectElement).value
+      // 面が建て直る（`apply` と同じ理由）
+      wipe <- true
       // **いま選ばれている表記で書いてもらう。** 表記はこちらが決めるのではなく
       // 人が決めているもので、弾幕を選び直しただけで動かしてはいけない
       thenCatch
@@ -415,6 +439,45 @@ type Playground() as self =
         (invokeAsync1 dotNet "SetRate" n)
         (fun _ -> ())
         (fun err -> setError (errText err))
+
+  /// そのコマへ飛ぶ。**丸めるのは host の `Seek`** ——
+  /// ここで丸めると、上限が 2 か所 に書かれて片方 だけ古びる。
+  ///
+  /// 飛んでいるあいだ画面は止まらない（着くまで何フレームか かかる）。
+  /// 進んでいることはコマ数の表示に出る
+  member _.seek() =
+    let input = el "seek-to"
+    if isNull input then ()
+    elif isNull dotNet then setError "まだ起動していない"
+    else
+      let v = (input :?> HTMLInputElement).value
+      // **`float v` にしない。** Fable の `Double.Parse` は読めない字で例外を投げる ——
+      // `IsNaN` で受けるつもりの門はそこまで来ない（焼いた JS を読んで気づいた）。
+      // `type="number"` の欄は、数でない字が入っていると `value` が空になる
+      let mutable n = 0.0
+      // 空欄や字が入っているとき。**0 に倒さない** —— 頭へ飛んでしまう
+      if not (System.Double.TryParse(v, &n)) then setError "コマ数を入れて"
+      else
+        // 戻る先だと面を建て直すので、軌跡は 1 コマ 塗り潰す
+        wipe <- true
+        setError ""
+        thenCatch
+          (invokeAsync1 dotNet "SeekTo" n)
+          (fun _ -> ())
+          (fun err -> setError (errText err))
+
+  /// 次の 1 コマ だけ面を塗り潰す。面を建て直す口を呼ぶ手前で使う
+  member _.wipeTrail() = wipe <- true
+
+  /// 軌跡の入り切り。**host は知らない** —— 描き方の話で、
+  /// 走っているものは変わらない（速さや配色と同じ扱い）
+  member _.setTrail() =
+    let box = el "trail"
+    if isNull box then ()
+    else
+      trail <- (box :?> HTMLInputElement).``checked``
+      // 切ったときに残っている尾を 1 コマ で消す
+      if not trail then wipe <- true
 
   /// 補完の使い方。**中身は html に在る字だけ**で、ここは開け閉めだけ。
   /// ループは止めない —— 開いている間も弾幕は動く
@@ -613,7 +676,7 @@ type Playground() as self =
                 subarray (heapF32 ()) off (off + n * 2)
               else null
             self.draw (packed, n) |> ignore
-            self.hud (n, t)
+            self.hud (n, t, int (unbox<float> (jsItem ret 2)))
           with ex ->
             console.error ex
             setError (string ex)
@@ -659,7 +722,12 @@ on "play" "click" (fun () -> playground.call("Play"))
 on "pause" "click" (fun () -> playground.call("Pause"))
 on "step-once" "click" (fun () -> playground.call("StepOnce"))
 on "rate" "change" (fun () -> playground.setRate ())
-on "reset" "click" (fun () -> playground.call("Reset"))
+on "reset" "click" (fun () ->
+  // 面が建て直る。**軌跡を 1 コマ 塗り潰してから**（`apply` と同じ理由）
+  playground.wipeTrail ()
+  playground.call ("Reset"))
+on "seek" "click" (fun () -> playground.seek ())
+on "trail" "change" (fun () -> playground.setTrail ())
 on "apply" "click" (fun () -> playground.apply ())
 on "open" "click" (fun () -> playground.``open``())
 on "share" "click" (fun () -> playground.share ())
