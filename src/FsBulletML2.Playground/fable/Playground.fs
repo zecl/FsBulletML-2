@@ -72,6 +72,23 @@ let private closeDialog (dialog: obj) : unit = jsNative
 [<Emit("navigator.clipboard ? navigator.clipboard.writeText($0) : null")>]
 let private copyText (s: string) : obj = jsNative
 
+/// 字をファイルとして落とす。**`a[download]` を 1 回 だけ組んで押す。**
+///
+/// Blob の URL は使い終わったら返す —— 返さないとページを閉じるまで残る。
+/// `charset` を書くのは、開く側が Shift_JIS と読まないため
+[<Emit("""(() => {
+  const blob = new Blob([$1], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = $0
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+})()""")>]
+let private saveText (name: string) (text: string) : unit = jsNative
+
 let private el (id: string) = document.getElementById id
 
 let private setError (msg: string) =
@@ -132,6 +149,9 @@ type Playground() as self =
   // 知らせを出したか。**波線と同じ扱い** —— 知らせは「いまの本文がどこから
   // 来たか」の話なので、本文が変わった時点で嘘になる
   let mutable noted = false
+  // 整形を待っているときの、その字。**空なら待っていない。**
+  // 字そのものを持つので、打ち直せば待ちは自然に外れる
+  let mutable pendingFormat = ""
 
   member _.attach() =
     let c = el "stage"
@@ -479,6 +499,65 @@ type Playground() as self =
       // 切ったときに残っている尾を 1 コマ で消す
       if not trail then wipe <- true
 
+  /// 本文を読んで、同じ表記で書き直す。
+  ///
+  /// **口を足していない。** `Transcode` の行き先を、いまの表記と同じにするだけ ——
+  /// 整形は「別の表記へ書き直す」の行き先が同じ場合で、
+  /// 読む口も書く口も 4 表記 ぶん もう在る。
+  ///
+  /// **押す前に知らせる。** 整形すると **コメントは残らない**（木がコメントを
+  /// 持たないので、読んで書き直した時点で落ちる）。だから
+  ///
+  ///     字が変わらない   その場で「もう整形されている」
+  ///     字が変わる       1 回 目 は知らせるだけ。もう一度 押すと入れ替える
+  ///
+  /// **1 回 目 と 2 回 目 のあいだに打てば、待っているものは消える** ——
+  /// 待っているのは「その字から作った結果」で、字が変われば別のものになる
+  member _.format() =
+    if isNull dotNet then setError "まだ起動していない"
+    else
+      let text = Monaco.getValue ()
+      let id = current.Kind.Id
+      thenCatch
+        (invokeAsync3 dotNet "Transcode" id id text)
+        (fun res ->
+          let r = jsonParse (string res)
+          if not (unbox<bool> r?ok) then
+            pendingFormat <- ""
+            setError (string r?message)
+          else
+            let formatted = string r?text
+            setError ""
+            if formatted = text then
+              pendingFormat <- ""
+              self.showNote "もう整形されている"
+            elif pendingFormat = text then
+              pendingFormat <- ""
+              Monaco.setValue formatted
+              self.showNote "整形した"
+            else
+              pendingFormat <- text
+              self.showNote "整形すると字が変わる。コメントは残らない。もう一度 押すと入れ替える")
+        (fun err ->
+          pendingFormat <- ""
+          setError (errText err))
+
+  /// いまの本文をファイルに落とす。**Open の対。**
+  ///
+  /// **host へ行かない。** 落とすのは欄に在る字そのもので、
+  /// 読めるかどうかも関係ない（書きかけでも落とせる）。
+  ///
+  /// 名前の拡張子は表記から引く —— `Open` が名前で表記を決めるので、
+  /// **落としたものをそのまま開くと同じ表記に戻る**
+  member _.save() =
+    let text = Monaco.getValue ()
+    // **頭は要素名にしない。** 根の名前を付けたくなるが、ブラウザ側に
+    // BulletML の綴りが在ってはいけない（門が当たる）——
+    // 語彙は host が焼いて渡すもので、ここに表を持たない
+    let name = "pattern" + current.Kind.FileExtension
+    saveText name text
+    self.showNote ("落とした: " + name)
+
   /// 補完の使い方。**中身は html に在る字だけ**で、ここは開け閉めだけ。
   /// ループは止めない —— 開いている間も弾幕は動く
   member _.help() =
@@ -611,6 +690,10 @@ type Playground() as self =
               Monaco.registerRenameProvider
                 lang.EditorLanguageId
                 (fun src offset -> lang.Usages src offset)
+              // 定義へ移動（F12）と参照（Shift+F12）。**rename と同じ 1 本 の上**
+              Monaco.registerNavigationProviders
+                lang.EditorLanguageId
+                (fun src offset -> lang.Usages src offset)
               Monaco.registerCodeActionProvider
                 lang.EditorLanguageId
                 (fun src offset -> lang.Fixes src offset)
@@ -730,6 +813,8 @@ on "seek" "click" (fun () -> playground.seek ())
 on "trail" "change" (fun () -> playground.setTrail ())
 on "apply" "click" (fun () -> playground.apply ())
 on "open" "click" (fun () -> playground.``open``())
+on "save" "click" (fun () -> playground.save ())
+on "format" "click" (fun () -> playground.format ())
 on "share" "click" (fun () -> playground.share ())
 
 // **いちばん最後。** 上の配線が済んでから WASM を起こす ——

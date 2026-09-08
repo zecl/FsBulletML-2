@@ -171,13 +171,23 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
       | [] -> []
       | _ ->
         let names = related |> List.collect (fun (r, d, _) -> [ r; d ]) |> Set.ofList
+        // **定義側の要素名。** 参照側と重ならないことは測ってある
+        // （`Usage.IsDefinition` の但し書き）—— 重なっていたら、
+        // 札の名前だけではどちら側か言えない
+        let defs = related |> List.map (fun (_, d, _) -> d) |> Set.ofList
         shape.Tags source
         // **閉じ札を数えない。** XML だけが返すもので、属性を持たない
         |> List.filter (fun t -> not t.Closing && names.Contains t.TagName)
         |> List.collect (fun t ->
-             t.Attrs |> List.filter (fun a -> a.AttrName = attr && a.Value = value))
-        |> List.map (fun a ->
-             { Line = a.Line; Column = a.Column; EndColumn = a.EndColumn; Text = a.Value })
+             t.Attrs
+             |> List.filter (fun a -> a.AttrName = attr && a.Value = value)
+             |> List.map (fun a -> t.TagName, a))
+        |> List.map (fun (tagName, a) ->
+             { Line = a.Line
+               Column = a.Column
+               EndColumn = a.EndColumn
+               Text = a.Value
+               IsDefinition = defs.Contains tagName })
     | _ -> []
 
   /// カーソルの下の「無い参照」を、綴りの近い定義へ直す。**表記を知らない。**
