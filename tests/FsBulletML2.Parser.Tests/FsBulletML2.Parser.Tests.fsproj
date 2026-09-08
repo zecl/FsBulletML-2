@@ -57,6 +57,10 @@
     <Compile Include="ShareLink.fs" />
     <!-- 意味の層（v2.3）。**読めて・組めても走らないもの** -->
     <Compile Include="Semantics.fs" />
+    <!-- 入れ子の深さ（v2.4）。**知り方は 4 通り、答えは 1 つ** -->
+    <Compile Include="Depth.fs" />
+    <!-- 本文の構造（v2.4）。深さは上、**こちらは範囲** -->
+    <Compile Include="Outline.fs" />
   </ItemGroup>
   <ItemGroup>
     <!-- **CE の本文を試験の出力へ写す。** 期待値は `Bullets.Dsl` の値なので、

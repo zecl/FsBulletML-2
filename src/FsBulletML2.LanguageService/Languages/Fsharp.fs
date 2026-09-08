@@ -256,3 +256,18 @@ type FsharpLanguage(vocabulary: unit -> Vocab) =
       let pairs =
         Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
       Semantics.findings pairs v.TopPrefix (tagsOf v source)
+
+    /// 本文の構造（v2.4）。**ほかの 3 表記 と同じ 1 本 を通る。**
+    ///
+    /// ただし CE の深さは `{ }` の段で、**要素の入れ子とは別物**
+    /// （同梱 176 本 中 145 本 で違う。`◯◯Ref` は `{ }` を開かず、
+    /// `doActs (body { … })` のような包みが 1 段 増える）。
+    /// **それが正しい** —— ここで見ているのは CE の本文であって XML ではない
+    member _.Outline source =
+      let v = vocabulary ()
+      let detailAttr =
+        Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
+        |> List.tryHead
+        |> Option.map (fun (_, _, attr) -> attr)
+        |> Option.defaultValue ""
+      Outline.build detailAttr (Scan.lineColumn source) (tagsOf v source)

@@ -117,8 +117,11 @@ module SxmlScan =
         else advance ()
       (List.ofSeq attrs, (if stop < 0 then src.Length else stop), start)
 
-    /// 括弧 1 組。`i` は `(` の上。読み終えると `)` の次（無ければ末尾）
-    let rec readForm () =
+    /// 括弧 1 組。`i` は `(` の上。読み終えると `)` の次（無ければ末尾）。
+    ///
+    /// **入れ子の深さは再帰の段そのもの**（v2.4）—— sxml は包含で
+    /// 木になる（測った。176 / 176 本）ので、ここで数えれば足りる
+    let rec readForm (depth: int) =
       let start = i
       advance () // '('
       skipSpace ()
@@ -138,7 +141,7 @@ module SxmlScan =
             attrs <- a
             attrsStart <- st
             attrsStop <- s
-          else readForm ()
+          else readForm (depth + 1)
         elif src.[i] = '"' then readString () |> ignore
         else advance ()
       // **名前が空なら足さない。** `(` を打った直後がこれ。
@@ -159,12 +162,13 @@ module SxmlScan =
                 Start = start
                 Stop = if stop < 0 then src.Length else stop
                 NameStart = nameFrom
-                NameStop = nameStop }
+                NameStop = nameStop
+                Depth = depth }
             AttrsStart = attrsStart
             AttrsStop = attrsStop }
 
     while i < src.Length do
-      if src.[i] = '(' then readForm () else advance ()
+      if src.[i] = '(' then readForm 0 else advance ()
     // **前順に並べ直す。** 上は子を読み終えてから自分を足すので後順になる
     // —— 「いちばん内側 = 最後」で引く側が、そのままだと逆を引く
     out |> Seq.sortBy (fun f -> f.Hit.Start) |> List.ofSeq
