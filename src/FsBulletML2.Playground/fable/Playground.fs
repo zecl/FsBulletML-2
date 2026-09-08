@@ -89,6 +89,11 @@ let private copyText (s: string) : obj = jsNative
 })()""")>]
 let private saveText (name: string) (text: string) : unit = jsNative
 
+// 種を振り直すときだけ使う。**弾幕の乱数はこれではない** ——
+// あちらは host の `SeededRandom`（種から決まる並び）
+[<Emit("Math.random()")>]
+let private random () : float = jsNative
+
 let private el (id: string) = document.getElementById id
 
 let private setError (msg: string) =
@@ -111,8 +116,20 @@ let private heapF32 () : obj =
 /// Bolero の onclick / onReady と同じ名前で出す。
 [<AttachMembers>]
 type Playground() as self =
+  // マウスが指している場所。**これがそのまま自機とは限らない** ——
+  // 止めているときと回っているときは host が決める（`setView`）
   let mutable playerX = 240.
   let mutable playerY = 600.
+  // 描く自機と、面の形。**どれも host から毎コマ来る** ——
+  // ここに数を書き写すと、向きを足したときに 2 通り の真ができる
+  let mutable drawX = 240.
+  let mutable drawY = 600.
+  let mutable fieldW = 0.
+  let mutable fieldH = 0.
+  let mutable homeX = 240.
+  let mutable homeY = 600.
+  let mutable enemyX = 240.
+  let mutable enemyY = 80.
   let mutable running = false
   let mutable dotNet: obj = null
   let mutable frames = 0
@@ -173,8 +190,8 @@ type Playground() as self =
       c.addEventListener (
         "mouseleave",
         fun _ ->
-          playerX <- 240.
-          playerY <- 600.
+          playerX <- homeX
+          playerY <- homeY
       )
 
   member _.hud(n: int, t: float, frame: int) =
@@ -197,6 +214,40 @@ type Playground() as self =
     if not (isNull f) && frame <> lastFrame then
       lastFrame <- frame
       f.textContent <- string frame
+
+  /// 面の置き場所を host から引き直す。**大きさが変わったときだけ。**
+  ///
+  /// 敵と自機の定位置は向きで変わるので、ここで写す ——
+  /// JS 側に数を書くと、`Stage` と 2 通り の真ができる
+  member _.refreshPlaces() =
+    if isNull dotNet then ()
+    else
+      thenCatch
+        (invokeAsync0 dotNet "FieldSize")
+        (fun (v: obj) ->
+          homeX <- unbox<float> (jsItem v 2)
+          homeY <- unbox<float> (jsItem v 3)
+          enemyX <- unbox<float> (jsItem v 4)
+          enemyY <- unbox<float> (jsItem v 5))
+        (fun err -> setError (errText err))
+
+  /// 毎コマ host から来る、自機と面の大きさ。
+  ///
+  /// **大きさが変わったら canvas を建て直す。** 向きは弾幕が持っているので、
+  /// 変わるのは弾幕が変わったとき —— 建て直す道は 8 本 以上 あるので、
+  /// 「変わったら」で拾うほうが呼び忘れが起きない
+  member _.setView(px: float, py: float, w: float, h: float) =
+    drawX <- px
+    drawY <- py
+    if w > 0. && (w <> fieldW || h <> fieldH) then
+      fieldW <- w
+      fieldH <- h
+      let c = el "stage"
+      if not (isNull c) then
+        let cv = c :?> HTMLCanvasElement
+        cv.width <- int w
+        cv.height <- int h
+      self.refreshPlaces ()
 
   member _.ensureCtx() : CanvasRenderingContext2D =
     if not (isNull canvasCtx) then canvasCtx
@@ -225,12 +276,12 @@ type Playground() as self =
       c2d.fillRect (0., 0., float canvas.width, float canvas.height)
       c2d?fillStyle <- "#66ccff"
       c2d.beginPath ()
-      c2d.arc (playerX, playerY, 5., 0., System.Math.PI * 2.)
+      c2d.arc (drawX, drawY, 5., 0., System.Math.PI * 2.)
       c2d.fill ()
       c2d?fillStyle <- "#ffffff"
       if n <= 0 then
         c2d.beginPath ()
-        c2d.arc (240., 80., 6., 0., System.Math.PI * 2.)
+        c2d.arc (enemyX, enemyY, 6., 0., System.Math.PI * 2.)
         c2d.fill ()
         0
       else
@@ -558,6 +609,84 @@ type Playground() as self =
     saveText name text
     self.showNote ("落とした: " + name)
 
+  /// いま欄に出ている難度（0 から 100 の整数）。**字は 1 か所 でしか読まない**
+  member _.rankPercent() : int =
+    let el = el "rank"
+    if isNull el then 50
+    else
+      let mutable v = 0.0
+      if System.Double.TryParse((el :?> HTMLInputElement).value, &v)
+      then max 0 (min 100 (int v))
+      else 50
+
+  /// いま欄に出ている種。**読めなければ 1**（種は 0 から動かない）
+  member _.seedValue() : int =
+    let el = el "seed"
+    if isNull el then 1
+    else
+      let mutable v = 0.0
+      if System.Double.TryParse((el :?> HTMLInputElement).value, &v) then max 1 (int v) else 1
+
+  /// 難度の欄を動かした。**host が面を建て直す** ——
+  /// `Runner.load` は木を組む段で rank を引くので、走っている面には効かない
+  member _.setRank() =
+    let label = el "rank-value"
+    let n = self.rankPercent ()
+    if not (isNull label) then label.textContent <- string n
+    if isNull dotNet then ()
+    else
+      thenCatch
+        (invokeAsync1 dotNet "SetRank" (float n / 100.0))
+        (fun _ -> ())
+        (fun err -> setError (errText err))
+
+  /// 種の欄を動かした。**同じ種なら同じ走り**
+  member _.setSeed() =
+    if isNull dotNet then ()
+    else
+      thenCatch
+        (invokeAsync1 dotNet "SetSeed" (self.seedValue ()))
+        (fun _ -> ())
+        (fun err -> setError (errText err))
+
+  /// 自機の動かし方。**面を建て直さない** —— 難度や種と違って、
+  /// これは走っている面の途中からでも効く（狙いは毎コマ 引かれる）。
+  ///
+  /// 狙いを使う弾幕は 176 本 中 103 本（実測）——
+  /// つまり半分 以上 で、自機をどこに置くかが絵そのものを変える
+  member _.setPlayerMotion() =
+    let sel = el "player"
+    if isNull sel || isNull dotNet then ()
+    else
+      let mutable v = 0.0
+      let n =
+        if System.Double.TryParse((sel :?> HTMLSelectElement).value, &v) then int v else 0
+      thenCatch
+        (invokeAsync1 dotNet "SetPlayerMotion" n)
+        (fun _ -> ())
+        (fun err -> setError (errText err))
+
+  /// 種を振り直す。**「別の走りが見たい」を 1 手 に**
+  member _.rollSeed() =
+    let box = el "seed"
+    if isNull box then ()
+    else
+      // 1 から 999999。**0 を入れない**（種は 0 から動かない）
+      let n = 1 + int (floor (random () * 999999.0))
+      (box :?> HTMLInputElement).value <- string n
+      self.setSeed ()
+
+  /// リンクから来た走らせ方を欄と host に入れる。**負は「載っていない」の印**
+  member _.applyAxes(rank: int, seed: int) =
+    if rank >= 0 then
+      let box = el "rank"
+      if not (isNull box) then (box :?> HTMLInputElement).value <- string rank
+      self.setRank ()
+    if seed >= 0 then
+      let box = el "seed"
+      if not (isNull box) then (box :?> HTMLInputElement).value <- string (max 1 seed)
+      self.setSeed ()
+
   /// 補完の使い方。**中身は html に在る字だけ**で、ここは開け閉めだけ。
   /// ループは止めない —— 開いている間も弾幕は動く
   member _.help() =
@@ -617,7 +746,9 @@ type Playground() as self =
   member _.share() =
     self.showNote ""
     thenCatch
-      (box (Share.encode current.Kind (Monaco.getValue ())))
+      // **走らせ方も乗せる（版 2）。** 同じ本文でも難度と種が違えば別の絵 ——
+      // リンクが指しているのは「その走り」
+      (box (Share.encode current.Kind (self.rankPercent ()) (self.seedValue ()) (Monaco.getValue ())))
       (fun fragment ->
         window.location.hash <- string fragment
         setError ""
@@ -654,6 +785,9 @@ type Playground() as self =
             | Some lang ->
               Monaco.setValue r.Text
               self.useLanguage lang
+              // **走らせ方を先に入れる。** `apply` が面を建てるので、
+              // あとから入れると建て直しが 1 回 増える
+              self.applyAxes (r.Rank, r.Seed)
               self.showNote "リンクから読んだ"
               self.apply ())
         (fun err -> setError (errText err))
@@ -758,6 +892,14 @@ type Playground() as self =
                 let off = int (unbox<float> (jsItem ret 1) / 4.)
                 subarray (heapF32 ()) off (off + n * 2)
               else null
+            // **自機と面の大きさは host が決める。** 送った座標をそのまま
+            // 描くと、止めているときと回っているときに絵と狙いが食い違う
+            self.setView (
+              unbox<float> (jsItem ret 3),
+              unbox<float> (jsItem ret 4),
+              unbox<float> (jsItem ret 5),
+              unbox<float> (jsItem ret 6)
+            )
             self.draw (packed, n) |> ignore
             self.hud (n, t, int (unbox<float> (jsItem ret 2)))
           with ex ->
@@ -810,6 +952,10 @@ on "reset" "click" (fun () ->
   playground.wipeTrail ()
   playground.call ("Reset"))
 on "seek" "click" (fun () -> playground.seek ())
+on "rank" "input" (fun () -> playground.setRank ())
+on "seed" "change" (fun () -> playground.setSeed ())
+on "seed-roll" "click" (fun () -> playground.rollSeed ())
+on "player" "change" (fun () -> playground.setPlayerMotion ())
 on "trail" "change" (fun () -> playground.setTrail ())
 on "apply" "click" (fun () -> playground.apply ())
 on "open" "click" (fun () -> playground.``open``())

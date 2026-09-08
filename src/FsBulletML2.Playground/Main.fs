@@ -31,7 +31,23 @@ type PlaygroundHost() =
 
   let env = BrowserEnv()
   let mutable current = Initial.pattern.Bulletml
-  let mutable field = Playfield.Create env current
+
+  /// 面を建てる。**乱数の並びを頭へ戻してから。**
+  ///
+  /// 戻さないと、同じ種でも「建て直したあと」が別の走りになる ——
+  /// Reset も Apply も飛ぶのも、すべてここを通る。
+  ///
+  /// **`Runner.load` は木を組む段で rank と rand を引く**（`wait` の term を
+  /// その場で畳む）ので、rank や種を変えたら建て直すしかない
+  /// **面の形も建て直しで決まる。** 向きは弾幕が持っているので、
+  /// 弾幕が変われば面も変わりうる —— 自機の定位置ごと env へ渡す
+  let build (bulletml: Bulletml) =
+    env.RestartRandom()
+    let pf = Playfield.Create env bulletml
+    env.SetField pf.Field
+    pf
+
+  let mutable field = build current
   // **開いた時点で走っている。** Play を押すまで止まっていると、
   // 弾幕を見に来た人が最初に見るのが静止画になる。止めたい人は Pause を
   // 押せばよく、そちらは 1 手 で戻せる。
@@ -50,12 +66,27 @@ type PlaygroundHost() =
   let elapsed = fun () -> watch.Elapsed.TotalMilliseconds
   // **1 個 だけ作って持ち回る。** 毎コマ `field.Tick` を関数値にすると、
   // 1 フレーム につき 1 個 の閉包がヒープに乗る。
-  // `field` は Apply で差し替わるが、その都度 読み直すのでこれで足りる
-  let tick = fun () -> field.Tick()
-  let ret = Array.zeroCreate<float> 3
+  // `field` は Apply で差し替わるが、その都度 読み直すのでこれで足りる。
+  //
+  // **自機を動かすのもここ 1 か所。** 進める道は 3 本 ある（走る・1 コマ
+  // 送り・飛ぶ）ので、呼ぶ側に置くと必ずどれかで動かし忘れる
+  let tick =
+    fun () ->
+      env.AdvancePlayer field.Frame
+      field.Tick()
+  let ret = Array.zeroCreate<float> 7
   let catalog = lazy (All.bullets |> List.toArray)
 
-  /// `[n; ptr; frame]`。Apply で配列が差し替わるので ptr は毎コマ返す。
+  /// `[n; ptr; frame; playerX; playerY; width; height]`。
+  /// Apply で配列が差し替わるので ptr は毎コマ返す。
+  ///
+  /// **自機と面の大きさも毎コマ返す。** どちらも「建て直したときに変わる」
+  /// もので、JS から引きに行く形にすると建て直す道の数だけ呼び忘れる口が
+  /// できる（走る・1 コマ 送り・飛ぶ・Apply・Reset・選び直し・難度・種・
+  /// リンクを開く）。返してしまえば呼び忘れが起きない。
+  ///
+  /// 自機を返すのは、**送った座標がそのまま自機とは限らない**から ——
+  /// 止めているときと回っているときは、こちらが決める。
   ///
   /// **飛んでいるあいだは Pacing を通さない。** 速さは「見ながら進める」ための
   /// 道具で、飛ぶのは着くまでの手段 —— 混ぜると 1/4 速で飛べなくなる。
@@ -65,7 +96,7 @@ type PlaygroundHost() =
     if Seek.isRunning seek then
       // 戻るには建て直すしかない（面は逆再生できない）。
       // **建ててから差し替える** —— ほかの差し替えと同じ理由
-      if Seek.needsRestart field.Frame seek then field <- Playfield.Create env current
+      if Seek.needsRestart field.Frame seek then field <- build current
       watch.Restart()
       let struct (_, next) = Seek.step field.Frame tick elapsed seek
       seek <- next
@@ -73,6 +104,10 @@ type PlaygroundHost() =
     ret.[0] <- float (field.Pack())
     ret.[1] <- field.PackedPtr
     ret.[2] <- float field.Frame
+    ret.[3] <- float env.PlayerX
+    ret.[4] <- float env.PlayerY
+    ret.[5] <- float field.Field.Width
+    ret.[6] <- float field.Field.Height
     ret
 
   /// **飛ぶのをやめる。** 飛んでいる最中の Play は「もう待たない」なので、
@@ -93,7 +128,7 @@ type PlaygroundHost() =
   member _.StepOnce() =
     seek <- Seek.idle
     playing <- false
-    field.Tick()
+    tick ()
 
   /// そのコマへ飛ぶ。**着くまで何フレームか かかる**（`Seek` の但し書き）。
   ///
@@ -111,12 +146,66 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.SetRate(n: int) = pacing <- Pacing.withRate n
 
+  /// 難易度。**0 から 1。**
+  ///
+  /// 版の頭で測った —— 0 と 1 に振ると **176 本 中 171 本 で走りが変わる**
+  /// （弾数が 3 倍 から 7 倍 になるものが在る）。v1.9 まで 0.5 に固定していた。
+  ///
+  /// **建て直す。** `Runner.load` は木を組む段で rank を引く（`wait` の term を
+  /// その場で畳む）ので、走っている面には効かない。
+  ///
+  /// **速さや配色と違って、これは弾幕の走りを変える。** 見る側の都合ではなく
+  /// 「どの難度の絵を見ているか」なので、Reset でも Apply でも保つ
+  [<JSInvokable>]
+  member _.SetRank(v: float) =
+    env.SetRank(float32 v)
+    seek <- Seek.idle
+    field <- build current
+
+  /// 乱数の種。**同じ種なら同じ走り。**
+  ///
+  /// v1.9 まで `System.Random()` に種が無く、毎回 別の走りだった ——
+  /// 「いま見た絵をもう一度」が出せない。
+  ///
+  /// **並びを決めるのは `SeededRandom`**（`System.Random` ではない）——
+  /// 種は Share URL に乗るので、走らせる runtime が変わっても
+  /// 同じ絵でなければならない。
+  [<JSInvokable>]
+  member _.SetSeed(n: int) =
+    env.SetSeed n
+    seek <- Seek.idle
+    field <- build current
+
+  /// いまの難度と種。**Share が読む。** `[rank; seed]`
+  [<JSInvokable>]
+  member _.ViewAxes() : float[] = [| float env.RankValue; float env.Seed |]
+
+  /// 自機の動かし方。**面が変わっても保つ** ——
+  /// 難度や種と違って走りの一部ではないが、見る人の手の置き方なので、
+  /// 弾幕を替えるたびに追う側へ戻されると邪魔になる
+  [<JSInvokable>]
+  member _.SetPlayerMotion(n: int) = env.SetMotion(Player.ofInt n)
+
+  /// 面の大きさ。**JS が canvas をこの大きさにする。**
+  ///
+  /// 向きは弾幕が持っているので、建て直すたびに変わりうる ——
+  /// 呼ぶのは建て直した側（Apply / Reset / 選び直し / 難度 / 種）。
+  ///
+  /// `[width; height; playerX; playerY; enemyX; enemyY]`。置き場所も返すのは、
+  /// マウスが面の外に出たときの戻り先と、弾が 1 つ も無いときに描く敵が
+  /// 要るため。**JS 側に数を書き写さない**
+  [<JSInvokable>]
+  member _.FieldSize() : float[] =
+    let f = field.Field
+    [| float f.Width; float f.Height; float f.PlayerX; float f.PlayerY
+       float f.EnemyX; float f.EnemyY |]
+
   /// **飛んでいる最中でも頭へ戻す。** 面を建て直すと `Frame` も 0 に戻るので、
   /// 飛び先を持ったままだとそこへ向かって走り直してしまう
   [<JSInvokable>]
   member _.Reset() =
     seek <- Seek.idle
-    field <- Playfield.Create env current
+    field <- build current
 
   /// 起動時に欄へ出す XML。**html に直書きしない。**
   ///
@@ -183,7 +272,7 @@ type PlaygroundHost() =
           | Result.Ok text ->
             // 建ててから差し替える（`ApplySource` と同じ理由。落ちたあとの
             // `Reset` が `current` から建て直すので、進めてはいけない）
-            let next = Playfield.Create env info.Bulletml
+            let next = build info.Bulletml
             current <- info.Bulletml
             field <- next
             // 別の弾幕に飛び先は引き継がない（`Reset` と同じ理由）
@@ -233,7 +322,7 @@ type PlaygroundHost() =
     // 先に `current` を書くと、落ちたあとの Reset がその弾幕で作り直して
     // また落ちる（`Reset` は `current` から建てる）
     let put bulletml =
-      let next = Playfield.Create env bulletml
+      let next = build bulletml
       current <- bulletml
       field <- next
       // 別の本文に飛び先は引き継がない（`Reset` と同じ理由）

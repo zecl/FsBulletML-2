@@ -30,8 +30,8 @@ module internal DeterministicField =
     { new IFrontEnv with
         member _.Rand = rand
         member _.Rank = 0.5f
-        member _.PlayerX = Stage.PlayerX0
-        member _.PlayerY = Stage.PlayerY0
+        member _.PlayerX = Stage.portrait.PlayerX
+        member _.PlayerY = Stage.portrait.PlayerY
         member _.TryTargetFrom(_, _, tx, ty) =
           tx <- 0.0f
           ty <- 0.0f

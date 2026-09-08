@@ -88,6 +88,26 @@
         <button type="button" id="seek" title="そのコマまで進める（着いたら止まる）">飛ぶ</button>
         <!-- 過去の位置は貯めない。面を薄く塗り重ねるだけ（fable の draw） -->
         <label class="rate"><input id="trail" type="checkbox"> 軌跡</label>
+        <!-- 難度（$rank）。**176 本 中 173 本 が使う軸**で、v1.9 まで 0.5 固定だった。
+             動かすと host が面を建て直す（rank は木を組む段で焼き込まれる） -->
+        <label class="rate">難度
+          <input id="rank" type="range" min="0" max="100" step="1" value="50" title="$rank（0 から 1）">
+          <span id="rank-value">50</span>
+        </label>
+        <!-- 乱数の種。**同じ種なら同じ走り。** Share URL に乗る -->
+        <label class="rate">種
+          <input id="seed" type="number" min="1" max="999999" step="1" value="1" title="同じ種なら同じ走り">
+        </label>
+        <button type="button" id="seed-roll" title="種を振り直す（別の走りを見る）">振</button>
+        <!-- 自機の動かし方。**176 本 中 103 本 が狙いを使う**（実測）ので、
+             自機をどこに置くかは半分 以上 の弾幕で絵そのものを変える -->
+        <label class="rate">自機
+          <select id="player" title="狙い弾の基準になる自機をどう動かすか">
+            <option value="0">追う</option>
+            <option value="1">止める</option>
+            <option value="2">回る</option>
+          </select>
+        </label>
         <button type="button" id="reset">Reset</button>
         <button type="button" id="apply">Apply</button>
         <button type="button" id="open">Open</button>
@@ -205,6 +225,27 @@
         <li><strong>Reset</strong> はいま載っている弾幕を最初から。<strong>欄の文字は触らない</strong></li>
         <li><strong>Frame</strong> は載せてから進めたコマ数。Apply や Reset、
             弾幕の選び直しで 0 に戻る</li>
+        <li><strong>難度</strong>は <code>$rank</code>（0 から 1）。
+            <strong>同梱 176 本 のうち 173 本 が使う軸</strong>で、
+            0 と 1 に振ると <strong>171 本 で走りが変わる</strong>（弾数が数倍 になるものも在る）。
+            動かすと弾幕は最初から走り直す —— <code>$rank</code> は
+            <strong>木を組む段で焼き込まれる</strong>ので、走っている面には効かない</li>
+        <li><strong>種</strong>は <code>$rand</code> の並びを決める。
+            <strong>同じ種なら同じ走り</strong>で、<strong>振</strong> を押すと別の走りになる。
+            Reset で頭に戻しても<strong>同じ絵をもう一度</strong>見られる</li>
+        <li><strong>面の向きは弾幕が決める。</strong>
+            <code>&lt;bulletml type="horizontal"&gt;</code> と書いてあれば横長の面になり、
+            <strong>敵が右・自機が左</strong>に置かれる。同梱 176 本 のうち 9 本 がこれ。
+            <strong>面を回すのではない</strong> —— 横画面の弾幕は座標のとり方はそのままに
+            左の側へ撃つように書かれているので、自機を左に置けば絵が成り立つ。
+            書いていなければ縦の面（<code>vertical</code> と同じ）</li>
+        <li><strong>自機</strong>は狙い弾（<code>type="aim"</code>）の基準。
+            <strong>176 本 のうち 103 本 が狙いを使う</strong>ので、
+            どこに置くかで絵そのものが変わる。
+            <strong>追う</strong>はマウス、<strong>止める</strong>は定位置、
+            <strong>回る</strong>は定位置のまわりを 240 コマ かけて 1 周。
+            回るのは<strong>コマ数だけで決まる</strong>ので、
+            同じ種・同じ難度なら同じ絵になる</li>
         <li><strong>飛ぶ</strong> はそのコマまで進めて<strong>止まる</strong>（1 コマ 送りと同じ）。
             <strong>押しても画面は固まらない</strong> —— 重い弾幕だと着くまで何秒か かかるので、
             進んでいることは Frame の数で分かる。Play を押せばそこでやめる。
@@ -237,6 +278,8 @@
             <strong>サーバへは送られない</strong>（<code>#</code> の後ろに載るので、
             置いてあるところからは中身が見えない）。
             表記も一緒に載るので、開いた側は同じ表記で読む。
+            <strong>難度と種も載る</strong> —— 同じ本文でも走らせ方が違えば別の絵なので、
+            <strong>リンクが指しているのは「その走り」</strong>。
             <strong>版が違うリンクや壊れた字は「読めない」と出る</strong>（黙って空にしない）</li>
         <li><kbd>Ctrl</kbd>+<kbd>.</kbd> は<strong>綴りの直し方</strong>を出す。
             <code>actionRef label="tp"</code> のように指す先が無いとき、

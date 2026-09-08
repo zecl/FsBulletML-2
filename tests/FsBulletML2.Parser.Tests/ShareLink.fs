@@ -50,7 +50,7 @@ type ShareLinkTests() =
     // ここが黙って通ると「空のリンク」が作れてしまう
     ShareLink.toBase64Url [||] |> should equal ""
     ShareLink.tryFromBase64Url "" |> should equal None
-    match ShareLink.tryParse(ShareLink.build SourceKind.Xml [||]) with
+    match ShareLink.tryParse(ShareLink.build SourceKind.Xml 50 7 [||]) with
     | Result.Error why -> why |> should equal "共有リンクの中身が壊れている"
     | Result.Ok _ -> failwith "空の中身が読めてしまった"
 
@@ -68,29 +68,59 @@ type ShareLinkTests() =
   member _.``4 表記 とも往復する``() =
     for kind in SourceKind.all do
       let bytes = bytesOf 64
-      match ShareLink.tryParse(ShareLink.build kind bytes) with
+      match ShareLink.tryParse(ShareLink.build kind 50 7 bytes) with
       | Result.Ok link ->
         link.Kind |> should equal kind
         link.Bytes |> should equal bytes
+        link.Rank |> should equal 50
+        link.Seed |> should equal 7
       | Result.Error why -> failwithf "%s が戻らなかった: %s" kind.Id why
+
+  [<Test>]
+  member _.``走らせ方も往復する``() =
+    // **同じ本文でも、難度と種が違えば別の絵**（版 2 で乗せた）——
+    // 端も通す（0 と 100、種の上限）
+    for (rank, seed) in [ 0, 1; 100, 999999; 37, 12345 ] do
+      match ShareLink.tryParse(ShareLink.build SourceKind.Xml rank seed (bytesOf 8)) with
+      | Result.Ok link ->
+        link.Rank |> should equal rank
+        link.Seed |> should equal seed
+      | Result.Error why -> failwithf "%d/%d が戻らなかった: %s" rank seed why
+
+  [<Test>]
+  member _.``難度は範囲で丸める``() =
+    // **`JSInvokable` の先から来る値**なので、UI に無い数も来うる
+    let rankOf (n: int) =
+      match ShareLink.tryParse(ShareLink.build SourceKind.Xml n 1 (bytesOf 4)) with
+      | Result.Ok link -> link.Rank
+      | Result.Error why -> failwith why
+    rankOf -5 |> should equal 0
+    rankOf 999 |> should equal ShareLink.RankScale
+
+  [<Test>]
+  member _.``走らせ方が違えばリンクも違う``() =
+    // 上の往復は、**乗せていなくても「同じものが戻った」で緑になる**
+    let link r s = ShareLink.build SourceKind.Xml r s (bytesOf 8)
+    link 50 1 |> should not' (equal (link 60 1))
+    link 50 1 |> should not' (equal (link 50 2))
 
   [<Test>]
   member _.``版が頭に出る``() =
     // **形を変えたときに、古いリンクを黙って誤読しない**ための字
-    ShareLink.build SourceKind.Xml (bytesOf 8)
+    ShareLink.build SourceKind.Xml 50 7 (bytesOf 8)
     |> _.StartsWith(ShareLink.version + ".")
     |> should equal true
 
   [<Test>]
   member _.``違う版は読まない``() =
-    match ShareLink.tryParse "2.xml.AQID" with
+    match ShareLink.tryParse "1.xml.50.7.AQID" with
     | Result.Error why -> why |> should contain "版"
     | Result.Ok _ -> failwith "違う版が読めてしまった"
 
   [<Test>]
   member _.``頭 の シャープ は在っても無くてもよい``() =
     // `location.hash` は付けて返す
-    let link = ShareLink.build SourceKind.Sxml (bytesOf 16)
+    let link = ShareLink.build SourceKind.Sxml 50 7 (bytesOf 16)
     ShareLink.tryParse link |> should equal (ShareLink.tryParse ("#" + link))
 
   [<Test>]
@@ -103,15 +133,18 @@ type ShareLinkTests() =
     why "" |> should equal "共有リンクが空"
     why "#" |> should equal "共有リンクが空"
     why null |> should equal "共有リンクが空"
-    why "1.xml" |> should equal "共有リンクの形が違う"
-    why "1.xml.AQID.AQID" |> should equal "共有リンクの形が違う"
-    why "1.nope.AQID" |> should equal "知らない表記: nope"
-    why "1.XML.AQID" |> should equal "知らない表記: XML"
+    why "2.xml" |> should equal "共有リンクの形が違う"
+    why "2.xml.50.7.AQID.AQID" |> should equal "共有リンクの形が違う"
+    why "2.nope.50.7.AQID" |> should equal "知らない表記: nope"
+    why "2.XML.50.7.AQID" |> should equal "知らない表記: XML"
+    why "2.xml.x.7.AQID" |> should equal "共有リンクの走らせ方が読めない"
+    why "2.xml.50.x.AQID" |> should equal "共有リンクの走らせ方が読めない"
+    why "2.xml.101.7.AQID" |> should equal "共有リンクの難度が範囲の外"
 
   [<Test>]
   member _.``表記は器の 1 本 から引く``() =
     // ここに `"xml"` の表を持つと、表記を足したときそちらだけ古びる
     for kind in SourceKind.all do
-      match ShareLink.tryParse(ShareLink.build kind (bytesOf 4)) with
+      match ShareLink.tryParse(ShareLink.build kind 50 7 (bytesOf 4)) with
       | Result.Ok link -> link.Kind.Id |> should equal kind.Id
       | Result.Error why -> failwithf "%s: %s" kind.Id why

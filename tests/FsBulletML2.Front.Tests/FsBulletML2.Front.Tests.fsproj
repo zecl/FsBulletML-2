@@ -21,12 +21,19 @@
       同じ形の前例: Parser.Tests が Vocabulary.fs / XmlScan.fs を借りている。
     -->
     <Compile Include="..\..\src\FsBulletML2.Playground\Stage.fs" Link="Stage.fs" />
+    <Compile Include="..\..\src\FsBulletML2.Playground\Rand.fs" Link="Rand.fs" />
+    <Compile Include="..\..\src\FsBulletML2.Playground\Player.fs" Link="Player.fs" />
+    <Compile Include="..\..\src\FsBulletML2.Playground\BrowserEnv.fs" Link="BrowserEnv.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Pacing.fs" Link="Pacing.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Seek.fs" Link="Seek.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Playfield.fs" Link="Playfield.fs" />
     <Compile Include="DeterministicField.fs" />
     <Compile Include="StepPacing.fs" />
     <Compile Include="SeekFrames.fs" />
+    <!-- 種と難度（v2.0）。**リンクが指しているのは「その走り」** -->
+    <Compile Include="SeededRuns.fs" />
+    <!-- 画面の向きと自機（v2.0）。**弾幕が面の形を決める** -->
+    <Compile Include="ViewFacing.fs" />
   </ItemGroup>
   <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
        手のせいか版のせいかが割れない -->

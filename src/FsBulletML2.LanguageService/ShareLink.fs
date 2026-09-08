@@ -7,8 +7,17 @@ open System.Text
 
 /// 共有リンクの中身。**サーバを持たない** —— 本文そのものが URL に乗る。
 ///
-/// 字にすると `<版>.<表記の Id>.<base64url>`。fragment（`#` の後ろ）に置くので
-/// サーバへは送られない。
+/// 字にすると `<版>.<表記の Id>.<難度>.<種>.<base64url>`。
+/// fragment（`#` の後ろ）に置くのでサーバへは送られない。
+///
+/// ## 走らせ方も乗る（版 2）
+///
+/// 版 1 は本文だけだった。**同じ本文でも、難度と種が違えば別の絵**になる ——
+/// `$rank` は 176 本 中 173 本 が、`$rand` は 115 本 が使う。
+/// リンクが指しているのは「その走り」なので、両方 乗せる。
+///
+/// **版 1 のリンクは読めない**（そう作ってある）。まだ配っていないので、
+/// そこは断ってよい（決めた）。
 ///
 /// ## 中身を開かない
 ///
@@ -22,6 +31,11 @@ open System.Text
 type ShareLink =
   { /// どの表記で書かれた本文か。**本文だけだと開いた側が決められない**
     Kind: SourceKind
+    /// 難度（`$rank`）を 100 倍 した整数。**0 から 100。**
+    /// 小数を字にすると runtime で桁が変わるので、整数で載せる
+    Rank: int
+    /// 乱数の種。**同じ種なら同じ走り**（`SeededRandom`）
+    Seed: int
     /// 圧縮された本文。**中身はここでは開かない**
     Bytes: byte[] }
 
@@ -32,8 +46,14 @@ module ShareLink =
   ///
   /// 置かないと、形を変えたときに古いリンクを黙って誤読する ——
   /// 圧縮の形式を替えれば base64url は通るのに中身だけが化ける、が起きる。
-  /// 版が違えば「このリンクは読めない」と言って止まる
-  let version = "1"
+  /// 版が違えば「このリンクは読めない」と言って止まる。
+  ///
+  /// **2 で走らせ方（難度と種）が乗った。** 版 1 のリンクは読めない
+  let version = "2"
+
+  /// 難度は 100 倍 の整数で載る。**上限**
+  [<Literal>]
+  let RankScale = 100
 
   /// 区切り。**base64url に出ない字**を選ぶ（出る字だと分け目が動く）
   let private separator = '.'
@@ -70,10 +90,37 @@ module ShareLink =
         let padded = s.Replace('-', '+').Replace('_', '/') + pad
         try Some(Convert.FromBase64String padded) with _ -> None
 
+  /// 数を 10 進 の字にする。**`string` に任せない** ——
+  /// runtime によって桁や記号が変わりうる（負は 0 に倒すので符号は出ない）
+  ///
+  /// **`StringBuilder.Insert` を使わない。** Fable の library に口が無く、
+  /// .NET では通るのに**焼いた JS だけが読み込みで落ちる**
+  /// （突き合わせの門が捕まえた）。桁は多くて 9 個 なので、字を前へ足す
+  let private digits (n: int) =
+    let n = max 0 n
+    if n = 0 then "0"
+    else
+      let mutable s = ""
+      let mutable v = n
+      while v > 0 do
+        s <- string (char (int '0' + v % 10)) + s
+        v <- v / 10
+      s
+
+  /// 10 進 の字を数へ。**数字以外 が 1 つ でも在れば `None`**
+  let private tryDigits (s: string) =
+    if isNull s || s.Length = 0 || s.Length > 9 then None
+    elif s |> Seq.exists (fun c -> c < '0' || c > '9') then None
+    else Some(s |> Seq.fold (fun acc c -> acc * 10 + int c - int '0') 0)
+
   /// リンクの中身を字にする。**組み立てはここ 1 か所**で、読む側と対
-  let build (kind: SourceKind) (bytes: byte[]) : string =
+  let build (kind: SourceKind) (rank: int) (seed: int) (bytes: byte[]) : string =
+    let rank = if rank < 0 then 0 elif rank > RankScale then RankScale else rank
     let sb = StringBuilder()
-    sb.Append(version).Append(separator).Append(kind.Id).Append(separator)
+    sb.Append(version).Append(separator)
+      .Append(kind.Id).Append(separator)
+      .Append(digits rank).Append(separator)
+      .Append(digits seed).Append(separator)
       .Append(toBase64Url bytes).ToString()
 
   /// 字からリンクを戻す。**読めないときは理由を返す** ——
@@ -88,21 +135,28 @@ module ShareLink =
     if s.Length = 0 then Result.Error "共有リンクが空"
     else
       let parts = s.Split separator
-      if parts.Length <> 3 then
+      // **版だけは形が違っても読む。** 古いリンクに「形が違う」と出すと、
+      // 人には「壊れた」に見える —— 読めない理由は版であって形ではない
+      let v = if parts.Length > 0 then parts.[0] else ""
+      if v <> version then
+        Result.Error(sprintf "このリンクは読めない（版 %s / いまは %s）" v version)
+      elif parts.Length <> 5 then
         Result.Error "共有リンクの形が違う"
       else
-        let v = parts.[0]
         let id = parts.[1]
-        let payload = parts.[2]
-        if v <> version then
-          Result.Error(sprintf "このリンクは読めない（版 %s / いまは %s）" v version)
-        else
-          match SourceKind.tryParse id with
-          | None -> Result.Error(sprintf "知らない表記: %s" id)
-          | Some kind ->
-            match tryFromBase64Url payload with
+        match SourceKind.tryParse id with
+        | None -> Result.Error(sprintf "知らない表記: %s" id)
+        | Some kind ->
+          match tryDigits parts.[2], tryDigits parts.[3] with
+          | None, _
+          | _, None -> Result.Error "共有リンクの走らせ方が読めない"
+          | Some rank, Some seed when rank > RankScale ->
+            ignore seed
+            Result.Error "共有リンクの難度が範囲の外"
+          | Some rank, Some seed ->
+            match tryFromBase64Url parts.[4] with
             | None -> Result.Error "共有リンクの中身が壊れている"
-            | Some bytes -> Result.Ok { Kind = kind; Bytes = bytes }
+            | Some bytes -> Result.Ok { Kind = kind; Rank = rank; Seed = seed; Bytes = bytes }
 
   /// 2 つ の runtime で同じ答えが返ることを見る口。
   /// **組み立てはここ 1 か所。** node 側 と .NET 側 で別々に組むと、
@@ -123,6 +177,10 @@ module ShareLink =
       add "ok:"
       add link.Kind.Id
       add "/"
+      add (digits link.Rank)
+      add "/"
+      add (digits link.Seed)
+      add "/"
       add (string link.Bytes.Length)
       add "/"
       // 中身そのもの。**長さだけだと、並びが入れ替わっても気づかない**
@@ -141,5 +199,6 @@ module ShareLink =
       add ":"
       add (if back.Length = n && Array.forall2 (=) back bytes then "same" else "differs")
     add " link="
-    add (build SourceKind.Xml bytes)
+    // **走らせ方も長さから決める。** 表に数を並べると、そちらが 2 つ 目 の表になる
+    add (build SourceKind.Xml (n * 7 % (RankScale + 1)) (n * 12345 + 1) bytes)
     sb.ToString()

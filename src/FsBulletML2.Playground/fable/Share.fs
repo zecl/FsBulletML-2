@@ -28,6 +28,10 @@ type ShareRead =
     KindId: string
     /// 読めたときの本文。読めなければ空
     Text: string
+    /// 難度を 100 倍 した整数（版 2）。読めなければ -1
+    Rank: int
+    /// 乱数の種（版 2）。読めなければ -1
+    Seed: int
     /// 読めなかった理由。読めれば空
     Message: string }
 
@@ -68,11 +72,14 @@ let private deflate (text: string) : JS.Promise<byte[]> = jsNative
 let private inflate (bytes: byte[]) : JS.Promise<string> = jsNative
 
 let private ng (message: string) =
-  { Ok = false; KindId = ""; Text = ""; Message = message }
+  { Ok = false; KindId = ""; Text = ""; Rank = -1; Seed = -1; Message = message }
 
-/// 本文を fragment にする。**頭 の `#` は付けない**（付ける側が決める）
-let encode (kind: SourceKind) (text: string) : JS.Promise<string> =
-  deflate text |> pmap (fun bytes -> ShareLink.build kind bytes)
+/// 本文と走らせ方を fragment にする。**頭 の `#` は付けない**（付ける側が決める）。
+///
+/// **走らせ方も乗せる（版 2）** —— 同じ本文でも、難度と種が違えば別の絵。
+/// リンクが指しているのは「その走り」
+let encode (kind: SourceKind) (rank: int) (seed: int) (text: string) : JS.Promise<string> =
+  deflate text |> pmap (fun bytes -> ShareLink.build kind rank seed bytes)
 
 /// fragment を本文に戻す。
 ///
@@ -84,6 +91,12 @@ let decode (fragment: string) : JS.Promise<ShareRead> =
   | Result.Error why -> resolved (ng why)
   | Result.Ok link ->
     inflate link.Bytes
-    |> pmap (fun text -> { Ok = true; KindId = link.Kind.Id; Text = text; Message = "" })
+    |> pmap (fun text ->
+         { Ok = true
+           KindId = link.Kind.Id
+           Text = text
+           Rank = link.Rank
+           Seed = link.Seed
+           Message = "" })
     // 中身が base64url を通っても、解けるとは限らない
     |> pcatch (fun _ -> ng "共有リンクの中身を開けない")
