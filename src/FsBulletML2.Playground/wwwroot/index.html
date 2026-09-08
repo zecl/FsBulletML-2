@@ -51,22 +51,30 @@
              乱数は面ごとに分けてあるので、1 面 で見たときと同じ絵が出る -->
         <canvas id="stage2" width="480" height="640" hidden></canvas>
         <div class="editor">
+        <!-- **層でまとめてある**（v2.4.2）。並びは
+             本文 -> 軸 -> 見る側の都合 -> 助け。
+             `id` とラベルは 1 つ も変えていない —— あれを変えると
+             `Playground.fs` の `el "id"`（42 回）と help の説明（63 か所）が動く。
+             **並べ替えだけなら、直すのは README の表 1 か所。** -->
         <div class="picker">
+          <!-- 本文。**字が変わる側** -->
           <select id="pattern">
             <option value="">（編集 / Open）</option>
           </select>
-          <!-- 2 つ 目 の面に載せる弾幕（v2.1）。中身は空 ——
-               並びは `#pattern` と同じ 1 本 から Fable が作る -->
-          <label class="mode">2 面<select id="pattern2"><option value="">なし</option></select></label>
           <!-- 中身は空。**表記の表を html に書かない** —— 登録されている
                並び（Playground.fs の languages）から Fable が作る -->
           <label class="mode">表記<select id="mode"></select></label>
-          <!-- 中身は空。**配色の表も html に書かない** —— Monaco が素で
-               持っている並び（fable/Monaco.fs の themes）から Fable が作る -->
+          <!-- 走らせ方の軸。**弾幕は同じで走りが変わる**（Share に乗る）。
+               2 つ 目 の面に載せる弾幕（v2.1）。中身は空 ——
+               並びは `#pattern` と同じ 1 本 から Fable が作る -->
+          <label class="mode">2 面<select id="pattern2"><option value="">なし</option></select></label>
+          <!-- 見る側の都合。**弾幕にも本文にも触らない**。
+               中身は空 —— Monaco が素で持っている並び（fable/Monaco.fs の themes）から -->
           <label class="mode">配色<select id="theme"></select></label>
           <!-- 比べる先。**中身は空** —— 表記の並びは Fable が作る（`mode` と同じ理由）。
                並べているあいだは**読むだけ**で、直すのは元の欄でやる -->
           <label class="mode">比べる<select id="compare"></select></label>
+          <!-- 助け -->
           <button type="button" id="help" title="補完の使い方">?</button>
         </div>
         <!-- 中身は空。**XML を html に書かない** —— 起動時の本文は host が
@@ -78,11 +86,25 @@
         <div id="diff" class="source" hidden></div>
         </div>
       </div>
+      <!-- **層でまとめてある**（v2.4.2）。並びは
+           時間 -> 見る側の都合 -> 走らせ方の軸 -> 本文。
+           **`Reset` は時間の側**（`Apply` の隣から離した）——
+           片方 は走行を頭へ戻し、もう片方 は本文を反映する。
+           押し間違えると失うものが違う。 -->
       <div class="bar">
+        <!-- 時間。**走行の制御** -->
         <button type="button" id="play">Play</button>
         <button type="button" id="pause">Pause</button>
         <button type="button" id="step-once" title="1 コマ 進める（押すと止まる）">&#9654;|</button>
-        <!-- 数の意味は host の Pacing が持つ。正なら 1 コマ に何回 進めるか、
+        <!-- 飛び先。上限と丸め方は host の Seek が持つ（html には書かない）。
+             **押しても画面は止まらない** —— 着くまで何フレームか かかる -->
+        <label class="rate">コマ
+          <input id="seek-to" type="number" min="0" step="60" value="600" title="飛び先のコマ数">
+        </label>
+        <button type="button" id="seek" title="そのコマまで進める（着いたら止まる）">飛ぶ</button>
+        <button type="button" id="reset">Reset</button>
+        <!-- 見る側の都合。**弾幕にも本文にも触らない**（Apply / Reset でも戻さない）。
+             数の意味は host の Pacing が持つ。正なら 1 コマ に何回 進めるか、
              負なら何コマ に 1 回 進めるか -->
         <label class="rate">速さ
           <select id="rate">
@@ -93,15 +115,10 @@
             <option value="4">x4</option>
           </select>
         </label>
-        <!-- 飛び先。上限と丸め方は host の Seek が持つ（html には書かない）。
-             **押しても画面は止まらない** —— 着くまで何フレームか かかる -->
-        <label class="rate">コマ
-          <input id="seek-to" type="number" min="0" step="60" value="600" title="飛び先のコマ数">
-        </label>
-        <button type="button" id="seek" title="そのコマまで進める（着いたら止まる）">飛ぶ</button>
         <!-- 過去の位置は貯めない。面を薄く塗り重ねるだけ（fable の draw） -->
         <label class="rate"><input id="trail" type="checkbox"> 軌跡</label>
-        <!-- 難度（$rank）。**176 本 中 173 本 が使う軸**で、v1.9 まで 0.5 固定だった。
+        <!-- 走らせ方の軸。**弾幕は同じで走りが変わる** —— どれも Share に乗る。
+             難度（$rank）は 176 本 中 173 本 が使う軸で、v1.9 まで 0.5 固定だった。
              動かすと host が面を建て直す（rank は木を組む段で焼き込まれる） -->
         <label class="rate">難度
           <input id="rank" type="range" min="0" max="100" step="1" value="50" title="$rank（0 から 1）">
@@ -121,7 +138,7 @@
             <option value="2">回る</option>
           </select>
         </label>
-        <button type="button" id="reset">Reset</button>
+        <!-- 本文。**字が変わる側** -->
         <button type="button" id="apply">Apply</button>
         <button type="button" id="open">Open</button>
         <!-- 落とす先の名前と拡張子は Fable が表記から組む。**html に書かない** ——
