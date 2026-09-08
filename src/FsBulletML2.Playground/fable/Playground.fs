@@ -1249,6 +1249,35 @@ on "save" "click" (fun () -> playground.save ())
 on "format" "click" (fun () -> playground.format ())
 on "share" "click" (fun () -> playground.share ())
 
+// **窓の大きさが変わったら、欄を測り直す**（v2.4.4）。
+//
+// `automaticLayout` は入れ物の変化を自分で見ることになっているが、
+// 入れ物の幅を 728 -> 300 に変えて測ると `getLayoutInfo().width` が
+// **726 のまま動かなかった**（親でも iframe の中でも同じ。`layout()` を
+// 呼ぶと 326 に直る）。欄の中身が入れ物より広いままなので、**そのぶん
+// 画面が横に溢れる** —— 狭い画面でいちばん目に付く崩れがこれ。
+//
+// **`automaticLayout` を外して替えるのではなく、足す。** 背面タブで
+// 発火しないのはどちらも同じで、そこは変えない（Monaco.fs の但し書き）。
+//
+// **1 回 に畳む。** 掴んで窓を引き伸ばすと resize は数十回 飛んでくる。
+//
+// **畳むのに `requestAnimationFrame` を使わない。** 背面タブでは rAF が
+// 止まるので、そこで測ると「resize は 2 回 届いたのに rAF は 0 回」になる
+// （実際にそう出た）。窓の掴み替えは前面でしか起きないので実害は無いが、
+// **測れない実装を増やさない** —— `setTimeout` なら背面でも走る
+let mutable private relayoutQueued = false
+
+window.addEventListener (
+  "resize",
+  fun _ ->
+    if not relayoutQueued then
+      relayoutQueued <- true
+      window.setTimeout ((fun _ ->
+        relayoutQueued <- false
+        Monaco.relayout ()), 50)
+      |> ignore)
+
 // **いちばん最後。** 上の配線が済んでから WASM を起こす ——
 // `onReady` はここから返ってくるので、先に起こすと受け口が無い。
 // 失敗は `#loop-error` に出す。黙って白い画面にしない
