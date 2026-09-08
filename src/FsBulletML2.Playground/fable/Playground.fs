@@ -89,6 +89,11 @@ let private copyText (s: string) : obj = jsNative
 })()""")>]
 let private saveText (name: string) (text: string) : unit = jsNative
 
+// 種を振り直すときだけ使う。**弾幕の乱数はこれではない** ——
+// あちらは host の `SeededRandom`（種から決まる並び）
+[<Emit("Math.random()")>]
+let private random () : float = jsNative
+
 let private el (id: string) = document.getElementById id
 
 let private setError (msg: string) =
@@ -558,6 +563,67 @@ type Playground() as self =
     saveText name text
     self.showNote ("落とした: " + name)
 
+  /// いま欄に出ている難度（0 から 100 の整数）。**字は 1 か所 でしか読まない**
+  member _.rankPercent() : int =
+    let el = el "rank"
+    if isNull el then 50
+    else
+      let mutable v = 0.0
+      if System.Double.TryParse((el :?> HTMLInputElement).value, &v)
+      then max 0 (min 100 (int v))
+      else 50
+
+  /// いま欄に出ている種。**読めなければ 1**（種は 0 から動かない）
+  member _.seedValue() : int =
+    let el = el "seed"
+    if isNull el then 1
+    else
+      let mutable v = 0.0
+      if System.Double.TryParse((el :?> HTMLInputElement).value, &v) then max 1 (int v) else 1
+
+  /// 難度の欄を動かした。**host が面を建て直す** ——
+  /// `Runner.load` は木を組む段で rank を引くので、走っている面には効かない
+  member _.setRank() =
+    let label = el "rank-value"
+    let n = self.rankPercent ()
+    if not (isNull label) then label.textContent <- string n
+    if isNull dotNet then ()
+    else
+      thenCatch
+        (invokeAsync1 dotNet "SetRank" (float n / 100.0))
+        (fun _ -> ())
+        (fun err -> setError (errText err))
+
+  /// 種の欄を動かした。**同じ種なら同じ走り**
+  member _.setSeed() =
+    if isNull dotNet then ()
+    else
+      thenCatch
+        (invokeAsync1 dotNet "SetSeed" (self.seedValue ()))
+        (fun _ -> ())
+        (fun err -> setError (errText err))
+
+  /// 種を振り直す。**「別の走りが見たい」を 1 手 に**
+  member _.rollSeed() =
+    let box = el "seed"
+    if isNull box then ()
+    else
+      // 1 から 999999。**0 を入れない**（種は 0 から動かない）
+      let n = 1 + int (floor (random () * 999999.0))
+      (box :?> HTMLInputElement).value <- string n
+      self.setSeed ()
+
+  /// リンクから来た走らせ方を欄と host に入れる。**負は「載っていない」の印**
+  member _.applyAxes(rank: int, seed: int) =
+    if rank >= 0 then
+      let box = el "rank"
+      if not (isNull box) then (box :?> HTMLInputElement).value <- string rank
+      self.setRank ()
+    if seed >= 0 then
+      let box = el "seed"
+      if not (isNull box) then (box :?> HTMLInputElement).value <- string (max 1 seed)
+      self.setSeed ()
+
   /// 補完の使い方。**中身は html に在る字だけ**で、ここは開け閉めだけ。
   /// ループは止めない —— 開いている間も弾幕は動く
   member _.help() =
@@ -617,7 +683,9 @@ type Playground() as self =
   member _.share() =
     self.showNote ""
     thenCatch
-      (box (Share.encode current.Kind (Monaco.getValue ())))
+      // **走らせ方も乗せる（版 2）。** 同じ本文でも難度と種が違えば別の絵 ——
+      // リンクが指しているのは「その走り」
+      (box (Share.encode current.Kind (self.rankPercent ()) (self.seedValue ()) (Monaco.getValue ())))
       (fun fragment ->
         window.location.hash <- string fragment
         setError ""
@@ -654,6 +722,9 @@ type Playground() as self =
             | Some lang ->
               Monaco.setValue r.Text
               self.useLanguage lang
+              // **走らせ方を先に入れる。** `apply` が面を建てるので、
+              // あとから入れると建て直しが 1 回 増える
+              self.applyAxes (r.Rank, r.Seed)
               self.showNote "リンクから読んだ"
               self.apply ())
         (fun err -> setError (errText err))
@@ -810,6 +881,9 @@ on "reset" "click" (fun () ->
   playground.wipeTrail ()
   playground.call ("Reset"))
 on "seek" "click" (fun () -> playground.seek ())
+on "rank" "input" (fun () -> playground.setRank ())
+on "seed" "change" (fun () -> playground.setSeed ())
+on "seed-roll" "click" (fun () -> playground.rollSeed ())
 on "trail" "change" (fun () -> playground.setTrail ())
 on "apply" "click" (fun () -> playground.apply ())
 on "open" "click" (fun () -> playground.``open``())

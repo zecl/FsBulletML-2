@@ -118,9 +118,30 @@ button:disabled {
   padding: 5px 6px;
 }
 
-/* 飛び先。**幅を字数で持つ** —— px だと桁が増えたとき数が見えなくなる */
+/* 飛び先と種。**幅を字数で持つ** —— px だと桁が増えたとき数が見えなくなる */
 #seek-to {
   width: 6ch;
+}
+
+#seed {
+  width: 8ch;
+}
+
+/* 難度。**短くする** —— バーの取り分を食うと、ほかの口が折り返す */
+#rank {
+  width: 7em;
+}
+
+/* いまの難度。**桁で幅が動かないように右へ寄せる** */
+#rank-value {
+  display: inline-block;
+  width: 3ch;
+  text-align: right;
+}
+
+#seed-roll {
+  flex: none;
+  padding: 6px 10px;
 }
 
 /* プルダウンと ? を横に並べる。余りは弾幕のプルダウンが取る。

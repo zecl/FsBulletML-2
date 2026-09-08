@@ -57,6 +57,8 @@
        ブラウザのアプリそのもの —— 描画の場と、JS から呼ばれる口。 -->
   <ItemGroup>
     <Compile Include="Stage.fs" />
+    <!-- 種から決まる乱数。**`System.Random` を使わない**（種を Share に乗せる） -->
+    <Compile Include="Rand.fs" />
     <Compile Include="BrowserEnv.fs" />
     <Compile Include="Pacing.fs" />
     <Compile Include="Seek.fs" />

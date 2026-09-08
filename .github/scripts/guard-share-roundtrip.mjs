@@ -72,7 +72,7 @@ let linkChars = 0
 for (const path of walk(corpusDir)) {
   const text = readFileSync(path, 'utf8')
   const kindId = byExt[extname(path).toLowerCase()]
-  const link = await mod.encode(kindOf(kindId), text).catch((e) => `THREW:${e}`)
+  const link = await mod.encode(kindOf(kindId), 50, 7, text).catch((e) => `THREW:${e}`)
   if (typeof link !== 'string' || link.startsWith('THREW:')) {
     bad.push(`${path}: リンクを作れなかった（${link}）`)
     continue
@@ -96,7 +96,7 @@ for (const path of walk(corpusDir)) {
 }
 
 async function roundTrip(name, text) {
-  const link = await mod.encode(kindOf('xml'), text).catch((e) => `THREW:${e}`)
+  const link = await mod.encode(kindOf('xml'), 50, 7, text).catch((e) => `THREW:${e}`)
   if (typeof link !== 'string' || link.startsWith('THREW:')) {
     bad.push(`${name}: リンクを作れなかった（${link}）`)
     return null
@@ -122,11 +122,12 @@ await roundTrip('空の本文', '')
 // **貼るときに切れたリンクを、中身の化けた弾幕にしない**
 const sample = await roundTrip('素の本文', '<bulletml/>')
 if (sample) {
-  await expectNg('版が違う', '2' + sample.slice(1))
+  await expectNg('版が違う', '1' + sample.slice(1))
   await expectNg('字が壊れている', sample.slice(0, -1) + '*')
   await expectNg('途中で切れている', sample.slice(0, sample.length - 4))
 }
-await expectNg('区切りが足りない', '1.xml')
+await expectNg('区切りが足りない', '2.xml')
+  await expectNg('走らせ方が数でない', '2.xml.x.7.AQID')
 await expectNg('空', '')
 
 for (const line of bad) console.log(`NG\t${line}`)

@@ -31,7 +31,19 @@ type PlaygroundHost() =
 
   let env = BrowserEnv()
   let mutable current = Initial.pattern.Bulletml
-  let mutable field = Playfield.Create env current
+
+  /// 面を建てる。**乱数の並びを頭へ戻してから。**
+  ///
+  /// 戻さないと、同じ種でも「建て直したあと」が別の走りになる ——
+  /// Reset も Apply も飛ぶのも、すべてここを通る。
+  ///
+  /// **`Runner.load` は木を組む段で rank と rand を引く**（`wait` の term を
+  /// その場で畳む）ので、rank や種を変えたら建て直すしかない
+  let build (bulletml: Bulletml) =
+    env.RestartRandom()
+    Playfield.Create env bulletml
+
+  let mutable field = build current
   // **開いた時点で走っている。** Play を押すまで止まっていると、
   // 弾幕を見に来た人が最初に見るのが静止画になる。止めたい人は Pause を
   // 押せばよく、そちらは 1 手 で戻せる。
@@ -65,7 +77,7 @@ type PlaygroundHost() =
     if Seek.isRunning seek then
       // 戻るには建て直すしかない（面は逆再生できない）。
       // **建ててから差し替える** —— ほかの差し替えと同じ理由
-      if Seek.needsRestart field.Frame seek then field <- Playfield.Create env current
+      if Seek.needsRestart field.Frame seek then field <- build current
       watch.Restart()
       let struct (_, next) = Seek.step field.Frame tick elapsed seek
       seek <- next
@@ -111,12 +123,46 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.SetRate(n: int) = pacing <- Pacing.withRate n
 
+  /// 難易度。**0 から 1。**
+  ///
+  /// 版の頭で測った —— 0 と 1 に振ると **176 本 中 171 本 で走りが変わる**
+  /// （弾数が 3 倍 から 7 倍 になるものが在る）。v1.9 まで 0.5 に固定していた。
+  ///
+  /// **建て直す。** `Runner.load` は木を組む段で rank を引く（`wait` の term を
+  /// その場で畳む）ので、走っている面には効かない。
+  ///
+  /// **速さや配色と違って、これは弾幕の走りを変える。** 見る側の都合ではなく
+  /// 「どの難度の絵を見ているか」なので、Reset でも Apply でも保つ
+  [<JSInvokable>]
+  member _.SetRank(v: float) =
+    env.SetRank(float32 v)
+    seek <- Seek.idle
+    field <- build current
+
+  /// 乱数の種。**同じ種なら同じ走り。**
+  ///
+  /// v1.9 まで `System.Random()` に種が無く、毎回 別の走りだった ——
+  /// 「いま見た絵をもう一度」が出せない。
+  ///
+  /// **並びを決めるのは `SeededRandom`**（`System.Random` ではない）——
+  /// 種は Share URL に乗るので、走らせる runtime が変わっても
+  /// 同じ絵でなければならない。
+  [<JSInvokable>]
+  member _.SetSeed(n: int) =
+    env.SetSeed n
+    seek <- Seek.idle
+    field <- build current
+
+  /// いまの難度と種。**Share が読む。** `[rank; seed]`
+  [<JSInvokable>]
+  member _.ViewAxes() : float[] = [| float env.RankValue; float env.Seed |]
+
   /// **飛んでいる最中でも頭へ戻す。** 面を建て直すと `Frame` も 0 に戻るので、
   /// 飛び先を持ったままだとそこへ向かって走り直してしまう
   [<JSInvokable>]
   member _.Reset() =
     seek <- Seek.idle
-    field <- Playfield.Create env current
+    field <- build current
 
   /// 起動時に欄へ出す XML。**html に直書きしない。**
   ///
@@ -183,7 +229,7 @@ type PlaygroundHost() =
           | Result.Ok text ->
             // 建ててから差し替える（`ApplySource` と同じ理由。落ちたあとの
             // `Reset` が `current` から建て直すので、進めてはいけない）
-            let next = Playfield.Create env info.Bulletml
+            let next = build info.Bulletml
             current <- info.Bulletml
             field <- next
             // 別の弾幕に飛び先は引き継がない（`Reset` と同じ理由）
@@ -233,7 +279,7 @@ type PlaygroundHost() =
     // 先に `current` を書くと、落ちたあとの Reset がその弾幕で作り直して
     // また落ちる（`Reset` は `current` から建てる）
     let put bulletml =
-      let next = Playfield.Create env bulletml
+      let next = build bulletml
       current <- bulletml
       field <- next
       // 別の本文に飛び先は引き継がない（`Reset` と同じ理由）
