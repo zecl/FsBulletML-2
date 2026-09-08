@@ -87,6 +87,16 @@ jobs:
       - name: その門の校正
         shell: pwsh
         run: ./.github/scripts/guard-wasm-blocking.Tests.ps1
+      # キーだけで回る人には、フォーカスが当たった口の名前しか手がかりが無い。
+      # **画面に字が在っても、口に結びついていなければ届かない** ——
+      # 包む label / aria-label / 口の中の字 の 3 通り を見る（v2.4.3）
+      - name: 操作の口に名前が在るか
+        shell: pwsh
+        run: ./.github/scripts/guard-control-names.ps1
+
+      - name: その門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-control-names.Tests.ps1
 
       - name: 変更から選ぶ
         id: pick
