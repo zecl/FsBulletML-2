@@ -9,7 +9,7 @@
       既定        NodeTrace の口が `obj -> unit = ignore`（OFF が素）
       呼び先      通った 2（command / actionElm）/ 止まった 3
       compile の順 Trace.fs が Step.fs より前
-      段の約束    受け口を繋いだ場所が 0 件
+      段の約束    繋ぐのは Focus.fs の 1 か所 だけ（`visit` は 0 件）
 
   **いちばん当てたいのは呼び先の数。** 口が減っても走行は止まらないので、
   目でも試験でも出ない。実際に測っているとき 1 度 踏んだ ——
@@ -17,6 +17,11 @@
   弾は同じように飛ぶ（`action だけ` の中央値が 0 で出た）。
 
   **通る側 も当てる。** 落ちるほうだけ見ていると「常に赤」の門が緑に見える。
+
+  段 3 で「繋いだ場所 0 件」が「Focus.fs の 1 か所 だけ」に変わった。
+  **数える向きが 2 つ になったので、較正も 2 方向 に要る** ——
+  増える側（ほかが繋ぐ）と、減る側（Focus.fs が繋がなくなる）。
+  減る側は**印が消えるだけで走行は変わらない**ので、ここでしか出ない。
 
   最後に repo の現物へ当てる。**較正が緑でも、本番の軸で走らないなら意味が無い。**
 #>
@@ -153,11 +158,32 @@ module Runner =
     ()
 '@
 
+# 段 3 で受け口を繋ぐ側。**繋ぐのと素へ戻すのが揃っていること**を当てる
+$goodFocus = @'
+namespace FsBulletML2.Playground
+
+type Focus () =
+  let onStop = fun (node: obj) -> ignore node
+  let onPair = fun (a: obj) (b: obj) -> ignore (a, b)
+  let noPair = fun (_: obj) (_: obj) -> ()
+
+  member _.Begin() =
+    NodeTrace.stop <- onStop
+    NodeOrigin.enabled <- true
+    NodeOrigin.pair <- onPair
+
+  member _.End() =
+    NodeTrace.stop <- ignore
+    NodeOrigin.enabled <- false
+    NodeOrigin.pair <- noPair
+'@
+
 
 function Check {
   param(
     [string]$Name, [string]$Trace, [string]$Step, [string]$Proj,
-    [bool]$WantPass, [string]$Expect, [string]$Consumer, [string]$Ops, [string]$Api
+    [bool]$WantPass, [string]$Expect, [string]$Consumer, [string]$Ops, [string]$Api,
+    [string]$Focus, [switch]$NoFocus
   )
   $script:count++
   $tmp = Join-Path ([IO.Path]::GetTempPath()) ("guard-run-trace-" + [guid]::NewGuid().ToString('N'))
@@ -175,10 +201,17 @@ function Check {
   $consumerRoot = Join-Path $tmp 'consumer'
   New-Item -ItemType Directory -Path $consumerRoot | Out-Null
   if ($Consumer) { [IO.File]::WriteAllText((Join-Path $consumerRoot 'Front.fs'), $Consumer) }
+  # **繋ぐ側も置く。** `-RepoRoot` を tmp にして、`-FocusFs` を tmp から見た
+  # 相対で渡す —— 門は `RepoRoot` を基準に相対を組むので、ここを揃えないと
+  # 「読めなかった」で全件 落ちる
+  if (-not $NoFocus) {
+    [IO.File]::WriteAllText((Join-Path $consumerRoot 'Focus.fs'),
+      $(if ($Focus) { $Focus } else { $script:goodFocus }))
+  }
 
   $msg = ''
   $passed = $true
-  try { & $guard -TraceFs $tp -StepFs $sp -CoreProj $pp -OpsFs $op -ApiFs $ap -ConsumerRoots @($consumerRoot) -Quiet }
+  try { & $guard -RepoRoot $tmp -FocusFs 'consumer/Focus.fs' -TraceFs $tp -StepFs $sp -CoreProj $pp -OpsFs $op -ApiFs $ap -ConsumerRoots @($consumerRoot) -Quiet }
   catch { $passed = $false; $msg = "$_" }
   Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 
@@ -236,8 +269,8 @@ Check 'Trace.fs が fsproj に無い' $goodTrace $goodStep `
   ($goodProj -replace '\s*<Compile Include="Trace.fs" />', '') $false 'fsproj に無い'
 
 Write-Host ''
-Write-Host '段の約束。**繋いだことが黙って入らないように数える**'
-Check '受け口を繋いでいる場所が在る' $goodTrace $goodStep $goodProj $false '繋いだ場所が在る' `
+Write-Host '段の約束。**通った側（visit）を繋ぐのは段 4。どこであっても 0 件**'
+Check 'visit を繋いでいる場所が在る' $goodTrace $goodStep $goodProj $false 'NodeTrace.visit を繋いでいる' `
   "module Front =`r`n  let wire () = NodeTrace.visit <- (fun o -> ())`r`n"
 
 Write-Host ''
@@ -274,11 +307,40 @@ Check 'enabled を見ずに歩く' $goodTrace $goodStep $goodProj $false 'FoldOr
   ($goodApi -replace 'if NodeOrigin\.enabled then FoldOrigin\.walk bulletml rec''', "FoldOrigin.walk bulletml rec'")
 
 Write-Host ''
-Write-Host '段の約束。**段 2 の口も、繋ぐのは段 3**'
-Check 'NodeOrigin.pair を繋いでいる' $goodTrace $goodStep $goodProj $false '繋いだ場所が在る' `
+Write-Host '段 3 の約束。増える側。**Focus.fs 以外 が繋ぐと、選んでいない人も払う**'
+Check 'ほかの場所が stop を繋いでいる' $goodTrace $goodStep $goodProj $false 'ほかに繋いだ場所が在る' `
+  "module Front =`r`n  let wire () = NodeTrace.stop <- (fun o -> ())`r`n"
+Check 'ほかの場所が pair を繋いでいる' $goodTrace $goodStep $goodProj $false 'ほかに繋いだ場所が在る' `
   "module Front =`r`n  let wire () = NodeOrigin.pair <- (fun a b -> ())`r`n"
-Check 'NodeOrigin.enabled を繋いでいる' $goodTrace $goodStep $goodProj $false '繋いだ場所が在る' `
+Check 'ほかの場所が enabled を繋いでいる' $goodTrace $goodStep $goodProj $false 'ほかに繋いだ場所が在る' `
   "module Front =`r`n  let wire () = NodeOrigin.enabled <- true`r`n"
+
+Write-Host ''
+Write-Host '段 3 の約束。減る側。**印が消えるだけで走行は変わらないので、ここでしか出ない**'
+Check 'Focus.fs が無い' $goodTrace $goodStep $goodProj $false '読めなかった' '' '' '' '' -NoFocus
+$focusNoStop = $goodFocus.Replace('    NodeTrace.stop <- onStop', '    ignore onStop')
+$focusNoPair = $goodFocus.Replace('    NodeOrigin.pair <- onPair', '    ignore onPair')
+$focusNoEnabled = $goodFocus.Replace('    NodeOrigin.enabled <- true', '    ignore true')
+Check 'Focus.fs が stop を繋がない' $goodTrace $goodStep $goodProj $false 'NodeTrace.stop を繋いでいない' '' '' '' `
+  $focusNoStop
+Check 'Focus.fs が pair を繋がない' $goodTrace $goodStep $goodProj $false 'NodeOrigin.pair を繋いでいない' '' '' '' `
+  $focusNoPair
+Check 'Focus.fs が enabled を繋がない' $goodTrace $goodStep $goodProj $false 'NodeOrigin.enabled を繋いでいない' '' '' '' `
+  $focusNoEnabled
+
+Write-Host ''
+Write-Host '素へ戻す側。**繋ぎっぱなしだと、選んでいない弾も受け口を通る**'
+$focusNoOffStop = $goodFocus.Replace('    NodeTrace.stop <- ignore', '    NodeTrace.stop <- onStop')
+$focusNoOffEnabled = $goodFocus.Replace('    NodeOrigin.enabled <- false', '    NodeOrigin.enabled <- true')
+# **その場で作ると、選んでいる間ずっと閉包が毎コマ ヒープに乗る。**
+# 戻す形が既定と同じ字であることは、繋ぐ側と戻す側を数え分ける根拠でもある
+$focusNoOffPair = $goodFocus.Replace('    NodeOrigin.pair <- noPair', '    NodeOrigin.pair <- fun _ _ -> ()')
+Check 'stop を ignore へ戻さない' $goodTrace $goodStep $goodProj $false '素へ戻す側が無い' '' '' '' `
+  $focusNoOffStop
+Check 'enabled を false へ戻さない' $goodTrace $goodStep $goodProj $false '素へ戻す側が無い' '' '' '' `
+  $focusNoOffEnabled
+Check 'pair を noPair へ戻さない' $goodTrace $goodStep $goodProj $false '素へ戻す側が無い' '' '' '' `
+  $focusNoOffPair
 Write-Host '材料が読めないとき。**0 件 は違反 0 件 と同じ顔をする**'
 $script:count++
 $missing = Join-Path ([IO.Path]::GetTempPath()) 'no-such-trace.fs'

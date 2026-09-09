@@ -110,9 +110,10 @@ type PlaygroundHost() =
         f2.Tick()
       | None -> ()
   // `[n; ptr; frame; playerX; playerY; width; height]` に、
-  // 2 つ 目 の `[n2; ptr2; width2; height2]` を足した 11 数。
+  // 2 つ 目 の `[n2; ptr2; width2; height2]` と、追っている弾の
+  // `[pick; stops; depth; serial; paths]` を足した 16 数。
   // **2 つ 目 が無ければ `n2` は -1**（0 は「弾が 1 つ も無い面」で別の意味）
-  let ret = Array.zeroCreate<float> 11
+  let ret = Array.zeroCreate<float> 16
   /// プルダウンに出す並び。**同梱のあとに公式配布のサンプルを繋ぐ**（v2.4.1）。
   ///
   /// 番号で引く口（`SelectPattern` / `InitialIndex`）が在るので、
@@ -165,7 +166,42 @@ type PlaygroundHost() =
       ret.[8] <- 0.0
       ret.[9] <- 0.0
       ret.[10] <- 0.0
+    // 追っている弾（v3.1 の段 3）。**添字は毎コマ 引き直す** ——
+    // 消しで詰めたコマに黙って別の弾を指さないため（`Playfield.PickedIndex`）。
+    //
+    // 数を 4 つ 返すのは、**「戻れた」と「正しい所へ戻れた」が別**だから ——
+    // `stops` は 0 か 2 以上（1 は出ない）、`depth` は鎖の段数、
+    // `serial` は再開点そのもの、`paths` は道の本数。
+    // 名前だけでは、どれが効いたか読めない。
+    //
+    // **`paths` が 2 以上 のコマでは、出しているのは 1 本 目 だけ。**
+    // 黙って落とさないために数で出す（同梱では wait 全体 の 1.31%）
+    ret.[11] <- float field.PickedIndex
+    ret.[12] <- float field.Focus.Stops
+    ret.[13] <- float field.Focus.Depth
+    ret.[14] <- float field.Focus.Serial
+    ret.[15] <- float field.Focus.Paths
     ret
+
+  /// 面の弾を押したときの受け口（v3.1 の段 3）。**`Pack` の並びの添字。**
+  ///
+  /// **いちばん近い弾を探すのは呼ぶ側。** 座標は WASM ヒープの `float32[]` を
+  /// JS がそのまま読んでいる（`Playfield.Pack`）ので、あちらには全部 の座標が
+  /// もう在る —— こちらへ座標を送り返すと、同じ配列を 2 度 運ぶことになる。
+  ///
+  /// 範囲の外なら追うのをやめる（`Playfield.Pick`）
+  [<JSInvokable>]
+  member _.PickBullet(index: int) = field.Pick index
+
+  /// 追うのをやめる。**面の何も無いところを押したとき**
+  [<JSInvokable>]
+  member _.UnpickBullet() = field.Unpick()
+
+  /// 追っている弾の再開点の要素名。**`serial` が変わったときだけ引く口** ——
+  /// 毎コマ 引くと、選んだだけで境界越しに文字列が 60 個/秒 できる。
+  /// 名前の表は持たない（腕の名前の頭を小文字に。正本は `Core/DTD.fs`）
+  [<JSInvokable>]
+  member _.ResumeName() : string = field.Focus.Name
 
   /// **飛ぶのをやめる。** 飛んでいる最中の Play は「もう待たない」なので、
   /// 目的のコマを捨てていまの場所から走らせる
