@@ -3,6 +3,25 @@ name: PR
 # 変更されたコードから、走らせる試験を機械が決める。
 # 決め方は .github/scripts/affected.ps1、その校正は affected.Tests.ps1。
 # **対応表を手で書かない** —— 参照が変わったとき表だけが古びるのを避けるため。
+#
+# ## runner は self-hosted（Windows）
+#
+# 全 job を手元の Windows 機で走らせる。
+#
+# 正本は infra/gha-runner/README.md。契約は 3 つ ——
+#
+#     labels        runs-on: [self-hosted, windows, fsbulletml2]
+#                   install-runner.ps1 の -Label と対。片方 だけ変えると
+#                   job は永遠に queued（赤ではないが緑にもならない）
+#     actions/cache 使わない。手元の runner ではクラウドへの往復のほうが遅く、
+#                   素のホストなら既定の置き場（~/.nuget/packages）が最初から残る
+#     setup-dotnet  使わない。SDK はホストに在り、global.json を満たさなければ
+#                   dotnet 自身 が落ちる（黙って別の SDK で建つことはない）
+#
+# **土 は変えていない。** 4 job は windows-latest で走っていたものをそのまま
+# Windows の runner へ移しただけ —— Linux へ移すと門の 3 か所（`\bin\Release\`）と
+# 773 件 の試験が初めて別の軸に載る。「止まっているものを外す」と
+# 「走ったことのない軸を増やす」を混ぜない。
 
 on:
   pull_request:
@@ -23,7 +42,7 @@ concurrency:
 jobs:
   select:
     name: Select
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, windows, fsbulletml2]
     outputs:
       tests: ${{ steps.pick.outputs.tests }}
       builds: ${{ steps.pick.outputs.builds }}
@@ -120,22 +139,13 @@ jobs:
     name: Test · ${{ matrix.project.label }}
     needs: select
     if: needs.select.outputs.tests != '[]'
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows, fsbulletml2]
     strategy:
       fail-fast: false
       matrix:
         project: ${{ fromJson(needs.select.outputs.tests) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
-      - uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
-          restore-keys: nuget-${{ runner.os }}-
-
       - name: dotnet test
         run: dotnet test ${{ matrix.project.path }} -c Release --logger "trx;LogFileName=${{ matrix.project.name }}.trx"
 
@@ -151,22 +161,13 @@ jobs:
     name: Build · ${{ matrix.project.label }}
     needs: select
     if: needs.select.outputs.builds != '[]'
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows, fsbulletml2]
     strategy:
       fail-fast: false
       matrix:
         project: ${{ fromJson(needs.select.outputs.builds) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
-      - uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
-          restore-keys: nuget-${{ runner.os }}-
-
       - run: dotnet build ${{ matrix.project.path }} -c Release
 
       # **build が通ることと、publish した物が起動することは別だった。**
@@ -203,22 +204,13 @@ jobs:
   # 焼き直しは .github/scripts/bake-unity-dlls.ps1。
   shipped:
     name: Shipped DLLs
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows, fsbulletml2]
     steps:
       # **浅く取らない。** 下の校正が、stub を割る前の dll を過去の commit から
       # 取り出して当てる —— 既定の深さ 1 だとその blob が無くて落ちる
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
-      - uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
-          restore-keys: nuget-${{ runner.os }}-
-
       - run: dotnet build samples/FsBulletML2.Sample.Unity2D.CSharp.Compile -c Release -p:UseShippedDlls=true
 
       # 同梱 dll が、名乗りどおりのアセンブリから型を引いているか。
@@ -226,10 +218,13 @@ jobs:
       # Unity でだけ落ちる（上の build は stub を参照するので、そちらは
       # 最後まで緑になる）。
       #
-      # **この job に置く理由が 2 つ ある。** 上の build が 7 本 の stub を
-      # 焼くので、突き合わせる表の材料がここにしか無い。もう 1 つ は門が
-      # 出力を `\bin\Release\` で絞っていて、区切りが `/` の機械では
-      # 1 本 も拾えないこと。**選ぶ job（ubuntu）へ戻すとどちらも消える。**
+      # **この job に置く理由が在る。** 上の build が 7 本 の stub を焼くので、
+      # 突き合わせる表の材料がここにしか無い —— 選ぶ job へ戻すと材料が消える。
+      #
+      # 門は出力を `\bin\Release\` で絞っている。いまは runner が Windows なので
+      # 当たるが、**区切りが `/` の機械では 1 本 も拾えない** ——
+      # Linux へ移すときはここと guard-stub-shape.ps1 の 2 か所 を直す
+      # （infra/gha-runner/README.md の「なぜ Windows なのか」）
       - name: 同梱 dll の参照先
         shell: pwsh
         run: ./.github/scripts/guard-shipped-refs.ps1
@@ -247,18 +242,9 @@ jobs:
   # 数秒で終わる。条件を書くと「選ばれなかったから skip」と「壊れて skip」が混ざる。
   parity:
     name: Fable Parity
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows, fsbulletml2]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
-      - uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
-          restore-keys: nuget-${{ runner.os }}-
-
       # **Playground まるごとは建てない。** あちらは WASM workload が要る。
       # 焼くのに要るのは Fable 側の proj だけ
       - name: 焼く
@@ -293,7 +279,7 @@ jobs:
     name: Gate
     needs: [select, test, build, shipped, parity]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, windows, fsbulletml2]
     steps:
       - uses: actions/checkout@v4
       - shell: pwsh
