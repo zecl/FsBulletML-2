@@ -381,6 +381,7 @@ module internal Step =
   /// ほどいて渡すと、その match が要らなくなる
   let rec command (rs: Resolvers) (script: Action) (p: Progress) (fc: FireContext)
       : Sim<RunState * Progress * FireContext> =
+    NodeTrace.visit (box script)
     match script with
     | Action.Wait s ->
         sim {
@@ -434,6 +435,7 @@ module internal Step =
   /// その振る舞いをそのまま写す（repeat の子に actionRef を書く弾幕がある）
   and actionElm (rs: Resolvers) (script: ActionElm) (p: Progress) (fc: FireContext)
       : Sim<RunState * Progress * FireContext> =
+    NodeTrace.visit (box script)
     match script with
     | ActionElm.Action (attrs, children) -> action rs attrs children p fc
     | ActionElm.ActionRef _ -> action rs { actionLabel = None } [] p fc
@@ -603,6 +605,7 @@ module internal Step =
                         return ps, stopped, cont, curFc, loopHit
                 | childScript ->
                     let! r, p', fc' = command rs childScript cur curFc
+                    if r = Stopped then NodeTrace.stop (box childScript)
                     let p'' = if r = Ended then setDone p' else p'
                     // **1 マスだけ差し替える。尻尾は共有する。**
                     // List.mapi は毎回 n セル 作り直していた。updateAt は
@@ -708,6 +711,7 @@ module internal Step =
           go <- num' < times
         else
           let (r, child', fc'), st', w = Sim.run env st (actionElm rs body child curFc)
+          if r = Stopped then NodeTrace.stop (box body)
           st <- st'
           effectsAcc.AddRange w
           child <- child'
@@ -974,6 +978,7 @@ module internal Step =
     for (script, prog, _) in self.Tops do
       if not (isDone prog) then
         let (r, prog', fc'), st', w = Sim.run env st (actionElm rs script prog sharedFc)
+        if r = Stopped then NodeTrace.stop (box script)
         st <- st'
         effects <- effects @ w
         sharedFc <- fc'

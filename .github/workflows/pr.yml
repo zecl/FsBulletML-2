@@ -141,6 +141,18 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-embed-layout.Tests.ps1
 
+      # 走行の記録の受け口（v3.1 の段 1）。**OFF が素に戻る形**で置かれているか。
+      # 口が減っても走行は止まらないので、呼び先の数を数える。
+      # 確保そのものは走らせないと出ない —— bench の --alloc を素と並べる
+      # （README の v3.1 の節に記録が在る）。
+      - name: 走行の記録の受け口が素に戻る形か
+        shell: pwsh
+        run: ./.github/scripts/guard-run-trace.ps1
+
+      - name: その門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-run-trace.Tests.ps1
+
       - name: 変更から選ぶ
         id: pick
         shell: pwsh
