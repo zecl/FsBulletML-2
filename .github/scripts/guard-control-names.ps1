@@ -28,6 +28,11 @@
   **button の中身は同じ行に在る前提で読む。** またがっている button が
   在れば落とす。前提が崩れたことを、判定より先に出す。
 
+  **またぎは 2 か所 で起きる。** 中身（`</button>` が次の行）だけでなく、
+  **開き札の `>` が次の行に在る**ときも読めない —— そちらは網に 1 度 も
+  当たらないので、口が数から消えて**違反 0 件 と同じ顔をする**。
+  属性を改行して並べたときに踏んだ。
+
   較正は guard-control-names.Tests.ps1。
 #>
 [CmdletBinding()]
@@ -87,6 +92,17 @@ $broken = [System.Collections.Generic.List[string]]::new()
 
 for ($i = 0; $i -lt $lines.Count; $i++) {
   $line = $lines[$i]
+
+  # **開き札そのものが行をまたいでいないか。** 下の網は 1 行 に閉じた札しか
+  # 拾わないので、`<button` の `>` が次の行に在ると**その口は数から消える** ——
+  # 違反 0 件 と同じ顔をする。中身のまたぎ（下の `</button>` の検査）とは
+  # 別の穴で、属性を改行して並べたときに踏んだ
+  foreach ($o in [regex]::Matches($line, '<(button|select|input)\b')) {
+    if (-not [regex]::IsMatch($line.Substring($o.Index), '^<(button|select|input)\b[^>]*>')) {
+      $broken.Add("$($i + 1) 行目 $($o.Groups[1].Value) の開き札が行をまたいでいる")
+    }
+  }
+
   foreach ($m in [regex]::Matches($line, '<(button|select|input)\b[^>]*>')) {
     $tag = $m.Groups[1].Value
     $idm = [regex]::Match($m.Value, 'id="([^"]+)"')

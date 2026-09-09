@@ -54,7 +54,8 @@
         <!-- **層でまとめてある**（v2.4.2）。並びは
              本文 -> 軸 -> 見る側の都合 -> 助け。
              `id` とラベルは 1 つ も変えていない —— あれを変えると
-             `Playground.fs` の `el "id"`（42 回）と help の説明（63 か所）が動く。
+             `Playground.fs` の `el "id"`（45 回 / 別の id 24 個）と
+             使い方の窓の説明が動く。
              **並べ替えだけなら、直すのは README の表 1 か所。** -->
         <div class="picker">
           <!-- 本文。**字が変わる側** -->
@@ -171,253 +172,445 @@
     </div>
 
     <!--
-      補完の使い方。**中身は字だけで、ロジックは書かない** ——
-      開け閉めは Fable（playground.help / closeHelp）。
-      dialog なので Esc と背景のクリックで閉じるのは素で付いてくる
+      使い方。**中身は字だけで、ロジックは書かない** ——
+      開け閉めと章の出し入れは Fable（playground.help / closeHelp / showChapter）。
+      **`dialog` が素で持っているのは Esc だけ。** 但し書きには長いあいだ
+      「背景のクリックも素で付いてくる」と書いてあったが、測ったら閉じなかった ——
+      背景（`::backdrop`）の当たり判定は dialog 自身 に付くので、
+      押しても中の何にも当たらず、誰も受け取らない。背景で閉じるのは
+      Fable の側 で足してある（clickedBackdrop）。
+
+      **章は 7 つ で、`help-tab-◯◯` と `help-ch-◯◯` が対**。並びは Fable の
+      helpChapters と合わせる —— 片方 だけ足すと「目次に出ない章」か
+      「開かない札」ができて、どちらも黙って通る。対と並びは
+      guard-help-chapters.ps1 が数えている。
+
+      絵は img/help/ に置いてある。**撮り直す手順は docs/help-shots.md** ——
+      参照と実物のずれは門が見るが、**画の中身が古びたことは誰も見ない**
     -->
     <dialog id="help-dialog" class="help">
-      <h2>補完の使い方</h2>
+      <div class="help-head">
+        <h2>使い方</h2>
+        <!-- **上に置く**。前の版は本文のいちばん下に在ったので、
+             閉じるだけのために 4.9 画面分 送る必要が在った ——
+             1080 の窓では札そのものが画面の外（y=1060）に居て、実質 押せなかった。
 
-      <p>
-        候補は BulletML の DTD から出しているので、<strong>その場所に置けるものしか出ない</strong>。
-        打っている途中で本文が壊れていても止まらない。
-      </p>
+             **字は × だが、名前は aria-label で持つ。** × は「口の中の字」として
+             名前が在ることになってしまうが、読み上げても意味にならない -->
+        <button type="button" id="help-close" class="help-close" aria-label="閉じる" title="閉じる">&#215;</button>
+      </div>
 
-      <p>
-        <strong>表記</strong>のプルダウンで XML・sxml・fsb・F# の CE を切り替える。
-        はじめの 3 つ は<strong>語彙が同じ</strong>で、変わるのは書き方だけ ——
-        XML の <code>&lt;fire label="a"&gt;</code> が
-        sxml では <code>(fire (@ (label "a")))</code>、
-        fsb では <code>fire label="a"</code>（入れ子は行頭の空白で決まる）。
-        <strong>切り替えると、いまの本文がその表記に書き直される。</strong>
-        プルダウンの弾幕を読み直すのではなく<strong>いまの本文を変換する</strong>ので、
-        自分で足した字も残る。読めない本文のときは触らずに理由が出る。
-      </p>
+      <div class="help-grid">
+        <nav class="help-nav" aria-label="章">
+          <button type="button" id="help-tab-start" class="help-tab" aria-current="true">はじめに</button>
+          <button type="button" id="help-tab-write" class="help-tab">書く</button>
+          <button type="button" id="help-tab-trace" class="help-tab">たどる</button>
+          <button type="button" id="help-tab-run" class="help-tab">走らせる</button>
+          <button type="button" id="help-tab-compare" class="help-tab">並べて比べる</button>
+          <button type="button" id="help-tab-io" class="help-tab">出し入れ</button>
+          <button type="button" id="help-tab-keys" class="help-tab">キーだけで動かす</button>
+        </nav>
 
-      <p>
-        <strong>F# の CE でも 4 表記 と同じものが出る。</strong>
-        書くのは要素名ではなく DSL の名前（<code>top</code> / <code>defAction</code> /
-        <code>actionRef</code>）で、<strong>置ける場所が入れ子で決まる</strong> ——
-        候補はその場所に置けるものだけを出す。
-        <code>repeat</code> の中は <code>action</code> の中と同じものが置ける。
-      </p>
+        <div id="help-body" class="help-body">
 
-      <p>
-        <strong>hover は CE でも出る。</strong> 名前の上に置くと、
-        それが <strong>BulletML の何を作るか</strong>と、その仕様が出る ——
-        <code>defAction</code> なら <code>&lt;action&gt;</code>、
-        <code>aim</code> なら <code>&lt;direction&gt;</code> と
-        <code>type="aim"</code> の 2 つ。
-        <code>vertical</code> のように<strong>2 つ の意味を持つ名前は両方</strong>出る
-        （根の画面の向きと、<code>accel</code> の中の縦の加速度）。
-        文字列やコメントの中では出ない。
-      </p>
+          <section id="help-ch-start" class="help-ch">
+            <h3>はじめに</h3>
 
-      <table>
-        <thead><tr><th>打つ（XML / sxml / fsb）</th><th>出るもの</th></tr></thead>
-        <tbody>
-          <tr>
-            <td><code>&lt;</code> / <code>(</code><br>
-                fsb は<strong>字下げのあとに 1 文字</strong>（始まりの記号が無い）</td>
-            <td>そこに置ける要素。<code>action</code> の中なら <code>fire</code> や <code>wait</code>、
-                <code>fire</code> の中なら <code>direction</code> や <code>bullet</code></td>
-          </tr>
-          <tr>
-            <td>続けて何文字か</td>
-            <td>絞り込み。確定すると <code>&lt;fire&gt;</code> / <code>(fire)</code> /
-                <code>fire</code> のように入る</td>
-          </tr>
-          <tr>
-            <td>タグの中で空白＋何文字か<br>
-                <code>(@ (</code> に続けて何文字か<br>
-                fsb は名前の後ろで空白＋何文字か</td>
-            <td>属性名。確定すると <code>type=""</code> / <code>(type "")</code> まで入って、
-                カーソルが引用符の中に来る</td>
-          </tr>
-          <tr>
-            <td><code>"</code></td>
-            <td>属性値。<code>type</code> なら <code>aim</code> / <code>absolute</code> /
-                <code>relative</code> / <code>sequence</code></td>
-          </tr>
-          <tr>
-            <td><code>$</code> に続けて何文字か</td>
-            <td><code>$rand</code> と <code>$rank</code>。<code>wait</code> や <code>speed</code> のように
-                <strong>中身に式を書ける要素の中だけ</strong></td>
-          </tr>
-          <tr>
-            <td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td>
-            <td>どこでも明示的に出す。空白を打っただけでは出ないので、属性名はこれが早い</td>
-          </tr>
-        </tbody>
-      </table>
+            <p>
+              候補は BulletML の DTD から出しているので、<strong>その場所に置けるものしか出ない</strong>。
+              打っている途中で本文が壊れていても止まらない。
+            </p>
 
-      <h3>ほかの操作</h3>
-      <ul>
-        <li><strong>Apply</strong> を押すと、書いたものが弾幕に反映される。
-            打つたびには反映しない（見ている弾幕が最初に戻ってしまうため）</li>
-        <li>読めなければ Apply したときに下のバーへ理由が出て、分かる位置には波線が付く</li>
-        <li><strong>読めて・組めても走らないものは、打った時点で波線が付く</strong>
-            （Apply を待たない）。字から数えているので、
-            <strong>いちばん長い弾幕でも 0.5 ミリ秒</strong>。3 種類 出る。
+            <p>
+              <strong>表記</strong>のプルダウンで XML・sxml・fsb・F# の CE を切り替える。
+              はじめの 3 つ は<strong>語彙が同じ</strong>で、変わるのは書き方だけ ——
+              XML の <code>&lt;fire label="a"&gt;</code> が
+              sxml では <code>(fire (@ (label "a")))</code>、
+              fsb では <code>fire label="a"</code>（入れ子は行頭の空白で決まる）。
+              <strong>切り替えると、いまの本文がその表記に書き直される。</strong>
+              プルダウンの弾幕を読み直すのではなく<strong>いまの本文を変換する</strong>ので、
+              自分で足した字も残る。読めない本文のときは触らずに理由が出る。
+            </p>
+
+            <p>
+              <strong>F# の CE でも 4 表記 と同じものが出る。</strong>
+              書くのは要素名ではなく DSL の名前（<code>top</code> / <code>defAction</code> /
+              <code>actionRef</code>）で、<strong>置ける場所が入れ子で決まる</strong> ——
+              候補はその場所に置けるものだけを出す。
+              <code>repeat</code> の中は <code>action</code> の中と同じものが置ける。
+            </p>
+
+            <p>
+              <strong>hover は CE でも出る。</strong> 名前の上に置くと、
+              それが <strong>BulletML の何を作るか</strong>と、その仕様が出る ——
+              <code>defAction</code> なら <code>&lt;action&gt;</code>、
+              <code>aim</code> なら <code>&lt;direction&gt;</code> と
+              <code>type="aim"</code> の 2 つ。
+              <code>vertical</code> のように<strong>2 つ の意味を持つ名前は両方</strong>出る
+              （根の画面の向きと、<code>accel</code> の中の縦の加速度）。
+              文字列やコメントの中では出ない。
+            </p>
+
+            <figure>
+              <img src="img/help/hover.png" width="745" height="182" loading="lazy"
+                   alt="direction の上に hover して、名前・説明・DTD の宣言が出ている欄">
+              <figcaption>
+                <code>direction</code> の上。<strong>説明のあとに DTD の宣言そのもの</strong>が出る ——
+                置ける属性と既定値が、仕様の字で読める
+              </figcaption>
+            </figure>
+
+            <p class="note">
+              4 つ の表記が全部 書けて、hover は 4 つ とも出る。
+              候補・<kbd>F2</kbd>・<kbd>F12</kbd>・<kbd>Ctrl</kbd>+<kbd>.</kbd>・
+              アウトライン・折りたたみは 4 表記 とも出る。
+            </p>
+          </section>
+
+          <section id="help-ch-write" class="help-ch" hidden>
+            <h3>書く</h3>
+
+            <table>
+              <thead><tr><th>打つ（XML / sxml / fsb）</th><th>出るもの</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><code>&lt;</code> / <code>(</code><br>
+                      fsb は<strong>字下げのあとに 1 文字</strong>（始まりの記号が無い）</td>
+                  <td>そこに置ける要素。<code>action</code> の中なら <code>fire</code> や <code>wait</code>、
+                      <code>fire</code> の中なら <code>direction</code> や <code>bullet</code></td>
+                </tr>
+                <tr>
+                  <td>続けて何文字か</td>
+                  <td>絞り込み。確定すると <code>&lt;fire&gt;</code> / <code>(fire)</code> /
+                      <code>fire</code> のように入る</td>
+                </tr>
+                <tr>
+                  <td>タグの中で空白＋何文字か<br>
+                      <code>(@ (</code> に続けて何文字か<br>
+                      fsb は名前の後ろで空白＋何文字か</td>
+                  <td>属性名。確定すると <code>type=""</code> / <code>(type "")</code> まで入って、
+                      カーソルが引用符の中に来る</td>
+                </tr>
+                <tr>
+                  <td><code>"</code></td>
+                  <td>属性値。<code>type</code> なら <code>aim</code> / <code>absolute</code> /
+                      <code>relative</code> / <code>sequence</code></td>
+                </tr>
+                <tr>
+                  <td><code>$</code> に続けて何文字か</td>
+                  <td><code>$rand</code> と <code>$rank</code>。<code>wait</code> や <code>speed</code> のように
+                      <strong>中身に式を書ける要素の中だけ</strong></td>
+                </tr>
+                <tr>
+                  <td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td>
+                  <td>どこでも明示的に出す。空白を打っただけでは出ないので、属性名はこれが早い</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <figure>
+              <img src="img/help/complete.png" width="534" height="358" loading="lazy"
+                   alt="action の中で < を打って、置ける要素と雛形が並んだ候補の窓">
+              <figcaption>
+                <code>&lt;action&gt;</code> の中で <code>&lt;</code> を打ったところ。
+                <strong>要素と雛形が同じ窓に並ぶ</strong>（印が違う）
+              </figcaption>
+            </figure>
+
+            <h4>雛形</h4>
+            <p>
+              候補は「その場所に置ける要素」を出すが、
+              <strong>「N 方向 に撃つ」のような形は要素 1 つ では出ない</strong>。
+              そこを埋めるのが雛形で、<strong>骨ごと入る</strong> ——
+              <code>&lt;action&gt;</code> の中で 6 つ、<code>&lt;bulletml&gt;</code> の直下 で 2 つ。
+            </p>
             <ul>
-              <li><strong>赤</strong> —— <code>top</code> で始まる名前の定義が 1 つ も無い。
-                  <strong>読めて・組めて、黙って何も起きない</strong>（走らせる側が
-                  <code>top</code> で始まる名前を探すので）</li>
-              <li><strong>黄</strong> —— <code>◯◯Ref</code> が指す名前の定義が無い。
-                  <strong>Apply は通る</strong> —— 解けない参照は黙って無視されるだけなので、
-                  書いたつもりのものが出ない</li>
-              <li><strong>青</strong> —— どこからも呼ばれていない定義。
-                  <strong>走りには影響しない</strong>（同梱 176 本 にも 6 件 在る）</li>
-            </ul></li>
-        <li><strong>Reset</strong> はいま載っている弾幕を最初から。<strong>欄の文字は触らない</strong></li>
-        <li><strong>Frame</strong> は載せてから進めたコマ数。Apply や Reset、
-            弾幕の選び直しで 0 に戻る</li>
-        <li><strong>難度</strong>は <code>$rank</code>（0 から 1）。
-            <strong>同梱 176 本 のうち 173 本 が使う軸</strong>で、
-            0 と 1 に振ると <strong>171 本 で走りが変わる</strong>（弾数が数倍 になるものも在る）。
-            動かすと弾幕は最初から走り直す —— <code>$rank</code> は
-            <strong>木を組む段で焼き込まれる</strong>ので、走っている面には効かない</li>
-        <li><strong>種</strong>は <code>$rand</code> の並びを決める。
-            <strong>同じ種なら同じ走り</strong>で、<strong>振</strong> を押すと別の走りになる。
-            Reset で頭に戻しても<strong>同じ絵をもう一度</strong>見られる</li>
-        <li><strong>面の向きは弾幕が決める。</strong>
-            <code>&lt;bulletml type="horizontal"&gt;</code> と書いてあれば横長の面になり、
-            <strong>敵が右・自機が左</strong>に置かれる。同梱 176 本 のうち 9 本 がこれ。
-            <strong>面を回すのではない</strong> —— 横画面の弾幕は座標のとり方はそのままに
-            左の側へ撃つように書かれているので、自機を左に置けば絵が成り立つ。
-            書いていなければ縦の面（<code>vertical</code> と同じ）</li>
-        <li><strong>自機</strong>は狙い弾（<code>type="aim"</code>）の基準。
-            <strong>176 本 のうち 103 本 が狙いを使う</strong>ので、
-            どこに置くかで絵そのものが変わる。
-            <strong>追う</strong>はマウス、<strong>止める</strong>は定位置、
-            <strong>回る</strong>は定位置のまわりを 240 コマ かけて 1 周。
-            回るのは<strong>コマ数だけで決まる</strong>ので、
-            同じ種・同じ難度なら同じ絵になる</li>
-        <li><strong>飛ぶ</strong> はそのコマまで進めて<strong>止まる</strong>（1 コマ 送りと同じ）。
-            <strong>押しても画面は固まらない</strong> —— 重い弾幕だと着くまで何秒か かかるので、
-            進んでいることは Frame の数で分かる。Play を押せばそこでやめる。
-            いまより手前のコマを指すと<strong>最初から進め直す</strong>（面は逆再生できない）。
-            そのとき乱数も引き直すので、<code>$rand</code> を使う弾幕は
-            <strong>さっき見た絵と同じにならない</strong></li>
-        <li><strong>軌跡</strong> は通った跡を残す。<strong>過去の位置は覚えていない</strong> ——
-            面を薄く塗り重ねているだけなので、放っておけば消える。
-            塗り重ねる先は面ぜんぶなので、<strong>自機の跡も残る</strong></li>
-        <li>プルダウンで同梱の弾幕を選ぶと、その弾幕が欄に入る。
-            <strong>表記は変わらない</strong> —— sxml で読んでいれば sxml で入る。
-            並びは 2 つ に分かれていて、後ろは
-            <strong>BulletML 公式配布のサンプル 17 本</strong>
-            （同梱とは別の集合。<code>[Progear]</code> のように
-            もとのファイル名で出る）</li>
-        <li><strong>2 面</strong>で、もう 1 つ の弾幕を隣に並べて<strong>同じコマで走らせる</strong>。
-            難度・種・自機は 2 つ で共通なので、<strong>違うのは弾幕だけ</strong>。
-            <strong>乱数は面ごとに分けてある</strong>ので、
-            並べても 1 面 で見たときと同じ絵になる（並べたら絵が変わる、では比べられない）。
-            弾数は <code>1 面 / 2 面</code> の形で出る。
-            <strong>面の向きは弾幕ごと</strong>なので、片方 だけ横長になることがある</li>
-        <li><kbd>Ctrl</kbd>＋ホイールで<strong>欄の字が拡大縮小する</strong>（VS Code と同じ）。
-            拡大率は Apply でも Reset でも戻らない</li>
-        <li><strong>配色</strong>は欄の見た目だけを替える。
-            弾幕にも本文にも触らない（速さと同じで<strong>見る側の都合</strong>）。
-            Monaco が素で持っている 4 本 —— 暗い・明るいと、
-            その高コントラスト版（<strong>HC</strong>）</li>
-        <li><strong>比べる</strong>は、欄を 2 面 に入れ替えて並べる。
-            <strong>並べているあいだは読むだけ</strong>で、直すのは「しない」に
-            戻してから。左右 とも <kbd>F12</kbd> と hover は効く。
-            <ul>
-              <li><strong>走っている弾幕と</strong> —— 左がいま走っているもの、
-                  右が編集中の本文。<strong>Apply する前に何を変えたかが見える</strong>。
-                  同じ表記どうしなので、赤と緑が意味を持つ</li>
-              <li><strong>◯◯ と</strong> —— いまの本文をその表記へ変換したものが左。
-                  <strong>赤と緑は意味を持たない</strong>（書き方が違えば全行 が違う）——
-                  同じ弾幕が別の書き方でどう見えるかを、並べて読むための出し方</li>
+              <li><strong>N 方向 に撃つ</strong> —— <code>repeat</code> ＋
+                  <code>direction type="sequence"</code></li>
+              <li><strong>自機を狙って撃つ</strong> / <strong>決めてある弾を撃つ</strong> /
+                  <strong>待つ</strong> / <strong>速さを変える</strong> / <strong>向きを変える</strong></li>
+              <li><code>&lt;bulletml&gt;</code> の直下 では
+                  <strong>撃ち始める（top）</strong>と<strong>撃って消える弾</strong></li>
             </ul>
-            表記そのものを切り替えると、比べる先は<strong>「しない」に戻る</strong>
-            （自分とは比べられないので）</li>
-        <li><strong>Open</strong> は名前で表記を決める。<code>.sxml</code> を開けば sxml、
-            <code>.fsb</code> なら fsb、<code>.fsx</code> なら F# の CE に切り替わる</li>
-        <li><strong>Save</strong> はその対。<strong>いま欄に在る字をそのまま落とす</strong> ——
-            読めない書きかけでも落とせる。拡張子は表記から付くので、
-            落としたものを Open すると同じ表記に戻る</li>
-        <li><strong>整形</strong> は読んで同じ表記で書き直す。
-            <strong>コメントは残らない</strong>（木がコメントを持たないので、
-            読んだ時点で落ちる）。だから<strong>字が変わるときは 1 回 目 で知らせて、
-            もう一度 押すと入れ替える</strong>。
-            知らせたあとに打つと、待っているものは消える</li>
-        <li><strong>Share</strong> は<strong>いまの本文をそのまま URL にする</strong>。
-            アドレス欄がその字になり、コピーもされる。
-            <strong>サーバへは送られない</strong>（<code>#</code> の後ろに載るので、
-            置いてあるところからは中身が見えない）。
-            表記も一緒に載るので、開いた側は同じ表記で読む。
-            <strong>難度と種も載る</strong> —— 同じ本文でも走らせ方が違えば別の絵なので、
-            <strong>リンクが指しているのは「その走り」</strong>。
-            <strong>版が違うリンクや壊れた字は「読めない」と出る</strong>（黙って空にしない）</li>
-        <li><kbd>Ctrl</kbd>+<kbd>.</kbd> は<strong>綴りの直し方</strong>を出す。
-            <code>actionRef label="tp"</code> のように指す先が無いとき、
-            <strong>1 文字 違いの定義が在れば</strong>「tp を top に直す」が出る。
-            <strong>近い名前が無ければ何も出ない</strong>（当てずっぽうを出さない）。
-            波線が消えていても出る</li>
-        <li><kbd>F2</kbd> は <code>label</code> の名前を<strong>まとめて変える</strong>。
-            <code>action label="a"</code> の上でも <code>actionRef label="a"</code> の上でも、
-            その名前の書いてあるところが全部 変わる。
-            <code>action</code> と <code>bullet</code> のように<strong>別の種類は巻き込まない</strong></li>
-        <li><kbd>F12</kbd> は <strong>その名前を決めているところへ飛ぶ</strong>。
-            <kbd>Shift</kbd>+<kbd>F12</kbd> は<strong>書いてあるところを全部 並べる</strong>。
-            どちらも <kbd>F2</kbd> と同じ 1 本 の上に載っている ——
-            <strong>決めているところが無ければ飛ばない</strong>（そこは波線と
-            <kbd>Ctrl</kbd>+<kbd>.</kbd> の担当）</li>
-        <li><kbd>Alt</kbd>+<kbd>O</kbd> は<strong>どこに何が在るかを並べる</strong>。
-            打った字から数えるので Apply を待たない。
-            <strong><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> でも出る</strong> ——
-            ただし<strong>その組み合わせはページの外に持ち主が居ることがある</strong>
-            （常駐ソフトの割り当てや、Chrome の「ブックマーク マネージャ」）。
-            取られるとここまで届かないので、<strong>出ないときは <kbd>Alt</kbd>+<kbd>O</kbd></strong>。
-            <strong>入れ子のまま</strong>出て、<code>label</code> の付いたものは名前も添う。
+            <p>
+              <strong>穴には既定値が入っている。</strong> <kbd>Tab</kbd> で次の穴へ移る ——
+              埋めずに走らせても弾幕として成り立つ
+              （<code>$1</code> は BulletML の式として正しく読めてしまうので、
+              空の穴を作っていない）。
+            </p>
+
+            <figure>
+              <img src="img/help/frame.png" width="520" height="248" loading="lazy"
+                   alt="N 方向 に撃つ の雛形が入って、times 8 や sequence 45 の既定値が埋まっている欄">
+              <figcaption>
+                「N 方向 に撃つ」を選んだ直後。<strong>8 方向・45 度 が入っている</strong>ので、
+                そのまま Apply しても走る
+              </figcaption>
+            </figure>
+
+            <h4>欄そのもの</h4>
             <ul>
-              <li>入れ子の知り方は表記ごとに違う（閉じ札・括弧の対・字下げ）が、
-                  <strong>同梱 176 本 とも 3 表記 で同じ木</strong>になった ——
-                  だから<strong>表記を切り替えても並びは変わらない</strong></li>
-              <li>F# の CE だけは <code>{ }</code> の段を見るので、別の木になる
-                  （176 本 中 145 本 で違う）。<strong>そちらが正しい</strong> ——
-                  見ているのが要素の入れ子ではなく CE の本文なので</li>
-            </ul></li>
-        <li><strong>折りたたみ</strong>も同じ木に載っている。
-            畳む範囲は<strong>その要素の中身が終わるところまで</strong> ——
-            閉じ札が在る表記ではその行まで、無い表記では中身の最後の行まで。
-            <strong>親の閉じ札は巻き込まない</strong>。
-            1 行 に収まっているものは畳む先が無いので出ない</li>
-        <li><kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>&rarr;</kbd> は
-            <strong>囲んでいる要素まで選択を広げる</strong>。
-            押すたびに 1 段 ずつ外へ出て、<kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>&larr;</kbd>
-            で 1 段 戻る。
-            <strong>字下げは選ばない</strong> —— 始まりは要素の名前から。
-            アウトライン・折りたたみと<strong>同じ 1 本 の上</strong>に載っている</li>        <li>検索（<kbd>Ctrl</kbd>+<kbd>F</kbd>）・
-            取り消し（<kbd>Ctrl</kbd>+<kbd>Z</kbd>）はエディタの標準機能</li>
-      </ul>
+              <li><kbd>Ctrl</kbd>＋ホイールで<strong>欄の字が拡大縮小する</strong>（VS Code と同じ）。
+                  拡大率は Apply でも Reset でも戻らない</li>
+              <li><strong>配色</strong>は欄の見た目だけを替える。
+                  弾幕にも本文にも触らない（速さと同じで<strong>見る側の都合</strong>）。
+                  Monaco が素で持っている 4 本 —— 暗い・明るいと、
+                  その高コントラスト版（<strong>HC</strong>）</li>
+              <li>検索（<kbd>Ctrl</kbd>+<kbd>F</kbd>）・
+                  取り消し（<kbd>Ctrl</kbd>+<kbd>Z</kbd>）はエディタの標準機能</li>
+            </ul>
+          </section>
 
-      <h3>キーだけで動かす</h3>
-      <ul>
-        <li><kbd>Tab</kbd> で操作を順に回る。<strong>24 か所 が輪に入っていて、
-            そのうち 23 か所 が口</strong>（残り 1 つ が下の欄）。
-            並びは画面のとおり —— 上の列 6 個 -> 欄 -> 下の列 17 個</li>
-        <li><strong><kbd>Tab</kbd> を 7 回 押すと欄に入り、そこで止まる。</strong>
-            欄の中では <kbd>Tab</kbd> が字下げになるので、
-            <strong>下の列 17 個 へは <kbd>Tab</kbd> だけでは進めない</strong>。
-            <kbd>Ctrl</kbd>+<kbd>M</kbd> を 1 回 押すと <kbd>Tab</kbd> が
-            外へ抜ける側に切り替わる。もう一度 押すと字下げに戻る</li>
-        <li><kbd>Esc</kbd> は<strong>出ている窓を閉じる</strong>（候補・検索・名前の変更）。
-            <strong>欄からは出ない</strong> —— 出るのは上の <kbd>Ctrl</kbd>+<kbd>M</kbd>。
-            この窓も <kbd>Esc</kbd> で閉じる</li>
-        <li>いまどこに居るかは<strong>青い枠</strong>で出る。
-            <strong>キーで来たときだけ</strong>光り、クリックでは光らない</li>
-      </ul>
+          <!-- **書く から割った**。1 つ に置くと 1440x900 で 3.66 画面分 に在った ——
+               打つ側（候補・雛形・欄）と、書いたものをたどる側で切れる -->
+          <section id="help-ch-trace" class="help-ch" hidden>
+            <h3>たどる</h3>
 
-      <p class="note">
-        4 つ の表記が全部 書けて、hover は 4 つ とも出る。
-        候補・<kbd>F2</kbd>・<kbd>F12</kbd>・<kbd>Ctrl</kbd>+<kbd>.</kbd>・
-        アウトライン・折りたたみは 4 表記 とも出る。
-      </p>
+            <h4>名前を追う</h4>
+            <ul>
+              <li><kbd>Ctrl</kbd>+<kbd>.</kbd> は<strong>綴りの直し方</strong>を出す。
+                  <code>actionRef label="tp"</code> のように指す先が無いとき、
+                  <strong>1 文字 違いの定義が在れば</strong>「tp を top に直す」が出る。
+                  <strong>近い名前が無ければ何も出ない</strong>（当てずっぽうを出さない）。
+                  波線が消えていても出る</li>
+              <li><kbd>F2</kbd> は <code>label</code> の名前を<strong>まとめて変える</strong>。
+                  <code>action label="a"</code> の上でも <code>actionRef label="a"</code> の上でも、
+                  その名前の書いてあるところが全部 変わる。
+                  <code>action</code> と <code>bullet</code> のように<strong>別の種類は巻き込まない</strong></li>
+              <li><kbd>F12</kbd> は <strong>その名前を決めているところへ飛ぶ</strong>。
+                  <kbd>Shift</kbd>+<kbd>F12</kbd> は<strong>書いてあるところを全部 並べる</strong>。
+                  どちらも <kbd>F2</kbd> と同じ 1 本 の上に載っている ——
+                  <strong>決めているところが無ければ飛ばない</strong>（そこは波線と
+                  <kbd>Ctrl</kbd>+<kbd>.</kbd> の担当）</li>
+            </ul>
 
-      <button type="button" id="help-close">閉じる</button>
+            <h4>形を見る</h4>
+            <ul>
+              <li><kbd>Alt</kbd>+<kbd>O</kbd> は<strong>どこに何が在るかを並べる</strong>。
+                  打った字から数えるので Apply を待たない。
+                  <strong><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> でも出る</strong> ——
+                  ただし<strong>その組み合わせはページの外に持ち主が居ることがある</strong>
+                  （常駐ソフトの割り当てや、Chrome の「ブックマーク マネージャ」）。
+                  取られるとここまで届かないので、<strong>出ないときは <kbd>Alt</kbd>+<kbd>O</kbd></strong>。
+                  <strong>入れ子のまま</strong>出て、<code>label</code> の付いたものは名前も添う。
+                  <ul>
+                    <li>入れ子の知り方は表記ごとに違う（閉じ札・括弧の対・字下げ）が、
+                        <strong>同梱 176 本 とも 3 表記 で同じ木</strong>になった ——
+                        だから<strong>表記を切り替えても並びは変わらない</strong></li>
+                    <li>F# の CE だけは <code>{ }</code> の段を見るので、別の木になる
+                        （176 本 中 145 本 で違う）。<strong>そちらが正しい</strong> ——
+                        見ているのが要素の入れ子ではなく CE の本文なので</li>
+                  </ul></li>
+              <li><strong>折りたたみ</strong>も同じ木に載っている。
+                  畳む範囲は<strong>その要素の中身が終わるところまで</strong> ——
+                  閉じ札が在る表記ではその行まで、無い表記では中身の最後の行まで。
+                  <strong>親の閉じ札は巻き込まない</strong>。
+                  1 行 に収まっているものは畳む先が無いので出ない</li>
+              <li><kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>&rarr;</kbd> は
+                  <strong>囲んでいる要素まで選択を広げる</strong>。
+                  押すたびに 1 段 ずつ外へ出て、<kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>&larr;</kbd>
+                  で 1 段 戻る。
+                  <strong>字下げは選ばない</strong> —— 始まりは要素の名前から。
+                  アウトライン・折りたたみと<strong>同じ 1 本 の上</strong>に載っている</li>
+            </ul>
+
+            <figure>
+              <img src="img/help/outline.png" width="466" height="279" loading="lazy"
+                   alt="Alt+O で出したアウトライン。入れ子のまま並び、label の付いたものは名前も添う">
+              <figcaption>
+                <kbd>Alt</kbd>+<kbd>O</kbd>。<strong>入れ子のまま</strong>で、
+                <code>action top</code> のように<strong>名前が添う</strong>。
+                右の <code>symbols (14)</code> が数
+              </figcaption>
+            </figure>
+
+          </section>
+
+          <section id="help-ch-run" class="help-ch" hidden>
+            <h3>走らせる</h3>
+
+            <ul>
+              <li><strong>Apply</strong> を押すと、書いたものが弾幕に反映される。
+                  打つたびには反映しない（見ている弾幕が最初に戻ってしまうため）</li>
+              <li>読めなければ Apply したときに下のバーへ理由が出て、分かる位置には波線が付く</li>
+              <li><strong>読めて・組めても走らないものは、打った時点で波線が付く</strong>
+                  （Apply を待たない）。字から数えているので、
+                  <strong>いちばん長い弾幕でも 0.5 ミリ秒</strong>。3 種類 出る。
+                  <ul>
+                    <li><strong>赤</strong> —— <code>top</code> で始まる名前の定義が 1 つ も無い。
+                        <strong>読めて・組めて、黙って何も起きない</strong>（走らせる側が
+                        <code>top</code> で始まる名前を探すので）</li>
+                    <li><strong>黄</strong> —— <code>◯◯Ref</code> が指す名前の定義が無い。
+                        <strong>Apply は通る</strong> —— 解けない参照は黙って無視されるだけなので、
+                        書いたつもりのものが出ない</li>
+                    <li><strong>青</strong> —— どこからも呼ばれていない定義。
+                        <strong>走りには影響しない</strong>（同梱 176 本 にも 6 件 在る）</li>
+                  </ul></li>
+            </ul>
+
+            <figure>
+              <img src="img/help/squiggles.png" width="430" height="182" loading="lazy"
+                   alt="赤・黄・青 の波線が同時に出ている本文。top が無く、指す先の無い bulletRef と、呼ばれていない bullet が在る">
+              <figcaption>
+                3 色 が同時に出た本文。<strong>どれも「読めて・組める」</strong> ——
+                <code>top</code> が無く（赤）、<code>nai</code> の定義が無く（黄）、
+                <code>tsukawanai</code> が呼ばれていない（青）
+              </figcaption>
+            </figure>
+
+            <h4>時間</h4>
+            <ul>
+              <li><strong>Reset</strong> はいま載っている弾幕を最初から。<strong>欄の文字は触らない</strong></li>
+              <li><strong>Frame</strong> は載せてから進めたコマ数。Apply や Reset、
+                  弾幕の選び直しで 0 に戻る</li>
+              <li><strong>飛ぶ</strong> はそのコマまで進めて<strong>止まる</strong>（1 コマ 送りと同じ）。
+                  <strong>押しても画面は固まらない</strong> —— 重い弾幕だと着くまで何秒か かかるので、
+                  進んでいることは Frame の数で分かる。Play を押せばそこでやめる。
+                  いまより手前のコマを指すと<strong>最初から進め直す</strong>（面は逆再生できない）。
+                  そのとき乱数も引き直すので、<code>$rand</code> を使う弾幕は
+                  <strong>さっき見た絵と同じにならない</strong></li>
+            </ul>
+
+            <h4>走らせ方の軸</h4>
+            <ul>
+              <li><strong>難度</strong>は <code>$rank</code>（0 から 1）。
+                  <strong>同梱 176 本 のうち 173 本 が使う軸</strong>で、
+                  0 と 1 に振ると <strong>171 本 で走りが変わる</strong>（弾数が数倍 になるものも在る）。
+                  動かすと弾幕は最初から走り直す —— <code>$rank</code> は
+                  <strong>木を組む段で焼き込まれる</strong>ので、走っている面には効かない</li>
+              <li><strong>種</strong>は <code>$rand</code> の並びを決める。
+                  <strong>同じ種なら同じ走り</strong>で、<strong>振</strong> を押すと別の走りになる。
+                  Reset で頭に戻しても<strong>同じ絵をもう一度</strong>見られる</li>
+              <li><strong>自機</strong>は狙い弾（<code>type="aim"</code>）の基準。
+                  <strong>176 本 のうち 103 本 が狙いを使う</strong>ので、
+                  どこに置くかで絵そのものが変わる。
+                  <strong>追う</strong>はマウス、<strong>止める</strong>は定位置、
+                  <strong>回る</strong>は定位置のまわりを 240 コマ かけて 1 周。
+                  回るのは<strong>コマ数だけで決まる</strong>ので、
+                  同じ種・同じ難度なら同じ絵になる</li>
+            </ul>
+
+            <h4>面</h4>
+            <ul>
+              <li><strong>面の向きは弾幕が決める。</strong>
+                  <code>&lt;bulletml type="horizontal"&gt;</code> と書いてあれば横長の面になり、
+                  <strong>敵が右・自機が左</strong>に置かれる。同梱 176 本 のうち 9 本 がこれ。
+                  <strong>面を回すのではない</strong> —— 横画面の弾幕は座標のとり方はそのままに
+                  左の側へ撃つように書かれているので、自機を左に置けば絵が成り立つ。
+                  書いていなければ縦の面（<code>vertical</code> と同じ）</li>
+              <li><strong>軌跡</strong> は通った跡を残す。<strong>過去の位置は覚えていない</strong> ——
+                  面を薄く塗り重ねているだけなので、放っておけば消える。
+                  塗り重ねる先は面ぜんぶなので、<strong>自機の跡も残る</strong></li>
+            </ul>
+          </section>
+
+          <section id="help-ch-compare" class="help-ch" hidden>
+            <h3>並べて比べる</h3>
+
+            <ul>
+              <li><strong>2 面</strong>で、もう 1 つ の弾幕を隣に並べて<strong>同じコマで走らせる</strong>。
+                  難度・種・自機は 2 つ で共通なので、<strong>違うのは弾幕だけ</strong>。
+                  <strong>乱数は面ごとに分けてある</strong>ので、
+                  並べても 1 面 で見たときと同じ絵になる（並べたら絵が変わる、では比べられない）。
+                  弾数は <code>1 面 / 2 面</code> の形で出る。
+                  <strong>面の向きは弾幕ごと</strong>なので、片方 だけ横長になることがある</li>
+            </ul>
+
+            <figure class="fig-wide">
+              <img src="img/help/two-stages.png" width="991" height="653" loading="lazy"
+                   alt="2 つ の面が横に並んで、別々の弾幕が同じコマで走っている">
+              <figcaption>
+                同じコマの 2 面。<strong>難度・種・自機は共通</strong>なので、
+                絵の違いは弾幕の違いだけ
+              </figcaption>
+            </figure>
+
+            <ul>
+              <li><strong>比べる</strong>は、欄を 2 面 に入れ替えて並べる。
+                  <strong>並べているあいだは読むだけ</strong>で、直すのは「しない」に
+                  戻してから。左右 とも <kbd>F12</kbd> と hover は効く。
+                  <ul>
+                    <li><strong>走っている弾幕と</strong> —— 左がいま走っているもの、
+                        右が編集中の本文。<strong>Apply する前に何を変えたかが見える</strong>。
+                        同じ表記どうしなので、赤と緑が意味を持つ</li>
+                    <li><strong>◯◯ と</strong> —— いまの本文をその表記へ変換したものが左。
+                        <strong>赤と緑は意味を持たない</strong>（書き方が違えば全行 が違う）——
+                        同じ弾幕が別の書き方でどう見えるかを、並べて読むための出し方</li>
+                  </ul>
+                  表記そのものを切り替えると、比べる先は<strong>「しない」に戻る</strong>
+                  （自分とは比べられないので）</li>
+            </ul>
+
+            <figure class="fig-wide">
+              <img src="img/help/diff.png" width="910" height="242" loading="lazy"
+                   alt="走っている弾幕と編集中の本文を並べた差分。times と direction と speed の 3 行 が色付き">
+              <figcaption>
+                「走っている弾幕と」。左が走っているもの、右が欄の字 ——
+                <strong>Apply していない 3 行</strong>が色で出る
+              </figcaption>
+            </figure>
+          </section>
+
+          <section id="help-ch-io" class="help-ch" hidden>
+            <h3>出し入れ</h3>
+
+            <ul>
+              <li>プルダウンで同梱の弾幕を選ぶと、その弾幕が欄に入る。
+                  <strong>表記は変わらない</strong> —— sxml で読んでいれば sxml で入る。
+                  並びは 2 つ に分かれていて、後ろは
+                  <strong>BulletML 公式配布のサンプル 17 本</strong>
+                  （同梱とは別の集合。<code>[Progear]</code> のように
+                  もとのファイル名で出る）</li>
+              <li><strong>Open</strong> は名前で表記を決める。<code>.sxml</code> を開けば sxml、
+                  <code>.fsb</code> なら fsb、<code>.fsx</code> なら F# の CE に切り替わる</li>
+              <li><strong>Save</strong> はその対。<strong>いま欄に在る字をそのまま落とす</strong> ——
+                  読めない書きかけでも落とせる。拡張子は表記から付くので、
+                  落としたものを Open すると同じ表記に戻る</li>
+              <li><strong>整形</strong> は読んで同じ表記で書き直す。
+                  <strong>コメントは残らない</strong>（木がコメントを持たないので、
+                  読んだ時点で落ちる）。だから<strong>字が変わるときは 1 回 目 で知らせて、
+                  もう一度 押すと入れ替える</strong>。
+                  知らせたあとに打つと、待っているものは消える</li>
+              <li><strong>Share</strong> は<strong>いまの本文をそのまま URL にする</strong>。
+                  アドレス欄がその字になり、コピーもされる。
+                  <strong>サーバへは送られない</strong>（<code>#</code> の後ろに載るので、
+                  置いてあるところからは中身が見えない）。
+                  表記も一緒に載るので、開いた側は同じ表記で読む。
+                  <strong>難度と種も載る</strong> —— 同じ本文でも走らせ方が違えば別の絵なので、
+                  <strong>リンクが指しているのは「その走り」</strong>。
+                  <strong>版が違うリンクや壊れた字は「読めない」と出る</strong>（黙って空にしない）</li>
+            </ul>
+          </section>
+
+          <section id="help-ch-keys" class="help-ch" hidden>
+            <h3>キーだけで動かす</h3>
+
+            <ul>
+              <li><kbd>Tab</kbd> で操作を順に回る。<strong>24 か所 が輪に入っていて、
+                  そのうち 23 か所 が口</strong>（残り 1 つ が下の欄）。
+                  並びは画面のとおり —— 上の列 6 個 -&gt; 欄 -&gt; 下の列 17 個</li>
+              <li><strong><kbd>Tab</kbd> を 7 回 押すと欄に入り、そこで止まる。</strong>
+                  欄の中では <kbd>Tab</kbd> が字下げになるので、
+                  <strong>下の列 17 個 へは <kbd>Tab</kbd> だけでは進めない</strong>。
+                  <kbd>Ctrl</kbd>+<kbd>M</kbd> を 1 回 押すと <kbd>Tab</kbd> が
+                  外へ抜ける側に切り替わる。もう一度 押すと字下げに戻る</li>
+              <li><kbd>Esc</kbd> は<strong>出ている窓を閉じる</strong>（候補・検索・名前の変更）。
+                  <strong>欄からは出ない</strong> —— 出るのは上の <kbd>Ctrl</kbd>+<kbd>M</kbd>。
+                  この窓も <kbd>Esc</kbd> で閉じる。
+                  <strong>右上 の &#215; と、窓の外 を押しても閉じる</strong>
+                  （閉じ口は 3 本）</li>
+              <li>いまどこに居るかは<strong>青い枠</strong>で出る。
+                  <strong>キーで来たときだけ</strong>光り、クリックでは光らない</li>
+              <li><strong>この窓の中も <kbd>Tab</kbd> で回る。</strong>
+                  <strong>閉じる</strong>のあとに章の札が 6 つ 並んでいて、
+                  <kbd>Enter</kbd> か <kbd>Space</kbd> で開く ——
+                  <strong>窓を閉じているあいだ、ここは輪に入らない</strong>
+                  （上の 24 か所 に入っていないのはそのため）</li>
+            </ul>
+          </section>
+
+        </div>
+      </div>
     </dialog>
     <!--
       Monaco は CDN。**版はこの 1 行 だけに在る** —— `Monaco.fs` はこの src から

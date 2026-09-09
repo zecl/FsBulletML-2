@@ -59,12 +59,33 @@ let private errText (e: obj) : string = jsNative
 [<Emit("JSON.parse($0)")>]
 let private jsonParse (s: string) : obj = jsNative
 
-// dialog は素で Esc と背景を持っている。**自前で被せを作らない**
+// dialog は素で Esc と被せを持っている。**自前で被せを作らない**
 [<Emit("$0.showModal()")>]
 let private showModal (dialog: obj) : unit = jsNative
 
 [<Emit("$0.close()")>]
 let private closeDialog (dialog: obj) : unit = jsNative
+
+/// 背景を押したか。**`dialog` は Esc では閉じるが、背景では閉じない** ——
+/// 「素で付いてくる」と但し書きに書いてあったが、測ったら閉じなかった。
+///
+/// 背景は `::backdrop` で、**当たり判定は dialog 自身に付く**ので、
+/// `target` が dialog なら「中のどれにも当たっていない」が分かる。
+///
+/// **座標も見る。** `target` だけだと、中で字を選んで外で指を離したときに
+/// 当たってしまう（選んだだけで窓が閉じる）。
+///
+/// **中の名前を `$0` / `$1` に来る名前と重ねない。** 最初は
+/// `const d = $0, e = $1` と書いて、置換後が `const d = d, e = e` になった ——
+/// 自分を自分で初期化する const で、押すたび ReferenceError。
+/// **F# は通り、build も門も出ず、押して初めて落ちる**
+[<Emit("""(() => {
+  const dlg = $0, ev = $1;
+  if (ev.target !== dlg) return false;
+  const r = dlg.getBoundingClientRect();
+  return ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom;
+})()""")>]
+let private clickedBackdrop (dialog: obj) (e: Event) : bool = jsNative
 
 // **無いことが在る。** http で開いた窓や、権限を落とした窓では
 // `navigator.clipboard` そのものが生えない —— そこで落とすと、
@@ -95,6 +116,16 @@ let private saveText (name: string) (text: string) : unit = jsNative
 let private random () : float = jsNative
 
 let private el (id: string) = document.getElementById id
+
+/// 使い方の章。**html の `help-tab-◯◯` と `help-ch-◯◯` の後ろ半分**で、
+/// 並びは目次の並び。
+///
+/// **要素名ではない。** ここに `fire` のような BulletML の名前を置くと、
+/// `guard-playground-boundaries` の線（ブラウザ側に要素名を書かない）を越える。
+///
+/// 札と章の対はここでは数えない —— **数えるのは guard-help-chapters.ps1** で、
+/// この並びと html の両方 を見る（片方 だけ足すと黙って通るので）
+let private helpChapters = [ "start"; "write"; "trace"; "run"; "compare"; "io"; "keys" ]
 
 let private setError (msg: string) =
   let e = el "loop-error"
@@ -950,6 +981,26 @@ type Playground() as self =
     let d = el "help-dialog"
     if not (isNull d) then closeDialog d
 
+  /// 章を 1 つ だけ出す。**出す側と隠す側を同じ回で書く** ——
+  /// 「押した札を出す」だけにすると、前の章が残って 2 つ 並ぶ。
+  ///
+  /// 本文の送りは頭へ戻す。**戻さないと、短い章に切り替えたとき
+  /// 中身の無いところが出る**（送りは入れ物のもので、章のものではない）
+  member _.showChapter(name: string) =
+    for c in helpChapters do
+      let sect = el ("help-ch-" + c)
+      if not (isNull sect) then
+        if c = name then sect.removeAttribute "hidden"
+        else sect.setAttribute ("hidden", "")
+
+      let tab = el ("help-tab-" + c)
+      if not (isNull tab) then
+        if c = name then tab.setAttribute ("aria-current", "true")
+        else tab.removeAttribute "aria-current"
+
+    let body = el "help-body"
+    if not (isNull body) then body.scrollTop <- 0.0
+
   /// 入れ物の大きさを変えた側から呼ぶ。**モーダルに入れて開いた直後** ——
   /// 0x0 で建った版が、そこで実寸を測り直す
   member _.relayout() = Monaco.relayout ()
@@ -1222,6 +1273,13 @@ let private on (id: string) (event: string) (handler: unit -> unit) =
   if isNull node then setError ("配線する先が無い: " + id)
   else node.addEventListener (event, fun _ -> handler ())
 
+/// 押した先が要るとき。**`on` は event を渡さない** ——
+/// 背景のクリックは「押した先が dialog 自身」でしか見分けられない
+let private onEvent (id: string) (event: string) (handler: Event -> unit) =
+  let node = el id
+  if isNull node then setError ("配線する先が無い: " + id)
+  else node.addEventListener (event, handler)
+
 on "pattern" "change" (fun () -> playground.pick ())
 on "pattern2" "change" (fun () -> playground.pickSecond ())
 on "mode" "change" (fun () -> playground.setMode ())
@@ -1229,6 +1287,31 @@ on "theme" "change" (fun () -> playground.setTheme ())
 on "compare" "change" (fun () -> playground.setCompare ())
 on "help" "click" (fun () -> playground.help ())
 on "help-close" "click" (fun () -> playground.closeHelp ())
+
+// **背景でも閉じる。** `dialog` が素で持っているのは Esc だけで、
+// 背景のクリックは持っていない —— 但し書きには「素で付いてくる」と
+// 書いてあったが、当たり判定を測ったら dialog 自身 に付いていた。
+// 章に割って窓が小さくなったぶん、背景を押す人が増える。
+//
+// **押し始めと離しの両方 が外**のときだけ閉じる。`click` の座標は
+// 離した位置なので、それだけを見ると**中で字を選んで外で指を離した**ときに
+// 閉じる（実際に測って赤が出た）。逆に外で押して中で離す形も閉じない
+let mutable private helpDownOnBackdrop = false
+
+onEvent "help-dialog" "mousedown" (fun e ->
+  let d = el "help-dialog"
+  helpDownOnBackdrop <- not (isNull d) && clickedBackdrop d e)
+
+onEvent "help-dialog" "click" (fun e ->
+  let d = el "help-dialog"
+  let outside = not (isNull d) && clickedBackdrop d e
+  if helpDownOnBackdrop && outside then playground.closeHelp ()
+  helpDownOnBackdrop <- false)
+
+// 章の札。**`on` は配線する先が無ければ `setError` に出す**ので、
+// html の側 を消したら気づく（黙って押せない札にはならない）
+for c in helpChapters do
+  on ("help-tab-" + c) "click" (fun () -> playground.showChapter c)
 on "play" "click" (fun () -> playground.call("Play"))
 on "pause" "click" (fun () -> playground.call("Pause"))
 on "step-once" "click" (fun () -> playground.call("StepOnce"))

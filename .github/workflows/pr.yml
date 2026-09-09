@@ -117,6 +117,18 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-control-names.Tests.ps1
 
+      # 使い方の窓は章に割れていて、章は 3 か所 に書かれている ——
+      # 目次の札（html）・本文の節（html）・並び（Playground.fs の helpChapters）。
+      # **どれか 1 つ を足し忘れても走行は止まらない**ので、対と並びを数える。
+      # 絵の参照と実物も両方向 で見る（消し忘れが残り続けないように）
+      - name: 使い方の窓の章が揃っているか
+        shell: pwsh
+        run: ./.github/scripts/guard-help-chapters.ps1
+
+      - name: その門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-help-chapters.Tests.ps1
+
       - name: 変更から選ぶ
         id: pick
         shell: pwsh
