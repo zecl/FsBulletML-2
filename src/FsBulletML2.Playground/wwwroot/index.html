@@ -12,7 +12,16 @@
 
       **本番では header で送ること。** meta は frame-ancestors も
       report-only も持てないし、head より前に注入された物には効かない。
-      Cloudflare へ載せる版（v2.0）でそちらへ移す。
+
+      **「v2.0 でそちらへ移す」と書いてあったが、移していない。**
+      理由は「忘れた」ではなく、**この repo に header を送れる場所が 1 つ も無い**
+      から —— `_headers` も `staticwebapp.config.json` も `wrangler.toml` も
+      `web.config` も在らず、配っているのは wwwroot の静的ファイルだけ。
+      置き場が決まった時点で、そこへ 1 枚 足して meta を外す。
+
+      **埋め込み（v2.8）で効いてくるのは frame-ancestors。** meta では
+      指定できないので、**いまは誰でも枠に入れられる**。読み取り専用の
+      デモなので実害は測っていないが、絞りたくなったら header が要る。
 
       wasm-unsafe-eval  Blazor WASM の runtime が要る
       unsafe-inline     Monaco が style を差し込む（script には出していない）
@@ -68,19 +77,19 @@
           </select>
           <!-- 中身は空。**表記の表を html に書かない** —— 登録されている
                並び（Playground.fs の languages）から Fable が作る -->
-          <label class="mode">表記<select id="mode"></select></label>
+          <label class="mode embed-hide">表記<select id="mode"></select></label>
           <!-- 走らせ方の軸。**弾幕は同じで走りが変わる**（Share に乗る）。
                2 つ 目 の面に載せる弾幕（v2.1）。中身は空 ——
                並びは `#pattern` と同じ 1 本 から Fable が作る -->
-          <label class="mode">2 面<select id="pattern2"><option value="">なし</option></select></label>
+          <label class="mode embed-hide">2 面<select id="pattern2"><option value="">なし</option></select></label>
           <!-- 見る側の都合。**弾幕にも本文にも触らない**。
                中身は空 —— Monaco が素で持っている並び（fable/Monaco.fs の themes）から -->
-          <label class="mode">配色<select id="theme"></select></label>
+          <label class="mode embed-hide">配色<select id="theme"></select></label>
           <!-- 比べる先。**中身は空** —— 表記の並びは Fable が作る（`mode` と同じ理由）。
                並べているあいだは**読むだけ**で、直すのは元の欄でやる -->
-          <label class="mode">比べる<select id="compare"></select></label>
+          <label class="mode embed-hide">比べる<select id="compare"></select></label>
           <!-- 助け -->
-          <button type="button" id="help" title="補完の使い方">?</button>
+          <button class="embed-hide" type="button" id="help" title="補完の使い方">?</button>
         </div>
         <!-- 中身は空。**XML を html に書かない** —— 起動時の本文は host が
              同梱カタログの CE から焼いて渡す（Main.fs の InitialSource） -->
@@ -100,18 +109,18 @@
         <!-- 時間。**走行の制御** -->
         <button type="button" id="play">Play</button>
         <button type="button" id="pause">Pause</button>
-        <button type="button" id="step-once" title="1 コマ 進める（押すと止まる）">&#9654;|</button>
+        <button class="embed-hide" type="button" id="step-once" title="1 コマ 進める（押すと止まる）">&#9654;|</button>
         <!-- 飛び先。上限と丸め方は host の Seek が持つ（html には書かない）。
              **押しても画面は止まらない** —— 着くまで何フレームか かかる -->
-        <label class="rate">コマ
+        <label class="rate embed-hide">コマ
           <input id="seek-to" type="number" min="0" step="60" value="600" title="飛び先のコマ数">
         </label>
-        <button type="button" id="seek" title="そのコマまで進める（着いたら止まる）">飛ぶ</button>
+        <button class="embed-hide" type="button" id="seek" title="そのコマまで進める（着いたら止まる）">飛ぶ</button>
         <button type="button" id="reset">Reset</button>
         <!-- 見る側の都合。**弾幕にも本文にも触らない**（Apply / Reset でも戻さない）。
              数の意味は host の Pacing が持つ。正なら 1 コマ に何回 進めるか、
              負なら何コマ に 1 回 進めるか -->
-        <label class="rate">速さ
+        <label class="rate embed-hide">速さ
           <select id="rate">
             <option value="-4">1/4</option>
             <option value="-2">1/2</option>
@@ -121,7 +130,7 @@
           </select>
         </label>
         <!-- 過去の位置は貯めない。面を薄く塗り重ねるだけ（fable の draw） -->
-        <label class="rate"><input id="trail" type="checkbox"> 軌跡</label>
+        <label class="rate embed-hide"><input id="trail" type="checkbox"> 軌跡</label>
         <!-- 走らせ方の軸。**弾幕は同じで走りが変わる** —— どれも Share に乗る。
              難度（$rank）は 176 本 中 173 本 が使う軸で、v1.9 まで 0.5 固定だった。
              動かすと host が面を建て直す（rank は木を組む段で焼き込まれる） -->
@@ -130,13 +139,13 @@
           <span id="rank-value">50</span>
         </label>
         <!-- 乱数の種。**同じ種なら同じ走り。** Share URL に乗る -->
-        <label class="rate">種
+        <label class="rate embed-hide">種
           <input id="seed" type="number" min="1" max="999999" step="1" value="1" title="同じ種なら同じ走り">
         </label>
-        <button type="button" id="seed-roll" title="種を振り直す（別の走りを見る）">振</button>
+        <button class="embed-hide" type="button" id="seed-roll" title="種を振り直す（別の走りを見る）">振</button>
         <!-- 自機の動かし方。**176 本 中 103 本 が狙いを使う**（実測）ので、
              自機をどこに置くかは半分 以上 の弾幕で絵そのものを変える -->
-        <label class="rate">自機
+        <label class="rate embed-hide">自機
           <select id="player" title="狙い弾の基準になる自機をどう動かすか">
             <option value="0">追う</option>
             <option value="1">止める</option>
@@ -144,29 +153,29 @@
           </select>
         </label>
         <!-- 本文。**字が変わる側** -->
-        <button type="button" id="apply">Apply</button>
-        <button type="button" id="open">Open</button>
+        <button class="embed-hide" type="button" id="apply">Apply</button>
+        <button class="embed-hide" type="button" id="open">Open</button>
         <!-- 落とす先の名前と拡張子は Fable が表記から組む。**html に書かない** ——
              書くと、表記を足したとき 2 か所 直すことになる -->
-        <button type="button" id="save" title="いまの本文をファイルに落とす">Save</button>
+        <button class="embed-hide" type="button" id="save" title="いまの本文をファイルに落とす">Save</button>
         <!-- 読んで同じ表記で書き直す。**口は Transcode の行き先を同じにするだけ**。
              字が変わるときは 1 回 目 で知らせて、もう一度 押すと入れ替える -->
-        <button type="button" id="format" title="読んで書き直す（コメントは残らない）">整形</button>
+        <button class="embed-hide" type="button" id="format" title="読んで書き直す（コメントは残らない）">整形</button>
         <!-- accept は Fable が入れる（登録されている表記の拡張子）。
              ここに書くと、表記を足したとき 2 か所 直すことになる -->
         <input id="open-file" type="file" hidden>
         <!-- いまの本文を URL にする。行き先は fragment（# の後ろ）なので
              サーバへは送られない。作るのは Fable（Share.fs と 器 の ShareLink） -->
-        <button type="button" id="share" title="いまの本文を URL にする">Share</button>
-        <span>FPS: <span id="fps">0</span></span>
-        <span>Bullets: <span id="bullet-count">0</span></span>
+        <button class="embed-hide" type="button" id="share" title="いまの本文を URL にする">Share</button>
+        <span class="embed-hide">FPS: <span id="fps">0</span></span>
+        <span class="embed-hide">Bullets: <span id="bullet-count">0</span></span>
         <!-- 面を建ててから何コマ 進めたか。**飛んでいる最中はここが速く動く** ——
              進んでいることの唯一の合図 -->
         <span>Frame: <span id="frame-count">0</span></span>
         <span class="error" id="loop-error">起動待ち</span>
         <!-- 済んだことの知らせ。**error と別に置く** ——
              同じところへ赤で出すと、コピーできたことが失敗に見える -->
-        <span class="done" id="share-note"></span>
+        <span class="done embed-hide" id="share-note"></span>
       </div>
       <div id="main"></div>
     </div>

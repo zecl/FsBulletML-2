@@ -117,6 +117,26 @@ let private random () : float = jsNative
 
 let private el (id: string) = document.getElementById id
 
+/// 記事や本の中に貼られているか。**`?embed=1` か、自分が枠の中に居るか。**
+///
+/// 2 通り 見るのは、どちらか片方 では足りないから ——
+/// 枠の外 から `?embed=1` で開かれることも在るし、`?embed=1` を付け忘れた
+/// 枠の中 でも詰めたい。**枠の中 の判定は、同じ元 でなくても効く**
+/// （`window.top` を読むだけで、中身を触らない）
+[<Emit("(new URLSearchParams(location.search).get('embed') === '1') || (window.self !== window.top)")>]
+let private isEmbedded () : bool = jsNative
+
+/// **印は module の頭 で立てる。** ここは `js/Playground.js` の先頭 で走る ——
+/// 手書きの `.js` を足す道は `guard-playground-boundaries` が塞いでいる
+/// （追跡された `.js` は 0 件 でなければならない）ので、Fable が最も早い場所。
+///
+/// **`html` に付ける。** `body` だと、`html` にしか掛からない規則（`.page` の
+/// 高さの元 になる `height: 100%`）から見えない
+let private embedded =
+  let e = isEmbedded ()
+  if e then document.documentElement.classList.add "embed"
+  e
+
 /// 使い方の章。**html の `help-tab-◯◯` と `help-ch-◯◯` の後ろ半分**で、
 /// 並びは目次の並び。
 ///
@@ -1244,8 +1264,14 @@ type Playground() as self =
 
     // **エディタは rAF を予約したあと。** ローダは CDN 越しなので、
     // 先に呼ぶと最初の 1 コマ がその往復ぶん遅れる。
-    // 読めなくても Canvas は 2way のまま動かす —— 理由だけ出す
-    self.startEditor ()
+    // 読めなくても Canvas は 2way のまま動かす —— 理由だけ出す。
+    //
+    // **貼られているときは建てない。** 読み取り専用の埋め込みでは欄を出さないので、
+    // Monaco の本体（CDN 越しの editor.main）を 1 バイト も取りに行かない。
+    // 弾幕のプルダウンは `fillPatterns` が別に埋めるので、選び直しは効く ——
+    // `pick` が呼ぶ `Monaco.setValue` は、エディタが無ければ何もしない
+    // （Monaco.fs の口はどれも `isNull editor` で守られている）
+    if not embedded then self.startEditor ()
 
 let playground = Playground()
 window?playground <- playground
