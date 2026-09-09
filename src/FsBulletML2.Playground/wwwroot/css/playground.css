@@ -433,18 +433,44 @@ button:disabled {
    **Monaco の飾り（decoration）に付く class。** 波線（`setModelMarkers`）とは
    別の仕組みで、owner ごとの置き換えに巻き込まれない。
 
-   下地だけにする —— 字の色を変えると、その表記の色分けが 1 か所 だけ崩れる */
+   下地だけにする —— 字の色を変えると、その表記の色分けが 1 か所 だけ崩れる。
+
+   **枠線は `outline` で描く。** `border` だと字の幅が動いて、
+   印が付いた瞬間に行の中身が横へずれる */
 .running-node {
-  background: rgba(255, 204, 51, 0.28);
+  background: rgba(255, 204, 51, 0.42);
   border-radius: 2px;
+  outline: 1px solid rgba(255, 204, 51, 1);
 }
 
 /* 撃った場所（v3.1 の段 4 の続き。v3.2）。**走っている場所と別の色** ——
    1 つ の画に 2 種類 の印が出るので、同じ色だと「いまここ」と
    「ここから出た」が読み分けられない */
 .fired-node {
-  background: rgba(128, 208, 160, 0.30);
+  background: rgba(96, 200, 140, 0.42);
   border-radius: 2px;
+  outline: 1px solid rgba(96, 200, 140, 1);
+}
+
+/* 明るい配色（`vs` / `hc-light`）。**同じ色は乗らない。**
+
+   上の 2 つ は暗い地の上で決めた明るい色で、白地に置くと下地も枠線も
+   飛ぶ（実機で見た）。**明度を落として濃くする** —— 濃さを alpha で
+   足そうとすると、字のほうが読めなくなる。
+
+   Monaco は配色の id をエディタの根に class として付けるので、
+   **切り替えに CSS だけで付いていける**（配色を見る字を足さない）。
+   class が 3 つ 並ぶので、素の 1 つ より詳細度が高い —— ソース順に頼らない */
+.monaco-editor.vs .running-node,
+.monaco-editor.hc-light .running-node {
+  background: rgba(230, 145, 0, 0.42);
+  outline-color: rgba(130, 82, 0, 1);
+}
+
+.monaco-editor.vs .fired-node,
+.monaco-editor.hc-light .fired-node {
+  background: rgba(0, 158, 95, 0.42);
+  outline-color: rgba(0, 90, 55, 1);
 }
 
 /* 済んだことの知らせ。**`.error` と別の色** ——

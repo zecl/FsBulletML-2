@@ -263,7 +263,7 @@ type ISourceLanguage =
   ///
   /// **カーソルを見ない。** 本文ぜんぶ の話
   abstract Outline: source: string -> Outline.Node list
-  /// 木のノードになる札の、**要素名の範囲**の並び（v3.1 の段 4）。
+  /// 木のノードになる札の、**光らせる範囲**の並び（v3.1 の段 4）。
   /// **k 番目 が木の k 番目 のノード。**
   ///
   /// 走っている場所を字の上で光らせるために要る。**位置ではなく順番で結ぶ** ——
@@ -275,4 +275,4 @@ type ISourceLanguage =
   ///
   /// ノードになる名前は呼ぶ側が渡す。正本は `Core/DTD.fs` の腕で、
   /// **器に表を書かない**（増えたとき黙って添字がずれる）
-  abstract NodeSpans: source: string -> nodes: string list -> (int * int) list
+  abstract NodeSpans: source: string -> nodes: string list -> NodeSpan list

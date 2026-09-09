@@ -441,6 +441,11 @@
               <li><strong>面の弾を押すと、その弾を追う</strong>。押した弾に丸が付き、
                   <strong>その弾がいま止まっている行が字の上で光る</strong>。
                   何も無いところを押すと追うのをやめる</li>
+              <li><strong>Pause してから押すと分かりやすい。</strong>
+                  走らせたままでも追えるが、弾が動くので狙った弾に当てにくく、
+                  光る行も 1 コマ ごとに移る ——
+                  止めて押し、<strong><code>▶|</code> で 1 コマ ずつ進める</strong>と、
+                  どの行からどの行へ移るかが読める</li>
               <li>下の帯に <code>追跡: 102 行 の wait（stop 2 / 鎖 1 / 道 1）</code> のように出る。
                   <strong>行番号が在り処</strong> —— 下地は<strong>見えている行にしか描かれない</strong>ので、
                   画面の外に在るときはこの数とスクロールバーの印で探す。
@@ -451,6 +456,13 @@
                   <code>stop</code> はその弾の入れ子の深さ、<code>鎖</code> は字へ戻すのに辿った段、
                   <code>道</code> は<strong>同時に走っている <code>top</code> の本数</strong>
                   （2 以上 のときは 1 本 目 だけを出している）</li>
+              <li><strong>光らない弾のほうが多い。</strong>
+                  <code>&lt;bullet&gt;</code> に <code>&lt;action&gt;</code> が無い弾は
+                  台本を持たないので、ただ飛ぶだけで<strong>一生 一度も光らない</strong>。
+                  台本を持つ弾でも、光るのは <code>wait</code> で止まっているコマだけで
+                  <strong>1 コマ ごとに移る</strong> ——
+                  帯が <code>追跡: 再開点なし</code> のときは、その弾がいま
+                  どこでも止まっていない</li>
               <li><strong>1 文字 でも打つと消える</strong>。印は走らせた結果から出るので、
                   字が動いた時点で場所が嘘になる —— <strong>Apply し直すとまた出る</strong></li>
               <li>F# の CE では<strong>光らない</strong>。CE は要素名で書かないので、
@@ -462,6 +474,16 @@
               <li>追っている弾を<strong>撃った <code>&lt;fire&gt;</code> も光る</strong>（別の色）。
                   帯にも <code>／ 出どころ 85 行</code> と出る。
                   <strong>敵そのものを押したときは出ない</strong> —— 撃たれていないので</li>
+              <li><strong>光るのは札の両端。</strong>
+                  <code>&lt;fire ...&gt;</code> と <code>&lt;/fire&gt;</code> の 2 か所 で、
+                  <strong>中身は染めない</strong> —— <code>&lt;fire&gt;</code> は
+                  撃たれる弾の一生を抱える（中に <code>&lt;bullet&gt;&lt;action&gt;</code> が入る）ので、
+                  まるごと染めると<strong>追っている弾の現在地がその中に埋まる</strong>。
+                  同梱の弾幕で数えると、1 つ の <code>&lt;fire&gt;</code> は
+                  <strong>中央 5 行 / 最大 71 行</strong></li>
+              <li>sxml と fsb では<strong>1 か所 だけ</strong>光る。
+                  括弧 1 組 と字下げで書くので<strong>閉じ札が無い</strong> ——
+                  そこは見出しの行が光る</li>
               <li><strong>こちらは字へ寄る。</strong> 走っている場所は 1 コマ ごとに動くので
                   勝手にスクロールしないが、出どころは<strong>撃たれた時点で決まって動かない</strong> ——
                   押した人が見に行きたい場所なので、画面の外なら 1 回 だけ寄せる

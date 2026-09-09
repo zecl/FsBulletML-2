@@ -1,6 +1,7 @@
 namespace FsBulletML2.LanguageService
 
 open System
+open System.Collections.Generic
 open System.Text
 
 /// 開始札の中の属性 1 つ。
@@ -70,6 +71,27 @@ type TagHit =
     /// fsb は字下げ、CE は `{ }`）。
     Depth: int }
 
+/// 木のノード 1 つ を字の上で光らせる範囲。**0 起点 の文字数で、`Stop` は含まない。**
+///
+/// **3 対 持っているのは、色ごとに要る幅が違うため。**
+///
+///     名前    走っている場所（黄）。再開点は 100% が `wait` で、葉なので
+///             名前で足りる
+///     開き札  撃った場所（緑）。**`fire` は撃たれる弾の一生を抱える**ので、
+///             要素まるごとだと中央 5 行 / 最大 71 行 が染まり、
+///             追っている弾の現在地（黄）を飲む（同梱 176 本 の 1,289 件 で測った）
+///     閉じ札  上の対。**持たない表記では開き札と同じ範囲**が入る
+type NodeSpan =
+  { NameStart: int
+    NameStop: int
+    OpenStart: int
+    OpenStop: int
+    /// 閉じ札。**`sxml` と `fsb` は持たない**（括弧 1 組 / 字下げ）ので、
+    /// そこでは開き札と同じ範囲。**呼ぶ側は同じかどうかを見て 1 つ に畳む** ——
+    /// 同じ範囲を 2 枚 重ねると、下地が半透明なので色が濃くなる
+    CloseStart: int
+    CloseStop: int }
+
 /// カーソルの居場所。**そこで何を打てるか。**
 type Context =
   /// 本文。直近に開いている要素（無ければ根の外）
@@ -99,7 +121,7 @@ type Token =
 /// どちらも正しく見える。
 module Scan =
 
-  /// 木のノードになる札の、**要素名の範囲**を並べる（0 起点、`stop` は含まない）。
+  /// 木のノードになる札の、**光らせる範囲**を並べる（`NodeSpan`）。
   ///
   /// **字の位置は木に無い**ので、走行中のノードを字へ結ぶには順番しかない
   /// （v2.9 で測った。木の k 番目 と札の k 番目 が 3 表記 で 176 / 176 揃う）。
@@ -109,17 +131,68 @@ module Scan =
   /// **黙って添字がずれる。** 正本は `Core/DTD.fs` の腕
   /// （`NodeOrder.names` が reflection で引いて渡す）。
   ///
-  /// 光らせるのは**名前だけ**。札まるごとだと、子を持つ要素で
-  /// `<action>` から `</action>` までが一面 に染まる
+  /// **要素まるごとの範囲は返さない。** `fire` は撃たれる弾の一生を抱えるので、
+  /// 中央 5 行 / 最大 71 行 が染まる（同梱 176 本 の 1,289 件 を数えた）。
+  /// 出すのは名前・開き札・閉じ札 の 3 対 で、**中身は染めない。**
+  ///
   /// **1 つ ずつ引かずに並びで返す。** 呼ぶ側は窓が開いているあいだ本文が
   /// 変わらない（変わった瞬間に窓を閉じる）ので、走査は窓ごとに 1 回 で済む
-  let nodeNameSpans (tags: TagHit list) (nodes: string list) =
+  let nodeSpans (src: string) (tags: TagHit list) (nodes: string list) =
     if List.isEmpty nodes then []
     else
       let ok = Set.ofList nodes
-      tags
-      |> List.filter (fun t -> not t.Closing && ok.Contains t.TagName)
-      |> List.map (fun t -> t.NameStart, t.NameStop)
+      let all = List.toArray tags
+
+      /// その位置を含む行の末尾（`\r\n` なら `\r` の手前）
+      let lineEnd (from: int) =
+        let mutable k = min from src.Length
+        while k < src.Length && src.[k] <> '\n' do k <- k + 1
+        if k > 0 && src.[k - 1] = '\r' then k - 1 else k
+
+      /// 開き札の終わり。**「`Stop` の次」と「行末」の小さいほう。**
+      ///
+      /// `Stop` の意味は表記ごとに違う（`TagHit` の但し書き）が、
+      /// **どれも開き札の終わりの上界になっている** ——
+      ///
+      ///     xml    開始札の `>`             -> `Stop + 1` が採られる
+      ///     sxml   その括弧の `)`（要素の終わり） -> 行末 が採られる
+      ///     fsb    行末                     -> 行末 が採られる
+      ///
+      /// **行末で切るのは、手で 1 行 に詰めて書かれたときの守り** ——
+      /// `<fire><direction>...` と書かれた xml でも、緑は `<fire>` で止まる
+      let openStop (t: TagHit) = min (t.Stop + 1) (lineEnd t.Start)
+
+      // 開き札 -> 閉じ札 の対。**1 巡 で組む。**
+      // `Closing` を持たない表記（sxml / fsb）では 1 件 も入らない
+      let close = Dictionary<int, TagHit>()
+      let stack = ResizeArray<int>()
+      for k in 0 .. all.Length - 1 do
+        let u = all.[k]
+        if u.SelfClosing then ()
+        elif u.Closing then
+          // **名前が合うところまで戻す。** 閉じ忘れが在っても止まらない ——
+          // 本文は打っている途中なので、閉じていない札が普通に在る
+          let mutable j = stack.Count - 1
+          while j >= 0 && all.[stack.[j]].TagName <> u.TagName do j <- j - 1
+          if j >= 0 then
+            close.[stack.[j]] <- u
+            stack.RemoveRange(j, stack.Count - j)
+        else stack.Add k
+
+      [ for i in 0 .. all.Length - 1 do
+          let t = all.[i]
+          if not t.Closing && ok.Contains t.TagName then
+            let os = openStop t
+            let cs, ce =
+              match close.TryGetValue i with
+              | true, u -> u.Start, min (u.Stop + 1) (lineEnd u.Start)
+              | _ -> t.Start, os
+            { NameStart = t.NameStart
+              NameStop = t.NameStop
+              OpenStart = t.Start
+              OpenStop = os
+              CloseStart = cs
+              CloseStop = ce } ]
 
   let isNameChar (c: char) =
     Char.IsLetterOrDigit c || c = '_' || c = '-' || c = '.' || c = ':'
