@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2
+namespace FsBulletML2
 
 /// BulletML の木の上の操作。**BulletmlRead から切り出したもの。**
 ///
@@ -43,14 +43,14 @@ module internal BulletmlOps =
   ///
   /// 拾う順は変えていない —— 自分を先に入れてから子へ降りる
   let private collect
-      (fromAction: ActionAttrs * Action list -> 'a list)
+      (fromAction: obj -> ActionAttrs * Action list -> 'a list)
       (fromFire: FireAttrs * Direction option * Speed option * BulletElm -> 'a list)
       (fromBullet: BulletAttrs * Direction option * Speed option * ActionElm list -> 'a list)
       (root: Bulletml) : 'a list =
     let rec command (c: Action) =
       match c with
       | Action.Action (attrs, children) ->
-        fromAction (attrs, children) @ (children |> List.collect command)
+        fromAction (box c) (attrs, children) @ (children |> List.collect command)
       | Action.Fire (attrs, d, s, child) ->
         fromFire (attrs, d, s, child) @ bulletElm child
       | Action.Repeat (_, child) -> actionElm child
@@ -62,7 +62,7 @@ module internal BulletmlOps =
     and actionElm (a: ActionElm) =
       match a with
       | ActionElm.Action (attrs, children) ->
-        fromAction (attrs, children) @ (children |> List.collect command)
+        fromAction (box a) (attrs, children) @ (children |> List.collect command)
       | ActionElm.ActionRef _ -> []
     and bulletElm (b: BulletElm) =
       match b with
@@ -76,16 +76,22 @@ module internal BulletmlOps =
       | BulletmlElm.Fire (attrs, d, s, child) ->
         fromFire (attrs, d, s, child) @ bulletElm child
       | BulletmlElm.Action (attrs, children) ->
-        fromAction (attrs, children) @ (children |> List.collect command)
+        fromAction (box t) (attrs, children) @ (children |> List.collect command)
     match root with
     | Bulletml.Bulletml (_, elms) -> elms |> List.collect topElm
 
   /// 名前の付いた action。actionRef が指す先になれるので ActionElm で返す
   let internal getAction (bulletml: Bulletml) : ActionElm list =
     bulletml |> collect
-      (fun (attrs, children) ->
+      (fun src (attrs, children) ->
         match attrs.actionLabel with
-        | Some _ -> [ ActionElm.Action (attrs, children) ]
+        | Some _ ->
+            // **ここで新しい ActionElm ができる。** 元は 3 通り（BulletmlElm.Action /
+            // ActionElm.Action / Action.Action）で、どれも collect が分解して渡す
+            let e = ActionElm.Action (attrs, children)
+            if NodeOrigin.enabled && not (obj.ReferenceEquals(box e, src)) then
+              NodeOrigin.pair (box e) src
+            [ e ]
         | None -> [])
       (fun _ -> [])
       (fun _ -> [])
@@ -103,7 +109,7 @@ module internal BulletmlOps =
   /// Action.Fire で返す（根の直下にある fire も同じ形にして返す）
   let internal getFire (bulletml: Bulletml) : Action list =
     bulletml |> collect
-      (fun _ -> [])
+      (fun _ _ -> [])
       (fun (attrs, d, s, child) ->
         match attrs.fireLabel with
         | Some _ -> [ Action.Fire (attrs, d, s, child) ]
@@ -119,7 +125,7 @@ module internal BulletmlOps =
   /// 名前の付いた bullet。bulletRef が指す先になれるので BulletElm で返す
   let internal getBullet (bulletml: Bulletml) : BulletElm list =
     bulletml |> collect
-      (fun _ -> [])
+      (fun _ _ -> [])
       (fun _ -> [])
       (fun (attrs, d, s, children) ->
         match attrs.bulletLabel with
@@ -138,7 +144,7 @@ module internal BulletmlOps =
   /// 「触らない腕」をまとめて受けていた。その `x` には
   /// Vanish（触らなくてよい）と Bulletml / 当時あった NotCommand（そもそも
   /// ここへ来ない）が混ざっていた
-  let rec private substCommand prams (c: Action) : Action =
+  let rec private substCommandCore prams (c: Action) : Action =
     match c with
     | Action.ChangeDirection (direction, term) ->
       Action.ChangeDirection (convertDirection prams direction, convertTerm prams term)
@@ -159,7 +165,7 @@ module internal BulletmlOps =
       Action.Action (attrs, children |> List.map (substCommand prams))
     | Action.ActionRef (attrs, param) -> Action.ActionRef (attrs, convertParam prams param)
 
-  and private substActionElm prams (a: ActionElm) : ActionElm =
+  and private substActionElmCore prams (a: ActionElm) : ActionElm =
     match a with
     | ActionElm.Action (attrs, children) ->
       ActionElm.Action (attrs, children |> List.map (substCommand prams))
@@ -172,6 +178,22 @@ module internal BulletmlOps =
                            convertSpeedOption prams speed,
                            children |> List.map (substActionElm prams))
     | BulletElm.BulletRef (attrs, param) -> BulletElm.BulletRef (attrs, convertParam prams param)
+
+  // --- param を差し込んで作った物を、元の物と対にする -------------------------
+  //
+  // **覆いで、中身（*Core）は 1 行 も触っていない。**
+  // **同じ物が返ったときは対にしない** —— vanish の腕は引数なしなので
+  // singleton で、作り直しても同じ物が返る（同梱 176 本 で 265 件）。
+
+  and private substCommand prams (c: Action) : Action =
+    let r = substCommandCore prams c
+    if NodeOrigin.enabled && not (obj.ReferenceEquals(r, c)) then NodeOrigin.pair (box r) (box c)
+    r
+
+  and private substActionElm prams (a: ActionElm) : ActionElm =
+    let r = substActionElmCore prams a
+    if NodeOrigin.enabled && not (obj.ReferenceEquals(r, a)) then NodeOrigin.pair (box r) (box a)
+    r
 
   /// 参照先の要素へ実引数を差し込む。**種別ごとに 1 本 ずつ。**
   ///
@@ -236,7 +258,7 @@ module internal BulletmlOps =
         new BulletmlDTDViolationException(
               sprintf "not found target Action element:%s" (ActionLabel.text attrs.actionRefLabel)) |> raise
 
-  and private expandCommand visiting lastAction top (c: Action) : Action =
+  and private expandCommandCore visiting lastAction top (c: Action) : Action =
     match c with
     | Action.ActionRef (attrs, prams) ->
       match resolveActionRef visiting lastAction top attrs prams with
@@ -266,7 +288,7 @@ module internal BulletmlOps =
     | Action.ChangeDirection _ | Action.ChangeSpeed _
     | Action.Accel _ | Action.Wait _ | Action.Vanish -> c
 
-  and private expandActionElm visiting lastAction top (a: ActionElm) : ActionElm =
+  and private expandActionElmCore visiting lastAction top (a: ActionElm) : ActionElm =
     match a with
     | ActionElm.Action (attrs, children) ->
       ActionElm.Action (attrs, children |> List.map (expandCommand visiting lastAction top))
@@ -275,6 +297,22 @@ module internal BulletmlOps =
       | None -> a
       | Some expanded -> expanded
 
+
+  // --- 参照の解決で作った物を、元の物と対にする -----------------------------
+  //
+  // **覆いで、中身（*Core）は 1 行 も触っていない。**
+  // **同じ物が返ったときは対にしない** —— expandCommandCore の `| None -> c`
+  // （輪はそのまま残す）が該当する。
+
+  and private expandCommand visiting lastAction top (c: Action) : Action =
+    let r = expandCommandCore visiting lastAction top c
+    if NodeOrigin.enabled && not (obj.ReferenceEquals(r, c)) then NodeOrigin.pair (box r) (box c)
+    r
+
+  and private expandActionElm visiting lastAction top (a: ActionElm) : ActionElm =
+    let r = expandActionElmCore visiting lastAction top a
+    if NodeOrigin.enabled && not (obj.ReferenceEquals(r, a)) then NodeOrigin.pair (box r) (box a)
+    r
   and private expandBulletElm visiting lastAction top (b: BulletElm) : BulletElm =
     match b with
     | BulletElm.Bullet (attrs, d, s, children) ->

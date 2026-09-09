@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2
+namespace FsBulletML2
 
 open FsBulletML2.Domain
 
@@ -217,6 +217,55 @@ type Frame =
 /// ある。** ここはコメントなのでコンパイルされず、段階 4 で load に rootEnv が
 /// 増えたときも古い形（引数 1 つ）のまま残っていた。**例を直したらあちらも、
 /// あちらが赤くなったらここも。**
+/// 畳みの前後を同じ順で歩いて対にする。
+///
+/// **腕が動かないことは測ってある**（同梱 176 本 で 176 / 176。README の
+/// 「参照が死んでいても、歩く順なら結べるか」）。それでも並びの長さを
+/// 見てから降りる —— **同梱に無いだけで、読める本はいつでも書ける。**
+/// 揃わない枝は黙って降りない（対が 1 つ 欠けるだけで、走行は変わらない）。
+///
+/// **同じ物のときは対にしない。** vanish は引数なしの腕で singleton なので、
+/// 畳んでも同じ物が返る（同梱 176 本 で 265 件）。
+module private FoldOrigin =
+
+  let private link (a: obj) (b: obj) =
+    if not (obj.ReferenceEquals(a, b)) then NodeOrigin.pair b a
+
+  let walk (read: Bulletml) (folded: Bulletml) =
+    let rec cmd (a: Action) (b: Action) =
+      link (box a) (box b)
+      match a, b with
+      | Action.Action (_, xs), Action.Action (_, ys) when xs.Length = ys.Length ->
+          List.iter2 cmd xs ys
+      | Action.Repeat (_, x), Action.Repeat (_, y) -> elm x y
+      | Action.Fire (_, _, _, x), Action.Fire (_, _, _, y) -> bul x y
+      | _ -> ()
+    and elm (a: ActionElm) (b: ActionElm) =
+      link (box a) (box b)
+      match a, b with
+      | ActionElm.Action (_, xs), ActionElm.Action (_, ys) when xs.Length = ys.Length ->
+          List.iter2 cmd xs ys
+      | _ -> ()
+    and bul (a: BulletElm) (b: BulletElm) =
+      match a, b with
+      | BulletElm.Bullet (_, _, _, xs), BulletElm.Bullet (_, _, _, ys) when xs.Length = ys.Length ->
+          List.iter2 elm xs ys
+      | _ -> ()
+    let top (a: BulletmlElm) (b: BulletmlElm) =
+      // **根の要素も対にする。** ここを子だけ降りると、getAction が畳んだ木の
+      // BulletmlElm から作った ActionElm の鎖が、ここで止まる（1.00% が戻れない）
+      link (box a) (box b)
+      match a, b with
+      | BulletmlElm.Bullet (_, _, _, xs), BulletmlElm.Bullet (_, _, _, ys) when xs.Length = ys.Length ->
+          List.iter2 elm xs ys
+      | BulletmlElm.Fire (_, _, _, x), BulletmlElm.Fire (_, _, _, y) -> bul x y
+      | BulletmlElm.Action (_, xs), BulletmlElm.Action (_, ys) when xs.Length = ys.Length ->
+          List.iter2 cmd xs ys
+      | _ -> ()
+    match read, folded with
+    | Bulletml (_, xs), Bulletml (_, ys) when xs.Length = ys.Length -> List.iter2 top xs ys
+    | _ -> ()
+
 module Runner =
 
   /// 弾幕を読む。1 本 につき 1 回。
@@ -239,6 +288,8 @@ module Runner =
         Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
         Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
     let rec' = BulletmlRead.foldConstants bulletml
+    // 読んだ木と畳んだ木の対。**繋がないときは歩かない**（NodeOrigin.enabled）
+    if NodeOrigin.enabled then FoldOrigin.walk bulletml rec'
     let resolvers : Step.Resolvers =
       { Bullet = BulletmlOps.expandBulletRefOnce rec'
         Action = BulletmlOps.expandActionRefOnce rec' }

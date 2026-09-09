@@ -40,6 +40,12 @@ module NodeTrace =
   let mutable visit : obj -> unit = ignore
   /// そのコマに止まったノード
   let mutable stop : obj -> unit = ignore
+
+module NodeOrigin =
+  /// 対を作るか
+  let mutable enabled = false
+  /// 作った物 -> 元の物
+  let mutable pair : obj -> obj -> unit = fun _ _ -> ()
 '@
 
 $goodStep = @'
@@ -90,10 +96,68 @@ $goodProj = @'
 </Project>
 '@
 
+$goodOps = @'
+module internal BulletmlOps =
+
+  // コメントの中の NodeOrigin.pair (box a) b は数えない
+  /// 但し書きの中の NodeOrigin.pair (box c) d も数えない
+  let internal getAction (bulletml: Bulletml) : ActionElm list =
+    bulletml |> collect
+      (fun src (attrs, children) ->
+        match attrs.actionLabel with
+        | Some _ ->
+            let e = ActionElm.Action (attrs, children)
+            if NodeOrigin.enabled && not (obj.ReferenceEquals(box e, src)) then
+              NodeOrigin.pair (box e) src
+            [ e ]
+        | None -> [])
+      (fun _ _ -> [])
+      (fun _ -> [])
+
+  and private substCommand prams (c: Action) : Action =
+    let r = substCommandCore prams c
+    if NodeOrigin.enabled && not (obj.ReferenceEquals(r, c)) then NodeOrigin.pair (box r) (box c)
+    r
+
+  and private substActionElm prams (a: ActionElm) : ActionElm =
+    let r = substActionElmCore prams a
+    if NodeOrigin.enabled && not (obj.ReferenceEquals(r, a)) then NodeOrigin.pair (box r) (box a)
+    r
+
+  and private expandCommand visiting lastAction top (c: Action) : Action =
+    let r = expandCommandCore visiting lastAction top c
+    if NodeOrigin.enabled && not (obj.ReferenceEquals(r, c)) then NodeOrigin.pair (box r) (box c)
+    r
+
+  and private expandActionElm visiting lastAction top (a: ActionElm) : ActionElm =
+    let r = expandActionElmCore visiting lastAction top a
+    if NodeOrigin.enabled && not (obj.ReferenceEquals(r, a)) then NodeOrigin.pair (box r) (box a)
+    r
+'@
+
+$goodApi = @'
+namespace FsBulletML2
+
+module private FoldOrigin =
+
+  let private link (a: obj) (b: obj) =
+    if not (obj.ReferenceEquals(a, b)) then NodeOrigin.pair b a
+
+  let walk (read: Bulletml) (folded: Bulletml) = ignore (read, folded)
+
+module Runner =
+
+  let load (rand: unit -> float32) (rank: float32) (bulletml: Bulletml) =
+    let rec' = BulletmlRead.foldConstants bulletml
+    if NodeOrigin.enabled then FoldOrigin.walk bulletml rec'
+    ()
+'@
+
+
 function Check {
   param(
     [string]$Name, [string]$Trace, [string]$Step, [string]$Proj,
-    [bool]$WantPass, [string]$Expect, [string]$Consumer
+    [bool]$WantPass, [string]$Expect, [string]$Consumer, [string]$Ops, [string]$Api
   )
   $script:count++
   $tmp = Join-Path ([IO.Path]::GetTempPath()) ("guard-run-trace-" + [guid]::NewGuid().ToString('N'))
@@ -104,13 +168,17 @@ function Check {
   [IO.File]::WriteAllText($tp, $Trace)
   [IO.File]::WriteAllText($sp, $Step)
   [IO.File]::WriteAllText($pp, $Proj)
+  $op = Join-Path $tmp 'BulletmlOps.fs'
+  $ap = Join-Path $tmp 'Api.fs'
+  [IO.File]::WriteAllText($op, $(if ($Ops) { $Ops } else { $script:goodOps }))
+  [IO.File]::WriteAllText($ap, $(if ($Api) { $Api } else { $script:goodApi }))
   $consumerRoot = Join-Path $tmp 'consumer'
   New-Item -ItemType Directory -Path $consumerRoot | Out-Null
   if ($Consumer) { [IO.File]::WriteAllText((Join-Path $consumerRoot 'Front.fs'), $Consumer) }
 
   $msg = ''
   $passed = $true
-  try { & $guard -TraceFs $tp -StepFs $sp -CoreProj $pp -ConsumerRoots @($consumerRoot) -Quiet }
+  try { & $guard -TraceFs $tp -StepFs $sp -CoreProj $pp -OpsFs $op -ApiFs $ap -ConsumerRoots @($consumerRoot) -Quiet }
   catch { $passed = $false; $msg = "$_" }
   Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 
@@ -173,6 +241,44 @@ Check '受け口を繋いでいる場所が在る' $goodTrace $goodStep $goodPro
   "module Front =`r`n  let wire () = NodeTrace.visit <- (fun o -> ())`r`n"
 
 Write-Host ''
+Write-Host ''
+Write-Host '段 2 の口。**enabled が別に在るのは、繋がないときに歩かないため**'
+Check 'NodeOrigin も揃っている' $goodTrace $goodStep $goodProj $true '' ''
+Check 'enabled の既定が true' ($goodTrace -replace 'let mutable enabled = false', 'let mutable enabled = true') `
+  $goodStep $goodProj $false 'NodeOrigin.enabled の既定'
+Check 'pair の既定が別の形' ($goodTrace -replace 'let mutable pair : obj -> obj -> unit = fun _ _ -> \(\)',
+  'let mutable pair : obj -> obj -> unit = fun a b -> printfn "%A %A" a b') `
+  $goodStep $goodProj $false 'NodeOrigin.pair が'
+
+Write-Host ''
+Write-Host '対を作る呼び先。**減っても走行は変わらないので、ここでしか出ない**'
+Check 'getAction の対を落とす' $goodTrace $goodStep $goodProj $false 'NodeOrigin.pair の呼び先が 5 件' '' `
+  ($goodOps -replace '(?m)^\s*if NodeOrigin\.enabled && not \(obj\.ReferenceEquals\(box e, src\)\) then\r?\n\s*NodeOrigin\.pair \(box e\) src\r?\n', '')
+Check 'Api の対を落とす' $goodTrace $goodStep $goodProj $false 'NodeOrigin.pair の呼び先が 5 件' '' $goodOps `
+  ($goodApi -replace 'if not \(obj\.ReferenceEquals\(a, b\)\) then NodeOrigin\.pair b a', '()')
+Check 'コメントに呼び名を足しても数は変わらない' $goodTrace $goodStep $goodProj $true '' '' `
+  ($goodOps -replace '(?m)^  // コメントの中の.*$', '  // NodeOrigin.pair (box x) y NodeOrigin.pair (box z) w')
+
+Write-Host ''
+Write-Host '覆い。**中身（*Core）を直に呼ぶ形へ戻すと、対が黙って消える**'
+# **-replace を 3 つ 以上 チェーンすると「allows only two elements」で落ちる。**
+# 変数に分けて .Replace() を使う
+$opsNoSubst = $goodOps.Replace('let r = substCommandCore prams c', 'let r = subst prams c')
+$opsNoExpand = $goodOps.Replace('let r = expandActionElmCore visiting lastAction top a', 'let r = expand visiting lastAction top a')
+Check 'substCommand の覆いを外す' $goodTrace $goodStep $goodProj $false 'substCommand が substCommandCore を覆う形' '' $opsNoSubst
+Check 'expandActionElm の覆いを外す' $goodTrace $goodStep $goodProj $false 'expandActionElm が expandActionElmCore を覆う形' '' $opsNoExpand
+
+Write-Host ''
+Write-Host '歩きの手前の if。**外すと、繋がない人が毎回 木を 1 周 する**'
+Check 'enabled を見ずに歩く' $goodTrace $goodStep $goodProj $false 'FoldOrigin.walk' '' $goodOps `
+  ($goodApi -replace 'if NodeOrigin\.enabled then FoldOrigin\.walk bulletml rec''', "FoldOrigin.walk bulletml rec'")
+
+Write-Host ''
+Write-Host '段の約束。**段 2 の口も、繋ぐのは段 3**'
+Check 'NodeOrigin.pair を繋いでいる' $goodTrace $goodStep $goodProj $false '繋いだ場所が在る' `
+  "module Front =`r`n  let wire () = NodeOrigin.pair <- (fun a b -> ())`r`n"
+Check 'NodeOrigin.enabled を繋いでいる' $goodTrace $goodStep $goodProj $false '繋いだ場所が在る' `
+  "module Front =`r`n  let wire () = NodeOrigin.enabled <- true`r`n"
 Write-Host '材料が読めないとき。**0 件 は違反 0 件 と同じ顔をする**'
 $script:count++
 $missing = Join-Path ([IO.Path]::GetTempPath()) 'no-such-trace.fs'
