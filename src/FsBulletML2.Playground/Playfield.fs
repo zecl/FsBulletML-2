@@ -21,26 +21,33 @@ type Live(run: BulletRun, x: float32, y: float32, isRoot: bool) =
 /// （`Driver.step` → Delta を足す → Spawn は次コマ → Finished なら restart）。
 /// **回している最中に `live.Add` しない。** 今コマの Spawn は溜めて、消しのあとで足す。
 [<Sealed>]
-type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field) =
+type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field, focus: Focus) =
 
   let spawned = ResizeArray<Live>()
   let mutable frame = 0
   let mutable xs = Array.zeroCreate<float32> 256
   let mutable pin = Unchecked.defaultof<GCHandle>
+  /// 追っている弾（v3.1 の段 3）。**参照で握る** —— 死んだ枠には末尾を移すので
+  /// （`Tick`）、添字はそのコマのものでしかない
+  let mutable picked = Unchecked.defaultof<Live>
 
   let rePin () =
     if pin.IsAllocated then pin.Free()
     pin <- GCHandle.Alloc(xs, GCHandleType.Pinned)
 
   static member Create (front: IFrontEnv) (bulletml: Bulletml) =
-    let script = Runner.load front.Rand front.Rank bulletml
+    // **対の表は組む段でしか作れない**（`Focus.Collect` の但し書き）。
+    // 選ぶのは走り出したあとなので、ここで作らないと、選ばれた時点で
+    // 面を建て直すことになる —— 見ていたコマが頭へ戻ってしまう
+    let focus = Focus()
+    let script = focus.Collect(fun () -> Runner.load front.Rand front.Rank bulletml)
     let run = Runner.newRoot BulletType.Enemy script
     // **面の形は弾幕が決める。** 横画面と名乗る弾幕は、縦の面に置くと
     // 弾が横へ抜けていく（`Stage.landscape` の但し書き）
     let field = Stage.ofDirection script.ShootingDirection
     let live = ResizeArray<Live>()
     live.Add(Live(run, field.EnemyX, field.EnemyY, true))
-    Playfield(front, live, field)
+    Playfield(front, live, field, focus)
 
   member _.Count = live.Count
 
@@ -66,7 +73,16 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field)
           Speed = m0.Speed
           Dir = m0.Dir
           Accel = m0.Accel }
-      let f = Driver.step front Space.YDown SpawnOrigin.AtShooter it.Run motion
+      // **追っている弾のときだけ繋ぐ。** 呼びを 1 本 にまとめて try/finally を
+      // 全部 の弾に掛けると、選んでいない人にもその分 を払わせる
+      let f =
+        if obj.ReferenceEquals(it, picked) then
+          focus.Begin()
+          try
+            Driver.step front Space.YDown SpawnOrigin.AtShooter it.Run motion
+          finally
+            focus.End()
+        else Driver.step front Space.YDown SpawnOrigin.AtShooter it.Run motion
       if not it.IsRoot then
         it.X <- it.X + f.Delta.X
         it.Y <- it.Y + f.Delta.Y
@@ -81,6 +97,11 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field)
           || it.Y < 0.0f || it.Y > field.Height)
       if dead then
         let last = live.Count - 1
+        // 追っていた弾が消えたら追うのをやめる。**数も消す** ——
+        // 残すと、消えた弾の最後のコマの数がそのまま出続ける
+        if obj.ReferenceEquals(it, picked) then
+          picked <- Unchecked.defaultof<Live>
+          focus.Clear()
         if i <> last then live.[i] <- live.[last]
         live.RemoveAt last
       else i <- i + 1
@@ -104,3 +125,33 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field)
   member _.PackedPtr =
     if not pin.IsAllocated then rePin ()
     float (pin.AddrOfPinnedObject().ToInt64())
+
+  /// 追っている弾の再開点（v3.1 の段 3）。**選んでいなければ何も出ない**
+  member _.Focus = focus
+
+  /// `Pack` した並びの添字で選ぶ。**握るのは参照** ——
+  /// 添字はそのコマのもので、次のコマには別の弾を指しうる。
+  /// 範囲の外なら追うのをやめる
+  member _.Pick(i: int) =
+    if i >= 0 && i < live.Count then picked <- live.[i]
+    else
+      picked <- Unchecked.defaultof<Live>
+      focus.Clear()
+
+  member _.Unpick() =
+    picked <- Unchecked.defaultof<Live>
+    focus.Clear()
+
+  /// 追っている弾が `Pack` の並びの何番目 か。**無ければ -1**（消えたときも）。
+  ///
+  /// **添字を覚えない。** 覚えると、消しで詰めたコマに黙って別の弾を指す
+  /// —— 絵は隣の弾に付き、再開点は追っている弾のものという食い違いが出る
+  member _.PickedIndex =
+    if obj.ReferenceEquals(picked, null) then -1
+    else
+      let mutable i = 0
+      let mutable found = -1
+      while found < 0 && i < live.Count do
+        if obj.ReferenceEquals(live.[i], picked) then found <- i
+        i <- i + 1
+      found

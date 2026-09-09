@@ -26,6 +26,7 @@
     <Compile Include="..\..\src\FsBulletML2.Playground\BrowserEnv.fs" Link="BrowserEnv.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Pacing.fs" Link="Pacing.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Seek.fs" Link="Seek.fs" />
+    <Compile Include="..\..\src\FsBulletML2.Playground\Focus.fs" Link="Focus.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Playfield.fs" Link="Playfield.fs" />
     <Compile Include="DeterministicField.fs" />
     <Compile Include="StepPacing.fs" />
@@ -36,6 +37,8 @@
     <Compile Include="ViewFacing.fs" />
     <!-- 2 面（v2.1）。**並べたことで絵が変わったら比べられない** -->
     <Compile Include="TwoFields.fs" />
+    <!-- 追っている弾の再開点（v3.1 の段 3）。**読んだ木と参照で突き合わせる** -->
+    <Compile Include="FocusResume.fs" />
   </ItemGroup>
   <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
        手のせいか版のせいかが割れない -->

@@ -64,6 +64,8 @@
     <Compile Include="BrowserEnv.fs" />
     <Compile Include="Pacing.fs" />
     <Compile Include="Seek.fs" />
+    <!-- 追っている弾の再開点（v3.1 の段 3）。**受け口を繋ぐのはここ 1 か所** -->
+    <Compile Include="Focus.fs" />
     <Compile Include="Playfield.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="Program.fs" />

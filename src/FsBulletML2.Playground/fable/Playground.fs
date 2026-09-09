@@ -19,6 +19,12 @@ let private subarray (arr: obj) (start: int) (end': int) : obj = jsNative
 [<Emit("$0.invokeMethod($1)")>]
 let private invoke0 (dn: obj) (name: string) : obj = jsNative
 
+// **弾を選ぶのは同期で呼ぶ。** 添字はそのコマの `Pack` の並びのもので、
+// 次のコマには別の弾を指しうる（`Playfield.Tick` が消しで末尾を移す）——
+// 非同期にすると、押してから届くまでに 1 コマ 進みうる
+[<Emit("$0.invokeMethod($1, $2)")>]
+let private invoke1 (dn: obj) (name: string) (a: obj) : obj = jsNative
+
 [<Emit("$0.invokeMethod($1, $2, $3, $4)")>]
 let private invokeStep (dn: obj) (name: string) (t: float) (x: float) (y: float) : obj = jsNative
 
@@ -187,6 +193,20 @@ type Playground() as self =
   let mutable t0 = 0.
   let mutable lastN = -1
   let mutable lastFrame = -1
+  // 追っている弾（v3.1 の段 3）。**真は host が持つ** —— ここは毎コマ 写すだけで、
+  // 押した直後の値を握らない（消しで詰まると添字が動く）
+  let mutable pickIdx = -1
+  // いま描いている面の座標。**ヒープの窓は貯めない** —— WASM のヒープは
+  // 育つと別の器になるので、押されたときに `heapF32` から引き直す
+  let mutable packedOff = 0
+  let mutable packedN = 0
+  // 再開点の帯。**変わったときだけ書く**（弾数やコマ数と同じ扱い）
+  let mutable lastPick = -2
+  let mutable lastSerial = -2
+  let mutable lastStops = -1
+  let mutable lastDepth = -1
+  let mutable lastPaths = -1
+  let mutable resumeName = ""
   // 軌跡。**過去の位置を貯めない** —— 面を消さずに薄く塗り重ねるだけなので、
   // 確保は増えない（`draw` の但し書き）
   let mutable trail = false
@@ -251,6 +271,45 @@ type Playground() as self =
           playerX <- homeX
           playerY <- homeY
       )
+      // 弾を押すと、その弾を追う（v3.1 の段 3）。**自機の操作と同じ面の上**だが、
+      // `mousemove` は自機、`click` は選び —— 押しても自機は動かない
+      c.addEventListener (
+        "click",
+        fun (ev: Event) ->
+          let e = ev :?> MouseEvent
+          let r = c.getBoundingClientRect ()
+          let cv = c :?> HTMLCanvasElement
+          self.pickBullet ((e.clientX - r.left) * (float cv.width / r.width),
+                     (e.clientY - r.top) * (float cv.height / r.height))
+      )
+
+  /// いちばん近い弾を追う。**離れていたら追うのをやめる** ——
+  /// 面のどこを押しても何かが選ばれると、選び直しと選び解除が同じ操作になる。
+  ///
+  /// **探すのはここ。** 座標は WASM ヒープの `float32[]` をそのまま読んでいるので
+  /// （`Playfield.Pack`）、こちらには全部 の座標がもう在る —— host へ座標を
+  /// 送り返すと、同じ配列を 2 度 運ぶことになる。
+  ///
+  /// 半径は弾の見た目（4 px 角）より広く取る。**指で押せる大きさが要る**
+  member _.pickBullet(x: float, y: float) =
+    if isNull dotNet then ()
+    else
+      let mutable best = -1
+      // **半径の 2 乗 で比べる。** 平方根は順を変えないので取らない
+      let mutable bestD = 12. * 12.
+      if packedN > 0 then
+        let a = subarray (heapF32 ()) packedOff (packedOff + packedN * 2)
+        let mutable i = 0
+        while i < packedN do
+          let dx = f32 a (i * 2) - x
+          let dy = f32 a (i * 2 + 1) - y
+          let d = dx * dx + dy * dy
+          if d <= bestD then
+            bestD <- d
+            best <- i
+          i <- i + 1
+      if best >= 0 then invoke1 dotNet "PickBullet" (box best) |> ignore
+      else invoke0 dotNet "UnpickBullet" |> ignore
 
   /// **2 面 のときは弾数を分けて出す**（`n / n2`）——
   /// 足してしまうと、並べて比べているのに「どちらが濃いか」が読めない。
@@ -278,6 +337,40 @@ type Playground() as self =
     if not (isNull f) && frame <> lastFrame then
       lastFrame <- frame
       f.textContent <- string frame
+
+  /// 追っている弾の再開点（v3.1 の段 3）。
+  ///
+  /// **名前は番号が変わったときだけ引く。** 再開点は `wait` の間ずっと同じ物なので、
+  /// 毎コマ 引くと同じ字を 60 回/秒 境界越しに作ることになる。
+  ///
+  /// 数も一緒に出すのは、**「戻れた」と「正しい所へ戻れた」が別**だから ——
+  /// `stop` は 0 か 2 以上（1 は出ない）で、これは走行の構造がそのまま出た数
+  member _.focusHud(pick: int, stops: int, depth: int, serial: int, paths: int) =
+    let fo = el "focus"
+    if isNull fo then ()
+    elif pick = lastPick && serial = lastSerial && stops = lastStops
+         && depth = lastDepth && paths = lastPaths then ()
+    else
+      if serial <> lastSerial then
+        resumeName <-
+          if isNull dotNet || serial < 0 then ""
+          else string (invoke0 dotNet "ResumeName")
+      lastPick <- pick
+      lastSerial <- serial
+      lastStops <- stops
+      lastDepth <- depth
+      lastPaths <- paths
+      fo.textContent <-
+        if pick < 0 then ""
+        // **追っているのに再開点が無いコマは在る** —— 台本を持たない弾と、
+        // 全 top が終わったコマ（同梱の 86.66%）。空にせず、そう書く
+        elif serial < 0 then "追跡: 再開点なし"
+        else
+          // **道が 2 本 以上 のときは 1 本 目 だけ出している。** 数で見せる ——
+          // 黙って落とすと、出ている場所が全部 だと読めてしまう
+          "追跡: " + resumeName
+          + "（stop " + string stops + " / 鎖 " + string depth
+          + " / 道 " + string paths + "）"
 
   /// 面の置き場所を host から引き直す。**大きさが変わったときだけ。**
   ///
@@ -372,6 +465,7 @@ type Playground() as self =
     (ey: float)
     (packed: obj)
     (n: int)
+    (pick: int)
     : int =
     let n = n ||| 0
     // **軌跡は過去の位置を持たない。** 面を薄く塗るだけにすると、前のコマの
@@ -398,18 +492,26 @@ type Playground() as self =
       while i < n do
         c2d.fillRect (f32 packed (i * 2) - 2., f32 packed (i * 2 + 1) - 2., 4., 4.)
         i <- i + 1
+      // 追っている弾（v3.1 の段 3）。**全部 の弾のあとに描く** ——
+      // 先に描くと、あとから来た弾に上書きされて消える
+      if pick >= 0 && pick < n then
+        c2d?fillStyle <- "#ffcc33"
+        c2d.beginPath ()
+        c2d.arc (f32 packed (pick * 2), f32 packed (pick * 2 + 1), 6., 0., System.Math.PI * 2.)
+        c2d.fill ()
       n
 
   member _.draw(packed: obj, n: int) : int =
     let c2d = self.ensureCtx ()
-    if isNull c2d then 0 else self.paint c2d canvas enemyX enemyY packed n
+    if isNull c2d then 0 else self.paint c2d canvas enemyX enemyY packed n pickIdx
 
   /// 2 つ 目 の面。**`n` が負なら出さない**（0 は「弾が 1 つ も無い面」で別の意味）
   member _.draw2(packed: obj, n: int) : int =
     if n < 0 then 0
     else
       let c2d = self.ensureCtx2 ()
-      if isNull c2d then 0 else self.paint c2d canvas2 enemyX2 enemyY2 packed n
+      // **2 つ 目 の面では選べない**（v3.1 の段 3 は 1 面 だけ）
+      if isNull c2d then 0 else self.paint c2d canvas2 enemyX2 enemyY2 packed n (-1)
 
   member _.call(name: string, ?arg: obj) =
     if isNull dotNet then setError "まだ起動していない"
@@ -1232,8 +1334,16 @@ type Playground() as self =
             let packed =
               if n > 0 then
                 let off = int (unbox<float> (jsItem ret 1) / 4.)
+                // 押されたときに引き直せるように、窓ではなく位置を控える
+                packedOff <- off
+                packedN <- n
                 subarray (heapF32 ()) off (off + n * 2)
-              else null
+              else
+                packedN <- 0
+                null
+            // 追っている弾（v3.1 の段 3）。**描く前に写す** —— 印を付ける先は
+            // このコマの並びなので、`draw` より後ろで写すと 1 コマ 遅れる
+            pickIdx <- int (unbox<float> (jsItem ret 11))
             // **自機と面の大きさは host が決める。** 送った座標をそのまま
             // 描くと、止めているときと回っているときに絵と狙いが食い違う
             self.setView (
@@ -1257,6 +1367,13 @@ type Playground() as self =
             // 1 面 目 で消えて 2 面 目 に効かない
             wipe <- false
             self.hud (n, n2, t, int (unbox<float> (jsItem ret 2)))
+            self.focusHud (
+              pickIdx,
+              int (unbox<float> (jsItem ret 12)),
+              int (unbox<float> (jsItem ret 13)),
+              int (unbox<float> (jsItem ret 14)),
+              int (unbox<float> (jsItem ret 15))
+            )
           with ex ->
             console.error ex
             setError (string ex)

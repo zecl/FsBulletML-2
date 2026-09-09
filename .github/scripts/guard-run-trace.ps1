@@ -18,7 +18,7 @@
       見る    既定が ignore（何も繋がなければ何もしない）
       見る    呼び先の数（通った 2 / 止まった 3）。**減ると黙って記録が欠ける**
       見る    Trace.fs が Domain.fs より前に compile される（依存の向き）
-      見る    段 1 の約束 —— **消費する側をまだ作っていない**
+      見る    段 3 の約束 —— **繋ぐのは Focus.fs の 1 か所 だけ**
 
       見ない  確保が素に戻るか。**そこは走らせないと出ない**
               （`dotnet run --project bench/FsBulletML2.Benchmarks -- --alloc` を
@@ -31,12 +31,21 @@
   それでも弾は同じように飛ぶ。実際に測っているとき 1 度 踏んだ
   （`action だけ` の中央値が 0 で出た）。
 
-  ## 「消費する側」を数える理由
+  ## 「繋ぐ場所」を数える理由
 
-  段 1 の約束は「**受け口を開けるだけ。繋ぐのは次の段**」。
+  段 1 と段 2 の約束は「**受け口を開けるだけ。繋ぐのは次の段**」だった。
+  段 3 でそこを直した —— いまの約束は「**繋ぐのは Focus.fs の 1 か所 だけ**」。
+
   繋いだ瞬間に確保と時間の予算（README の v2.9 の結論）が効き始めるので、
-  **繋いだことが黙って入らない**ようにここで数える。
-  次の段でここを 1 行 直す —— **直すことが段が進んだ印になる。**
+  **どこが繋いでいるかを数える。** 数えるのは 2 方向 で、片方 しか見ないと
+  黙って壊れる ——
+
+      増える  ほかの場所が繋ぐと、選んでいない人も費用を払う
+      減る    Focus.fs が繋がなくなると、**印が出なくなるだけで走行は変わらない**
+              （目にも試験にも出ない。**0 件 を緑にしない**）
+
+  **`visit` はまだ誰も繋がない。** 通った所を光らせるのは段 4 で、
+  そこでここを 1 行 直す —— **直すことが段が進んだ印になる。**
 
   較正は guard-run-trace.Tests.ps1。
 #>
@@ -49,6 +58,7 @@ param(
   [string]$OpsFs,
   [string]$ApiFs,
   [string[]]$ConsumerRoots,
+  [string]$FocusFs = 'src/FsBulletML2.Playground/Focus.fs',
   [switch]$Quiet
 )
 
@@ -161,30 +171,65 @@ foreach ($n in @('substCommand', 'substActionElm', 'expandCommand', 'expandActio
 if ($api -notmatch 'if NodeOrigin\.enabled then FoldOrigin\.walk') {
   $problems.Add('Api.fs の Runner.load が "if NodeOrigin.enabled then FoldOrigin.walk" の形で無い')
 }
-# --- 段 1 の約束 —— 消費する側をまだ作っていない ------------------------------
+# --- 段 3 の約束 —— 繋ぐのは Focus.fs の 1 か所 だけ --------------------------
+# **`visit` はまだ誰も繋がない**（通った所を光らせるのは段 4）。
+# `stop` と `NodeOrigin` は Focus.fs だけ —— ほかが繋げば費用が増え、
+# あそこが繋がなくなれば**印が消えるだけで走行は変わらない**
 $hooked = [System.Collections.Generic.List[string]]::new()
+$inFocus = @{ 'NodeTrace.stop' = 0; 'NodeOrigin.pair' = 0; 'NodeOrigin.enabled' = 0 }
+$focusSeen = $false
 foreach ($root in $ConsumerRoots) {
   if (-not (Test-Path -LiteralPath $root)) { continue }
   Get-ChildItem -LiteralPath $root -Recurse -File -Include *.fs, *.fsx, *.cs |
     Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } |
     ForEach-Object {
+      $rel = $_.FullName.Substring($RepoRoot.Length + 1).Replace('\', '/')
+      $isFocus = ($rel -eq $FocusFs)
+      if ($isFocus) { $focusSeen = $true }
       $t = [IO.File]::ReadAllText($_.FullName)
-      foreach ($p in $ports) {
-        if ($t -match "NodeTrace\.$p\s*<-") {
-          $hooked.Add("$($_.FullName.Substring($RepoRoot.Length + 1)) が NodeTrace.$p を繋いでいる")
-        }
+      # 通った側は段 4。**どこであっても 0 件**
+      if ($t -match 'NodeTrace\.visit\s*<-') {
+        $hooked.Add("$rel が NodeTrace.visit を繋いでいる（通った所は段 4）")
       }
-      # **段 2 の口も同じ約束。** 繋ぐのは段 3（Front が弾を選ぶとき）
-      foreach ($p in @('pair', 'enabled')) {
-        if ($t -match "NodeOrigin\.$p\s*<-") {
-          $hooked.Add("$($_.FullName.Substring($RepoRoot.Length + 1)) が NodeOrigin.$p を繋いでいる")
+      foreach ($port in @('NodeTrace.stop', 'NodeOrigin.pair', 'NodeOrigin.enabled')) {
+        $c = ([regex]::Matches($t, ($port -replace '\.', '\.') + '\s*<-')).Count
+        if ($c -gt 0) {
+          if ($isFocus) { $inFocus[$port] += $c }
+          else { $hooked.Add("$rel が $port を繋いでいる（繋ぐのは $FocusFs だけ）") }
         }
       }
     }
 }
-if (-not $Quiet) { Write-Host "受け口を繋いでいる場所  $($hooked.Count) 件（段 1 では 0 件）" }
+if (-not $focusSeen) {
+  $problems.Add("$FocusFs が読めなかった。**0 件 は違反 0 件 と同じ顔をする**ので、ここで落とす")
+}
+# **繋ぐ側と素へ戻す側を、別々に数える。**
+#
+# 合わせて数えると、**繋ぐのをやめても「戻す」1 件 で緑のまま**になる ——
+# 較正で 3 件 踏んだ。素へ戻す形は `Trace.fs` の既定と同じ形で書く
+# （`ignore` / `false` / その場で作らない `noPair`）ので、
+# **戻す側を字で決められる。残りが繋ぐ側。**
+$restore = @{
+  'NodeTrace.stop'     = 'NodeTrace\.stop\s*<-\s*ignore'
+  'NodeOrigin.enabled' = 'NodeOrigin\.enabled\s*<-\s*false'
+  'NodeOrigin.pair'    = 'NodeOrigin\.pair\s*<-\s*noPair'
+}
+$focusPath = Join-Path $RepoRoot $FocusFs
+$focusText = if (Test-Path -LiteralPath $focusPath) { [IO.File]::ReadAllText($focusPath) } else { '' }
+foreach ($port in @('NodeTrace.stop', 'NodeOrigin.pair', 'NodeOrigin.enabled')) {
+  $off = ([regex]::Matches($focusText, $restore[$port])).Count
+  $on = $inFocus[$port] - $off
+  if (-not $Quiet) { Write-Host "$FocusFs の $port  繋ぐ $on 件 / 戻す $off 件" }
+  if ($on -lt 1) {
+    $problems.Add("$FocusFs が $port を繋いでいない。**印が出なくなるだけで走行は変わらない**ので、目にも試験にも出ない")
+  }
+  if ($off -lt 1) {
+    $problems.Add("$FocusFs に $port を素へ戻す側が無い（$($restore[$port])）。繋ぎっぱなしだと、選んでいない弾も受け口を通る")
+  }
+}
+if (-not $Quiet) { Write-Host "ほかの場所が繋いでいる件数  $($hooked.Count) 件（段 3 では 0 件）" }
 if ($hooked.Count -gt 0) {
-  $problems.Add("段 1 は受け口を開けるだけ。繋いだ場所が在る:`n        " + ($hooked -join "`n        "))
+  $problems.Add("繋ぐのは $FocusFs だけ。ほかに繋いだ場所が在る:`n        " + ($hooked -join "`n        "))
 }
 
 # --- 判定 --------------------------------------------------------------------
@@ -196,5 +241,6 @@ if ($problems.Count -gt 0) {
 }
 
 if (-not $Quiet) {
-  Write-Host '受け口は 2 本 とも既定が ignore、呼び先は 通った 2 / 止まった 3、繋いだ場所は 0 件'
+  Write-Host ("受け口は 2 本 とも既定が ignore、呼び先は 通った 2 / 止まった 3、" +
+    "繋ぐのは $FocusFs だけ（visit は 0 件）")
 }
