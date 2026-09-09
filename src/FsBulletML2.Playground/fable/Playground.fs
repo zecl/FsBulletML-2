@@ -220,7 +220,7 @@ type Playground() as self =
   let mutable litIndex = -2
   // 窓が開いているあいだの、名前の範囲の並び。**本文は変わらない**
   // （変わった瞬間に窓を閉じる）ので、走査は窓ごとに 1 回
-  let mutable litSpans: (int * int) list = []
+  let mutable litSpans: NodeSpan list = []
   let mutable litScanned = false
   // 光らせた行（1 起点）。**帯に出す** —— 下地は見えている行にしか描かれない
   let mutable litLine = -1
@@ -395,8 +395,10 @@ type Playground() as self =
           litLine <- -1
           Monaco.clearHighlight ()
         else
-          let (a, b) = List.item order litSpans
-          litLine <- Monaco.highlight a b
+          // **こちらは名前だけ。** 再開点は 100% が `wait` で、葉なので
+          // 名前で足りる（同梱 383,655 コマ で数えた）
+          let sp = List.item order litSpans
+          litLine <- Monaco.highlight sp.NameStart sp.NameStop
       litLine
 
   /// 撃った場所を光らせる（v3.2）。戻りは行（1 起点）。**無ければ -1。**
@@ -420,8 +422,11 @@ type Playground() as self =
           fromLine <- -1
           Monaco.clearOrigin ()
         else
-          let (a, b) = List.item from litSpans
-          fromLine <- Monaco.highlightOrigin a b
+          // **こちらは開き札と閉じ札。** `fire` は名前 4 文字 だと見つけにくく、
+          // 要素まるごとだと中央 5 行 が染まって黄を飲む（1,289 件 で数えた）
+          let sp = List.item from litSpans
+          fromLine <-
+            Monaco.highlightOrigin sp.OpenStart sp.OpenStop sp.CloseStart sp.CloseStop
       fromLine
 
   /// 印の窓を開ける。**本文と走っている木が同じところで揃った瞬間だけ。**

@@ -352,28 +352,38 @@ let highlight (startOffset: int) (stopOffset: int) : int =
         "options" ==> createObj [
           "className" ==> "running-node"
           // **数で書く**（あちらの enum なので）—— 7 = Full / 1 = Inline。
-          // 色をここに書くのは、Monaco が css の class を読まないため
-          "overviewRuler" ==> createObj [ "color" ==> "#ffcc33"; "position" ==> 7 ]
-          "minimap" ==> createObj [ "color" ==> "#ffcc33"; "position" ==> 1 ] ] ] |]
+          // 色をここに書くのは、Monaco が css の class を読まないため。
+          //
+          // **配色では切り替わらない**（下地は css なので付いていける）——
+          // 明るい地と暗い地の両方 で見える 1 本 にする
+          "overviewRuler" ==> createObj [ "color" ==> "#d98f00"; "position" ==> 7 ]
+          "minimap" ==> createObj [ "color" ==> "#d98f00"; "position" ==> 1 ] ] ] |]
     unbox<int> a?lineNumber
 
 /// 印を下ろす。**入れ物は残す**（次に付けるときに作り直さない）
 let clearHighlight () =
   if not (isNull lit) then setDecorations lit [||]
 
-/// 撃った場所を光らせる（v3.2）。戻りは光らせた行（1 起点）。**無ければ -1。**
+/// 撃った場所を光らせる（v3.2）。戻りは開き札の行（1 起点）。**無ければ -1。**
+///
+/// **範囲は 2 つ 受け取る** —— 開き札と閉じ札。`fire` は撃たれる弾の一生を
+/// 抱えるので、要素まるごとだと中央 5 行 / 最大 71 行 が染まり、
+/// 追っている弾の現在地（黄）を飲む。**だから両端だけを光らせて、中身は残す。**
+///
+/// **2 つ が同じなら 1 枚 にする。** 下地は半透明なので、重ねると色が濃くなって
+/// 別の意味に見える（閉じ札を持たない表記では同じ範囲が渡ってくる）。
 ///
 /// **こちらは字へ飛ぶ。** 再開点（段 4）は毎コマ 変わるので飛ばないが、
 /// 撃った場所は**弾を選んだ時点で決まって動かない** —— 押した人が
 /// 見に行きたい場所なので、画面の外なら 1 回 だけ寄せる
 /// （`...IfOutsideViewport` なので、見えているときは動かさない）
-let highlightOrigin (startOffset: int) (stopOffset: int) : int =
+let highlightOrigin (openStart: int) (openStop: int) (closeStart: int) (closeStop: int) : int =
   if isNull editor then -1
   else
     if isNull origin then origin <- newDecorations editor
-    let a = positionAt editor startOffset
-    let b = positionAt editor stopOffset
-    setDecorations origin [|
+    let deco (fromOffset: int) (toOffset: int) =
+      let a = positionAt editor fromOffset
+      let b = positionAt editor toOffset
       createObj [
         "range" ==> createObj [
           "startLineNumber" ==> a?lineNumber
@@ -382,9 +392,13 @@ let highlightOrigin (startOffset: int) (stopOffset: int) : int =
           "endColumn" ==> b?column ]
         "options" ==> createObj [
           "className" ==> "fired-node"
-          "overviewRuler" ==> createObj [ "color" ==> "#80d0a0"; "position" ==> 7 ]
-          "minimap" ==> createObj [ "color" ==> "#80d0a0"; "position" ==> 1 ] ] ] |]
-    let line = unbox<int> a?lineNumber
+          "overviewRuler" ==> createObj [ "color" ==> "#1aa06a"; "position" ==> 7 ]
+          "minimap" ==> createObj [ "color" ==> "#1aa06a"; "position" ==> 1 ] ] ]
+    let items =
+      if closeStart = openStart && closeStop = openStop then [| deco openStart openStop |]
+      else [| deco openStart openStop; deco closeStart closeStop |]
+    setDecorations origin items
+    let line = unbox<int> (positionAt editor openStart)?lineNumber
     revealLine editor line
     line
 
