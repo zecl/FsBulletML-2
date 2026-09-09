@@ -14,6 +14,7 @@
     <Compile Include="Util.fs" />
     <Compile Include="Expr.fs" />
     <Compile Include="DTD.fs" />
+    <Compile Include="Trace.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="Sim.fs" />
     <Compile Include="Eval.fs" />
