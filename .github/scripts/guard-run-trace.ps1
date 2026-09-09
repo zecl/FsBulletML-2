@@ -46,6 +46,8 @@ param(
   [string]$TraceFs,
   [string]$StepFs,
   [string]$CoreProj,
+  [string]$OpsFs,
+  [string]$ApiFs,
   [string[]]$ConsumerRoots,
   [switch]$Quiet
 )
@@ -58,13 +60,15 @@ $core = Join-Path $RepoRoot 'src/FsBulletML2.Core'
 if (-not $TraceFs) { $TraceFs = Join-Path $core 'Trace.fs' }
 if (-not $StepFs) { $StepFs = Join-Path $core 'Step.fs' }
 if (-not $CoreProj) { $CoreProj = Join-Path $core 'FsBulletML2.Core.fsproj' }
+if (-not $OpsFs) { $OpsFs = Join-Path $core 'BulletmlOps.fs' }
+if (-not $ApiFs) { $ApiFs = Join-Path $core 'Api.fs' }
 if (-not $ConsumerRoots) {
   $ConsumerRoots = @(
     (Join-Path $RepoRoot 'src'), (Join-Path $RepoRoot 'samples'), (Join-Path $RepoRoot 'tests')
   )
 }
 
-foreach ($f in @($TraceFs, $StepFs, $CoreProj)) {
+foreach ($f in @($TraceFs, $StepFs, $CoreProj, $OpsFs, $ApiFs)) {
   if (-not (Test-Path -LiteralPath $f)) {
     throw "読めなかった（$f）。**0 件 は違反 0 件 と同じ顔をする**ので、ここで落とす"
   }
@@ -117,6 +121,46 @@ if (-not $Quiet) { Write-Host "compile の順  Trace $iTrace / Domain $iDomain /
 if ($iTrace -lt 0) { $problems.Add('Trace.fs が Core の fsproj に無い（ファイルが在っても焼かれない）') }
 elseif ($iTrace -gt $iStep) { $problems.Add('Trace.fs が Step.fs より後ろ（Step から呼べない）') }
 
+
+# --- NodeOrigin の既定 ---------------------------------------------------------
+# **段 2 で足した口。** こちらは「呼ぶだけ」ではなく**木を 1 周 する**ので、
+# 繋がないときに歩かないための enabled が別に要る（README の「段 2 の当てる先」）。
+if ($trace -notmatch 'let\s+mutable\s+enabled\s*=\s*false') {
+  $problems.Add('NodeOrigin.enabled の既定が false でない（OFF で歩かないことの根拠が消える）')
+}
+if ($trace -notmatch 'let\s+mutable\s+pair\s*:\s*obj\s*->\s*obj\s*->\s*unit\s*=\s*fun\s+_\s+_\s*->\s*\(\)') {
+  $problems.Add('NodeOrigin.pair が "obj -> obj -> unit = fun _ _ -> ()" の形で無い')
+}
+
+# --- 対を作る呼び先の数 ---------------------------------------------------------
+# **新しいノードができる場所は 6 か所。** 減ると、その経路だけ字へ戻れなくなる ——
+# 実際に 2 度 踏んだ（getAction の対が無くて 1.00%、FoldOrigin が根の要素を
+# 対にしていなくて同じ 1.00%）。**どちらも走行は変わらないので目には出ない。**
+$stripComments = {
+  param($path)
+  $t = [regex]::Replace([IO.File]::ReadAllText($path), '(?m)^\s*//.*$', '')
+  $t = [regex]::Replace($t, '(?s)\(\*.*?\*\)', ' ')
+  [regex]::Replace($t, '(?m)^\s*///.*$', '')
+}
+$ops = & $stripComments $OpsFs
+$api = & $stripComments $ApiFs
+$pairSites = ([regex]::Matches($ops, 'NodeOrigin\.pair')).Count + ([regex]::Matches($api, 'NodeOrigin\.pair')).Count
+if (-not $Quiet) { Write-Host "NodeOrigin.pair の呼び先  $pairSites 件（6 件 のはず）" }
+if ($pairSites -ne 6) {
+  $problems.Add("NodeOrigin.pair の呼び先が $pairSites 件（6 件 のはず）。減るとその経路だけ字へ戻れない")
+}
+
+# 覆いは 4 本。**中身（*Core）を直に呼ぶ形へ戻すと、対が黙って消える**
+foreach ($n in @('substCommand', 'substActionElm', 'expandCommand', 'expandActionElm')) {
+  if ($ops -notmatch "and\s+private\s+$n\s[^=]*=\s*\r?\n\s*let r = ${n}Core") {
+    $problems.Add("BulletmlOps.fs の $n が ${n}Core を覆う形になっていない")
+  }
+}
+
+# 畳みの対は組む段で 1 回。**enabled を見ずに歩くと、繋がない人が毎回 木を 1 周 する**
+if ($api -notmatch 'if NodeOrigin\.enabled then FoldOrigin\.walk') {
+  $problems.Add('Api.fs の Runner.load が "if NodeOrigin.enabled then FoldOrigin.walk" の形で無い')
+}
 # --- 段 1 の約束 —— 消費する側をまだ作っていない ------------------------------
 $hooked = [System.Collections.Generic.List[string]]::new()
 foreach ($root in $ConsumerRoots) {
@@ -128,6 +172,12 @@ foreach ($root in $ConsumerRoots) {
       foreach ($p in $ports) {
         if ($t -match "NodeTrace\.$p\s*<-") {
           $hooked.Add("$($_.FullName.Substring($RepoRoot.Length + 1)) が NodeTrace.$p を繋いでいる")
+        }
+      }
+      # **段 2 の口も同じ約束。** 繋ぐのは段 3（Front が弾を選ぶとき）
+      foreach ($p in @('pair', 'enabled')) {
+        if ($t -match "NodeOrigin\.$p\s*<-") {
+          $hooked.Add("$($_.FullName.Substring($RepoRoot.Length + 1)) が NodeOrigin.$p を繋いでいる")
         }
       }
     }
