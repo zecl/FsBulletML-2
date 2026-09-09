@@ -427,6 +427,18 @@ button:disabled {
   margin-top: 8px;
 }
 
+/* 走っている場所（v3.1 の段 4）。**面の印と同じ色** ——
+   面の丸と字の下地が同じ色なら、「どの弾の話か」が色で繋がる。
+
+   **Monaco の飾り（decoration）に付く class。** 波線（`setModelMarkers`）とは
+   別の仕組みで、owner ごとの置き換えに巻き込まれない。
+
+   下地だけにする —— 字の色を変えると、その表記の色分けが 1 か所 だけ崩れる */
+.running-node {
+  background: rgba(255, 204, 51, 0.28);
+  border-radius: 2px;
+}
+
 /* 済んだことの知らせ。**`.error` と別の色** ——
    同じところへ赤で出すと、コピーできたことが失敗に見える */
 .done {

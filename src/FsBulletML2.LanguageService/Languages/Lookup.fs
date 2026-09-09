@@ -328,3 +328,7 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
     member this.Fixes source offset = this.FixesAt(source, offset)
     member this.Findings source = this.FindingsIn source
     member this.Outline source = this.OutlineOf source
+    /// **3 表記 とも同じ 1 本。** 数え方（札）は表記ごとだが、
+    /// 「開き札のうちノードになるものの k 番目」は表記に依らない
+    member _.NodeSpans source nodes =
+      Scan.nodeNameSpans (shape.Tags source) nodes

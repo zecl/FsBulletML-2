@@ -62,6 +62,8 @@
     <!-- 本文の構造（v2.4）。深さは上、**こちらは範囲** -->
     <Compile Include="Outline.fs" />
     <Compile Include="Frames.fs" />
+    <!-- 木のノードと札を順番で結ぶ（v3.1 の段 4）。**光る先がずれても目に出ない** -->
+    <Compile Include="NodeOrder.fs" />
   </ItemGroup>
   <ItemGroup>
     <!-- **CE の本文を試験の出力へ写す。** 期待値は `Bullets.Dsl` の値なので、

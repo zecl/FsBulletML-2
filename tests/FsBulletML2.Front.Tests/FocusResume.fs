@@ -4,6 +4,7 @@ open System.Collections.Generic
 open NUnit.Framework
 open FsUnit
 open FsBulletML2
+open FsBulletML2.LanguageService
 open FsBulletML2.Playground
 
 /// v3.1 の段 3 —— **追っている弾の再開点が、読んだ木のノードか。**
@@ -102,6 +103,36 @@ module FocusResume =
     // 子が止まると親も `Stopped` を返すので、深さだけ積み上がる。
     // **1 は出ない**（`Trace.fs` の但し書き）
     stopOne |> should equal 0
+
+  [<Test>]
+  let ``再開点の添字は、歩きの並びのその位置を指す`` () =
+    // `OrderIndex` は「読んだ木を**書いてある順**に歩いた何番目 か」（v3.1 の段 4）。
+    // 字の側はその数だけを受け取り、札の k 番目 を光らせる ——
+    // **番号が 1 つ ずれても、走行も絵も変わらない。** 隣の要素が光るだけ。
+    //
+    // だから歩き直して**参照で突き合わせる。**
+    let mutable seen = 0
+    let mutable wrong = 0
+    let mutable missing = 0
+    for bulletml in books () do
+      let walk = NodeOrder.walk bulletml
+      let pf = field bulletml
+      pf.Pick 0
+      for _ in 1 .. frames do
+        pf.Tick()
+        if pf.Focus.Serial >= 0 then
+          seen <- seen + 1
+          let k = pf.Focus.OrderIndex
+          // **-1 は「決まらない」。** 並びに 2 度 出るノードのときで、
+          // 再開点は `action` / `wait` / `repeat` なので来ないはず
+          if k < 0 || k >= walk.Count then missing <- missing + 1
+          else
+            let (name, node) = walk.[k]
+            if not (obj.ReferenceEquals(node, pf.Focus.Resumed)) then wrong <- wrong + 1
+            elif name <> pf.Focus.Name then wrong <- wrong + 1
+    seen |> should be (greaterThan 0)
+    missing |> should equal 0
+    wrong |> should equal 0
 
   /// 弾が出て、`wait` で止まる弾幕。**コーパスの 1 本 目 では測れない** ——
   /// あちらの根は `wait` を持たず、1 度 も止まらない（再開点が出ない）

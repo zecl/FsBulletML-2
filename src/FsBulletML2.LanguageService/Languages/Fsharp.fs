@@ -263,6 +263,11 @@ type FsharpLanguage(vocabulary: unit -> Vocab) =
     /// （同梱 176 本 中 145 本 で違う。`◯◯Ref` は `{ }` を開かず、
     /// `doActs (body { … })` のような包みが 1 段 増える）。
     /// **それが正しい** —— ここで見ているのは CE の本文であって XML ではない
+    /// **結べない。** CE は要素名で書かないので `FsharpScan.tags` は
+    /// 名前しか返さず、入れ子も `{ }` の段（v2.4.5 / v2.9 の 5d で測った）。
+    /// **推定で光らせない** —— 隣を光らせるより、光らせないほうが読める
+    member _.NodeSpans _ _ = []
+
     member _.Outline source =
       let v = vocabulary ()
       let detailAttr =

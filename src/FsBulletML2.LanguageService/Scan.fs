@@ -99,6 +99,28 @@ type Token =
 /// どちらも正しく見える。
 module Scan =
 
+  /// 木のノードになる札の、**要素名の範囲**を並べる（0 起点、`stop` は含まない）。
+  ///
+  /// **字の位置は木に無い**ので、走行中のノードを字へ結ぶには順番しかない
+  /// （v2.9 で測った。木の k 番目 と札の k 番目 が 3 表記 で 176 / 176 揃う）。
+  ///
+  /// **ノードになる名前を引数で受け取る。** ここに表を書くと、DTD に要素が
+  /// 増えたときここだけが古びる —— しかも増えた側は「ノードでない」に落ちて、
+  /// **黙って添字がずれる。** 正本は `Core/DTD.fs` の腕
+  /// （`NodeOrder.names` が reflection で引いて渡す）。
+  ///
+  /// 光らせるのは**名前だけ**。札まるごとだと、子を持つ要素で
+  /// `<action>` から `</action>` までが一面 に染まる
+  /// **1 つ ずつ引かずに並びで返す。** 呼ぶ側は窓が開いているあいだ本文が
+  /// 変わらない（変わった瞬間に窓を閉じる）ので、走査は窓ごとに 1 回 で済む
+  let nodeNameSpans (tags: TagHit list) (nodes: string list) =
+    if List.isEmpty nodes then []
+    else
+      let ok = Set.ofList nodes
+      tags
+      |> List.filter (fun t -> not t.Closing && ok.Contains t.TagName)
+      |> List.map (fun t -> t.NameStart, t.NameStop)
+
   let isNameChar (c: char) =
     Char.IsLetterOrDigit c || c = '_' || c = '-' || c = '.' || c = ':'
 

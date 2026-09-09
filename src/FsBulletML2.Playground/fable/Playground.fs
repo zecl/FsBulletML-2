@@ -206,7 +206,25 @@ type Playground() as self =
   let mutable lastStops = -1
   let mutable lastDepth = -1
   let mutable lastPaths = -1
+  let mutable lastLine = -2
   let mutable resumeName = ""
+  // 走っている場所の印（v3.1 の段 4）。**Apply の窓だけ。**
+  //
+  // 印は走行から出るので、**画面の字と走っている木が食い違った瞬間に嘘になる。**
+  // 版の頭で測った —— どの 1 文字 を打っても木が読めるのは 40〜48% で、
+  // `<` は 100% 読めなくなる。だから打った瞬間に下ろす。
+  let mutable litOpen = false
+  // いま光らせている添字。**-2 は「まだ何もしていない」** ——
+  // -1（光らせるものが無い）と区別する
+  let mutable litIndex = -2
+  // 窓が開いているあいだの、名前の範囲の並び。**本文は変わらない**
+  // （変わった瞬間に窓を閉じる）ので、走査は窓ごとに 1 回
+  let mutable litSpans: (int * int) list = []
+  let mutable litScanned = false
+  // 光らせた行（1 起点）。**帯に出す** —— 下地は見えている行にしか描かれない
+  let mutable litLine = -1
+  // 木のノードになる要素名。**host から起動時に 1 回**。正本は Core の DTD.fs
+  let mutable nodeNames: string list = []
   // 軌跡。**過去の位置を貯めない** —— 面を消さずに薄く塗り重ねるだけなので、
   // 確保は増えない（`draw` の但し書き）
   let mutable trail = false
@@ -345,11 +363,62 @@ type Playground() as self =
   ///
   /// 数も一緒に出すのは、**「戻れた」と「正しい所へ戻れた」が別**だから ——
   /// `stop` は 0 か 2 以上（1 は出ない）で、これは走行の構造がそのまま出た数
-  member _.focusHud(pick: int, stops: int, depth: int, serial: int, paths: int) =
+  /// 走っている場所を字の上で光らせる（v3.1 の段 4）。**Apply の窓だけ。**
+  ///
+  /// 渡ってくるのは**読んだ木を書いてある順に歩いた添字**（`Main.StepFrame`）。
+  /// 位置は木に無く、字はこちらにしか無いので、あいだを渡るのは順番だけ ——
+  /// 木の k 番目 と札の k 番目 が揃うことは v2.9 で測ってある
+  /// （3 表記 で 176 / 176。F# の CE は結べないので空が返る）。
+  ///
+  /// **走査は窓ごとに 1 回。** 窓が開いているあいだ本文は変わらない
+  /// （変わった瞬間に閉じる）ので、添字が動いても数え直さない
+  member _.lightRunning(order: int) : int =
+    if not litOpen then
+      if litIndex <> -2 then
+        litIndex <- -2
+        litLine <- -1
+        Monaco.clearHighlight ()
+      -1
+    else
+      if not litScanned then
+        litScanned <- true
+        litSpans <- current.NodeSpans (Monaco.getValue ()) nodeNames
+      if order <> litIndex then
+        litIndex <- order
+        // **並びの外は光らせない。** 添字が外れているのに隣を光らせると、
+        // 「そこで止まっている」という嘘になる
+        if order < 0 || order >= List.length litSpans then
+          litLine <- -1
+          Monaco.clearHighlight ()
+        else
+          let (a, b) = List.item order litSpans
+          litLine <- Monaco.highlight a b
+      litLine
+
+  /// 印の窓を開ける。**本文と走っている木が同じところで揃った瞬間だけ。**
+  ///
+  /// 呼ぶのは Apply が通ったとき・弾幕を選び直したとき・表記を書き直したとき・
+  /// 起動時。**Open は呼ばない** —— 読んだだけで載せていないので、
+  /// 字と走っている木は別物
+  member _.openLight() =
+    litOpen <- true
+    litScanned <- false
+    litIndex <- -2
+
+  /// 印の窓を閉じる。**打った瞬間に。**
+  member _.closeLight() =
+    if litOpen then
+      litOpen <- false
+      litScanned <- false
+      litSpans <- []
+      litIndex <- -2
+      Monaco.clearHighlight ()
+
+  member _.focusHud(pick: int, stops: int, depth: int, serial: int, paths: int, line: int) =
     let fo = el "focus"
     if isNull fo then ()
     elif pick = lastPick && serial = lastSerial && stops = lastStops
-         && depth = lastDepth && paths = lastPaths then ()
+         && depth = lastDepth && paths = lastPaths && line = lastLine then ()
     else
       if serial <> lastSerial then
         resumeName <-
@@ -360,6 +429,7 @@ type Playground() as self =
       lastStops <- stops
       lastDepth <- depth
       lastPaths <- paths
+      lastLine <- line
       fo.textContent <-
         if pick < 0 then ""
         // **追っているのに再開点が無いコマは在る** —— 台本を持たない弾と、
@@ -368,7 +438,10 @@ type Playground() as self =
         else
           // **道が 2 本 以上 のときは 1 本 目 だけ出している。** 数で見せる ——
           // 黙って落とすと、出ている場所が全部 だと読めてしまう
-          "追跡: " + resumeName
+          // **行番号を先に出す。** 下地は見えている行にしか描かれないので、
+          // 画面の外に在るときは、この数だけが在り処を言う
+          (if line >= 1 then "追跡: " + string line + " 行 の " + resumeName
+           else "追跡: " + resumeName)
           + "（stop " + string stops + " / 鎖 " + string depth
           + " / 道 " + string paths + "）"
 
@@ -557,6 +630,8 @@ type Playground() as self =
           if unbox<bool> r?ok then
             setError ""
             clear ()
+            // **ここで字と走っている木が揃った。** 印の窓を開ける（v3.1 の段 4）
+            self.openLight ()
           else
             setError (string r?message)
             // **`marks` が空なら位置が無い層。** 推定で引かない
@@ -799,7 +874,11 @@ type Playground() as self =
             (invokeAsync3 dotNet "Transcode" fromId lang.Kind.Id text)
             (fun res ->
               let r = jsonParse (string res)
-              if unbox<bool> r?ok then Monaco.setValue (string r?text)
+              if unbox<bool> r?ok then
+                Monaco.setValue (string r?text)
+                // **走っている木は変わっていない。** 字を書き直しただけなので、
+                // 並びも同じ —— 窓は開けたまま（`setValue` が閉じるので開け直す）
+                self.openLight ()
               else
                 // **表記も戻す。** 本文を触らないだけだと、
                 // 「sxml と名乗る fsb の本文」が残って色も Apply の理由も嘘になる
@@ -898,7 +977,9 @@ type Playground() as self =
           if s.StartsWith "ERROR:" then setError (s.Substring 6)
           else
             Monaco.setValue s
-            setError "")
+            setError ""
+            // 選び直した弾幕がそのまま載っている。**窓を開ける**
+            self.openLight ())
         (fun err -> setError (errText err))
 
   /// 速さのプルダウン。**値の意味を html に書かない** ——
@@ -991,6 +1072,8 @@ type Playground() as self =
             elif pendingFormat = text then
               pendingFormat <- ""
               Monaco.setValue formatted
+              // 読んで書き直しただけ。**走っている木も並びも変わらない**
+              self.openLight ()
               self.showNote "整形した"
             else
               pendingFormat <- text
@@ -1232,6 +1315,8 @@ type Playground() as self =
             let seed = if isNull dotNet then "" else string (invoke0 dotNet "InitialSource")
             Monaco.create "source" current.EditorLanguageId seed
             self.loadVocabulary ()
+            // **起動時の字は host が焼いた同じ木。** 窓を開けておく
+            self.openLight ()
             self.fillModes ()
             // **エディタが建ってから出す。** Monaco が読めなかったときに
             // 配色のプルダウンだけ在るのは、押せるのに何も起きない口になる
@@ -1271,6 +1356,9 @@ type Playground() as self =
             // **印は文字に追随しない。** 1 文字 打った時点で場所が嘘になるので、
             // そこで消す。付けていないときは何もしない（毎打鍵の空振りを避ける）
             Monaco.onContentChanged (fun () ->
+              // **走っている場所の印もここで下ろす**（v3.1 の段 4）——
+              // 印は走行から出るので、字が 1 文字 動いた時点で嘘になる
+              self.closeLight ()
               if markedAt then
                 markedAt <- false
                 Monaco.clearMarks ()
@@ -1303,6 +1391,10 @@ type Playground() as self =
     else
       vocabulary <- VocabularyJson.parseVocabulary (string (invoke0 dotNet "Vocabulary"))
       if vocabulary.Elements.IsEmpty then setError "語彙が空（Core の型を読めていない）"
+      // 木のノードになる要素名（v3.1 の段 4）。**落とす側の表を持たない** ——
+      // DTD に要素が増えたとき、こちらだけ古びて添字が黙ってずれる
+      nodeNames <- unbox<string[]> (invoke0 dotNet "NodeElementNames") |> List.ofArray
+      if nodeNames.IsEmpty then setError "ノードの要素名が空（Core の腕を読めていない）"
 
   /// 走っている弾幕をプルダウンにも出す。**空のままにしない** ——
   /// 空は「XML 編集 / Open」の意味なので、同梱を走らせているのに嘘になる
@@ -1367,12 +1459,16 @@ type Playground() as self =
             // 1 面 目 で消えて 2 面 目 に効かない
             wipe <- false
             self.hud (n, n2, t, int (unbox<float> (jsItem ret 2)))
+            // **光らせるのが先。** 帯にはその行番号を出すので、
+            // あとに回すと 1 コマ 遅れた行が出る
+            let litLine = self.lightRunning (int (unbox<float> (jsItem ret 16)))
             self.focusHud (
               pickIdx,
               int (unbox<float> (jsItem ret 12)),
               int (unbox<float> (jsItem ret 13)),
               int (unbox<float> (jsItem ret 14)),
-              int (unbox<float> (jsItem ret 15))
+              int (unbox<float> (jsItem ret 15)),
+              litLine
             )
           with ex ->
             console.error ex
