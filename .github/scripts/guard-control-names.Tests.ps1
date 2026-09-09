@@ -91,7 +91,14 @@ Check '  複数行のコメント' @'
 Write-Host ''
 Write-Host 'この門が読める形になっていないときは、名前の在り無しより先に落ちる'
 Check 'id が無い口' '<button type="button">Play</button>' $false 'id が無い'
-Check 'button が行をまたぐ' "<button type=`"button`" id=`"play`">`n  Play`n</button>" $false '行をまたいでいる'
+Check 'button の中身が行をまたぐ' "<button type=`"button`" id=`"play`">`n  Play`n</button>" $false '行をまたいでいる'
+# **開き札のまたぎは別の穴。** 中身のまたぎと違って網に 1 度 も当たらないので、
+# 見ていないと「口が消えた」ことに気づけない
+Check 'button の開き札が行をまたぐ' "<button type=`"button`"`n        id=`"play`">Play</button>" $false '開き札が行をまたいでいる'
+Check 'select の開き札が行をまたぐ' "<select`n  id=`"theme`" aria-label=`"配色`"></select>" $false '開き札が行をまたいでいる'
+# **ほかの口が揃っていても落ちること。** 落ちないと「揃っている」と読んで、
+# 消えた 1 個 に気づかない
+Check '  ほかの口が揃っていても落ちる' "<button type=`"button`" id=`"play`">Play</button>`n<button type=`"button`"`n        id=`"pause`">Pause</button>" $false '開き札が行をまたいでいる'
 
 Write-Host ''
 Write-Host '材料が読めないとき。**口 0 個 は違反 0 件 と同じ顔をする**'

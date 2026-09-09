@@ -198,37 +198,134 @@ button:disabled {
   padding: 6px 0;
 }
 
-/* 使い方。**大きさは中身と窓の小さいほう** —— 長くなったら中で送る */
+/* 使い方。**章に割った** —— 前は 1 枚 で、1440x900 で 4.9 画面分 在った
+   （1280x800 で 5.5、900x700 で 6.2）。
+
+   **幅を `min()` で決める。** 前は `max-width` だけだったので、
+   表の `nowrap` が作る床（532px）に窓のほうが引っ張られ、
+   390px 幅 では **142px はみ出していた**。幅を先に決めて、
+   縮まらない表は `.help-body` の中で横に送る */
 .help {
-  max-width: 46em;
-  max-height: 80dvh;
-  overflow: auto;
+  width: min(64em, 92vw);
+  max-height: 88dvh;
+  /* 送るのは中の本文だけ。**ここで auto にすると頭も一緒に動く** */
+  overflow: hidden;
+  flex-direction: column;
   background: #16161e;
   color: #e8e8ee;
   border: 1px solid #555;
-  padding: 20px 24px;
+  padding: 0;
   line-height: 1.7;
+}
+
+/* **`display` は `[open]` の側 に書く。** 素の `.help` に書くと、
+   ブラウザが素で持っている `dialog:not([open]) { display: none }` を
+   上書きしてしまう（作者の指定は origin で勝つので、詳細度は関係ない）——
+   閉じた窓が生きたまま残り、**中の口 9 個 が Tab の輪に入っていた**。
+   窓は画面の下 に外れていたので目には出ず、輪を数えて初めて出た */
+.help[open] {
+  display: flex;
 }
 
 .help::backdrop {
   background: rgba(0, 0, 0, 0.6);
 }
 
-/* 閉じるは右下。**`margin-left: auto` で寄せる** ——
-   `float` や `position` にすると、中身が伸びたとき重なる */
-#help-close {
-  display: block;
-  margin-left: auto;
+/* 頭。**閉じるは上**（v2.8.1）—— 下に在ると、閉じるためだけに本文を送る */
+.help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  padding: 13px 20px;
+  border-bottom: 1px solid #333;
 }
 
 .help h2 {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 1.1rem;
 }
 
+/* 閉じる。**字は 1 つ でも当たりは 32px 角** ——
+   字の大きさだけで作ると、狙いでも指でも外す */
+.help-close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: #c8c8d4;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.help-close:hover {
+  color: #e8e8ee;
+  background: #2a2a36;
+}
+
+/* 目次と本文。**`min-height: 0` が要る** ——
+   無いと grid の子が縮まらず、`max-height` を越えて伸びる */
+.help-grid {
+  display: grid;
+  grid-template-columns: 11em 1fr;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.help-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 8px;
+  border-right: 1px solid #333;
+  overflow: auto;
+}
+
+.help-tab {
+  padding: 7px 10px;
+  text-align: left;
+  white-space: nowrap;
+  font: inherit;
+  color: #c8c8d4;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.help-tab:hover {
+  background: #21212c;
+}
+
+/* いまの章。**色だけで出さない** —— 縦棒も付ける（配色や見え方に寄らない印） */
+.help-tab[aria-current="true"] {
+  color: #e8e8ee;
+  background: #21212c;
+  box-shadow: inset 3px 0 0 #7cc7ff;
+}
+
+.help-body {
+  padding: 16px 22px 24px;
+  overflow: auto;
+  /* 縮まらない表を、窓ではなくここで受ける */
+  min-width: 0;
+}
+
 .help h3 {
-  margin: 20px 0 8px;
-  font-size: 1rem;
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.help h4 {
+  margin: 22px 0 6px;
+  font-size: 0.95rem;
+  color: #b8d8f0;
 }
 
 .help table {
@@ -272,6 +369,57 @@ button:disabled {
 
 .help .note {
   color: #a0a0b0;
+}
+
+/* 絵。**撮った寸法で出して、狭いときだけ縮める** ——
+   `width` / `height` は img に書いてあるので、読み込む前から場所が空く */
+.help figure {
+  margin: 14px 0 18px;
+}
+
+.help figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #333;
+  border-radius: 3px;
+}
+
+/* 面 2 つ と差分は、撮った実寸が章の幅より広い。
+   **縮めて出す** —— 横に送らせると、絵は一目 で見えないと意味が無い */
+.help .fig-wide img {
+  max-width: min(100%, 40em);
+}
+
+.help figcaption {
+  margin-top: 6px;
+  font-size: 0.9em;
+  color: #a0a0b0;
+}
+
+/* 狭いとき。**目次を上へ回す** —— 11em を横に取ると本文が読めない幅になる */
+@media (max-width: 719px) {
+  .help-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .help-nav {
+    flex-direction: row;
+    padding: 8px;
+    border-right: 0;
+    border-bottom: 1px solid #333;
+    overflow-x: auto;
+  }
+
+  /* 縦棒は下辺へ。横並びの札では左の棒が読めない */
+  .help-tab[aria-current="true"] {
+    box-shadow: inset 0 -3px 0 #7cc7ff;
+  }
+
+  .help-body {
+    padding: 14px 16px 20px;
+  }
 }
 
 .error {
