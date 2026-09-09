@@ -9,7 +9,7 @@
       既定        NodeTrace の口が `obj -> unit = ignore`（OFF が素）
       呼び先      通った 2（command / actionElm）/ 止まった 3
       compile の順 Trace.fs が Step.fs より前
-      段の約束    繋ぐのは Focus.fs の 1 か所 だけ（`visit` は 0 件）
+      段の約束    4 つ の口を繋ぐのは Focus.fs の 1 か所 だけ
 
   **いちばん当てたいのは呼び先の数。** 口が減っても走行は止まらないので、
   目でも試験でも出ない。実際に測っているとき 1 度 踏んだ ——
@@ -163,9 +163,13 @@ $goodFocus = @'
 namespace FsBulletML2.Playground
 
 type Focus () =
+  let onVisit = fun (node: obj) -> ignore node
   let onStop = fun (node: obj) -> ignore node
   let onPair = fun (a: obj) (b: obj) -> ignore (a, b)
   let noPair = fun (_: obj) (_: obj) -> ()
+
+  member _.BeginFrame() = NodeTrace.visit <- onVisit
+  member _.EndFrame() = NodeTrace.visit <- ignore
 
   member _.Begin() =
     NodeTrace.stop <- onStop
@@ -269,8 +273,8 @@ Check 'Trace.fs が fsproj に無い' $goodTrace $goodStep `
   ($goodProj -replace '\s*<Compile Include="Trace.fs" />', '') $false 'fsproj に無い'
 
 Write-Host ''
-Write-Host '段の約束。**通った側（visit）を繋ぐのは段 4。どこであっても 0 件**'
-Check 'visit を繋いでいる場所が在る' $goodTrace $goodStep $goodProj $false 'NodeTrace.visit を繋いでいる' `
+Write-Host '通った側（visit）も Focus.fs だけ。**v3.2 で繋いだ**'
+Check 'ほかの場所が visit を繋いでいる' $goodTrace $goodStep $goodProj $false 'ほかに繋いだ場所が在る' `
   "module Front =`r`n  let wire () = NodeTrace.visit <- (fun o -> ())`r`n"
 
 Write-Host ''
@@ -318,9 +322,12 @@ Check 'ほかの場所が enabled を繋いでいる' $goodTrace $goodStep $good
 Write-Host ''
 Write-Host '段 3 の約束。減る側。**印が消えるだけで走行は変わらないので、ここでしか出ない**'
 Check 'Focus.fs が無い' $goodTrace $goodStep $goodProj $false '読めなかった' '' '' '' '' -NoFocus
+$focusNoVisit = $goodFocus.Replace('  member _.BeginFrame() = NodeTrace.visit <- onVisit', '  member _.BeginFrame() = ignore onVisit')
 $focusNoStop = $goodFocus.Replace('    NodeTrace.stop <- onStop', '    ignore onStop')
 $focusNoPair = $goodFocus.Replace('    NodeOrigin.pair <- onPair', '    ignore onPair')
 $focusNoEnabled = $goodFocus.Replace('    NodeOrigin.enabled <- true', '    ignore true')
+Check 'Focus.fs が visit を繋がない' $goodTrace $goodStep $goodProj $false 'NodeTrace.visit を繋いでいない' '' '' '' `
+  $focusNoVisit
 Check 'Focus.fs が stop を繋がない' $goodTrace $goodStep $goodProj $false 'NodeTrace.stop を繋いでいない' '' '' '' `
   $focusNoStop
 Check 'Focus.fs が pair を繋がない' $goodTrace $goodStep $goodProj $false 'NodeOrigin.pair を繋いでいない' '' '' '' `
@@ -330,11 +337,14 @@ Check 'Focus.fs が enabled を繋がない' $goodTrace $goodStep $goodProj $fal
 
 Write-Host ''
 Write-Host '素へ戻す側。**繋ぎっぱなしだと、選んでいない弾も受け口を通る**'
+$focusNoOffVisit = $goodFocus.Replace('  member _.EndFrame() = NodeTrace.visit <- ignore', '  member _.EndFrame() = NodeTrace.visit <- onVisit')
 $focusNoOffStop = $goodFocus.Replace('    NodeTrace.stop <- ignore', '    NodeTrace.stop <- onStop')
 $focusNoOffEnabled = $goodFocus.Replace('    NodeOrigin.enabled <- false', '    NodeOrigin.enabled <- true')
 # **その場で作ると、選んでいる間ずっと閉包が毎コマ ヒープに乗る。**
 # 戻す形が既定と同じ字であることは、繋ぐ側と戻す側を数え分ける根拠でもある
 $focusNoOffPair = $goodFocus.Replace('    NodeOrigin.pair <- noPair', '    NodeOrigin.pair <- fun _ _ -> ()')
+Check 'visit を ignore へ戻さない' $goodTrace $goodStep $goodProj $false '素へ戻す側が無い' '' '' '' `
+  $focusNoOffVisit
 Check 'stop を ignore へ戻さない' $goodTrace $goodStep $goodProj $false '素へ戻す側が無い' '' '' '' `
   $focusNoOffStop
 Check 'enabled を false へ戻さない' $goodTrace $goodStep $goodProj $false '素へ戻す側が無い' '' '' '' `

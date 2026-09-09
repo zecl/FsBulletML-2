@@ -457,6 +457,20 @@
                   走っている場所と字を結ぶ手がかりが無い（アウトラインが別の木になるのと同じ理由）</li>
             </ul>
 
+            <h4>出どころを見る</h4>
+            <ul>
+              <li>追っている弾を<strong>撃った <code>&lt;fire&gt;</code> も光る</strong>（別の色）。
+                  帯にも <code>／ 出どころ 85 行</code> と出る。
+                  <strong>敵そのものを押したときは出ない</strong> —— 撃たれていないので</li>
+              <li><strong>こちらは字へ寄る。</strong> 走っている場所は 1 コマ ごとに動くので
+                  勝手にスクロールしないが、出どころは<strong>撃たれた時点で決まって動かない</strong> ——
+                  押した人が見に行きたい場所なので、画面の外なら 1 回 だけ寄せる
+                  （見えているときは動かさない）</li>
+              <li>撃った場所は<strong>走査した順で結んでいる</strong>。
+                  数が食い違うコマでは<strong>結ばない</strong> ——
+                  隣の <code>&lt;fire&gt;</code> を指すより、指さないほうが読める</li>
+            </ul>
+
           </section>
 
           <section id="help-ch-run" class="help-ch" hidden>

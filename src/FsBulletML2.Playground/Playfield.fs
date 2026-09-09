@@ -9,11 +9,14 @@ open FsBulletML2.Front
 
 /// 参照型。struct だと `let it = live.[i]` がコピーになって書き戻せない。
 [<Sealed>]
-type Live(run: BulletRun, x: float32, y: float32, isRoot: bool) =
+type Live(run: BulletRun, x: float32, y: float32, isRoot: bool, from: int) =
   member val Run = run with get, set
   member val X = x with get, set
   member val Y = y with get, set
   member _.IsRoot = isRoot
+  /// この弾を撃った `fire` が、読んだ木の**書いてある順**の何番目 か（v3.2）。
+  /// **撃たれていなければ -1**（根の敵）。決まらないときも -1
+  member _.From = from
 
 /// 生きている弾の一覧。Bolero を知らない。
 ///
@@ -46,7 +49,8 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
     // 弾が横へ抜けていく（`Stage.landscape` の但し書き）
     let field = Stage.ofDirection script.ShootingDirection
     let live = ResizeArray<Live>()
-    live.Add(Live(run, field.EnemyX, field.EnemyY, true))
+    // 根の敵は撃たれていないので、撃った場所は無い
+    live.Add(Live(run, field.EnemyX, field.EnemyY, true, -1))
     Playfield(front, live, field, focus)
 
   member _.Count = live.Count
@@ -64,6 +68,9 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
 
   member _.Tick() =
     spawned.Clear()
+    // 撃った場所を拾う窓（v3.2）。**1 コマ の頭で 1 回 だけ** ——
+    // 弾ごとに付け替えると、そのぶんを毎コマ 払う
+    focus.BeginFrame()
     let mutable i = 0
     while i < live.Count do
       let it = live.[i]
@@ -73,6 +80,7 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
           Speed = m0.Speed
           Dir = m0.Dir
           Accel = m0.Accel }
+      focus.BeginBullet()
       // **追っている弾のときだけ繋ぐ。** 呼びを 1 本 にまとめて try/finally を
       // 全部 の弾に掛けると、選んでいない人にもその分 を払わせる
       let f =
@@ -87,9 +95,20 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
         it.X <- it.X + f.Delta.X
         it.Y <- it.Y + f.Delta.Y
       it.Run <- if f.Finished then Driver.restart front f.Run else f.Run
+      // 撃った場所を弾に持たせる（v3.2）。**走査した撃つ腕の並びと
+      // `Spawned` の並びは 1 対 1**（同梱 176 本 の撃ったコマ 17,945 で
+      // 100.00%。手書きの 4 fire でも並びが一致した）。
+      //
+      // 数が食い違うコマでは結ばない。ただし **この守りが働くところは
+      // 作れなかった** —— もう撃った `fire` は走査されないので、
+      // `<fire/><wait>1</wait><fire/>` でも数は一致する。
+      // **外しても緑のまま**なので、これは網ではなく現状固定
+      let pairable = focus.FiredCount = List.length f.Spawned
+      let mutable k = 0
       for child in f.Spawned do
         let p = child.Motion.Pos
-        spawned.Add(Live(child, p.X, p.Y, false))
+        spawned.Add(Live(child, p.X, p.Y, false, (if pairable then focus.FiredIndex k else -1)))
+        k <- k + 1
       let dead =
         not it.IsRoot && (
           f.Vanished || f.Retired
@@ -106,6 +125,7 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
         live.RemoveAt last
       else i <- i + 1
     live.AddRange spawned
+    focus.EndFrame()
     frame <- frame + 1
 
   /// WASM ヒープ上の `float32[]`。JS は JSON せず `localHeapViewF32` で読む。
@@ -141,6 +161,11 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
   member _.Unpick() =
     picked <- Unchecked.defaultof<Live>
     focus.Clear()
+
+  /// 追っている弾を撃った `fire` が、読んだ木の書いてある順の何番目 か（v3.2）。
+  /// **追っていないときと、撃たれていない弾（根の敵）は -1**
+  member _.PickedFrom =
+    if obj.ReferenceEquals(picked, null) then -1 else picked.From
 
   /// 追っている弾が `Pack` の並びの何番目 か。**無ければ -1**（消えたときも）。
   ///

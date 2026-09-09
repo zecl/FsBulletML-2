@@ -134,6 +134,113 @@ module FocusResume =
     missing |> should equal 0
     wrong |> should equal 0
 
+  [<Test>]
+  let ``撃たれた弾は、撃った fire を指す`` () =
+    // v3.2 —— 面の弾を押すと「それを撃った場所」へ飛ぶ。
+    //
+    // **Core には撃った場所を渡す口が無い**（`Effect.Spawn` は `BulletState`
+    // だけを運ぶ）。走査した撃つ腕の並びと `Spawned` の並びが 1 対 1 なことを
+    // 測って（同梱の撃ったコマ 17,945 で 100.00%）、外から結んでいる ——
+    // **その対応が本当に撃った側を指しているか**をここで当てる。
+    let mutable picked = 0
+    let mutable notFire = 0
+    let mutable none = 0
+    for bulletml in books () do
+      let walk = NodeOrder.walk bulletml
+      let pf = field bulletml
+      // 1 コマ 進めて、撃たれた弾が出るまで待つ
+      let mutable n = 0
+      while n < frames && pf.Count < 2 do
+        pf.Tick()
+        n <- n + 1
+      if pf.Count >= 2 then
+        // **0 番目 は根の敵。** 撃たれていないので出どころが無い
+        pf.Pick 0
+        pf.PickedFrom |> should equal -1
+        pf.Pick 1
+        let k = pf.PickedFrom
+        if k < 0 then none <- none + 1
+        else
+          picked <- picked + 1
+          let (name, _) = walk.[k]
+          // 撃つ腕は 2 つ。`fireRef` も `command` が解決してから撃つ
+          if name <> "fire" && name <> "fireRef" then notFire <- notFire + 1
+    // **0 件 を緑にしない**
+    picked |> should be (greaterThan 0)
+    notFire |> should equal 0
+    // 結べなかった弾が在ってもよい（数が食い違うコマでは結ばない）が、
+    // **全部 が結べないなら、この試験は何も見ていない**
+    none |> should be (lessThan picked)
+
+  [<Test>]
+  let ``撃った fire の並びが、撃たれた弾の並びと同じ順`` () =
+    // **コーパスで「fire を指す」だけでは、1 つ ずれても赤くならない**
+    // （ずれた先も fire なので）。実際に変異を当てて緑のままだった。
+    //
+    // だから**並びそのもの**を当てる —— 1 コマ で 4 つ 撃つ弾幕を書いて、
+    // 撃たれた 4 弾 の出どころが、字に書いてある 4 つ の `fire` と
+    // **同じ順**であることを見る
+    let xml = """<?xml version="1.0" ?>
+<bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
+    <action label="top">
+        <fire><direction type="absolute">10</direction><bullet /></fire>
+        <fire><direction type="absolute">70</direction><bullet /></fire>
+        <fire><direction type="absolute">130</direction><bullet /></fire>
+        <fire><direction type="absolute">190</direction><bullet /></fire>
+        <wait>60</wait>
+    </action>
+</bulletml>"""
+    let bulletml = Bulletml.readXmlString xml
+    let walk = NodeOrder.walk bulletml
+    let fires =
+      [ for k in 0 .. walk.Count - 1 do
+          let (name, _) = walk.[k]
+          if name = "fire" then yield k ]
+    fires.Length |> should equal 4
+    let pf = field bulletml
+    pf.Tick()
+    // 根 1 つ ＋ 撃たれた 4 つ
+    pf.Count |> should equal 5
+    let got = [ for i in 1 .. 4 -> pf.Pick i; pf.PickedFrom ]
+    got |> should equal fires
+
+  [<Test>]
+  let ``もう撃った fire を挟んでも、出どころを取り違えない`` () =
+    // **数が食い違うコマでは結ばない**という守りが効いているか。
+    //
+    // `<fire/><wait>1</wait><fire/>` は、2 コマ 目 に
+    // 「もう撃った 1 つ 目」と「これから撃つ 2 つ 目」の両方 を走査しうる ——
+    // そこで数だけで結ぶと、**2 つ 目 で出た弾を 1 つ 目 に貼る。**
+    let xml = """<?xml version="1.0" ?>
+<bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
+    <action label="top">
+        <fire><direction type="absolute">10</direction><bullet /></fire>
+        <wait>1</wait>
+        <fire><direction type="absolute">100</direction><bullet /></fire>
+        <wait>60</wait>
+    </action>
+</bulletml>"""
+    let bulletml = Bulletml.readXmlString xml
+    let walk = NodeOrder.walk bulletml
+    let fires =
+      [ for k in 0 .. walk.Count - 1 do
+          let (name, _) = walk.[k]
+          if name = "fire" then yield k ]
+    fires.Length |> should equal 2
+    let pf = field bulletml
+    pf.Tick()                       // 1 つ 目 が出て、wait で止まる
+    pf.Count |> should equal 2
+    pf.Pick 1
+    pf.PickedFrom |> should equal fires.[0]
+    pf.Tick()                       // wait が明けて 2 つ 目 が出る
+    pf.Tick()
+    pf.Count |> should equal 3
+    // **2 つ 目 の弾は 2 つ 目 の fire から。** 取り違えるならここが 1 つ 目 になる。
+    // 結べなかった（-1）のも、貼り違えるよりは正しい
+    let second = (pf.Pick 2; pf.PickedFrom)
+    Assert.That(second, Is.EqualTo(fires.[1]).Or.EqualTo(-1),
+                "2 つ 目 の弾が 1 つ 目 の fire を指している")
+
   /// 弾が出て、`wait` で止まる弾幕。**コーパスの 1 本 目 では測れない** ——
   /// あちらの根は `wait` を持たず、1 度 も止まらない（再開点が出ない）
   let private stopping = lazy (Bulletml.readXmlString DeterministicField.Xml)

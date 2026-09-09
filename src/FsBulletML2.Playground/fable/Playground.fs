@@ -207,6 +207,7 @@ type Playground() as self =
   let mutable lastDepth = -1
   let mutable lastPaths = -1
   let mutable lastLine = -2
+  let mutable lastFromLine = -2
   let mutable resumeName = ""
   // 走っている場所の印（v3.1 の段 4）。**Apply の窓だけ。**
   //
@@ -223,6 +224,9 @@ type Playground() as self =
   let mutable litScanned = false
   // 光らせた行（1 起点）。**帯に出す** —— 下地は見えている行にしか描かれない
   let mutable litLine = -1
+  // 撃った場所（v3.2）。**弾を選んだ時点で決まって動かない**
+  let mutable fromIndex = -2
+  let mutable fromLine = -1
   // 木のノードになる要素名。**host から起動時に 1 回**。正本は Core の DTD.fs
   let mutable nodeNames: string list = []
   // 軌跡。**過去の位置を貯めない** —— 面を消さずに薄く塗り重ねるだけなので、
@@ -395,6 +399,31 @@ type Playground() as self =
           litLine <- Monaco.highlight a b
       litLine
 
+  /// 撃った場所を光らせる（v3.2）。戻りは行（1 起点）。**無ければ -1。**
+  ///
+  /// **再開点と別の入れ物・別の色。** 再開点は毎コマ 変わり、こちらは
+  /// 弾を選んだ時点で決まる —— 変わったときだけ字へ寄せる
+  member _.lightOrigin(from: int) : int =
+    if not litOpen then
+      if fromIndex <> -2 then
+        fromIndex <- -2
+        fromLine <- -1
+        Monaco.clearOrigin ()
+      -1
+    else
+      if not litScanned then
+        litScanned <- true
+        litSpans <- current.NodeSpans (Monaco.getValue ()) nodeNames
+      if from <> fromIndex then
+        fromIndex <- from
+        if from < 0 || from >= List.length litSpans then
+          fromLine <- -1
+          Monaco.clearOrigin ()
+        else
+          let (a, b) = List.item from litSpans
+          fromLine <- Monaco.highlightOrigin a b
+      fromLine
+
   /// 印の窓を開ける。**本文と走っている木が同じところで揃った瞬間だけ。**
   ///
   /// 呼ぶのは Apply が通ったとき・弾幕を選び直したとき・表記を書き直したとき・
@@ -404,6 +433,7 @@ type Playground() as self =
     litOpen <- true
     litScanned <- false
     litIndex <- -2
+    fromIndex <- -2
 
   /// 印の窓を閉じる。**打った瞬間に。**
   member _.closeLight() =
@@ -412,13 +442,18 @@ type Playground() as self =
       litScanned <- false
       litSpans <- []
       litIndex <- -2
+      fromIndex <- -2
+      fromLine <- -1
       Monaco.clearHighlight ()
+      Monaco.clearOrigin ()
 
-  member _.focusHud(pick: int, stops: int, depth: int, serial: int, paths: int, line: int) =
+  member _.focusHud(pick: int, stops: int, depth: int, serial: int, paths: int,
+                    line: int, fromLine: int) =
     let fo = el "focus"
     if isNull fo then ()
     elif pick = lastPick && serial = lastSerial && stops = lastStops
-         && depth = lastDepth && paths = lastPaths && line = lastLine then ()
+         && depth = lastDepth && paths = lastPaths && line = lastLine
+         && fromLine = lastFromLine then ()
     else
       if serial <> lastSerial then
         resumeName <-
@@ -430,6 +465,7 @@ type Playground() as self =
       lastDepth <- depth
       lastPaths <- paths
       lastLine <- line
+      lastFromLine <- fromLine
       fo.textContent <-
         if pick < 0 then ""
         // **追っているのに再開点が無いコマは在る** —— 台本を持たない弾と、
@@ -444,6 +480,8 @@ type Playground() as self =
            else "追跡: " + resumeName)
           + "（stop " + string stops + " / 鎖 " + string depth
           + " / 道 " + string paths + "）"
+          // 撃った場所（v3.2）。**根の敵は撃たれていないので出ない**
+          + (if fromLine >= 1 then " ／ 出どころ " + string fromLine + " 行" else "")
 
   /// 面の置き場所を host から引き直す。**大きさが変わったときだけ。**
   ///
@@ -1462,13 +1500,15 @@ type Playground() as self =
             // **光らせるのが先。** 帯にはその行番号を出すので、
             // あとに回すと 1 コマ 遅れた行が出る
             let litLine = self.lightRunning (int (unbox<float> (jsItem ret 16)))
+            let fromLine = self.lightOrigin (int (unbox<float> (jsItem ret 17)))
             self.focusHud (
               pickIdx,
               int (unbox<float> (jsItem ret 12)),
               int (unbox<float> (jsItem ret 13)),
               int (unbox<float> (jsItem ret 14)),
               int (unbox<float> (jsItem ret 15)),
-              litLine
+              litLine,
+              fromLine
             )
           with ex ->
             console.error ex
