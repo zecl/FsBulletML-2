@@ -129,6 +129,18 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-help-chapters.Tests.ps1
 
+      # 記事の枠に貼られた形（html.embed）。印（html）・規則（css）・配線（Fable）が
+      # 3 か所 に散っていて、どれが欠けても走行は止まらない。
+      # **いちばん危ないのは順番** —— css の html.embed が送る画面用のメディアより
+      # 前 に来ると、詳細度が同じなので負けて黙って効かなくなる
+      - name: 埋め込みの体裁が成り立つ形か
+        shell: pwsh
+        run: ./.github/scripts/guard-embed-layout.ps1
+
+      - name: その門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-embed-layout.Tests.ps1
+
       - name: 変更から選ぶ
         id: pick
         shell: pwsh
