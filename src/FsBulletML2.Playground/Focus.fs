@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 open Microsoft.FSharp.Reflection
 open FsBulletML2
+open FsBulletML2.LanguageService
 
 /// 選んだ弾の**再開点**を、走る木から読んだ木まで戻す（v3.1 の段 3）。
 ///
@@ -23,6 +24,22 @@ type Focus () =
   /// 読んだ木のノード -> 通し番号。**毎コマ 字を境界越しに渡さないため** ——
   /// 呼ぶ側は番号が変わったときだけ名前を引きに来る（`Main.ResumeName`）
   let serials = Dictionary<obj, int>(HashIdentity.Reference)
+
+  /// 読んだ木のノード -> **書いてある順の添字**（v3.1 の段 4）。
+  ///
+  /// 字の位置は木に無いので、光らせる先は順番でしか言えない ——
+  /// 木の k 番目 と札の k 番目 が揃うことは v2.9 で測ってある
+  /// （3 表記 で 176 / 176。F# の CE は結べない）。
+  let order = Dictionary<obj, int>(HashIdentity.Reference)
+
+  /// 並びに 2 度 出るノード。**そこは光らせない。**
+  ///
+  /// 2 通り の理由で起きる —— 引数なしの腕は singleton（`vanish`）で、
+  /// CE の木は空の `bullet` を共有している。**どちらも再開点には来ない**
+  /// （`stop` に渡ってくるのは `action` / `wait` / `repeat` の 3 腕 だけ）が、
+  /// **来ないことに寄りかからない** —— 来たときに黙って隣を光らせるより、
+  /// 光らせないほうが読める
+  let ambiguous = HashSet<obj>(HashIdentity.Reference)
 
   /// そのコマに `stop` が呼ばれた数。**0 か 2 以上。1 は出ない** ——
   /// 子が止まると親も `Stopped` を返すので、入れ子の深さだけ積み上がる
@@ -47,6 +64,8 @@ type Focus () =
   /// 読んだ木に同じ物が在ったということで、戻れなかったのとは別
   let mutable depth = 0
   let mutable serial = -1
+  /// 再開点の**書いてある順の添字**。**無ければ -1**（決まらないときも）
+  let mutable orderIndex = -1
   /// 名前を組んだときのノード。**参照で見る** —— 同じノードなら組み直さない
   let mutable named : obj = null
   let mutable name = ""
@@ -123,9 +142,18 @@ type Focus () =
   /// **選ぶのは走り出したあと**なので、選ばれてから作ろうとすると
   /// 面を建て直すことになる（見ていたコマが頭へ戻ってしまう）。
   /// 表は面ごとなので、建て直すたびに空にする
-  member _.Collect(build: unit -> 'a) : 'a =
+  member _.Collect (bulletml: Bulletml) (build: unit -> 'a) : 'a =
     origins.Clear()
     serials.Clear()
+    order.Clear()
+    ambiguous.Clear()
+    // **書いてある順の並びも、ここで 1 回 だけ組む。** 走行中には要らない
+    // （引くのは選んだ弾の 1 コマ に 1 回）ので、毎コマ 歩かない
+    let walk = NodeOrder.walk bulletml
+    for k in 0 .. walk.Count - 1 do
+      let (_, node) = walk.[k]
+      if order.ContainsKey node then ambiguous.Add node |> ignore
+      else order.[node] <- k
     NodeOrigin.enabled <- true
     NodeOrigin.pair <- onPair
     try build ()
@@ -154,9 +182,16 @@ type Focus () =
       resumed <- null
       depth <- 0
       serial <- -1
+      orderIndex <- -1
     else
       follow first
       serial <- serialOf resumed
+      orderIndex <-
+        if ambiguous.Contains resumed then -1
+        else
+          match order.TryGetValue resumed with
+          | true, k -> k
+          | _ -> -1
 
   /// 選ぶのをやめたとき。**数も消す** —— 消さないと、
   /// 選んでいないのに前のコマの数が残る
@@ -167,6 +202,7 @@ type Focus () =
     resumed <- null
     depth <- 0
     serial <- -1
+    orderIndex <- -1
 
   /// そのコマに `stop` が呼ばれた数
   member _.Stops = stops
@@ -179,6 +215,13 @@ type Focus () =
 
   /// 再開点の通し番号。**無ければ -1**（同じノードなら同じ数）
   member _.Serial = serial
+
+  /// 再開点が、読んだ木を**書いてある順**に歩いたときの何番目 か。
+  /// **無ければ -1** —— 再開点が無いときと、並びに 2 度 出て決まらないとき。
+  ///
+  /// 呼ぶ側は**この数だけを字の側へ渡す**（`Main.StepFrame`）。
+  /// 字の位置はあちらにしか無く、木はこちらにしか無い
+  member _.OrderIndex = orderIndex
 
   /// 読んだ木まで戻した再開点そのもの。**戻せなければ null。**
   ///

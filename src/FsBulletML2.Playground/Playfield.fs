@@ -40,7 +40,7 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
     // 選ぶのは走り出したあとなので、ここで作らないと、選ばれた時点で
     // 面を建て直すことになる —— 見ていたコマが頭へ戻ってしまう
     let focus = Focus()
-    let script = focus.Collect(fun () -> Runner.load front.Rand front.Rank bulletml)
+    let script = focus.Collect bulletml (fun () -> Runner.load front.Rand front.Rank bulletml)
     let run = Runner.newRoot BulletType.Enemy script
     // **面の形は弾幕が決める。** 横画面と名乗る弾幕は、縦の面に置くと
     // 弾が横へ抜けていく（`Stage.landscape` の但し書き）

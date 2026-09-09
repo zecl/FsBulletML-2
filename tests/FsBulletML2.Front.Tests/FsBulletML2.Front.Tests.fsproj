@@ -26,6 +26,10 @@
     <Compile Include="..\..\src\FsBulletML2.Playground\BrowserEnv.fs" Link="BrowserEnv.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Pacing.fs" Link="Pacing.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Seek.fs" Link="Seek.fs" />
+    <!-- **器 の Host からも 1 本 借りる。** `Focus.fs` が読んだ木を歩くのに使う。
+         参照を足さないのは、あちらが Parser / Dsl まで引くから ——
+         この 1 本 が使うのは Core の型と reflection だけ -->
+    <Compile Include="..\..\src\FsBulletML2.LanguageService.Host\NodeOrder.fs" Link="NodeOrder.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Focus.fs" Link="Focus.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Playfield.fs" Link="Playfield.fs" />
     <Compile Include="DeterministicField.fs" />

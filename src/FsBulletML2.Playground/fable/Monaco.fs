@@ -291,6 +291,25 @@ let private markerOwner = "fsbulletml2"
 [<Emit("globalThis.monaco.editor.setModelMarkers($0.getModel(), $1, $2)")>]
 let private setMarkers (editor: obj) (owner: string) (markers: obj[]) : unit = jsNative
 
+/// 走っている場所の印（v3.1 の段 4）。**波線と同じ仕組みにしない。**
+///
+/// `setModelMarkers` は owner ごとに丸ごと置き換わるので、そちらへ混ぜると
+/// 打鍵ごとの波線と取り合う（v2.3 で 1 度 分けた）。飾りは自分の入れ物を
+/// 持つので、**ほかの印を 1 つ も動かさずに付け外しできる。**
+///
+/// **入れ物は 1 つ だけ作って持ち回る** —— 毎回 作ると、前の入れ物が
+/// 消えないまま残って印が積み上がる
+[<Emit("$0.createDecorationsCollection([])")>]
+let private newDecorations (editor: obj) : obj = jsNative
+
+[<Emit("$0.set($1)")>]
+let private setDecorations (collection: obj) (items: obj[]) : unit = jsNative
+
+[<Emit("$0.getModel().getPositionAt($1)")>]
+let private positionAt (editor: obj) (offset: int) : obj = jsNative
+
+let mutable private lit: obj = null
+
 [<Emit("$0.getModel().getLineMaxColumn($1)")>]
 let private lineMaxColumn (editor: obj) (line: int) : int = jsNative
 
@@ -299,6 +318,42 @@ let private lineCount (editor: obj) : int = jsNative
 
 [<Emit("$0.getModel().onDidChangeContent($1)")>]
 let private onChange (editor: obj) (cb: unit -> unit) : unit = jsNative
+
+/// 走っている場所を光らせる。**範囲は本文の添字**（0 起点、`stop` は含まない）。
+/// 戻りは光らせた行（1 起点）。**付けられなければ -1。**
+///
+/// **勝手にスクロールしない。** 見ている場所を動かされると、1 コマ 進むたびに
+/// 画面が飛んで、字を読んでいられない。
+///
+/// **代わりに、画面の外でも在り処が分かる形にする** ——
+/// 下地は見えている行にしか描かれない（Monaco は見えている行しか組まない）ので、
+/// スクロールバーの帯（`overviewRuler`）とミニマップにも印を置き、
+/// **行番号は呼ぶ側が帯に出す。** 押したのに何も出ないように見えるのが
+/// いちばん困る —— 実際に踏んだ（102 行目 に付いて、画面は 69 行目 まで）
+let highlight (startOffset: int) (stopOffset: int) : int =
+  if isNull editor then -1
+  else
+    if isNull lit then lit <- newDecorations editor
+    let a = positionAt editor startOffset
+    let b = positionAt editor stopOffset
+    setDecorations lit [|
+      createObj [
+        "range" ==> createObj [
+          "startLineNumber" ==> a?lineNumber
+          "startColumn" ==> a?column
+          "endLineNumber" ==> b?lineNumber
+          "endColumn" ==> b?column ]
+        "options" ==> createObj [
+          "className" ==> "running-node"
+          // **数で書く**（あちらの enum なので）—— 7 = Full / 1 = Inline。
+          // 色をここに書くのは、Monaco が css の class を読まないため
+          "overviewRuler" ==> createObj [ "color" ==> "#ffcc33"; "position" ==> 7 ]
+          "minimap" ==> createObj [ "color" ==> "#ffcc33"; "position" ==> 1 ] ] ] |]
+    unbox<int> a?lineNumber
+
+/// 印を下ろす。**入れ物は残す**（次に付けるときに作り直さない）
+let clearHighlight () =
+  if not (isNull lit) then setDecorations lit [||]
 
 /// 波線 1 本 ぶん。行・桁 は 1 起点。**`endColumn` が 0 なら行末まで。**
 type Mark =

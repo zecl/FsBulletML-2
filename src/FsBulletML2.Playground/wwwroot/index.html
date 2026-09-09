@@ -436,6 +436,27 @@
               </figcaption>
             </figure>
 
+            <h4>弾を追う</h4>
+            <ul>
+              <li><strong>面の弾を押すと、その弾を追う</strong>。押した弾に丸が付き、
+                  <strong>その弾がいま止まっている行が字の上で光る</strong>。
+                  何も無いところを押すと追うのをやめる</li>
+              <li>下の帯に <code>追跡: 102 行 の wait（stop 2 / 鎖 1 / 道 1）</code> のように出る。
+                  <strong>行番号が在り処</strong> —— 下地は<strong>見えている行にしか描かれない</strong>ので、
+                  画面の外に在るときはこの数とスクロールバーの印で探す。
+                  <strong>勝手にスクロールしない</strong>（1 コマ 進むたびに画面が飛ぶので）</li>
+              <li>光るのはほとんど <code>&lt;wait&gt;</code>。
+                  <strong>走査が止まるのは <code>wait</code> だけ</strong>だから ——
+                  <code>fire</code> や <code>changeSpeed</code> はその場では止まらない。
+                  <code>stop</code> はその弾の入れ子の深さ、<code>鎖</code> は字へ戻すのに辿った段、
+                  <code>道</code> は<strong>同時に走っている <code>top</code> の本数</strong>
+                  （2 以上 のときは 1 本 目 だけを出している）</li>
+              <li><strong>1 文字 でも打つと消える</strong>。印は走らせた結果から出るので、
+                  字が動いた時点で場所が嘘になる —— <strong>Apply し直すとまた出る</strong></li>
+              <li>F# の CE では<strong>光らない</strong>。CE は要素名で書かないので、
+                  走っている場所と字を結ぶ手がかりが無い（アウトラインが別の木になるのと同じ理由）</li>
+            </ul>
+
           </section>
 
           <section id="help-ch-run" class="help-ch" hidden>

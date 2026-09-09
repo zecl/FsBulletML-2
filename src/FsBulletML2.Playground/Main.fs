@@ -111,9 +111,9 @@ type PlaygroundHost() =
       | None -> ()
   // `[n; ptr; frame; playerX; playerY; width; height]` に、
   // 2 つ 目 の `[n2; ptr2; width2; height2]` と、追っている弾の
-  // `[pick; stops; depth; serial; paths]` を足した 16 数。
+  // `[pick; stops; depth; serial; paths; order]` を足した 17 数。
   // **2 つ 目 が無ければ `n2` は -1**（0 は「弾が 1 つ も無い面」で別の意味）
-  let ret = Array.zeroCreate<float> 16
+  let ret = Array.zeroCreate<float> 17
   /// プルダウンに出す並び。**同梱のあとに公式配布のサンプルを繋ぐ**（v2.4.1）。
   ///
   /// 番号で引く口（`SelectPattern` / `InitialIndex`）が在るので、
@@ -181,6 +181,12 @@ type PlaygroundHost() =
     ret.[13] <- float field.Focus.Depth
     ret.[14] <- float field.Focus.Serial
     ret.[15] <- float field.Focus.Paths
+    // 光らせる先（v3.1 の段 4）。**読んだ木を書いてある順に歩いた添字。**
+    //
+    // **字の位置は渡らない。** 位置は木に無く（`XmlNode` は 名前・属性・子 だけ）、
+    // 字はあちら（JS）にしか無いので、あいだを渡るのは順番だけ。
+    // 決まらないときは -1（再開点が無いときと、並びに 2 度 出るとき）
+    ret.[16] <- float field.Focus.OrderIndex
     ret
 
   /// 面の弾を押したときの受け口（v3.1 の段 3）。**`Pack` の並びの添字。**
@@ -196,6 +202,17 @@ type PlaygroundHost() =
   /// 追うのをやめる。**面の何も無いところを押したとき**
   [<JSInvokable>]
   member _.UnpickBullet() = field.Unpick()
+
+  /// 木のノードになる要素名（v3.1 の段 4）。**起動時に 1 回 だけ。**
+  ///
+  /// 字の側は札を数えて k 番目 を取るが、**そのとき落とすものが要る** ——
+  /// `times` / `direction` などは値になって親へ畳まれ、木のノードにならない。
+  /// **落とす側の表を持たない** —— 増えたとき黙って添字がずれるので、
+  /// 引くのは逆側（ノードになる腕）にする。正本は `Core/DTD.fs` の腕。
+  ///
+  /// 空で返ってきたら黙って進まない（`Vocabulary` と同じ理由）
+  [<JSInvokable>]
+  member _.NodeElementNames() : string[] = NodeOrder.names
 
   /// 追っている弾の再開点の要素名。**`serial` が変わったときだけ引く口** ——
   /// 毎コマ 引くと、選んだだけで境界越しに文字列が 60 個/秒 できる。
