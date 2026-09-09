@@ -111,9 +111,9 @@ type PlaygroundHost() =
       | None -> ()
   // `[n; ptr; frame; playerX; playerY; width; height]` に、
   // 2 つ 目 の `[n2; ptr2; width2; height2]` と、追っている弾の
-  // `[pick; stops; depth; serial; paths; order]` を足した 17 数。
+  // `[pick; stops; depth; serial; paths; order; from]` を足した 18 数。
   // **2 つ 目 が無ければ `n2` は -1**（0 は「弾が 1 つ も無い面」で別の意味）
-  let ret = Array.zeroCreate<float> 17
+  let ret = Array.zeroCreate<float> 18
   /// プルダウンに出す並び。**同梱のあとに公式配布のサンプルを繋ぐ**（v2.4.1）。
   ///
   /// 番号で引く口（`SelectPattern` / `InitialIndex`）が在るので、
@@ -187,6 +187,11 @@ type PlaygroundHost() =
     // 字はあちら（JS）にしか無いので、あいだを渡るのは順番だけ。
     // 決まらないときは -1（再開点が無いときと、並びに 2 度 出るとき）
     ret.[16] <- float field.Focus.OrderIndex
+    // 追っている弾を撃った場所（v3.2）。**こちらも書いてある順の添字。**
+    //
+    // 再開点と違って**コマごとに動かない** —— 撃たれた時点で決まる。
+    // だから呼ぶ側は、これが変わったときだけ字へ飛ぶ
+    ret.[17] <- float field.PickedFrom
     ret
 
   /// 面の弾を押したときの受け口（v3.1 の段 3）。**`Pack` の並びの添字。**

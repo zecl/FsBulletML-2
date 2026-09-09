@@ -308,7 +308,13 @@ let private setDecorations (collection: obj) (items: obj[]) : unit = jsNative
 [<Emit("$0.getModel().getPositionAt($1)")>]
 let private positionAt (editor: obj) (offset: int) : obj = jsNative
 
+[<Emit("$0.revealLineInCenterIfOutsideViewport($1)")>]
+let private revealLine (editor: obj) (line: int) : unit = jsNative
+
 let mutable private lit: obj = null
+/// 撃った場所の入れ物（v3.2）。**再開点と別に持つ** ——
+/// 1 つ にまとめると、毎コマ 書き換わる側がもう片方 を消す
+let mutable private origin: obj = null
 
 [<Emit("$0.getModel().getLineMaxColumn($1)")>]
 let private lineMaxColumn (editor: obj) (line: int) : int = jsNative
@@ -354,6 +360,36 @@ let highlight (startOffset: int) (stopOffset: int) : int =
 /// 印を下ろす。**入れ物は残す**（次に付けるときに作り直さない）
 let clearHighlight () =
   if not (isNull lit) then setDecorations lit [||]
+
+/// 撃った場所を光らせる（v3.2）。戻りは光らせた行（1 起点）。**無ければ -1。**
+///
+/// **こちらは字へ飛ぶ。** 再開点（段 4）は毎コマ 変わるので飛ばないが、
+/// 撃った場所は**弾を選んだ時点で決まって動かない** —— 押した人が
+/// 見に行きたい場所なので、画面の外なら 1 回 だけ寄せる
+/// （`...IfOutsideViewport` なので、見えているときは動かさない）
+let highlightOrigin (startOffset: int) (stopOffset: int) : int =
+  if isNull editor then -1
+  else
+    if isNull origin then origin <- newDecorations editor
+    let a = positionAt editor startOffset
+    let b = positionAt editor stopOffset
+    setDecorations origin [|
+      createObj [
+        "range" ==> createObj [
+          "startLineNumber" ==> a?lineNumber
+          "startColumn" ==> a?column
+          "endLineNumber" ==> b?lineNumber
+          "endColumn" ==> b?column ]
+        "options" ==> createObj [
+          "className" ==> "fired-node"
+          "overviewRuler" ==> createObj [ "color" ==> "#80d0a0"; "position" ==> 7 ]
+          "minimap" ==> createObj [ "color" ==> "#80d0a0"; "position" ==> 1 ] ] ] |]
+    let line = unbox<int> a?lineNumber
+    revealLine editor line
+    line
+
+let clearOrigin () =
+  if not (isNull origin) then setDecorations origin [||]
 
 /// 波線 1 本 ぶん。行・桁 は 1 起点。**`endColumn` が 0 なら行末まで。**
 type Mark =

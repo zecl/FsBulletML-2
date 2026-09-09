@@ -81,6 +81,22 @@ type Focus () =
           | _ -> ()
       | _ -> ()
 
+  /// そのコマに走査した**撃つ腕**（v3.2）。並びは走査した順。
+  ///
+  /// **`Spawned` の並びと 1 対 1**（同梱 176 本 / 撃ったコマ 17,945 で 100.00%。
+  /// 手書きの 4 fire でも並びが一致した）。数が食い違うコマでは結ばない ——
+  /// もう撃った `fire` も走査はされるので、原理的には食い違いうる
+  let fired = ResizeArray<obj>()
+
+  let onVisit =
+    fun (node: obj) ->
+      match node with
+      | :? Action as a ->
+          match a with
+          | Action.Fire _ | Action.FireRef _ -> fired.Add node
+          | _ -> ()
+      | _ -> ()
+
   let onPair = fun (created: obj) (origin: obj) -> origins.[created] <- origin
   /// 戻す先。**その場で作らない** —— 毎コマ 閉包が 1 個 ヒープに乗る
   let noPair = fun (_: obj) (_: obj) -> ()
@@ -91,8 +107,8 @@ type Focus () =
   let maxChain = 16
 
   /// 走る木のノードから、読んだ木のノードへ。
-  /// **`depth` が `maxChain` なら上限に当たった**（環の疑い）
-  let follow (node: obj) =
+  /// 戻りは (読んだ木のノード, 辿った段数)。**上限は `maxChain`**（環の疑い）
+  let followTo (node: obj) =
     let mutable cur = node
     let mutable n = 0
     let mutable go = true
@@ -102,8 +118,21 @@ type Focus () =
           cur <- o
           n <- n + 1
       | _ -> go <- false
-    resumed <- cur
+    struct (cur, n)
+
+  let follow (node: obj) =
+    let struct (r, n) = followTo node
+    resumed <- r
     depth <- n
+
+  /// 読んだ木のノードを、**書いてある順の添字**へ。**決まらなければ -1**
+  let indexOfRead (node: obj) =
+    if isNull node then -1
+    elif ambiguous.Contains node then -1
+    else
+      match order.TryGetValue node with
+      | true, k -> k
+      | _ -> -1
 
   let serialOf (node: obj) =
     match serials.TryGetValue node with
@@ -161,6 +190,31 @@ type Focus () =
       NodeOrigin.enabled <- false
       NodeOrigin.pair <- noPair
 
+  /// 撃った場所を拾う窓（v3.2）。**1 コマ の頭で 1 回 だけ繋ぐ** ——
+  /// 弾ごとに付け替えると、1,500 弾 x 60 コマ ぶんの付け替えを毎秒 払う。
+  ///
+  /// **これは全部 の弾に掛かる。** 押す前に撃たれているので、選んだ弾だけでは
+  /// 足りない —— 確保が増えないことは測ってある（同梱 176 本 / 287 万 コマ で
+  /// 素との差 0.08%。素どうしの差より小さい）
+  member _.BeginFrame() = NodeTrace.visit <- onVisit
+
+  /// 1 コマ の後。**素へ戻す**
+  member _.EndFrame() = NodeTrace.visit <- ignore
+
+  /// 1 弾 の 1 コマ の前。**撃つ腕の並びを空にする**
+  member _.BeginBullet() = fired.Clear()
+
+  /// そのコマに走査した撃つ腕の数
+  member _.FiredCount = fired.Count
+
+  /// k 番目 の撃つ腕を、読んだ木の**書いてある順の添字**へ。
+  /// **決まらなければ -1**
+  member _.FiredIndex(k: int) =
+    if k < 0 || k >= fired.Count then -1
+    else
+      let struct (r, _) = followTo fired.[k]
+      indexOfRead r
+
   /// 選んだ弾の 1 コマ の前。**`NodeOrigin` もここで繋ぐ** ——
   /// 輪を書いた本は走行中にも新しいノードを作る（同梱では 1 件 も出ないが、
   /// Playground は本文を打てるので輪はいつでも書ける）
@@ -186,12 +240,7 @@ type Focus () =
     else
       follow first
       serial <- serialOf resumed
-      orderIndex <-
-        if ambiguous.Contains resumed then -1
-        else
-          match order.TryGetValue resumed with
-          | true, k -> k
-          | _ -> -1
+      orderIndex <- indexOfRead resumed
 
   /// 選ぶのをやめたとき。**数も消す** —— 消さないと、
   /// 選んでいないのに前のコマの数が残る

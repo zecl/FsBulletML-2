@@ -18,7 +18,7 @@
       見る    既定が ignore（何も繋がなければ何もしない）
       見る    呼び先の数（通った 2 / 止まった 3）。**減ると黙って記録が欠ける**
       見る    Trace.fs が Domain.fs より前に compile される（依存の向き）
-      見る    段 3 の約束 —— **繋ぐのは Focus.fs の 1 か所 だけ**
+      見る    約束 —— **4 つ の口を繋ぐのは Focus.fs の 1 か所 だけ**
 
       見ない  確保が素に戻るか。**そこは走らせないと出ない**
               （`dotnet run --project bench/FsBulletML2.Benchmarks -- --alloc` を
@@ -44,8 +44,9 @@
       減る    Focus.fs が繋がなくなると、**印が出なくなるだけで走行は変わらない**
               （目にも試験にも出ない。**0 件 を緑にしない**）
 
-  **`visit` はまだ誰も繋がない。** 通った所を光らせるのは段 4 で、
-  そこでここを 1 行 直す —— **直すことが段が進んだ印になる。**
+  **`visit` も Focus.fs だけ。** v3.2（弾から字へ）で繋いだ ——
+  撃った `fire` を拾うのに要る。**押す前に撃たれている**ので、
+  段 3 のように「選んだ弾の 1 コマ だけ」では足りない。
 
   較正は guard-run-trace.Tests.ps1。
 #>
@@ -171,12 +172,11 @@ foreach ($n in @('substCommand', 'substActionElm', 'expandCommand', 'expandActio
 if ($api -notmatch 'if NodeOrigin\.enabled then FoldOrigin\.walk') {
   $problems.Add('Api.fs の Runner.load が "if NodeOrigin.enabled then FoldOrigin.walk" の形で無い')
 }
-# --- 段 3 の約束 —— 繋ぐのは Focus.fs の 1 か所 だけ --------------------------
-# **`visit` はまだ誰も繋がない**（通った所を光らせるのは段 4）。
-# `stop` と `NodeOrigin` は Focus.fs だけ —— ほかが繋げば費用が増え、
+# --- 約束 —— 繋ぐのは Focus.fs の 1 か所 だけ ---------------------------------
+# 4 つ の口を全部 あそこで繋ぐ —— ほかが繋げば費用が増え、
 # あそこが繋がなくなれば**印が消えるだけで走行は変わらない**
 $hooked = [System.Collections.Generic.List[string]]::new()
-$inFocus = @{ 'NodeTrace.stop' = 0; 'NodeOrigin.pair' = 0; 'NodeOrigin.enabled' = 0 }
+$inFocus = @{ 'NodeTrace.visit' = 0; 'NodeTrace.stop' = 0; 'NodeOrigin.pair' = 0; 'NodeOrigin.enabled' = 0 }
 $focusSeen = $false
 foreach ($root in $ConsumerRoots) {
   if (-not (Test-Path -LiteralPath $root)) { continue }
@@ -187,11 +187,7 @@ foreach ($root in $ConsumerRoots) {
       $isFocus = ($rel -eq $FocusFs)
       if ($isFocus) { $focusSeen = $true }
       $t = [IO.File]::ReadAllText($_.FullName)
-      # 通った側は段 4。**どこであっても 0 件**
-      if ($t -match 'NodeTrace\.visit\s*<-') {
-        $hooked.Add("$rel が NodeTrace.visit を繋いでいる（通った所は段 4）")
-      }
-      foreach ($port in @('NodeTrace.stop', 'NodeOrigin.pair', 'NodeOrigin.enabled')) {
+      foreach ($port in @('NodeTrace.visit', 'NodeTrace.stop', 'NodeOrigin.pair', 'NodeOrigin.enabled')) {
         $c = ([regex]::Matches($t, ($port -replace '\.', '\.') + '\s*<-')).Count
         if ($c -gt 0) {
           if ($isFocus) { $inFocus[$port] += $c }
@@ -210,13 +206,14 @@ if (-not $focusSeen) {
 # （`ignore` / `false` / その場で作らない `noPair`）ので、
 # **戻す側を字で決められる。残りが繋ぐ側。**
 $restore = @{
+  'NodeTrace.visit'    = 'NodeTrace\.visit\s*<-\s*ignore'
   'NodeTrace.stop'     = 'NodeTrace\.stop\s*<-\s*ignore'
   'NodeOrigin.enabled' = 'NodeOrigin\.enabled\s*<-\s*false'
   'NodeOrigin.pair'    = 'NodeOrigin\.pair\s*<-\s*noPair'
 }
 $focusPath = Join-Path $RepoRoot $FocusFs
 $focusText = if (Test-Path -LiteralPath $focusPath) { [IO.File]::ReadAllText($focusPath) } else { '' }
-foreach ($port in @('NodeTrace.stop', 'NodeOrigin.pair', 'NodeOrigin.enabled')) {
+foreach ($port in @('NodeTrace.visit', 'NodeTrace.stop', 'NodeOrigin.pair', 'NodeOrigin.enabled')) {
   $off = ([regex]::Matches($focusText, $restore[$port])).Count
   $on = $inFocus[$port] - $off
   if (-not $Quiet) { Write-Host "$FocusFs の $port  繋ぐ $on 件 / 戻す $off 件" }
@@ -227,7 +224,7 @@ foreach ($port in @('NodeTrace.stop', 'NodeOrigin.pair', 'NodeOrigin.enabled')) 
     $problems.Add("$FocusFs に $port を素へ戻す側が無い（$($restore[$port])）。繋ぎっぱなしだと、選んでいない弾も受け口を通る")
   }
 }
-if (-not $Quiet) { Write-Host "ほかの場所が繋いでいる件数  $($hooked.Count) 件（段 3 では 0 件）" }
+if (-not $Quiet) { Write-Host "ほかの場所が繋いでいる件数  $($hooked.Count) 件（0 件 のはず）" }
 if ($hooked.Count -gt 0) {
   $problems.Add("繋ぐのは $FocusFs だけ。ほかに繋いだ場所が在る:`n        " + ($hooked -join "`n        "))
 }
@@ -242,5 +239,5 @@ if ($problems.Count -gt 0) {
 
 if (-not $Quiet) {
   Write-Host ("受け口は 2 本 とも既定が ignore、呼び先は 通った 2 / 止まった 3、" +
-    "繋ぐのは $FocusFs だけ（visit は 0 件）")
+    "繋ぐのは $FocusFs だけ（口は 4 つ）")
 }
