@@ -178,6 +178,22 @@
         <!-- いまの本文を URL にする。行き先は fragment（# の後ろ）なので
              サーバへは送られない。作るのは Fable（Share.fs と 器 の ShareLink） -->
         <button class="embed-hide" type="button" id="share" title="いまの本文を URL にする">Share</button>
+        <!-- 面を動く絵にして落とす（v2.5）。**形式は Fable が選ぶ** ——
+             焼ける形はブラウザで違うので、html に mime も拡張子も書かない
+             （書くと、焼けない環境で黙って落ちる）。
+             **録るのは実時間** —— 重い本は録画の中でもコマが落ちる。
+             それが見えている速さなので、そこは直さない。
+             長さの既定は 300 コマ（5 秒）—— 同梱 176 本 中 165 本 は、
+             そこまでに使う撃ち方が全部 1 度 は出る（実測）。
+             足りない本のために 10 秒 も置く（175 / 176 本） -->
+        <label class="rate embed-hide">長さ
+          <select id="rec-len" title="録る長さ">
+            <option value="180">3 秒</option>
+            <option value="300" selected>5 秒</option>
+            <option value="600">10 秒</option>
+          </select>
+        </label>
+        <button class="embed-hide" type="button" id="record" title="面を動く絵にして落とす">録る</button>
         <span class="embed-hide">FPS: <span id="fps">0</span></span>
         <span class="embed-hide">Bullets: <span id="bullet-count">0</span></span>
         <!-- 面を建ててから何コマ 進めたか。**飛んでいる最中はここが速く動く** ——
@@ -712,6 +728,35 @@
                   <strong>版が違うリンクや壊れた字は「読めない」と出る</strong>（黙って空にしない）</li>
             </ul>
 
+            <h4>絵にして渡す</h4>
+            <ul>
+              <li><strong>録る</strong> は、面をそのまま<strong>動く絵</strong>にして落とす。
+                  <strong>Share の対</strong> —— あちらは本文を渡し、こちらは絵を渡す。
+                  走らせなくていい相手（記事や本）には、こちらで足りる</li>
+              <li><strong>長さは 3 / 5 / 10 秒。既定は 5 秒。</strong>
+                  同梱 176 本 のうち <strong>165 本</strong> は、5 秒 までに
+                  その弾幕が使う撃ち方が全部 1 度 は出る（数えた）。
+                  10 秒 にすると 175 本。<strong>1 発 目 まで 2 秒 かかる本も在る</strong>ので、
+                  短いほうは頭が空になることが在る</li>
+              <li><strong>押すと走り出す。</strong> 止めていても録り始める ——
+                  止まっている面は塗られないので、そのままでは中身の無い絵になる。
+                  <strong>録り終えても走ったまま</strong>なので、止めたければ Pause</li>
+              <li><strong>録っているあいだは、この画面を前に出しておく。</strong>
+                  ほかのタブへ移るとブラウザが描くのをやめるので、
+                  <strong>そのぶんが絵から落ちる</strong>
+                  （後ろに置いたまま録ったら、中身の無い 110 バイト になった）</li>
+              <li><strong>重い弾幕は、録画の中でもコマが落ちる。</strong>
+                  録るのは実時間なので、5 秒 で 300 コマ のところが
+                  126 コマ しか進まない本が在る —— <strong>それが見えている速さ</strong>なので、
+                  絵もそのとおりになる</li>
+              <li><strong>並べているときは 1 面 目 だけ</strong>録る</li>
+              <li>形式は <strong>WebM</strong>（焼ける形はブラウザで違うので、こちらで選ぶ）。
+                  <strong>GIF にはできない</strong> —— ブラウザに焼く口が無い。
+                  大きさは 5 秒 で <strong>100 KB から 1 MB</strong> くらい ——
+                  <strong>弾が多いほど太る</strong>ので、
+                  同じ弾幕でも頭のほうと途中では倍 くらい違う（実測）</li>
+            </ul>
+
             <h4>閉じても残る</h4>
             <ul>
               <li><strong>打った字はこのブラウザに残る。</strong> 開き直すと
@@ -737,12 +782,12 @@
             <h3>キーだけで動かす</h3>
 
             <ul>
-              <li><kbd>Tab</kbd> で操作を順に回る。<strong>24 か所 が輪に入っていて、
-                  そのうち 23 か所 が口</strong>（残り 1 つ が下の欄）。
-                  並びは画面のとおり —— 上の列 6 個 -&gt; 欄 -&gt; 下の列 17 個</li>
+              <li><kbd>Tab</kbd> で操作を順に回る。<strong>26 か所 が輪に入っていて、
+                  そのうち 25 か所 が口</strong>（残り 1 つ が下の欄）。
+                  並びは画面のとおり —— 上の列 6 個 -&gt; 欄 -&gt; 下の列 19 個</li>
               <li><strong><kbd>Tab</kbd> を 7 回 押すと欄に入り、そこで止まる。</strong>
                   欄の中では <kbd>Tab</kbd> が字下げになるので、
-                  <strong>下の列 17 個 へは <kbd>Tab</kbd> だけでは進めない</strong>。
+                  <strong>下の列 19 個 へは <kbd>Tab</kbd> だけでは進めない</strong>。
                   <kbd>Ctrl</kbd>+<kbd>M</kbd> を 1 回 押すと <kbd>Tab</kbd> が
                   外へ抜ける側に切り替わる。もう一度 押すと字下げに戻る</li>
               <li><kbd>Esc</kbd> は<strong>出ている窓を閉じる</strong>（候補・検索・名前の変更）。
@@ -753,10 +798,10 @@
               <li>いまどこに居るかは<strong>青い枠</strong>で出る。
                   <strong>キーで来たときだけ</strong>光り、クリックでは光らない</li>
               <li><strong>この窓の中も <kbd>Tab</kbd> で回る。</strong>
-                  <strong>閉じる</strong>のあとに章の札が 6 つ 並んでいて、
+                  <strong>閉じる</strong>のあとに章の札が 7 つ 並んでいて、
                   <kbd>Enter</kbd> か <kbd>Space</kbd> で開く ——
                   <strong>窓を閉じているあいだ、ここは輪に入らない</strong>
-                  （上の 24 か所 に入っていないのはそのため）</li>
+                  （上の 26 か所 に入っていないのはそのため）</li>
             </ul>
           </section>
 
