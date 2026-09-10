@@ -452,6 +452,18 @@ button:disabled {
   outline: 1px solid rgba(96, 200, 140, 1);
 }
 
+/* 撃った数（v3.3 の段 1）。**下地を持たない** ——
+   走っている場所（黄）と撃った場所（緑）がもう在るので、3 色 目 を足すと
+   どれが何かを覚えられなくなる。**数そのものを字の後ろに置く。**
+
+   本文と見分けが付く必要は在るが、本文より強くてはいけない ——
+   打っている字のほうが主で、これは添え物 */
+.tally-mark {
+  color: #7fb4d8;
+  font-style: italic;
+  opacity: 0.85;
+}
+
 /* 明るい配色（`vs` / `hc-light`）。**同じ色は乗らない。**
 
    上の 2 つ は暗い地の上で決めた明るい色で、白地に置くと下地も枠線も
@@ -471,6 +483,11 @@ button:disabled {
 .monaco-editor.hc-light .fired-node {
   background: rgba(0, 158, 95, 0.42);
   outline-color: rgba(0, 90, 55, 1);
+}
+
+.monaco-editor.vs .tally-mark,
+.monaco-editor.hc-light .tally-mark {
+  color: #2a6d99;
 }
 
 /* 済んだことの知らせ。**`.error` と別の色** ——
