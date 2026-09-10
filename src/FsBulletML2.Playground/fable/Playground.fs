@@ -71,7 +71,7 @@ let private lsSet (key: string) (value: string) : bool = jsNative
 /// `pattern2` / `compare`（2 面 と 比べる）も入れていない ——
 /// あちらは 2 本 目 の弾幕を建てるので、戻す順が本文と絡む
 let private keptControls =
-  [| "theme"; "seed"; "rank"; "rate"; "player"; "trail"; "seek-to" |]
+  [| "theme"; "seed"; "rank"; "rate"; "player"; "trail"; "seek-to"; "rec-len" |]
 
 let private sourceKey = "fsbulletml2.source"
 let private modeKey = "fsbulletml2.mode"
@@ -156,6 +156,57 @@ let private copyText (s: string) : obj = jsNative
 })()""")>]
 let private saveText (name: string) (text: string) : unit = jsNative
 
+/// 焼ける形（v2.5）。**環境で違う** —— Chromium 系は WebM、Safari は mp4。
+/// 上から順に見て、最初に通ったものを返す。**1 つ も通らなければ空文字。**
+///
+/// **表を html に置かない** —— 置くと、焼けない環境で黙って落ちる
+/// （通らない mime を `MediaRecorder` に渡すと例外になる）。
+///
+/// vp9 を先に見るのは、同じ絵で **vp8 の 0.44 倍** だから
+/// （480x640 を 5 秒 で 686.5 KB と 1,563.8 KB。実測）
+[<Emit("""(() => {
+  if (!window.MediaRecorder) return ''
+  const list = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
+  for (const m of list) { if (MediaRecorder.isTypeSupported(m)) return m }
+  return ''
+})()""")>]
+let private recordMime () : string = jsNative
+
+/// 面を録って、動く絵として落とす（v2.5）。
+///
+/// **`captureStream` は塗られたコマだけを拾う。** 止まっている面や
+/// 後ろのタブでは中身の無い絵になる（実測 110 B）ので、呼ぶ側が走らせてから呼ぶ。
+///
+/// **ビットレートを渡さない。** 明示すると簡単な絵で逆に太る ——
+/// 前方 5 方向 に撃つだけの本で 104.4 KB が 140.7 KB になった（600 kbps）。
+/// 既定の律速は簡単な絵で下へ落ちるが、明示すると落ちなくなる。
+///
+/// **中の名前を、呼ぶ側の名前と重ねない**（`const d = d` の罠。
+/// `$0` には呼ぶ側の式がそのまま入る）
+[<Emit("""(() => {
+  const cvEl = $0, mimeType = $1, waitMs = $2, dlName = $3, cb = $4
+  const stream = cvEl.captureStream(60)
+  const mr = new MediaRecorder(stream, { mimeType: mimeType })
+  const parts = []
+  mr.ondataavailable = ev => { if (ev.data && ev.data.size) parts.push(ev.data) }
+  mr.onstop = () => {
+    stream.getTracks().forEach(tr => tr.stop())
+    const blob = new Blob(parts, { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = dlName
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    cb(blob.size)
+  }
+  mr.start()
+  setTimeout(() => { if (mr.state !== 'inactive') mr.stop() }, waitMs)
+})()""")>]
+let private recordCanvas (target: obj) (mime: string) (ms: float) (name: string) (onDone: float -> unit) : unit = jsNative
+
 // 種を振り直すときだけ使う。**弾幕の乱数はこれではない** ——
 // あちらは host の `SeededRandom`（種から決まる並び）
 [<Emit("Math.random()")>]
@@ -228,6 +279,9 @@ type Playground() as self =
   let mutable enemyX = 240.
   let mutable enemyY = 80.
   let mutable running = false
+  // 録っている最中か（v2.5）。**押している最中にもう一度 押させない** ——
+  // 2 本 目 の `MediaRecorder` が同じ面に付くと、どちらも半端な絵になる
+  let mutable recording = false
   let mutable dotNet: obj = null
   let mutable frames = 0
   let mutable t0 = 0.
@@ -1391,6 +1445,53 @@ type Playground() as self =
     saveText name text
     self.showNote ("落とした: " + name)
 
+  /// 録る長さ（コマ）。**読めなければ 300**（5 秒）——
+  /// 同梱 176 本 中 165 本 は、そこまでに使う撃ち方が全部 1 度 は出る
+  member _.recordFrames() : int =
+    let e = el "rec-len"
+    if isNull e then 300
+    else
+      let mutable v = 0.0
+      if System.Double.TryParse((e :?> HTMLSelectElement).value, &v) then max 60 (int v) else 300
+
+  /// 面を動く絵にして落とす（v2.5）。**Share の対** ——
+  /// あちらは本文を渡し、こちらは絵を渡す。
+  ///
+  /// **録るあいだは走らせる。** 止まっている面は塗られず、
+  /// `captureStream` が中身の無い絵を返す。だから押した時点で `Play` を送る。
+  ///
+  /// **録るのは 1 面 目 だけ。** 2 面 目 は別の canvas なので、
+  /// 両方 録ると 2 つ 落ちてくることになる。
+  ///
+  /// **長さは実時間。** 重い本は録画の中でもコマが落ちる（5 秒 で 300 コマ の
+  /// ところが 126 コマ の本が在った）—— それが見えている速さなので直さない
+  member _.record() =
+    if recording then self.showNote "録っている最中"
+    else
+      let mime = recordMime ()
+      let stage = el "stage"
+      if mime = "" then setError "この browser では絵を焼けない"
+      elif isNull stage then setError "面が見つからない"
+      else
+        let ms = float (self.recordFrames ()) / 60.0 * 1000.0
+        // **頭は要素名にしない**（`save` と同じ線。ブラウザ側に綴りを持たない）
+        let outName = "pattern" + (if mime.StartsWith "video/webm" then ".webm" else ".mp4")
+        let btn = el "record"
+        let setBtn (label: string) (off: bool) =
+          if not (isNull btn) then
+            btn.textContent <- label
+            (btn :?> HTMLButtonElement).disabled <- off
+        recording <- true
+        setBtn "録画中" true
+        self.showNote ("録っている（" + string (self.recordFrames ()) + " コマ）")
+        self.call "Play"
+        let finish =
+          fun (size: float) ->
+            recording <- false
+            setBtn "録る" false
+            self.showNote ("落とした: " + outName + " " + groupDigits (int (size / 1024.0)) + " KB")
+        recordCanvas stage mime ms outName finish
+
   /// いま欄に出ている難度（0 から 100 の整数）。**字は 1 か所 でしか読まない**
   member _.rankPercent() : int =
     let el = el "rank"
@@ -1956,6 +2057,7 @@ on "open" "click" (fun () -> playground.``open``())
 on "save" "click" (fun () -> playground.save ())
 on "format" "click" (fun () -> playground.format ())
 on "share" "click" (fun () -> playground.share ())
+on "record" "click" (fun () -> playground.record ())
 
 // **窓の大きさが変わったら、欄を測り直す**（v2.4.4）。
 //
