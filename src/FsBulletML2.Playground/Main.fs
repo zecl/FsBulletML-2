@@ -225,6 +225,31 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.ResumeName() : string = field.Focus.Name
 
+  /// どの撃つ腕が何発 撃ったか、多い順に（v3.3 の段 1）。
+  ///
+  /// 並びは `[添字; 数; 添字; 数; ...]` で、**先頭に 総数 と 腕の数**を置く ——
+  /// 上位が全体の何割 かは、その 2 つ が無いと出せない。
+  ///
+  ///     ret.[0]   数えた総数
+  ///     ret.[1]   数えた腕の数
+  ///     ret.[2k+2] / ret.[2k+3]   k 番目 の (書いてある順の添字, 撃った数)
+  ///
+  /// **毎コマ 呼ばない口。** 並べ替えが腕の数ぶん要るので、呼ぶ側が間引く
+  /// （字の上の印は 0.5 秒 ごとで足りる）。
+  ///
+  /// 上位いくつ で足りるかは測ってある —— 同梱 176 本 で**上位 3 つ が 93%**
+  [<JSInvokable>]
+  member _.TallyTop(n: int) : float[] =
+    let top = field.Focus.TallyTop n
+    let out = Array.zeroCreate<float> (2 + top.Length * 2)
+    out.[0] <- float field.Focus.TallyTotal
+    out.[1] <- float field.Focus.TallyCount
+    for k in 0 .. top.Length - 1 do
+      let struct (idx, count) = top.[k]
+      out.[2 + k * 2] <- float idx
+      out.[3 + k * 2] <- float count
+    out
+
   /// **飛ぶのをやめる。** 飛んでいる最中の Play は「もう待たない」なので、
   /// 目的のコマを捨てていまの場所から走らせる
   [<JSInvokable>]

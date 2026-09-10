@@ -214,6 +214,20 @@ type Playground() as self =
   // 印は走行から出るので、**画面の字と走っている木が食い違った瞬間に嘘になる。**
   // 版の頭で測った —— どの 1 文字 を打っても木が読めるのは 40〜48% で、
   // `<` は 100% 読めなくなる。だから打った瞬間に下ろす。
+  /// 3 桁 ごとに区切る。**桁が増えると読めなくなる** ——
+  /// 撃った数は同梱でも 5 桁 に届く（15,917 発 出る本が在る）。
+  ///
+  /// `toLocaleString` を使わない —— あれは見ている人の設定で区切りが変わり、
+  /// 場所によっては小数点と入れ替わる
+  let groupDigits (n: int) =
+    let s = string n
+    let len = s.Length
+    let sb = System.Text.StringBuilder()
+    for i in 0 .. len - 1 do
+      if i > 0 && (len - i) % 3 = 0 then sb.Append ',' |> ignore
+      sb.Append s.[i] |> ignore
+    sb.ToString()
+
   let mutable litOpen = false
   // いま光らせている添字。**-2 は「まだ何もしていない」** ——
   // -1（光らせるものが無い）と区別する
@@ -227,6 +241,21 @@ type Playground() as self =
   // 撃った場所（v3.2）。**弾を選んだ時点で決まって動かない**
   let mutable fromIndex = -2
   let mutable fromLine = -1
+  // 撃った数（v3.3 の段 1）。**出したかどうかだけ持つ** ——
+  // 数そのものは出すたびに引き直す（貯めると、面を建て直したときに古い数が残る）
+  let mutable tallyShown = false
+  // 最後に出したコマ。**剰余で間引かない** —— `frame % 30 = 0` は
+  // 「そのコマを必ず通る」前提で、コマ送りや飛ばしで通らないと
+  // **次に当たるまで 30 コマ 待つ**（1 コマ ずつ進めていると永久に出ない）。
+  // 実機で踏んだ：Frame 204 で止めた画面に、印が 1 つ も出なかった
+  let mutable tallyAt = -1000
+  // 何コマ に 1 回 出し直すか。**60 コマ/秒 なので 30 は 0.5 秒。**
+  // 毎コマ 出し直さないのは、並べ替えが**腕の数ぶん**要るから ——
+  // 弾の数と関係なく効くので、重い弾幕ほど損が目立つ
+  let tallyEvery = 30
+  // 字の上に出す上位いくつ。**同梱 176 本 で上位 3 つ が 93%**
+  // （`fire` が 4 個 以上 の 130 本 の中央値）なので、5 で足りる
+  let tallyTopN = 5
   // 木のノードになる要素名。**host から起動時に 1 回**。正本は Core の DTD.fs
   let mutable nodeNames: string list = []
   // 軌跡。**過去の位置を貯めない** —— 面を消さずに薄く塗り重ねるだけなので、
@@ -429,6 +458,42 @@ type Playground() as self =
             Monaco.highlightOrigin sp.OpenStart sp.OpenStop sp.CloseStart sp.CloseStop
       fromLine
 
+  /// 撃った数を字の右へ出す（v3.3 の段 1）。**印ではなく数を足す。**
+  ///
+  /// 走っている場所（黄）と撃った場所（緑）がもう在るので、
+  /// **3 色 目 を足さない** —— どれが何かを覚えられなくなる。
+  /// 数そのものを字の後ろに置けば、色を使わずに済む。
+  ///
+  /// **間引く。** 並べ替えは腕の数ぶんで、弾の数と関係なく効く
+  member _.lightTally(frame: int) =
+    if not litOpen then
+      if tallyShown then
+        tallyShown <- false
+        Monaco.clearTally ()
+    elif frame - tallyAt >= tallyEvery then
+      tallyAt <- frame
+      if not litScanned then
+        litScanned <- true
+        litSpans <- current.NodeSpans (Monaco.getValue ()) nodeNames
+      let raw = unbox<float[]> (invoke1 dotNet "TallyTop" (box tallyTopN))
+      // **先頭 2 つ は 総数 と 腕の数。** そこから後ろが (添字, 数) の対
+      let pairs = (raw.Length - 2) / 2
+      let span = List.length litSpans
+      let marks = ResizeArray<int * int * string>()
+      for k in 0 .. pairs - 1 do
+        let idx = int raw.[2 + k * 2]
+        let cnt = int raw.[3 + k * 2]
+        // **並びの外は出さない。** 添字が外れているのに隣へ数を付けると、
+        // 「その行が撃った」という嘘になる（光らせる側と同じ守り）
+        if idx >= 0 && idx < span && cnt > 0 then
+          let sp = List.item idx litSpans
+          // **札の後ろに置く。** 名前の後ろに置くと `<fire ×252>` になって
+          // **属性のように読める**（実機で見て気づいた）——
+          // 開き札の終わりなら `<fire> ×252` で、字と添え物が分かれる
+          marks.Add(sp.OpenStart, sp.OpenStop, "  ×" + groupDigits cnt)
+      tallyShown <- marks.Count > 0
+      Monaco.showTally (marks.ToArray())
+
   /// 印の窓を開ける。**本文と走っている木が同じところで揃った瞬間だけ。**
   ///
   /// 呼ぶのは Apply が通ったとき・弾幕を選び直したとき・表記を書き直したとき・
@@ -439,6 +504,9 @@ type Playground() as self =
     litScanned <- false
     litIndex <- -2
     fromIndex <- -2
+    // 窓を開けたら**次のコマで出す**（間引きの数を待たない）——
+    // 建て直した直後は数が 0 なので、待つと空白の 0.5 秒 が見える
+    tallyAt <- -1000
 
   /// 印の窓を閉じる。**打った瞬間に。**
   member _.closeLight() =
@@ -446,6 +514,8 @@ type Playground() as self =
       litOpen <- false
       litScanned <- false
       litSpans <- []
+      tallyShown <- false
+      Monaco.clearTally ()
       litIndex <- -2
       fromIndex <- -2
       fromLine <- -1
@@ -1506,6 +1576,9 @@ type Playground() as self =
             // あとに回すと 1 コマ 遅れた行が出る
             let litLine = self.lightRunning (int (unbox<float> (jsItem ret 16)))
             let fromLine = self.lightOrigin (int (unbox<float> (jsItem ret 17)))
+            // 撃った数（v3.3 の段 1）。**弾を選んでいなくても出る** ——
+            // 「どこが弾を増やしているか」は、追う前に知りたいこと
+            self.lightTally (int (unbox<float> (jsItem ret 2)))
             self.focusHud (
               pickIdx,
               int (unbox<float> (jsItem ret 12)),

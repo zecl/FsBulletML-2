@@ -315,6 +315,11 @@ let mutable private lit: obj = null
 /// 撃った場所の入れ物（v3.2）。**再開点と別に持つ** ——
 /// 1 つ にまとめると、毎コマ 書き換わる側がもう片方 を消す
 let mutable private origin: obj = null
+/// 撃った数の入れ物（v3.3 の段 1）。**3 つ 目。**
+///
+/// 上の 2 つ と混ぜられない —— あちらは 1 か所 ずつで毎コマ 書き換わり、
+/// こちらは何か所 も同時に出て、間引いて書き換わる
+let mutable private tallyDeco: obj = null
 
 [<Emit("$0.getModel().getLineMaxColumn($1)")>]
 let private lineMaxColumn (editor: obj) (line: int) : int = jsNative
@@ -404,6 +409,41 @@ let highlightOrigin (openStart: int) (openStop: int) (closeStart: int) (closeSto
 
 let clearOrigin () =
   if not (isNull origin) then setDecorations origin [||]
+
+/// 撃った数を字の右へ出す（v3.3 の段 1）。`marks` は
+/// (範囲の頭, 範囲の尻, 添える字) の並び。**添える字は呼ぶ側が作る** ——
+/// 桁区切りは場所ごとの決まりなので、器が決める話ではない。
+///
+/// **下地をもう 1 色 増やさない。** 走っている場所（黄）と撃った場所（緑）が
+/// もう在るので、3 色 目 は「どれが何か」を覚えられなくなる ——
+/// **数そのものを字の後ろに置けば、色を使わずに済む。**
+///
+/// **飛ばない。** 何か所 も同時に出るので、寄せる先が決まらない
+let showTally (marks: (int * int * string)[]) : unit =
+  if isNull editor then ()
+  else
+    if isNull tallyDeco then tallyDeco <- newDecorations editor
+    let items =
+      marks
+      |> Array.map (fun (fromOffset, toOffset, text) ->
+          let a = positionAt editor fromOffset
+          let b = positionAt editor toOffset
+          createObj [
+            "range" ==> createObj [
+              "startLineNumber" ==> a?lineNumber
+              "startColumn" ==> a?column
+              "endLineNumber" ==> b?lineNumber
+              "endColumn" ==> b?column ]
+            "options" ==> createObj [
+              // **`after` は範囲の後ろに字を足す**（本文は 1 文字 も変わらない）。
+              // フィールド名は `content`（`contentText` ではない）
+              "after" ==> createObj [
+                "content" ==> text
+                "inlineClassName" ==> "tally-mark" ] ] ])
+    setDecorations tallyDeco items
+
+let clearTally () =
+  if not (isNull tallyDeco) then setDecorations tallyDeco [||]
 
 /// 波線 1 本 ぶん。行・桁 は 1 起点。**`endColumn` が 0 なら行末まで。**
 type Mark =

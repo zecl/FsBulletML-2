@@ -107,7 +107,11 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
       let mutable k = 0
       for child in f.Spawned do
         let p = child.Motion.Pos
-        spawned.Add(Live(child, p.X, p.Y, false, (if pairable then focus.FiredIndex k else -1)))
+        let from = if pairable then focus.FiredIndex k else -1
+        spawned.Add(Live(child, p.X, p.Y, false, from))
+        // 撃った腕ごとに数える（v3.3 の段 1）。**引いた添字を使い回す** ——
+        // 数えるためにもう一度 鎖を辿ると、弾 1 発 につき 2 度 辿ることになる
+        focus.TallyAt from
         k <- k + 1
       let dead =
         not it.IsRoot && (

@@ -97,6 +97,16 @@ type Focus () =
           | _ -> ()
       | _ -> ()
 
+  /// 撃つ腕ごとの、撃った数（v3.3 の段 1）。**鍵は「書いてある順の添字」。**
+  ///
+  /// 数える相手は読んだ木のノードだが、**字へ出すのは添字**なので、
+  /// 添字の側で持てば引くときに戻さなくて済む。
+  ///
+  /// **面ごと。** 建て直す（Reset / Apply / 選び直し）と 0 から。
+  /// 弾を選んでいるかとは関係が無い —— 押す前から数え始める
+  let tally = Dictionary<int, int>()
+  let mutable tallyTotal = 0
+
   let onPair = fun (created: obj) (origin: obj) -> origins.[created] <- origin
   /// 戻す先。**その場で作らない** —— 毎コマ 閉包が 1 個 ヒープに乗る
   let noPair = fun (_: obj) (_: obj) -> ()
@@ -176,6 +186,10 @@ type Focus () =
     serials.Clear()
     order.Clear()
     ambiguous.Clear()
+    // 撃った数も面ごと（v3.3 の段 1）。**建て直したら 0 から** ——
+    // 残すと、別の弾幕の数が前の弾幕の行に乗る
+    tally.Clear()
+    tallyTotal <- 0
     // **書いてある順の並びも、ここで 1 回 だけ組む。** 走行中には要らない
     // （引くのは選んだ弾の 1 コマ に 1 回）ので、毎コマ 歩かない
     let walk = NodeOrder.walk bulletml
@@ -214,6 +228,42 @@ type Focus () =
     else
       let struct (r, _) = followTo fired.[k]
       indexOfRead r
+
+  /// 撃った腕を 1 発 数える（v3.3 の段 1）。
+  ///
+  /// **添字は `FiredIndex` の戻りをそのまま渡す** —— 呼ぶ側は撃った弾に
+  /// 持たせるために既に引いているので、ここで鎖を辿り直さない。
+  ///
+  /// **決まらなかった腕（-1）は数えない。** 数えると「どこか分からない場所で
+  /// 撃った数」が上位に混ざり、字の上に出す先が無い
+  member _.TallyAt(index: int) =
+    if index >= 0 then
+      tally.[index] <- (match tally.TryGetValue index with | true, v -> v | _ -> 0) + 1
+      tallyTotal <- tallyTotal + 1
+
+  /// 撃った数の多い順に n 個。戻りは (書いてある順の添字, 撃った数)。
+  ///
+  /// **毎コマ 呼ばない。** 並べ替えは腕の数ぶんなので、毎コマ 払うと
+  /// **弾の数と関係なく**効く —— 呼ぶ側が間引く。
+  ///
+  /// 上位いくつ で足りるかは測ってある。同梱 176 本 で
+  /// **上位 3 つ が撃った数の 93%**（`fire` が 4 個 以上 の 130 本 の中央値。
+  /// 3 個 以下 の 46 本 は上位 3 つ で 100% になるので分けて数えた）
+  member _.TallyTop(n: int) : struct (int * int)[] =
+    if n <= 0 || tally.Count = 0 then Array.empty
+    else
+      tally
+      |> Seq.sortByDescending (fun kv -> kv.Value)
+      |> Seq.truncate n
+      |> Seq.map (fun kv -> struct (kv.Key, kv.Value))
+      |> Seq.toArray
+
+  /// 数えた腕の数。**0 なら 1 発 も撃っていない**
+  member _.TallyCount = tally.Count
+
+  /// 数えた総数。**上位が占める割合を出すのに要る** ——
+  /// 呼ぶ側で足し直すと、腕の数ぶんの走査が毎回 増える
+  member _.TallyTotal = tallyTotal
 
   /// 選んだ弾の 1 コマ の前。**`NodeOrigin` もここで繋ぐ** ——
   /// 輪を書いた本は走行中にも新しいノードを作る（同梱では 1 件 も出ないが、

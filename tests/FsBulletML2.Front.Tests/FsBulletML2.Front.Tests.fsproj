@@ -43,6 +43,8 @@
     <Compile Include="TwoFields.fs" />
     <!-- 追っている弾の再開点（v3.1 の段 3）。**読んだ木と参照で突き合わせる** -->
     <Compile Include="FocusResume.fs" />
+    <!-- どの撃つ腕が何発 撃ったか（v3.3 の段 1）。**合計で当てる** -->
+    <Compile Include="FocusTally.fs" />
   </ItemGroup>
   <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
        手のせいか版のせいかが割れない -->
