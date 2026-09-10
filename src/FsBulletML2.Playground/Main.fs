@@ -238,6 +238,18 @@ type PlaygroundHost() =
   /// （字の上の印は 0.5 秒 ごとで足りる）。
   ///
   /// 上位いくつ で足りるかは測ってある —— 同梱 176 本 で**上位 3 つ が 93%**
+  /// 追っている弾の系譜（v3.6）。撃った `fire` の**書いてある順の添字**を、
+  /// **根に近い順**で。追っていなければ空。
+  ///
+  /// **毎コマ 呼ばない口。** 系譜は弾を選んだ時点で決まって動かない ——
+  /// 呼ぶ側が、選び直したときだけ引く。
+  ///
+  /// 深さは同梱で**最大 5 段 / 中央 3 段**（版の頭で数えた）。
+  /// 20 段 を超える本は 0 本 だったので、字の上に出しても読める
+  [<JSInvokable>]
+  member _.PickedLineage() : float[] =
+    field.PickedLineage |> Array.map float
+
   [<JSInvokable>]
   member _.TallyTop(n: int) : float[] =
     let top = field.Focus.TallyTop n

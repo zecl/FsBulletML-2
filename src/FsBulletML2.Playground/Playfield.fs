@@ -8,8 +8,8 @@ open FsBulletML2.Domain
 open FsBulletML2.Front
 
 /// 参照型。struct だと `let it = live.[i]` がコピーになって書き戻せない。
-[<Sealed>]
-type Live(run: BulletRun, x: float32, y: float32, isRoot: bool, from: int) =
+[<Sealed; AllowNullLiteral>]
+type Live(run: BulletRun, x: float32, y: float32, isRoot: bool, from: int, parent: Live) =
   member val Run = run with get, set
   member val X = x with get, set
   member val Y = y with get, set
@@ -17,6 +17,14 @@ type Live(run: BulletRun, x: float32, y: float32, isRoot: bool, from: int) =
   /// この弾を撃った `fire` が、読んだ木の**書いてある順**の何番目 か（v3.2）。
   /// **撃たれていなければ -1**（根の敵）。決まらないときも -1
   member _.From = from
+  /// この弾を撃った弾（v3.6）。**根は null。**
+  ///
+  /// **`From` を辿っても系譜にならない** —— あれは「撃った `fire` の添字」で、
+  /// 同じ `fire` から撃たれた弾は全部 同じ数になる。親そのものが要る。
+  ///
+  /// **握ると、消えた親が解放されない。** 深さのぶんだけ残る ——
+  /// そこは版の頭で数えた
+  member _.Parent = parent
 
 /// 生きている弾の一覧。Bolero を知らない。
 ///
@@ -50,7 +58,7 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
     let field = Stage.ofDirection script.ShootingDirection
     let live = ResizeArray<Live>()
     // 根の敵は撃たれていないので、撃った場所は無い
-    live.Add(Live(run, field.EnemyX, field.EnemyY, true, -1))
+    live.Add(Live(run, field.EnemyX, field.EnemyY, true, -1, null))
     Playfield(front, live, field, focus)
 
   member _.Count = live.Count
@@ -108,7 +116,7 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
       for child in f.Spawned do
         let p = child.Motion.Pos
         let from = if pairable then focus.FiredIndex k else -1
-        spawned.Add(Live(child, p.X, p.Y, false, from))
+        spawned.Add(Live(child, p.X, p.Y, false, from, it))
         // 撃った腕ごとに数える（v3.3 の段 1）。**引いた添字を使い回す** ——
         // 数えるためにもう一度 鎖を辿ると、弾 1 発 につき 2 度 辿ることになる
         focus.TallyAt from
@@ -170,6 +178,36 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
   /// **追っていないときと、撃たれていない弾（根の敵）は -1**
   member _.PickedFrom =
     if obj.ReferenceEquals(picked, null) then -1 else picked.From
+
+  /// 追っている弾の系譜（v3.6）。撃った `fire` の**書いてある順の添字**を、
+  /// **根に近い順**で並べる。追っていなければ空。
+  ///
+  /// **上限を置く。** 環はできないはずだが、置かないと万一のとき
+  /// **赤くならずに止まらなくなる**（門も目も何も出ない）
+  member _.PickedLineage : int[] =
+    if obj.ReferenceEquals(picked, null) then Array.empty
+    else
+      let acc = ResizeArray<int>()
+      let mutable cur = picked
+      let mutable n = 0
+      while not (obj.ReferenceEquals(cur, null)) && n < 64 do
+        if cur.From >= 0 then acc.Add cur.From
+        cur <- cur.Parent
+        n <- n + 1
+      acc.Reverse()
+      acc.ToArray()
+
+  /// 系譜の深さ（v3.6）。**辿れた段の数**で、`PickedLineage` の長さとは別 ——
+  /// 撃った場所が決まらなかった段（`From` が -1）も 1 段 として数える
+  member _.PickedDepth =
+    if obj.ReferenceEquals(picked, null) then 0
+    else
+      let mutable cur = picked
+      let mutable n = 0
+      while not (obj.ReferenceEquals(cur, null)) && n < 64 do
+        cur <- cur.Parent
+        n <- n + 1
+      n
 
   /// 追っている弾が `Pack` の並びの何番目 か。**無ければ -1**（消えたときも）。
   ///
