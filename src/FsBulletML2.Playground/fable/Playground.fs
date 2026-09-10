@@ -84,7 +84,15 @@ let private lsSet (key: string) (value: string) : bool = jsNative
 /// `pattern2` / `compare`（2 面 と 比べる）も入れていない ——
 /// あちらは 2 本 目 の弾幕を建てるので、戻す順が本文と絡む
 let private keptControls =
-  [| "theme"; "seed"; "rank"; "rate"; "player"; "trail"; "seek-to"; "rec-len" |]
+  [| "theme"; "seed"; "rank"; "rate"; "player"; "trail"; "marks"; "seek-to"; "rec-len" |]
+
+/// この中のものは `checked`、ほかは `value` で読み書きする。
+///
+/// **`keptControls` の隣 に置く。** 前は `if id = "trail"` と書いてあって、
+/// 2 つ 目 のチェックを足したときに**書いたほうだけが直る**形だった
+let private keptChecks = [| "trail"; "marks" |]
+
+let private isCheck (id: string) = Array.contains id keptChecks
 
 let private sourceKey = "fsbulletml2.source"
 let private modeKey = "fsbulletml2.mode"
@@ -393,6 +401,11 @@ type Playground() as self =
   // 止めているあいだは `frame` が動かないので、30 コマ の間引きだけだと
   // **印が永久に古いまま**になる（`Bullets:` は毎コマ 書き直される）
   let mutable markFrame = -1
+  // 字の右に印を出すか（v4.0.2）。**2 つ をまとめて切る** ——
+  // 撃った数 も 割合 も同じ仕組み（30 コマ に 1 度 の並べ替え）の上に載っていて、
+  // 別々 に切っても減り方は変わらない。切る理由は重さだけではなく、
+  // **字を読みたいときに邪魔**でもある
+  let mutable marksOn = true
   // 打った字を残すときの待ち（v3.5）。**0 は「予約が無い」**
   let mutable saveTimer = 0.0
   // 重さの帯（v3.3 の段 2）。**弾数とコマ時間の 2 本。**
@@ -1615,6 +1628,29 @@ type Playground() as self =
       // 切ったときに残っている尾を 1 コマ で消す
       if not trail then wipe <- true
 
+  /// 字の右の印の入り切り（v4.0.2）。**2 つ をまとめて。**
+  ///
+  /// **面にも伝える。** ブラウザ側で出すのをやめるだけだと、
+  /// 面は弾コマ を数え続ける（毎コマ、弾の数ぶん）—— 数えたものの
+  /// 行き先が無いので、そこも止める。撃った数は止めない（`SetMarks` の但し書き）
+  member _.setMarks() =
+    let chk = el "marks"
+    if isNull chk then ()
+    else
+      marksOn <- (chk :?> HTMLInputElement).``checked``
+      // **起動前 は面がまだ無い。** そのときは黙って進み、`onReady` が配り直す
+      if not (isNull dotNet) then self.call ("SetMarks", box marksOn)
+      if marksOn then
+        // 入れたら**次のコマで出す**（間引きの数を待たない）
+        tallyAt <- -1000
+        spanAt <- -1000
+      else
+        // 切ったら、いま出ている印をその場で落とす
+        tallyShown <- false
+        Monaco.clearTally ()
+        spanShown <- false
+        Monaco.clearSpans ()
+
   /// 本文を読んで、同じ表記で書き直す。
   ///
   /// **口を足していない。** `Transcode` の行き先を、いまの表記と同じにするだけ ——
@@ -1951,7 +1987,7 @@ type Playground() as self =
       let e = el id
       if not (isNull e) then
         let v =
-          if id = "trail" then box (unbox<HTMLInputElement>(box e)).``checked``
+          if isCheck id then box (unbox<HTMLInputElement>(box e)).``checked``
           else box (unbox<HTMLInputElement>(box e)).value
         o?(id) <- v
     lsSet settingsKey (JS.JSON.stringify o) |> ignore
@@ -1988,7 +2024,7 @@ type Playground() as self =
             let e = el id
             let v = o?(id)
             if not (isNull e) && not (isNull v) then
-              if id = "trail" then (unbox<HTMLInputElement>(box e)).``checked`` <- unbox<bool> v
+              if isCheck id then (unbox<HTMLInputElement>(box e)).``checked`` <- unbox<bool> v
               else (unbox<HTMLInputElement>(box e)).value <- unbox<string> v
               // **既存の道を通す。** 値を入れるだけでは配色も速さも効かない
               e.dispatchEvent (Event.Create "change") |> ignore
@@ -2161,6 +2197,9 @@ type Playground() as self =
   member _.onReady(dn: obj) =
     dotNet <- dn
     self.attach ()
+    // 印の入り切りを面へ配り直す（v4.0.2）。**戻すのが起動より先 のことが在る**
+    // —— `restoreLocal` は `dotNet` がまだ無いときは黙って進む
+    if not marksOn then self.call ("SetMarks", box false)
     try self.fillPatterns ()
     with ex -> setError (string ex)
     let errEl = el "loop-error"
@@ -2226,15 +2265,18 @@ type Playground() as self =
             let litLine = self.lightRunning (int (unbox<float> (jsItem ret 16)))
             let fromLine =
               self.lightOrigin (int (unbox<float> (jsItem ret 17)), pickIdx)
-            // 撃った数（v3.3 の段 1）。**弾を選んでいなくても出る** ——
-            // 「どこが弾を増やしているか」は、追う前に知りたいこと
-            self.lightTally (int (unbox<float> (jsItem ret 2)))
-            // **撃った数のあと。** あちらが間引きの数を進めるので、
-            // こちらは「進んだコマ」を見て同じコマで書き直す
-            self.lightSpans (int (unbox<float> (jsItem ret 2)))
-            // **2 つ の印を書いたあとで進める。** 手前 で進めると
-            // 「止まった」が 1 度 も見えない
-            markFrame <- int (unbox<float> (jsItem ret 2))
+            // **切ってあるなら、口ごと通らない**（v4.0.2）——
+            // 中で判じると、切っていても毎コマ 2 本 の呼び出しが残る
+            if marksOn then
+              // 撃った数（v3.3 の段 1）。**弾を選んでいなくても出る** ——
+              // 「どこが弾を増やしているか」は、追う前に知りたいこと
+              self.lightTally (int (unbox<float> (jsItem ret 2)))
+              // **撃った数のあと。** あちらが間引きの数を進めるので、
+              // こちらは「進んだコマ」を見て同じコマで書き直す
+              self.lightSpans (int (unbox<float> (jsItem ret 2)))
+              // **2 つ の印を書いたあとで進める。** 手前 で進めると
+              // 「止まった」が 1 度 も見えない
+              markFrame <- int (unbox<float> (jsItem ret 2))
             // 重さの帯（v3.3 の段 2）。**弾数は 1 面 目 だけ** ——
             // 2 面 を足すと「どちらが重いか」が混ざる
             self.weight (bn, stepMs, int (unbox<float> (jsItem ret 2)))
@@ -2344,6 +2386,7 @@ on "seed" "change" (fun () -> playground.setSeed ())
 on "seed-roll" "click" (fun () -> playground.rollSeed ())
 on "player" "change" (fun () -> playground.setPlayerMotion ())
 on "trail" "change" (fun () -> playground.setTrail ())
+on "marks" "change" (fun () -> playground.setMarks ())
 on "apply" "click" (fun () -> playground.apply ())
 on "open" "click" (fun () -> playground.``open``())
 on "save" "click" (fun () -> playground.save ())

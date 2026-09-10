@@ -68,6 +68,7 @@
           </select>
         </label>
         <label class="rate embed-hide"><input id="trail" type="checkbox"> 軌跡</label>
+        <label class="rate embed-hide" title="fire の右の弾数と、行の右の % をまとめて出し入れする"><input id="marks" type="checkbox" checked> 印</label>
         <label class="rate">難度
           <input id="rank" type="range" min="0" max="100" step="1" value="50" title="$rank（0 から 1）">
           <span id="rank-value">50</span>
@@ -694,6 +695,40 @@
               <li>印は<strong>見えている行にしか出ない</strong>（欄は画面の外の行を
                   組み立てない）</li>
             </ul>
+
+            <h4>印を切る</h4>
+
+            <figure>
+              <img src="img/help/marks-off.png" width="505" height="384" loading="lazy"
+                   alt="同じ本文。印を切ってあるので、行の右に数も ％ も出ていない">
+              <figcaption>
+                <strong>印</strong> を外したところ。
+                <code>×</code> も <code>％</code> も一緒に消える ——
+                走りも見え方も変わらない
+              </figcaption>
+            </figure>
+
+            <ul>
+              <li>上の列の <strong>印</strong> を外すと、
+                  <strong><code>×24（12）</code> と <code>23%</code> がまとめて消える</strong>。
+                  <strong>2 つ で 1 つ の切り替え</strong> —— どちらも
+                  同じ仕組みの上に載っていて、別々 に切っても軽くなり方は変わらない</li>
+              <li><strong>切ると軽くなる。</strong> いちばん弾が多い同梱の本で測って、
+                  <strong>1 コマ あたり 1.3 ミリ秒</strong>
+                  （60 コマ/秒 の予算 16.7 ミリ秒 に対して <strong>8.7%</strong>）。
+                  <strong>減るのは「印を描くぶん」ではない</strong> ——
+                  印のために<strong>毎コマ 数えている</strong>ぶんが止まる</li>
+              <li><strong>切る理由は重さだけではない。</strong>
+                  字を読みたいときには、行の右の数は邪魔</li>
+              <li><strong>入れ直すと、％ はそこから数え直す。</strong>
+                  切っているあいだは数えていないので、足すと
+                  <strong>穴の空いた数</strong>になる ——
+                  穴の大きさは「いつ入れ直したか」で決まるので、
+                  同じ弾幕・同じ種でも出る数が変わってしまう。
+                  <strong>×（撃った数）は数え続ける</strong>ので、そのまま出る</li>
+              <li><strong>切った状態は覚えている。</strong> 開き直しても切ったまま
+                  （表記や配色と同じ扱い）</li>
+            </ul>
           </section>
 
           <section id="help-ch-compare" class="help-ch" hidden>
@@ -862,7 +897,7 @@
               <li><strong>打った字はこのブラウザに残る。</strong> 開き直すと
                   そこから続けられて、帯に <code>前の続きから</code> と出る</li>
               <li><strong>走らせ方も残る</strong> —— 表記・配色・種・難度・速さ・自機・軌跡・
-                  飛ぶコマ数 の 8 つ。
+                  印・飛ぶコマ数 の 9 つ。
                   <strong>種が残るのが効く</strong> —— 同じ種なら同じ走りなので、
                   開き直しても<strong>さっきと同じ絵</strong>が出る</li>
               <li><strong>弾幕のプルダウンは戻らない。</strong> 残っているのは字のほうで、
