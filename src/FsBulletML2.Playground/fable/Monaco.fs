@@ -1040,3 +1040,48 @@ let registerStructureProviders
 /// **`language` を取らない。** 割り当ては言語 id ではなくエディタに付くので、
 /// 表記ごとに呼ぶと同じ規則が 4 本 積み上がる
 let addOutlineAltKey () = addAltBinding "KeyO" "editor.action.quickOutline"
+
+/// 本文まるごとを整形する口（v4.0）。**Shift+Alt+F と、右クリックの Format Document。**
+///
+/// `#format` のボタンは残る —— あちらは 2 段（知らせてから入れ替える）で、
+/// こちらは**字が変わらないなら 1 回 で終わる**。
+/// 版の頭で数えた —— **コーパス 173 本 にコメントは 0 件**なので、
+/// 押す人のほとんどは 1 回 で整形される。
+///
+/// **範囲整形と打鍵整形は繋がない。** どちらも「選んだところだけ読む」口が要るが、
+/// `Transcode` は本文まるごとから木を作る —— **選択範囲から木は作れない。**
+/// 繋ぐなら口を先に作る話で、それはこの版の大きさではない。
+[<Emit("globalThis.monaco.languages.registerDocumentFormattingEditProvider($0, { provideDocumentFormattingEdits: $1 })")>]
+let private registerFormatting (language: string) (provide: obj -> obj -> obj -> obj) : unit = jsNative
+
+/// 本文まるごとの範囲。**行と桁を自分で数えない** ——
+/// 末尾の改行の有無で 1 行 ずれる
+[<Emit("$0.getFullModelRange()")>]
+let private fullModelRange (model: obj) : obj = jsNative
+
+[<Emit("new Promise($0)")>]
+let private promiseOf (executor: obj -> obj -> unit) : obj = jsNative
+
+[<Emit("$0($1)")>]
+let private callWith (f: obj) (a: obj) : unit = jsNative
+
+/// 整形を繋ぐ。**呼ぶ側は「整形した字」か `None` を返す。**
+///
+/// `None` は「**1 文字 も動かさない**」—— 編集を 0 個 返すのが Monaco の作法で、
+/// **例外を投げると provider が黙って落ちる**（次から呼ばれもしない）。
+///
+/// **Promise を返してよい。** 整形は境界の向こう（`Transcode`）で走るので、
+/// 終わるのを待ってから返す
+let registerFormattingProvider
+  (language: string)
+  (format: string -> (string option -> unit) -> unit)
+  =
+  let provide (model: obj) (_options: obj) (_token: obj) : obj =
+    promiseOf (fun resolve _reject ->
+      format (getVal model) (fun result ->
+        match result with
+        | None -> callWith resolve (box Array.empty<obj>)
+        | Some text ->
+            let edit = createObj [ "range" ==> fullModelRange model; "text" ==> text ]
+            callWith resolve (box [| edit |])))
+  registerFormatting language provide

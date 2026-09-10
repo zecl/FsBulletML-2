@@ -43,6 +43,15 @@ let private invokeAsync3 (dn: obj) (name: string) (a: obj) (b: obj) (c: obj) : o
 [<Emit("$0.then($1).catch($2)")>]
 let private thenCatch (p: obj) (ok: obj -> unit) (err: obj -> unit) : unit = jsNative
 
+/// 印の数。**`String.Split` の overload に頼らない**（Fable の写し方が版に依る）
+let private countMark (s: string) (mark: string) =
+  let mutable n = 0
+  let mutable i = s.IndexOf mark
+  while i >= 0 do
+    n <- n + 1
+    i <- s.IndexOf(mark, i + mark.Length)
+  n
+
 [<Emit("$0.getContext('2d', { alpha: false })")>]
 let private getCtx (c: HTMLCanvasElement) : CanvasRenderingContext2D = jsNative
 
@@ -1588,6 +1597,48 @@ type Playground() as self =
   ///
   /// **1 回 目 と 2 回 目 のあいだに打てば、待っているものは消える** ——
   /// 待っているのは「その字から作った結果」で、字が変われば別のものになる
+  /// Monaco の整形（v4.0）。**`Shift`+`Alt`+`F` と 右クリックの Format Document。**
+  ///
+  /// ボタン（`format`）との違いは**段の数**。あちらは字が変わるだけで
+  /// 1 回 止まるが、こちらは**コメントが消えるときだけ**止まる ——
+  /// コーパス 173 本 にコメントは 0 件（版の頭で数えた）なので、
+  /// ほとんどの本文は 1 回 で整形される。
+  ///
+  /// **消える印の数で判じる。表記ごとのコメントの綴りを表に書かない** ——
+  /// 書くと、表記が増えたときにここだけが古びる。整形の前後 で
+  /// `<!--` と `//` を数えて、**減っていたら 1 文字 も動かさない。**
+  ///
+  /// **`//` は URL にも出る**（`xmlns` の値）が、整形では消えないので数は変わらない
+  /// —— 見ているのは「在るか」ではなく「**減ったか**」。
+  ///
+  /// **`None` を返す道が 4 つ 在る。** 起動前 / 読めない / 字が変わらない /
+  /// コメントが消える。**どれも編集を 0 個 返す** ——
+  /// 例外を投げると Monaco が provider を黙って落とす。
+  member _.formatEdits (src: string) (reply: string option -> unit) =
+    if isNull dotNet then reply None
+    else
+      let id = current.Kind.Id
+      thenCatch
+        (invokeAsync3 dotNet "Transcode" id id src)
+        (fun res ->
+          let r = jsonParse (string res)
+          // **読めない本文でも押される。** 波線が出ているだけで押せるので、
+          // ここは静かに何もしない（下のバーには Apply が出す）
+          if not (unbox<bool> r?ok) then reply None
+          else
+            let formatted = string r?text
+            if formatted = src then reply None
+            else
+              let lost =
+                (countMark src "<!--" - countMark formatted "<!--")
+                + (countMark src "//" - countMark formatted "//")
+              if lost > 0 then
+                self.showNote
+                  ("整形すると コメントが " + string lost + " 個 消える。入れ替えるなら 整形 のボタンから")
+                reply None
+              else reply (Some formatted))
+        (fun _ -> reply None)
+
   member _.format() =
     if isNull dotNet then setError "まだ起動していない"
     else
@@ -2006,6 +2057,11 @@ type Playground() as self =
               Monaco.registerStructureProviders
                 lang.EditorLanguageId
                 (fun src -> lang.Outline src)
+              // 整形（v4.0）。**本文まるごとだけ** ——
+              // 範囲整形と打鍵整形は繋いでいない（選択範囲から木は作れない）
+              Monaco.registerFormattingProvider
+                lang.EditorLanguageId
+                (fun src reply -> self.formatEdits src reply)
             // **割り当てはエディタに付く**（言語 id ではない）ので、
             // 上の for の外。中に置くと同じ規則が 4 本 積み上がる
             Monaco.addOutlineAltKey ()
