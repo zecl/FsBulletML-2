@@ -76,6 +76,9 @@ let private modelVersion (model: obj) : int = jsNative
 [<Emit("globalThis.monaco.editor.setModelLanguage($0.getModel(), $1)")>]
 let private setModelLanguage (editor: obj) (language: string) : unit = jsNative
 
+[<Emit("globalThis.monaco.languages.setLanguageConfiguration($0, $1)")>]
+let private setLanguageConfiguration (language: string) (config: obj) : unit = jsNative
+
 [<Emit("$0.getValue()")>]
 let private getVal (editor: obj) : string = jsNative
 
@@ -161,9 +164,55 @@ let setTheme (id: string) : bool =
     true
   else false
 
+/// 借り物の言語に、その表記の括弧と引用符を足す（v3.4 の段 1）。
+///
+/// **押して数えてから決めた。** 実キーで打って、何が効いているかを見た ——
+///
+///     xml      引用符・字下げ・コメント は効く。**閉じ札だけ無い**
+///     scheme   **1 つ も効かない**（`(` も `"` も閉じない）
+///     ini      **1 つ も効かない**
+///
+/// （`editor.trigger` の `type` では 1 つ も効かず、実キーに替えて初めて
+/// xml の引用符が閉じた —— **API 経由の入力は本物と別の道を通る。**）
+///
+/// **字下げの規則は書かない。** fsb の「子を持つ要素は名前だけの行」は
+/// 表記の文法で、正本は `FsbScan`（`Scan` の側）に在る ——
+/// ここに正規表現で写すと、片方 だけ直したときに黙ってずれる。
+///
+/// **コメントも書かない。** sxml と fsb にコメントは無いので、
+/// `Ctrl`+`/` が効かないのが正しい（xml は借り物のまま効いている）。
+///
+/// **言語 id は借り物のまま。** 自前の id に変えると provider の登録先が
+/// 6 種類 動く（そこは段 3）—— この面には他の xml / scheme / ini が
+/// 載っていないので、上書きして困る相手が居ない。
+let configureLanguages () =
+  // sxml —— 括弧 1 組 が要素そのもの。**対を数えるのは書く人の仕事だった**
+  setLanguageConfiguration
+    "scheme"
+    (createObj [
+      "brackets" ==> [| [| "("; ")" |] |]
+      "autoClosingPairs" ==> [|
+        createObj [ "open" ==> "("; "close" ==> ")" ]
+        // **引用符の中では括弧を閉じない**（属性の値に `(` が入る）
+        createObj [ "open" ==> "\""; "close" ==> "\""; "notIn" ==> [| "string" |] ] |]
+      "surroundingPairs" ==> [|
+        createObj [ "open" ==> "("; "close" ==> ")" ]
+        createObj [ "open" ==> "\""; "close" ==> "\"" ] |] ])
+  // fsb —— 括弧を持たない表記。**引用符だけ**
+  setLanguageConfiguration
+    "ini"
+    (createObj [
+      "autoClosingPairs" ==> [|
+        createObj [ "open" ==> "\""; "close" ==> "\""; "notIn" ==> [| "string" |] ] |]
+      "surroundingPairs" ==> [|
+        createObj [ "open" ==> "\""; "close" ==> "\"" ] |] ])
+
 let create (hostId: string) (language: string) (initial: string) =
   let host = document.getElementById hostId
   if isNull host then failwith ("要素が無い: " + hostId)
+  // **エディタを建てる前に。** 言語の設定は id に付くので、
+  // モデルができたあとでも効くが、最初の 1 打鍵 を取りこぼさない
+  configureLanguages ()
   editor <-
     createEditor
       host

@@ -381,6 +381,16 @@
                   その高コントラスト版（<strong>HC</strong>）</li>
               <li>検索（<kbd>Ctrl</kbd>+<kbd>F</kbd>）・
                   取り消し（<kbd>Ctrl</kbd>+<kbd>Z</kbd>）はエディタの標準機能</li>
+              <li><strong>括弧と引用符は自動で閉じる。</strong>
+                  <code>(</code> を打つと <code>()</code>、<code>"</code> を打つと
+                  <code>""</code> になり、間にカーソルが残る。
+                  選んでから <code>"</code> を打つと、選んだところを囲む</li>
+              <li><strong>閉じ札は入らない。</strong> XML で <code>&lt;fire&gt;</code> と
+                  打っても <code>&lt;/fire&gt;</code> は付かない ——
+                  <code>&lt;</code> から補完を出せば、閉じ札まで入った雛形が選べる</li>
+              <li><strong><kbd>Ctrl</kbd>+<kbd>/</kbd> は XML でだけ効く。</strong>
+                  ほかの 2 表記 に<strong>コメントが無い</strong>ので、
+                  入れると本文が壊れる</li>
             </ul>
           </section>
 
