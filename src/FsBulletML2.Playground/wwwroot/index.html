@@ -81,7 +81,18 @@
           <!-- 走らせ方の軸。**弾幕は同じで走りが変わる**（Share に乗る）。
                2 つ 目 の面に載せる弾幕（v2.1）。中身は空 ——
                並びは `#pattern` と同じ 1 本 から Fable が作る -->
-          <label class="mode embed-hide">2 面<select id="pattern2"><option value="">なし</option></select></label>
+          <label class="mode embed-hide grow">2 面<select id="pattern2"><option value="">なし</option></select></label>
+          <!-- 面 2 の走らせ方をずらす（v3.8）。**v2.1 は「難度・種・自機は
+               同じ値を配る」と決めた** —— そこを崩さずに、選んだときだけ
+               面 2 が別の値で走る。
+               版の頭で数えた：種で 104 / 176 本 が分かれ、1 コマ目 で
+               分かれる本は 0 本。難度 0 と 1 なら 172 / 176 本。
+               **選ぶと、2 面 が「なし」でも面 1 と同じ弾幕で建つ** -->
+          <label class="mode embed-hide">ずらす<select id="shift" title="面 2 の走らせ方をずらす">
+            <option value="0" selected>なし</option>
+            <option value="1">種</option>
+            <option value="2">難度</option>
+          </select></label>
           <!-- 見る側の都合。**弾幕にも本文にも触らない**。
                中身は空 —— Monaco が素で持っている並び（fable/Monaco.fs の themes）から -->
           <label class="mode embed-hide">配色<select id="theme"></select></label>
@@ -127,6 +138,13 @@
           <input id="seek-to" type="number" min="0" step="60" value="600" title="飛び先のコマ数">
         </label>
         <button class="embed-hide" type="button" id="seek" title="そのコマまで進める（着いたら止まる）">飛ぶ</button>
+        <!-- 2 面 が分かれたコマまで送る（v3.8）。**見る範囲は上の「コマ」欄**
+             —— 押した時点で頭から建て直すので、「そこまで見る」と
+             「そこへ飛ぶ」が同じ数になる。上限をここに書かない。
+             **判定は座標まで見る** —— 弾の数だけ見ると、同梱 176 本 の
+             中央で 22.3 倍 遅れる（6 コマ 目 で位置が違うのに、
+             数が食い違うのは 134 コマ 目） -->
+        <button class="embed-hide" type="button" id="diverge" title="2 面 が分かれるコマまで送る">分かれるまで</button>
         <button type="button" id="reset">Reset</button>
         <!-- 見る側の都合。**弾幕にも本文にも触らない**（Apply / Reset でも戻さない）。
              数の意味は host の Pacing が持つ。正なら 1 コマ に何回 進めるか、
@@ -672,6 +690,31 @@
               </figcaption>
             </figure>
 
+            <h4>分かれたコマを出す</h4>
+            <ul>
+              <li><strong>ずらす</strong>を選ぶと、<strong>面 2 だけ走らせ方を変える</strong>。
+                  <strong>種</strong>は乱数の並びを 1 つ 進め、<strong>難度</strong>は面 2 を 1 にする。
+                  <strong>2 面 が「なし」でも、面 1 と同じ弾幕で建つ</strong> ——
+                  同じ弾幕を「別の走らせ方で」並べるのがこの軸なので</li>
+              <li><strong>分かれるまで</strong>は、2 つ の面が<strong>食い違った最初のコマまで送って止める</strong>。
+                  見る範囲は左の<strong>「コマ」欄</strong>の数（飛ぶのと同じ欄）。
+                  押した時点で<strong>両方 頭から建て直す</strong> ——
+                  途中から見はじめると、そこまでに分かれていたぶんが見えない</li>
+              <li><strong>弾の数ではなく、位置で見る。</strong>
+                  同梱 176 本 で数えたら、種を変えたとき
+                  <strong>座標が分かれるのは 6 コマ 目（中央）なのに、
+                  弾の数が食い違うのは 134 コマ 目（中央）</strong> —— 22 倍 遅れる。
+                  数だけ見ていると、<strong>もう違う絵になっているのに気づかない</strong></li>
+              <li><strong>分かれない弾幕も在る。</strong> 種を変えても
+                  <strong>176 本 中 72 本</strong>は 900 コマ 走っても分かれない
+                  —— <code>$rand</code> を使っていない弾幕。
+                  そのときは「分かれなかった」と出る（黙って止まらない）</li>
+              <li>難度を 0 と 1 に振ると <strong>172 / 176 本</strong>が分かれる。
+                  <strong>1 コマ目 から分かれるのは 13 本 だけ</strong> ——
+                  難度は木を組む段で焼き込まれるが、頭のコマはたいてい待つだけなので、
+                  差が絵に出るまでには間が在る</li>
+            </ul>
+
             <ul>
               <li><strong>比べる</strong>は、欄を 2 面 に入れ替えて並べる。
                   <strong>並べているあいだは読むだけ</strong>で、直すのは「しない」に
@@ -782,12 +825,14 @@
             <h3>キーだけで動かす</h3>
 
             <ul>
-              <li><kbd>Tab</kbd> で操作を順に回る。<strong>26 か所 が輪に入っていて、
-                  そのうち 25 か所 が口</strong>（残り 1 つ が下の欄）。
-                  並びは画面のとおり —— 上の列 6 個 -&gt; 欄 -&gt; 下の列 19 個</li>
-              <li><strong><kbd>Tab</kbd> を 7 回 押すと欄に入り、そこで止まる。</strong>
+              <li><kbd>Tab</kbd> で操作を順に回る。<strong>28 か所 が輪に入っていて、
+                  そのうち 27 か所 が口</strong>（残り 1 つ が下の欄）。
+                  並びは画面のとおり —— 上の列 7 個 -&gt; 欄 -&gt; 下の列 20 個。
+                  <strong>口を 1 つ 足したら、この 4 つ の数はどれも動く</strong>
+                  （数え方は「隠れていない、押せる口を上から順に」）</li>
+              <li><strong><kbd>Tab</kbd> を 8 回 押すと欄に入り、そこで止まる。</strong>
                   欄の中では <kbd>Tab</kbd> が字下げになるので、
-                  <strong>下の列 19 個 へは <kbd>Tab</kbd> だけでは進めない</strong>。
+                  <strong>下の列 20 個 へは <kbd>Tab</kbd> だけでは進めない</strong>。
                   <kbd>Ctrl</kbd>+<kbd>M</kbd> を 1 回 押すと <kbd>Tab</kbd> が
                   外へ抜ける側に切り替わる。もう一度 押すと字下げに戻る</li>
               <li><kbd>Esc</kbd> は<strong>出ている窓を閉じる</strong>（候補・検索・名前の変更）。

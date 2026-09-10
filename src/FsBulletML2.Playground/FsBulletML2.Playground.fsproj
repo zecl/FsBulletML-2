@@ -64,6 +64,8 @@
     <Compile Include="BrowserEnv.fs" />
     <Compile Include="Pacing.fs" />
     <Compile Include="Seek.fs" />
+    <!-- 2 面 が分かれるコマまで送る（v3.8）。**数ではなく位置で見る** -->
+    <Compile Include="Diverge.fs" />
     <!-- 追っている弾の再開点（v3.1 の段 3）。**受け口を繋ぐのはここ 1 か所** -->
     <Compile Include="Focus.fs" />
     <Compile Include="Playfield.fs" />

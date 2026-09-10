@@ -63,6 +63,34 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
 
   member _.Count = live.Count
 
+  /// 生きている弾の並び。**外へは出さない** —— `Differ` が使うだけ
+  member private _.Live = live
+
+  /// 2 つ の面が分かれているか（v3.8）。**弾の数か、同じ添字の座標が違うか。**
+  ///
+  /// **添字で突き合わせられるのは「最初の食い違い」まで。** そこまでは 2 つ の
+  /// 走行が同じ順に弾を作っているので、並びも同じ物を指す。食い違ったあとの
+  /// 並びは意味を持たないが、**要るのは最初の 1 コマ だけ**なのでそれで足りる。
+  ///
+  /// **数だけでは足りない。** 同梱 176 本 で種を変えたとき、座標が分かれるのは
+  /// 中央 6 コマ 目 なのに、弾の数が食い違うのは中央 134 コマ 目
+  /// （**22.3 倍 遅れる**）。数だけ見ると、位置は 6 コマ 目 から違うのに
+  /// 134 コマ 目 まで気づかない。
+  ///
+  /// **`Pack` を通さない。** あちらは pin した 1 本 の配列へ写す口なので、
+  /// 2 つ の面を続けて呼ぶと片方 が上書きされる
+  static member Differ (a: Playfield) (b: Playfield) : bool =
+    let xs = a.Live
+    let ys = b.Live
+    if xs.Count <> ys.Count then true
+    else
+      let mutable i = 0
+      let mutable diff = false
+      while not diff && i < xs.Count do
+        if xs.[i].X <> ys.[i].X || xs.[i].Y <> ys.[i].Y then diff <- true
+        i <- i + 1
+      diff
+
   /// この面の形。**建てたあとは変わらない** —— 向きは弾幕が決めるので、
   /// 変わるときは弾幕が変わったとき、つまり建て直すとき
   member _.Field = field
