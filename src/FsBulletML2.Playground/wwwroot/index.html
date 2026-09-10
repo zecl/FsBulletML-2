@@ -120,7 +120,7 @@
            包むことになり、`align-self` と `max-height: 100%` の基準が
            変わる（面が縦に伸びて自機の丸が楕円になる形）。
            ここなら既存の規則を 1 つ も触らない。 -->
-      <canvas id="weight" class="embed-hide" width="1200" height="48"
+      <canvas id="weight" class="embed-hide" width="1200" height="68"
               aria-label="弾数とコマ時間の推移"></canvas>
       <!-- **層でまとめてある**（v2.4.2）。並びは
            時間 -> 見る側の都合 -> 走らせ方の軸 -> 本文。
@@ -648,11 +648,69 @@
                   塗り重ねる先は面ぜんぶなので、<strong>自機の跡も残る</strong></li>
             </ul>
 
+            <h4>どこが撃っているか</h4>
+
+            <figure>
+              <img src="img/help/tally.png" width="600" height="300" loading="lazy"
+                   alt="本文の fire タグの右に ×24 と ×96 の数が出ている">
+              <figcaption>
+                撃つ腕の右に<strong>それまでに何発 撃ったか</strong>が出る。
+                67 行 の <code>&lt;fire&gt;</code> が 24 発、
+                75 行 が 96 発
+              </figcaption>
+            </figure>
+
+            <ul>
+              <li>走らせると、<code>&lt;fire&gt;</code> の右に
+                  <strong>その面でそれまでに何発 撃ったか</strong>が出る。
+                  <strong>どの行が弾を増やしているか</strong>が、走らせながら読める</li>
+              <li><strong>出るのは多い順に 5 つ だけ。</strong>
+                  全部 出すと字が埋まる —— 同梱 176 本 で数えると
+                  <strong>上位 3 つ で撃った数の 93%</strong>
+                  （<code>fire</code> が 4 個 以上 の 130 本 の中央値）なので、
+                  5 つ で足りる</li>
+              <li><strong>色ではなく数を出している。</strong>
+                  走っている場所（黄）と出どころ（緑）がもう在るので、
+                  <strong>3 色 目 を足すとどれが何か覚えられなくなる</strong></li>
+              <li><strong>書き直すのは 30 コマ に 1 度。</strong>
+                  毎コマ 並べ替えると、<strong>弾の数と関係なく</strong>
+                  腕の数だけ費用が乗る</li>
+              <li><strong>面を建て直すと 0 から。</strong>
+                  Reset・Apply・弾幕の選び直しで数え直す ——
+                  残すと、別の弾幕の数が前の弾幕の行に乗る</li>
+              <li><strong>1 文字 でも打つと消える。</strong>
+                  走らせた結果から出す数なので、字が動いた時点で行が嘘になる ——
+                  <strong>Apply し直すとまた出る</strong></li>
+              <li>印は<strong>見えている行にしか出ない</strong>（欄は画面の外の行を
+                  組み立てない）。上位の腕が画面の外に在るときは、
+                  そこまでスクロールすると出る</li>
+            </ul>
+
             <h4>重さを見る</h4>
+
+            <figure class="fig-wide">
+              <img src="img/help/weight-band.png" width="700" height="68" loading="lazy"
+                   alt="重さの帯。上の段に 弾 480 / 6.6 ms/Frame （Frame 652）、下の段に青と橙の 2 本 の波形">
+              <figcaption>
+                <strong>上の段が字、下が波形</strong>で重ならない。
+                <strong>数の色は線の色と同じ</strong> ——
+                青が弾数、橙が 1 コマ の時間
+              </figcaption>
+            </figure>
+
             <ul>
               <li>ボタンの上の帯が、直近 600 コマ の<strong>弾数（青）と
-                  1 コマ の走行の時間（赤）</strong>。左上に、それぞれの最大と
-                  <strong>いちばん重かったのが何コマ 目 か</strong>が出る</li>
+                  1 コマ の走行の時間（橙）</strong>。
+                  <strong>上の段</strong>に、それぞれの最大と
+                  <strong>いちばん重かったのが Frame いくつ か</strong>が出る</li>
+              <li><strong>数の色を見る。</strong> 帯は画面の幅いっぱいなので、
+                  凡例を離して置くと線と結べない —— <strong>青い数が青い線、
+                  橙の数が橙の線</strong>。字で断らずに色で対応させてある</li>
+              <li><strong>等幅で書いてある。</strong> ここは毎コマ 書き換わるので、
+                  字幅が桁ごとに違うフォントだと
+                  <strong><code>7.4</code> が <code>8.0</code> になるだけで
+                  後ろが左右へ動く</strong>（一度 そうなった）。
+                  いま動くのは<strong>桁が増えた瞬間だけ</strong>で、右へ一方向</li>
               <li><strong>2 本 在るのは、片方 では読めないから。</strong>
                   同じ弾幕の中でも弾数と時間の相関は中央値 0.569 で、
                   同梱 176 本 のうち <strong>55 本 は 0.5 も無い</strong>（測った）——

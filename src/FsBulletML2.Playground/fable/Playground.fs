@@ -46,6 +46,10 @@ let private thenCatch (p: obj) (ok: obj -> unit) (err: obj -> unit) : unit = jsN
 [<Emit("$0.getContext('2d', { alpha: false })")>]
 let private getCtx (c: HTMLCanvasElement) : CanvasRenderingContext2D = jsNative
 
+/// 画面の 1 CSS 画素 が何 デバイス画素 か。**無ければ 1**
+[<Emit("window.devicePixelRatio || 1")>]
+let private dpr () : float = jsNative
+
 /// `localStorage` を読む。**読めなければ null。**
 ///
 /// **例外を握る。** プライベートウィンドウや「サイトデータを保存しない」設定では
@@ -625,26 +629,70 @@ type Playground() as self =
       if frame < weightLastFrame then
         weightAt <- 0
         weightCount <- 0
-      weightLastFrame <- frame
+        weightLastFrame <- frame
+      // **進んだコマ数。** この帯は rAF ごとに呼ばれるので、
+      // 「呼ばれた回数」と「進んだコマ数」は同じではない ——
+      // Pause では 0、倍速では 2 や 4、飛んでいる最中は数十
+      let advanced = frame - weightLastFrame
       // **立ち上がりの 1 コマ は溜めない。** 実機で見たら、最初のコマだけ
       // 26.0 ms 出て（以降 は 1 ms 未満）、そこで正規化された残りが
       // 全部 底に張り付いた —— あれは走行の重さではなく初回の費用
       // （JIT と、面が最初に伸ばす入れ物）。
       //
-      // **2 コマ 目 以降 も重いなら、下の字に「2 コマ 目」と出る** ——
+      // **2 コマ 目 以降 も重いなら、上の字に `（Frame 2）` と出る** ——
       // 捨てた数を増やす前に、そこを見る
-      if frame > 1 then
+      //
+      // **進んでいないコマは溜めない。** 前は rAF ごとに足していたので、
+      // **Pause で止めていても同じ数が入り続けて波形が流れた** ——
+      // 「止めているのに動く」は、見る道具としては嘘をついている
+      if advanced > 0 && frame > 1 then
         weightN.[weightAt] <- float n
-        weightMs.[weightAt] <- ms
+        // **1 コマ あたりに直す。** 倍速や「飛ぶ」では 1 回 の呼び出しで
+        // 何コマ か進むので、割らないと字の `ms/Frame` が嘘になる
+        weightMs.[weightAt] <- ms / float advanced
         weightFrameAt.[weightAt] <- frame
         weightAt <- (weightAt + 1) % weightLen
         if weightCount < weightLen then weightCount <- weightCount + 1
+      weightLastFrame <- frame
 
+      // **箱に合わせて内部解像度を取り直す。**
+      //
+      // 素は html の `width="1200" height="48"` で固定していて、
+      // CSS が幅いっぱいへ引き伸ばしていた —— **横だけ 1.35 倍**（1200 -> 1620
+      // を実測）で、縦は 1 倍。線 2 本 のときは気にならなかったが、
+      // **字を足した時点で嘘になった** —— 10px で焼いた字が横へ伸びて、
+      // しかも拡大なのでぼける。
+      //
+      // **dpr も掛ける。** 掛けないと、2 倍 の画面で同じことがもう一度 起きる。
+      //
+      // `width` を書くと ctx の状態が消えるので、**変わったときだけ**書いて、
+      // そのあとで倍率を入れ直す
+      let ratio = dpr ()
+      let w = float weightCanvas.clientWidth
+      let h = float weightCanvas.clientHeight
+      if w > 0. && h > 0. then
+        let needW = int (w * ratio + 0.5)
+        let needH = int (h * ratio + 0.5)
+        if weightCanvas.width <> needW || weightCanvas.height <> needH then
+          weightCanvas.width <- needW
+          weightCanvas.height <- needH
       let ctx = getCtx weightCanvas
-      let w = float weightCanvas.width
-      let h = float weightCanvas.height
+      // **以降 の座標は CSS の画素。** 描く側は倍率を知らないでよい
+      ctx.setTransform (ratio, 0., 0., ratio, 0., 0.)
       ctx.fillStyle <- U3.Case1 "#101018"
       ctx.fillRect (0., 0., w, h)
+      // **字の段と波形の段を分ける。**
+      //
+      // 前は同じ面に重ねて描いていて、**線 2 本 が字の中を通っていた** ——
+      // 帯は画面の幅いっぱい（dpr 1.5 の 4K で 2,481px）なので、
+      // 線は端から端まで在るのに字は左上の一角 にしかなく、**広い画面ほどひどい。**
+      // 板を字の下に敷くだけでも重なりは消えるが、
+      // **字が線の上に浮いている**ままで読みづらさが残った。
+      let bandH = 20.
+      ctx.fillStyle <- U3.Case1 "#181824"
+      ctx.fillRect (0., 0., w, bandH)
+      ctx.fillStyle <- U3.Case1 "#2c2c3c"
+      ctx.fillRect (0., bandH - 1., w, 1.)
       if weightCount >= 2 then
         // **古い順に読む。** 環なので、溜まりきる前は 0 から、
         // 溜まったあとは書いた次から
@@ -659,6 +707,7 @@ type Playground() as self =
           if weightMs.[i] > maxMs then
             maxMs <- weightMs.[i]
             maxMsFrame <- weightFrameAt.[i]
+        // **波形は字の段の下だけ。** 上端 は `bandH`、下端 は `h`
         let line (values: float[]) (top: float) (color: string) =
           ctx.strokeStyle <- U3.Case1 color
           ctx.lineWidth <- 1.0
@@ -666,22 +715,44 @@ type Playground() as self =
           for k in 0 .. weightCount - 1 do
             let x = w * float k / float (max 1 (weightCount - 1))
             // **1px の余白を上下 に取る。** 天井に張り付くと線が切れて見える
-            let y = h - 1.0 - (h - 2.0) * values.[at k] / top
+            let y = h - 1.0 - (h - bandH - 2.0) * values.[at k] / top
             if k = 0 then ctx.moveTo (x, y) else ctx.lineTo (x, y)
           ctx.stroke ()
         // **弾数が先。** コマ時間を後に描くと、重なったとき時間が上に出る ——
         // 見たいのは時間のほう
         line weightN maxN "#5aa0e0"
         line weightMs maxMs "#e07a5a"
-        // 目盛りの代わりに最大値を字で。**線だけだと桁が分からない**
-        ctx.fillStyle <- U3.Case1 "#8a9099"
-        ctx.font <- "10px monospace"
+        // 目盛りの代わりに最大値を字で。**線だけだと桁が分からない。**
+        //
         // **「いちばん重かったのがどこか」まで出す。** 数だけだと、
-        // 立ち上がりの 1 発 なのか走行中に跳ねたのかが読めない
-        ctx.fillText
-          ("弾 " + groupDigits (int maxN) + " / コマ " + maxMs.ToString "F1" + " ms"
-           + (if maxMsFrame > 0 then "（" + groupDigits maxMsFrame + " コマ 目）" else ""),
-           4., 11.)
+        // 立ち上がりの 1 発 なのか走行中に跳ねたのかが読めない。
+        //
+        // **数の色を線の色に合わせる。** どちらの数がどちらの線かは、
+        // 字で断らなくても色で分かる —— 帯が広いと凡例を離して置けない
+        // **等幅で書く。** 一度 `system-ui` にしたら、**字が左右へぶれた** ——
+        // プロポーショナルは数字の字幅が桁ごとに違うので（`1` が細い）、
+        // `7.4` が `8.0` になるだけで後ろが動く。**毎コマ 書き換える字で使わない。**
+        ctx.font <- "bold 13px ui-monospace, SFMono-Regular, Consolas, monospace"
+        ctx.textBaseline <- "middle"
+        let mutable x = 8.
+        let put (s: string) (color: string) =
+          ctx.fillStyle <- U3.Case1 color
+          ctx.fillText (s, x, bandH / 2.)
+          x <- x + ctx.measureText(s).width
+        // **桁を揃える枠は置かない。** 一度 最大桁（6 字）で右へ揃えてみたが、
+        // ふだんは 3 字 なので**隙間が間延びした。**
+        //
+        // 置かなくてよい理由 —— **ここに出す 3 つ はどれも最大値で、
+        // 走行の中では単調にしか増えない。** 等幅なら同じ桁数のあいだは
+        // 1px も動かず、動くのは桁が増えた瞬間だけ（実測 200 コマ で 2 回）。
+        // **毎コマ の揺れと、たまの繰り上がりは別**。
+        //
+        // **`Frame` と書く。** 下の帯が `Frame:` と出しているので、
+        // ここだけ「コマ」だと同じものに 2 通り の名前が付く
+        put ("弾 " + groupDigits (int maxN)) "#7cbcf0"
+        put "  /  " "#5a5a6a"
+        put (maxMs.ToString "F1" + " ms/Frame") "#f09a78"
+        if maxMsFrame > 0 then put ("　（Frame " + groupDigits maxMsFrame + "）") "#9aa0aa"
 
   /// 撃った数を字の右へ出す（v3.3 の段 1）。**印ではなく数を足す。**
   ///
