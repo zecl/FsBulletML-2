@@ -26,8 +26,13 @@
   作者の指定に負ける（origin で決まるので詳細度は関係ない）。生き残った窓は
   中の口が Tab の輪に入り、縦に長い機械では画面にも出る。実際に踏んだ。
 
+  **寸も見る。** `<img>` の width / height は**読み込む前に場所を空ける**ために
+  在るので、実物との比が縦横 で食い違うと、絵が入った瞬間 に字が跳ねるか
+  引き伸ばされて出る。**比が 1 とは限らない** —— 高い dpr の機械で滲まないように
+  1.5 倍 / 2 倍 で焼いた絵が在るので、見るのは「縦と横 で同じ比か」だけ。
+
   **絵の中身が古びたことは、この門も見ていない。** 撮り直す手順は
-  docs/help-shots.md に在る。ここで測れるのは「在る / 参照されている」まで。
+  docs/help-shots.md に在る。ここで測れるのは「在る / 参照されている / 寸が合う」まで。
 
   較正は guard-help-chapters.Tests.ps1。
 #>
@@ -153,6 +158,66 @@ if (Test-Path -LiteralPath $imgDir) {
   $problems.Add("絵の置き場が無い（$imgDir）のに、参照が $($refs.Count) 本 在る")
 }
 
+# --- 絵の寸。**書いてある大きさと実物の比が、縦横 で同じか** -------------------
+#
+# `width` / `height` を書くのは**読み込む前に場所を空ける**ため。
+# 比が縦横 で食い違うと、絵が入った瞬間 に字が跳ねるか、引き伸ばされて出る。
+#
+# **比が 1 でなくてよい。** 高い dpr の機械で滲まないように 1.5 倍 / 2 倍 で
+# 焼いた絵が在る（`docs/help-shots.md`）—— 見るのは縦横 が揃うことだけ。
+#
+# **PNG の頭だけ読む。** 画を解かないので、大きい絵でも数ミリ秒
+function Get-PngSize {
+  param([string]$Path)
+  $fs = [IO.File]::OpenRead($Path)
+  try {
+    $head = New-Object byte[] 24
+    if ($fs.Read($head, 0, 24) -ne 24) { return $null }
+    $sig = @(137, 80, 78, 71, 13, 10, 26, 10)
+    for ($i = 0; $i -lt 8; $i++) { if ($head[$i] -ne $sig[$i]) { return $null } }
+    if ([Text.Encoding]::ASCII.GetString($head, 12, 4) -ne 'IHDR') { return $null }
+    $w = ([int]$head[16] -shl 24) -bor ([int]$head[17] -shl 16) -bor ([int]$head[18] -shl 8) -bor [int]$head[19]
+    $h = ([int]$head[20] -shl 24) -bor ([int]$head[21] -shl 16) -bor ([int]$head[22] -shl 8) -bor [int]$head[23]
+    if ($w -le 0 -or $h -le 0) { return $null }
+    return @{ W = $w; H = $h }
+  } finally { $fs.Dispose() }
+}
+
+$imgTags = [regex]::Matches($html, '<img\b[^>]*>')
+$sized = 0
+foreach ($tag in $imgTags) {
+  $src = [regex]::Match($tag.Value, 'src="(img/help/[^"]+)"')
+  if (-not $src.Success) { continue }
+  $rel = $src.Groups[1].Value
+  $wm = [regex]::Match($tag.Value, '\bwidth="(\d+)"')
+  $hm = [regex]::Match($tag.Value, '\bheight="(\d+)"')
+  if (-not $wm.Success -or -not $hm.Success) {
+    $problems.Add("$rel に width / height が書いていない（読み込む前に場所が空かないので、絵が入ると字が跳ねる）")
+    continue
+  }
+  $onDisk = Join-Path $WwwRoot ($rel -replace '/', [IO.Path]::DirectorySeparatorChar)
+  if (-not (Test-Path -LiteralPath $onDisk)) { continue }   # 上 で数えてある
+  $size = Get-PngSize -Path $onDisk
+  if ($null -eq $size) {
+    $problems.Add("$rel が PNG として読めない（頭が壊れているか、PNG ではない）")
+    continue
+  }
+  $sized++
+  $declW = [int]$wm.Groups[1].Value
+  $declH = [int]$hm.Groups[1].Value
+  $rw = $size.W / $declW
+  $rh = $size.H / $declH
+  if ([Math]::Abs($rw - $rh) -gt 0.02) {
+    $problems.Add(("{0} の縦横 の比が違う（実物 {1}x{2} / 書いてある {3}x{4} = 横 {5:N3} 倍 と 縦 {6:N3} 倍）" -f
+      $rel, $size.W, $size.H, $declW, $declH, $rw, $rh))
+  } elseif ($rw -lt 0.99) {
+    $problems.Add(("{0} は書いてある寸より実物が小さい（実物 {1}x{2} / 書いてある {3}x{4}）" -f
+      $rel, $size.W, $size.H, $declW, $declH))
+  }
+}
+
+if (-not $Quiet) { Write-Host ("絵の寸 {0} 枚 を突き合わせた" -f $sized) }
+
 # --- 閉じた窓が生き残らないか -------------------------------------------------
 #
 # ブラウザは素で `dialog:not([open]) { display: none }` を持っているが、
@@ -199,5 +264,5 @@ if ($problems.Count -gt 0) {
 }
 
 if (-not $Quiet) {
-  Write-Host ("章は 3 か所 とも同じ並び（{0}）で、絵は参照と実物が 1 対 1" -f ($chapters -join ' -> '))
+  Write-Host ("章は 3 か所 とも同じ並び（{0}）で、絵は参照と実物が 1 対 1、寸も合う" -f ($chapters -join ' -> '))
 }
