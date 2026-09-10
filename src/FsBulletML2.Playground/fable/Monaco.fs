@@ -79,6 +79,9 @@ let private setModelLanguage (editor: obj) (language: string) : unit = jsNative
 [<Emit("globalThis.monaco.languages.setLanguageConfiguration($0, $1)")>]
 let private setLanguageConfiguration (language: string) (config: obj) : unit = jsNative
 
+[<Emit("globalThis.monaco.languages.setMonarchTokensProvider($0, $1)")>]
+let private setMonarchTokensProvider (language: string) (def: obj) : unit = jsNative
+
 [<Emit("$0.getValue()")>]
 let private getVal (editor: obj) : string = jsNative
 
@@ -206,6 +209,61 @@ let configureLanguages () =
         createObj [ "open" ==> "\""; "close" ==> "\""; "notIn" ==> [| "string" |] ] |]
       "surroundingPairs" ==> [|
         createObj [ "open" ==> "\""; "close" ==> "\"" ] |] ])
+
+  // --- 色付け（v3.4 の段 2）
+  //
+  // **借り物で何が足りないかは数えてある** ——
+  //
+  //     scheme  色が付かない 35.7% / 4 種類。**全部 `identifier`**
+  //     ini     41.5% / 4 種類。98 行 に `key` が 40 —— **要素名に色が無い**
+  //
+  // **要素名の表を書かない。** ここに並べると DTD に要素が増えたとき
+  // ここだけが古びる（正本は `Core/DTD.fs`）—— **形で当てる。**
+  //
+  // 括弧の直後 / 行頭 に在る語が要素名、という規則は表記そのものなので、
+  // 語彙が増えても変わらない。
+  // **式は引用符の中に在る。** `(speed "1.5+$rank")` のように書くので、
+  // 文字列を 1 つ の札にすると `$rank` が飲まれる —— 1 度 そう書いて、
+  // `variable` が 1 件 も出ないことを数えて気づいた。
+  //
+  // だから引用符の中を別の状態にして、そこで `$名前` を拾う
+  let inString =
+    [| box [| box "\\$[a-zA-Z0-9_]+" ; box "variable" |]
+       box [| box "[^\"$]+" ; box "string" |]
+       // `$` の後ろが名前でないとき（`$` 単体）。**状態を抜けない**
+       box [| box "\\$" ; box "string" |]
+       box [| box "\"" ; box (createObj [ "token" ==> "string.quote"; "next" ==> "@pop" ]) |] |]
+
+  setMonarchTokensProvider
+    "scheme"
+    (createObj [
+      "tokenizer" ==> createObj [
+        "root" ==> [|
+          // `(@` —— 属性リストの頭。要素名と間違えないよう先に当てる
+          box [| box "\\(\\s*@" ; box "delimiter" |]
+          // `(名前` —— 要素名（か属性名）。**2 つ を分けるのは段 3**
+          box [| box "(\\()(\\s*)([a-zA-Z][\\w.-]*)"
+                 box [| box "delimiter"; box "white"; box "tag" |] |]
+          box [| box "\"" ; box (createObj [ "token" ==> "string.quote"; "next" ==> "@str" ]) |]
+          box [| box "[()]" ; box "delimiter" |]
+          box [| box "[ \\t]+" ; box "white" |] |]
+        "str" ==> inString ] ])
+
+  setMonarchTokensProvider
+    "ini"
+    (createObj [
+      "tokenizer" ==> createObj [
+        "root" ==> [|
+          // 行頭（字下げの後）の名前 —— 要素名。**fsb は字下げで入れ子を書く**
+          box [| box "^(\\s*)([a-zA-Z][\\w.-]*)"
+                 box [| box "white"; box "tag" |] |]
+          // `名前=` —— 属性名
+          box [| box "([a-zA-Z][\\w.-]*)(\\s*=)"
+                 box [| box "attribute.name"; box "delimiter" |] |]
+          box [| box "\"" ; box (createObj [ "token" ==> "string.quote"; "next" ==> "@str" ]) |]
+          box [| box ":" ; box "delimiter" |]
+          box [| box "[ \\t]+" ; box "white" |] |]
+        "str" ==> inString ] ])
 
 let create (hostId: string) (language: string) (initial: string) =
   let host = document.getElementById hostId
