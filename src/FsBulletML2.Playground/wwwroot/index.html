@@ -721,9 +721,51 @@
               <li><strong>立ち上がりの 1 コマ は入っていない。</strong>
                   最初のコマだけ他の 20 倍 かかることが在り（走行の重さではなく、
                   初回に要る費用）、そこで目盛りが決まると残りが底に張り付く</li>
-              <li>赤い線は<strong>走行にかかった時間だけ</strong>で、描画や画面の更新は
+              <li>橙の線は<strong>走行にかかった時間だけ</strong>で、描画や画面の更新は
                   入っていない。<strong>タブが後ろに居るときの数は当てにならない</strong> ——
                   ブラウザが走らせる回数を間引くので、1 コマ が実際より重く出る</li>
+            </ul>
+
+            <h4>どこに時間が居るか</h4>
+
+            <figure>
+              <img src="img/help/span.png" width="505" height="392" loading="lazy"
+                   alt="本文の action と repeat の右に 22% / 23%、fireRef の右に ×131 / ×117 が出ている">
+              <figcaption>
+                <strong>％ が重さ、× が撃った数</strong>で、<strong>付く行が違う</strong> ——
+                28 発 撃った 6 行 目 に％ は無く、重いのは弾の側の
+                <code>&lt;action&gt;</code>（22%）
+              </figcaption>
+            </figure>
+
+            <ul>
+              <li>走らせると、行の右に<strong>その行に弾が何 弾コマ 居たか</strong>が
+                  ％ で出る。<code>&lt;fire&gt;</code> の×（撃った数）とは
+                  <strong>別の軸</strong> —— 撃つ行は<strong>弾が増える</strong>ところで、
+                  時間が居るところではない。同梱 176 本 で数えると
+                  <strong>いちばん重い行は 172 本 が <code>action</code></strong>、
+                  <code>fire</code> は 1 本 も 1 位 に来ない</li>
+              <li><strong>数えるのは延べ。</strong> 500 発 が 1 コマ 同じ行を通ったら 500 ——
+                  1 コマ と数えると、<strong>いちばん重い行がいちばん軽く見える</strong></li>
+              <li><strong>上位いくつ ではなく、5% 以上 の行に出る。</strong>
+                  上位 5 行 が占める割合は<strong>中央 78%</strong> だが、
+                  <strong>いちばん低い本は 24%</strong> —— 上位で切ると
+                  「出ている 5 行 で 4 分の 1」になる。％ で切れば、
+                  集まっている本では 5 行、散っている本では 12 行 に出る</li>
+              <li><strong>同じ行に 2 度 は出ない。</strong> 同じ台本を 2 か所 から撃つと
+                  走行では 2 つ の木になるが、字の上では 1 行 ——
+                  <strong>畳んでから足す</strong>ので、<code>32%</code> と <code>31%</code> が
+                  並ぶのではなく <code>63%</code> が 1 つ 出る</li>
+              <li><strong>印は行末に置いてある。</strong> 開き札の後ろに足すと
+                  <code>&lt;wait&gt;  13%20-$rank*8&lt;/wait&gt;</code> になって
+                  <strong>値の一部 に読める</strong>（撃った数のほうは
+                  <code>fire</code> と <code>fireRef</code> にしか付かず、
+                  あちらは本文を持たない）</li>
+              <li><strong>書き直すのは 30 コマ に 1 度</strong>で、
+                  <strong>面を建て直すと 0 から</strong>、
+                  <strong>1 文字 でも打つと消える</strong> —— 撃った数の印と同じ決まり</li>
+              <li>印は<strong>見えている行にしか出ない</strong>（欄は画面の外の行を
+                  組み立てない）</li>
             </ul>
           </section>
 

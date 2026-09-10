@@ -88,8 +88,26 @@ type Focus () =
   /// もう撃った `fire` も走査はされるので、原理的には食い違いうる
   let fired = ResizeArray<obj>()
 
+  /// 走った字ごとの**弾コマ**（v3.9）。**鍵は走る木のノードそのもの。**
+  ///
+  /// **索引は毎回 引かない。** `visit` は全部 の弾・全部 のコマ で呼ばれるので、
+  /// ここで鎖を辿って「読んだ木の添字」へ引くと**弾数に比例した費用**が乗る。
+  /// 引くのは出すときだけ（`SpanTop`）—— v3.3 の段 1 と同じ形。
+  ///
+  /// **1 コマ に 1 でなく、弾 1 発 につき 1 数える。** 500 発 が同じ行を
+  /// 通るコマは、1 発 が通るコマの 500 倍 重い ——
+  /// **1 コマ と数えると、いちばん重い行がいちばん軽く見える。**
+  let spans = Dictionary<obj, int>(HashIdentity.Reference)
+  let mutable spanTotal = 0
+  /// 数えるか。**版の頭の A/B のために切れる形にしてある** ——
+  /// 素との差を測るのに焼き直しを 2 回 するより、同じ走行の中で切り替えたい
+  let mutable countSpans = true
+
   let onVisit =
     fun (node: obj) ->
+      if countSpans then
+        spans.[node] <- (match spans.TryGetValue node with | true, v -> v | _ -> 0) + 1
+        spanTotal <- spanTotal + 1
       match node with
       | :? Action as a ->
           match a with
@@ -190,6 +208,9 @@ type Focus () =
     // 残すと、別の弾幕の数が前の弾幕の行に乗る
     tally.Clear()
     tallyTotal <- 0
+    // 走った字ごとの弾コマ（v3.9）。**こちらも面ごと**
+    spans.Clear()
+    spanTotal <- 0
     // **書いてある順の並びも、ここで 1 回 だけ組む。** 走行中には要らない
     // （引くのは選んだ弾の 1 コマ に 1 回）ので、毎コマ 歩かない
     let walk = NodeOrder.walk bulletml
@@ -264,6 +285,47 @@ type Focus () =
   /// 数えた総数。**上位が占める割合を出すのに要る** ——
   /// 呼ぶ側で足し直すと、腕の数ぶんの走査が毎回 増える
   member _.TallyTotal = tallyTotal
+
+  /// 弾コマの多い順に n 個（v3.9）。戻りは (書いてある順の添字, 弾コマ)。
+  ///
+  /// **索引を引くのはここだけ。** 数えるときは走る木のノードのまま持っていて、
+  /// 出すときに上位 n 個 ぶんだけ鎖を辿る —— 全 visit で引くと
+  /// **弾数に比例した費用**になる。
+  ///
+  /// **毎コマ 呼ばない**（`TallyTop` と同じ。並べ替えは字の数ぶん）
+  member _.SpanTop(n: int) : struct (int * int)[] =
+    if n <= 0 || spans.Count = 0 then Array.empty
+    else
+      // **畳んでから並べ替える。** 走る木のノードは**同じ行へ 2 つ 以上 戻る**
+      // ことが在る（`bulletRef` の展開など）—— 畳まずに並べると、
+      // 1 行 に `32%` と `31%` が別々 に付いて、**本当は 63% だと読めない**
+      // （実機で見て気づいた）。
+      //
+      // **ここで全部 引く。** 上位 n 個 だけ引いて畳むと、
+      // 畳んだあとに順が変わるので、n の外に居た片割れを取りこぼす。
+      // 引く回数は数えた字の数（同梱で中央 47 / 最大 727）で、
+      // **30 コマ に 1 度**しか呼ばれない
+      let byIndex = Dictionary<int, int>()
+      for kv in spans do
+        let struct (r, _) = followTo kv.Key
+        // 添字が決まらなかった行は出せない。**数から落とすのは出す段だけ**
+        let i = indexOfRead r
+        if i >= 0 then
+          byIndex.[i] <- (match byIndex.TryGetValue i with | true, v -> v | _ -> 0) + kv.Value
+      byIndex
+      |> Seq.sortByDescending (fun kv -> kv.Value)
+      |> Seq.truncate n
+      |> Seq.map (fun kv -> struct (kv.Key, kv.Value))
+      |> Seq.toArray
+
+  /// 数えた字の数。**0 なら 1 行 も走っていない**
+  member _.SpanCount = spans.Count
+
+  /// 弾コマの総数
+  member _.SpanTotal = spanTotal
+
+  /// 数えるかどうか。**版の頭の A/B のため**
+  member _.SetCountSpans(v: bool) = countSpans <- v
 
   /// 選んだ弾の 1 コマ の前。**`NodeOrigin` もここで繋ぐ** ——
   /// 輪を書いた本は走行中にも新しいノードを作る（同梱では 1 件 も出ないが、

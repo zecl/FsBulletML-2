@@ -513,6 +513,15 @@ button:disabled {
   opacity: 0.85;
 }
 
+/* 走った重さ（v3.9）。**撃った数と同じ形で、色だけ別。**
+   下の帯の線と同じ色にしてある —— 青が弾数、橙が時間。
+   同じ行に両方 出ることが在るので、色で軸を分ける */
+.span-mark {
+  color: #e09a78;
+  font-style: italic;
+  opacity: 0.85;
+}
+
 /* 明るい配色（`vs` / `hc-light`）。**同じ色は乗らない。**
 
    上の 2 つ は暗い地の上で決めた明るい色で、白地に置くと下地も枠線も
@@ -537,6 +546,11 @@ button:disabled {
 .monaco-editor.vs .tally-mark,
 .monaco-editor.hc-light .tally-mark {
   color: #2a6d99;
+}
+
+.monaco-editor.vs .span-mark,
+.monaco-editor.hc-light .span-mark {
+  color: #a04a20;
 }
 
 /* 済んだことの知らせ。**`.error` と別の色** ——
