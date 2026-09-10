@@ -76,6 +76,21 @@ h1 {
   flex: none;
 }
 
+/* 重さの帯（v3.3 の段 2）。**`.row` の兄弟**なので、`.page` の column が
+   そのまま効く —— 伸びるのは `.row` だけで、こちらは高さを固定する。
+
+   内部解像度は 1200x48 で固定。**面と違って dpr を測らない** ——
+   出すのは線 2 本 で、字も座標も乗らない */
+#weight {
+  flex: none;
+  width: 100%;
+  height: 48px;
+  margin-top: 8px;
+  background: #101018;
+  border: 1px solid #333;
+  box-sizing: border-box;
+}
+
 .editor {
   flex: 1;
   display: flex;
