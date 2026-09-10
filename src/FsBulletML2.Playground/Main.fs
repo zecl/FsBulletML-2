@@ -60,7 +60,23 @@ type PlaygroundHost() =
 
   /// 2 つ 目 の面。**同じ手順を別の env で。** 1 本 にまとめられないのは
   /// `env` が引数でなく閉包に居るからで、そこは 2 つ 目 の面の意味そのもの
+  /// 面 2 の走らせ方をずらす（v3.8）。**0 なし / 1 種を 1 つ 進める /
+  /// 2 難度を 1 にする。**
+  ///
+  /// v2.1 は「難度・種・自機の動かし方は同じ値を配る（比べるのは弾幕であって
+  /// 走らせ方ではない）」と決めた。**そこを崩さずに足す** ——
+  /// 既定は 0 で、**選んだときだけ**面 2 が別の値で走る。
+  ///
+  /// 版の頭で数えたとおり、**この 2 つ が「分かれるまで送る」の効く軸** ——
+  /// 種で 104 / 176 本（1 コマ目 で分かれるのは 0 本）、
+  /// 難度 0 と 1 で 172 / 176 本（1 コマ目 は 13 本）
+  let mutable shift = 0
+
   let buildSecond (bulletml: Bulletml) =
+    // **配るのは建てる前。** 種も難度も `Runner.load` が木を組む段で引くので、
+    // 建てたあとに変えても効かない
+    env2.SetSeed (if shift = 1 then env.Seed + 1 else env.Seed)
+    env2.SetRank (if shift = 2 then 1.0f else env.RankValue)
     env2.RestartRandom()
     let pf = Playfield.Create env2 bulletml
     env2.SetField pf.Field
@@ -69,13 +85,28 @@ type PlaygroundHost() =
   let mutable field = build current
   let mutable field2 : Playfield option = None
 
+  // 分かれるまで送る（v3.8）。**`seek` と別に持つ** ——
+  // あちらは「決めたコマまで」、こちらは「条件が立つまで」。
+  // 混ぜると、片方 の終わり方でもう片方 が止まる
+  let mutable diverge = Diverge.idle
+  /// 分かれた結果。**-2 は走っている / -1 は分かれずに終わった /
+  /// 0 以上 は分かれたコマ**
+  let mutable divergeAt = -1
+
   /// 走らせ方の軸が動いたときの建て直し。**両方 の面を、同じところで。**
   ///
   /// 片方 だけ建て直すと、並べている 2 つ が別のコマを指す ——
   /// 「同じ時刻の 2 つ」でなくなった時点で、比べる道具ではなくなる
   let rebuildAll () =
     field <- build current
-    field2 <- second |> Option.map buildSecond
+    // **ずらすときは、2 面 が「なし」でも面 1 と同じ弾幕を建てる**（v3.8）——
+    // 種や難度を比べるのに、別の弾幕を選ばせる必要が無い
+    let src = if second.IsSome then second elif shift > 0 then Some current else None
+    field2 <- src |> Option.map buildSecond
+    // 押し直すまで走らない（v3.8）。**建て直したら結果も捨てる** ——
+    // 残すと、別の面の「分かれたコマ」が新しい面の行に出る
+    diverge <- Diverge.idle
+    divergeAt <- -1
   // **開いた時点で走っている。** Play を押すまで止まっていると、
   // 弾幕を見に来た人が最初に見るのが静止画になる。止めたい人は Pause を
   // 押せばよく、そちらは 1 手 で戻せる。
@@ -109,6 +140,14 @@ type PlaygroundHost() =
         env2.AdvancePlayer f2.Frame
         f2.Tick()
       | None -> ()
+  /// 2 つ の面が分かれているか（v3.8）。**1 個 だけ作って持ち回る** ——
+  /// `tick` と同じ理由（毎コマ 関数値にすると閉包がヒープに乗る）。
+  /// **2 面 が無ければ分かれようが無い**ので false
+  let differs =
+    fun () ->
+      match field2 with
+      | Some f2 -> Playfield.Differ field f2
+      | None -> false
   // `[n; ptr; frame; playerX; playerY; width; height]` に、
   // 2 つ 目 の `[n2; ptr2; width2; height2]` と、追っている弾の
   // `[pick; stops; depth; serial; paths; order; from]` を足した 18 数。
@@ -139,7 +178,16 @@ type PlaygroundHost() =
     env.SetPlayer (float32 playerX) (float32 playerY)
     // **自機は 2 つ の面で同じ。** 比べるのは弾幕であって走らせ方ではない
     env2.SetPlayer (float32 playerX) (float32 playerY)
-    if Seek.isRunning seek then
+    if Diverge.isRunning diverge then
+      // 分かれるまで送る（v3.8）。**`Seek` より先に見る** ——
+      // どちらも「人が待っている進み方」だが、`DivergeRun` は押した時点で
+      // 頭から建て直しているので、途中で飛び先を混ぜると意味が壊れる
+      watch.Restart()
+      let struct (_, found, next) = Diverge.step tick elapsed differs diverge
+      diverge <- next
+      if found then divergeAt <- field.Frame
+      elif not (Diverge.isRunning next) then divergeAt <- -1
+    elif Seek.isRunning seek then
       // 戻るには建て直すしかない（面は逆再生できない）。
       // **建ててから差し替える** —— ほかの差し替えと同じ理由
       if Seek.needsRestart field.Frame seek then rebuildAll ()
@@ -267,11 +315,14 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.Play() =
     seek <- Seek.idle
+    // 分かれるまで送っている最中の Play も「もう待たない」（v3.8）
+    diverge <- Diverge.idle
     playing <- true
 
   [<JSInvokable>]
   member _.Pause() =
     seek <- Seek.idle
+    diverge <- Diverge.idle
     playing <- false
 
   /// 1 コマ だけ進める。**押した時点で止まる** ——
@@ -279,6 +330,7 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.StepOnce() =
     seek <- Seek.idle
+    diverge <- Diverge.idle
     playing <- false
     tick ()
 
@@ -289,6 +341,7 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.SeekTo(n: int) =
     playing <- false
+    diverge <- Diverge.idle
     seek <- Seek.toFrame n
 
   /// 正なら倍速（1 フレームに n 回）、負ならスロー（-n フレームに 1 回）。
@@ -507,6 +560,46 @@ type PlaygroundHost() =
     second <- None
     seek <- Seek.idle
     rebuildAll ()
+
+  /// 面 2 の走らせ方をずらす（v3.8）。**0 なし / 1 種 / 2 難度。**
+  ///
+  /// **建て直す。** 種も難度も木を組む段で焼き込まれるので、
+  /// 走っている面には効かない（`SetRank` / `SetSeed` と同じ）
+  [<JSInvokable>]
+  member _.SetShift(n: int) =
+    shift <- max 0 (min 2 n)
+    seek <- Seek.idle
+    rebuildAll ()
+
+  /// 2 つ の面が分かれるコマまで送る（v3.8）。**押した時点で頭から建て直す。**
+  ///
+  /// 建て直すのは、出す数が「**分かれた最初のコマ**」だから ——
+  /// 途中から見はじめると、そこまでに分かれていたぶんが見えず、
+  /// 「いま初めて分かれた」と読めてしまう。
+  ///
+  /// **2 面 が無ければ何もしない**（戻り false）。
+  /// `n` が 0 以下 なら既定のコマ数
+  [<JSInvokable>]
+  member _.DivergeRun(n: int) : bool =
+    match field2 with
+    | None -> false
+    | Some _ ->
+      playing <- false
+      seek <- Seek.idle
+      // **`rebuildAll` が `diverge` を空にする**ので、始めるのはそのあと
+      rebuildAll ()
+      diverge <- Diverge.start (if n <= 0 then Diverge.Default else n)
+      divergeAt <- -2
+      Diverge.isRunning diverge
+
+  /// 分かれた結果（v3.8）。
+  /// **-2 は走っている / -1 は分かれずに終わった / 0 以上 は分かれたコマ。**
+  ///
+  /// **毎コマ 返さない**（`StepFrame` の戻りに足さない）—— 境界を越えて
+  /// 数を 1 つ 渡すのは 6 マイクロ秒 で、それを一生 払うことになる（v3.7 で測った）。
+  /// 送っているあいだだけ、呼ぶ側が引きに来る
+  [<JSInvokable>]
+  member _.DivergeResult() : int = divergeAt
 
   /// 右側の本文を読んで弾幕を差し替える。
   ///

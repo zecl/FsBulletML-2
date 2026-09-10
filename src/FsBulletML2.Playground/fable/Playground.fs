@@ -279,6 +279,12 @@ type Playground() as self =
   let mutable enemyX = 240.
   let mutable enemyY = 80.
   let mutable running = false
+  // 分かれるまで送っている最中か（v3.8）。**引きに来るのはこのあいだだけ** ——
+  // 毎コマ の戻りに足すと、境界を越えて数を 1 つ 渡す 6 マイクロ秒 を一生 払う
+  let mutable divergeWatch = false
+  // 何コマ まで見ると言ったか。**言った数をそのまま出す** ——
+  // ここで別の数を書くと、上限が 2 か所 に在ることになる
+  let mutable divergeTo = 0
   // 録っている最中か（v2.5）。**押している最中にもう一度 押させない** ——
   // 2 本 目 の `MediaRecorder` が同じ面に付くと、どちらも半端な絵になる
   let mutable recording = false
@@ -1371,6 +1377,66 @@ type Playground() as self =
           (fun _ -> ())
           (fun err -> setError (errText err))
 
+  /// 2 つ の面が分かれるコマまで送る（v3.8）。
+  ///
+  /// **見る範囲は「コマ」欄 の数をそのまま使う** —— 押した時点で頭から
+  /// 建て直すので、「そのコマまで見る」と「そのコマへ飛ぶ」が同じ数になる。
+  /// **ここで別の上限を書かない**（2 か所 に在ると片方 だけ古びる）。
+  ///
+  /// **2 面 が無ければ何も送らない。** 弾幕を選んでいなくても、
+  /// 「ずらす」を選んでいれば host が面 1 と同じ弾幕で建てている
+  member _.divergeRun() =
+    let input = el "seek-to"
+    let p2 = el "pattern2"
+    let sh = el "shift"
+    let has =
+      (not (isNull p2) && (p2 :?> HTMLSelectElement).value <> "")
+      || (not (isNull sh) && (sh :?> HTMLSelectElement).value <> "0")
+    if isNull input then ()
+    elif isNull dotNet then setError "まだ起動していない"
+    elif not has then setError "2 面 が無い。弾幕を選ぶか、ずらす を選ぶ"
+    else
+      let mutable n = 0.0
+      if not (System.Double.TryParse((input :?> HTMLInputElement).value, &n)) then
+        setError "コマ数を入れて"
+      else
+        // 頭から建て直る。**軌跡は 1 コマ 塗り潰す**（`seek` と同じ）
+        wipe <- true
+        setError ""
+        divergeTo <- int n
+        divergeWatch <- true
+        self.showNote ("分かれるまで送っている（" + groupDigits divergeTo + " コマ まで）")
+        thenCatch
+          (invokeAsync1 dotNet "DivergeRun" n)
+          (fun _ -> ())
+          (fun err ->
+            divergeWatch <- false
+            setError (errText err))
+
+  /// 送っている最中に 1 コマ 1 回 引く（v3.8）。
+  /// **-2 は走っている / -1 は分かれなかった / 0 以上 は分かれたコマ**
+  member _.pollDiverge() =
+    if isNull dotNet then divergeWatch <- false
+    else
+      let v = int (unbox<float> (invoke0 dotNet "DivergeResult"))
+      if v <> -2 then
+        divergeWatch <- false
+        if v < 0 then
+          self.showNote ("分かれなかった（" + groupDigits divergeTo + " コマ まで見た）")
+        else
+          self.showNote ("分かれた: " + groupDigits v + " コマ 目")
+
+  /// 面 2 の走らせ方をずらす（v3.8）。**なし / 種 / 難度**
+  member _.setShift() =
+    let sel = el "shift"
+    if isNull sel then ()
+    else
+      let mutable n = 0.0
+      if System.Double.TryParse((sel :?> HTMLSelectElement).value, &n) then
+        // 面が建て直る。**軌跡を 1 コマ 塗り潰してから**
+        wipe <- true
+        self.call ("SetShift", box (int n))
+
   /// 次の 1 コマ だけ面を塗り潰す。面を建て直す口を呼ぶ手前で使う
   member _.wipeTrail() = wipe <- true
 
@@ -1937,6 +2003,8 @@ type Playground() as self =
             // 1 面 目 で消えて 2 面 目 に効かない
             wipe <- false
             self.hud (n, n2, t, int (unbox<float> (jsItem ret 2)))
+            // 分かれるまで送っている最中だけ引きに来る（v3.8）
+            if divergeWatch then self.pollDiverge ()
             // **光らせるのが先。** 帯にはその行番号を出すので、
             // あとに回すと 1 コマ 遅れた行が出る
             let litLine = self.lightRunning (int (unbox<float> (jsItem ret 16)))
@@ -2047,6 +2115,8 @@ on "reset" "click" (fun () ->
   playground.wipeTrail ()
   playground.call ("Reset"))
 on "seek" "click" (fun () -> playground.seek ())
+on "diverge" "click" (fun () -> playground.divergeRun ())
+on "shift" "change" (fun () -> playground.setShift ())
 on "rank" "input" (fun () -> playground.setRank ())
 on "seed" "change" (fun () -> playground.setSeed ())
 on "seed-roll" "click" (fun () -> playground.rollSeed ())

@@ -26,6 +26,7 @@
     <Compile Include="..\..\src\FsBulletML2.Playground\BrowserEnv.fs" Link="BrowserEnv.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Pacing.fs" Link="Pacing.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Seek.fs" Link="Seek.fs" />
+    <Compile Include="..\..\src\FsBulletML2.Playground\Diverge.fs" Link="Diverge.fs" />
     <!-- **器 の Host からも 1 本 借りる。** `Focus.fs` が読んだ木を歩くのに使う。
          参照を足さないのは、あちらが Parser / Dsl まで引くから ——
          この 1 本 が使うのは Core の型と reflection だけ -->
@@ -47,6 +48,8 @@
     <Compile Include="FocusTally.fs" />
     <!-- 弾の系譜（v3.6）。**この弾を撃った弾を根まで辿る** -->
     <Compile Include="BulletLineage.fs" />
+    <!-- 2 面 が分かれるコマ（v3.8）。**位置で見る。数では遅れる** -->
+    <Compile Include="DivergeFrames.fs" />
   </ItemGroup>
   <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
        手のせいか版のせいかが割れない -->
