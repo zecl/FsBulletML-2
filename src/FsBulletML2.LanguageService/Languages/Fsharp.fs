@@ -251,6 +251,17 @@ type FsharpLanguage(vocabulary: unit -> Vocab) =
     /// **ほかの 3 表記 と同じ 1 本 を通る**（`Semantics.findings`）——
     /// 渡す `Tags` が CE の名前を数える側になるだけ。
     /// 対も `top` の綴りも語彙から引くので、ここには何も書かない
+    ///
+    /// **式は出ない**（v4.1）。ほかの 3 表記 は「その要素の `#PCDATA`」で
+    /// 式を拾えるが、**CE は要素名で書かない** ——
+    /// `absolute "180+$rand*30"` が `<direction type="absolute">` で、
+    /// `repeat "10-$rank*2"` の字は `<repeat>` ではなく**中の `<times>`**。
+    /// **名前から要素へは引けるが、引数の何番目 が式かは引けない**
+    /// （`VocabCeLabel.LabelArg` が言うのは label の位置だけ）。
+    ///
+    /// **推定で光らせない。** label の字を式と読み違えると、
+    /// **正しい弾幕が赤くなる** —— v2.3 が引いた線に掛かる。
+    /// CE で効かないものを数え直すのは v4.8
     member _.Findings source =
       let v = vocabulary ()
       let pairs =

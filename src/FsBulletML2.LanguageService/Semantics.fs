@@ -67,6 +67,18 @@ type FindingKind =
   /// 数え方は `Refs.missing` の 1 本。**ここでは持たない** ——
   /// 波線と Quick Fix が同じ数え方を見る
   | MissingRef
+  /// 読めない式（v4.1）。**壊れ方が 2 通り あるので、腕が値を持つ。**
+  ///
+  ///     Stops = true    走らない。Apply が落ちる（`#loop-error` に出る）
+  ///     Stops = false   **走る。値が NaN になるだけ**
+  ///
+  /// 割れ目は Core の畳みに在る —— **`$` を含まない式だけ**が読み込みの段で
+  /// 畳まれ、そこで旧の評価器（XPath）が落ちる。`$` を含む式はそこを通らず、
+  /// 走行中に NaN になる。
+  ///
+  /// 版の頭で測った —— `<wait>1+*$rank</wait>` は **60 コマ で 61 発** 撃つ
+  /// （間 が空かない）。**読めて・組めて・走って・書いたつもりの間 が空かない。**
+  | BadExpr of stops: bool
 
 /// 意味の層の指摘 1 つ。
 type Finding =
@@ -184,6 +196,40 @@ let findings
   // `noEntry` だけは本文全体の話なので、位置に関わらず先頭
   noEntry @ (unused @ missing |> List.sortBy (fun f -> f.Line, f.Column))
 
+/// 読めない式（v4.1）。**`findings` と別の 1 本。**
+///
+/// 材料が違う —— あちらは `TagHit`（札の中身）、こちらは `TextHit`
+/// （札のあいだ の字）。**同じ関数に押し込むと、`TextHit` を持たない
+/// 表記のために空を渡すことになり、「出さない」と「取れない」が混ざる。**
+///
+/// **強さは 2 段。** `$` を含まない式は読み込みの段で畳まれるので落ち、
+/// 含む式は走行中に NaN になる（版の頭で測った。`BadExpr` の但し書き）。
+///
+/// **位置は「読めたところの続き」から、その字の終わりまで。**
+/// 要素まるごとに引くと `180+$rand*30` が全部 赤くなって、
+/// **どこが悪いか読めない。**
+///
+/// **行をまたがない。** 式が改行を含んでいたら、読めなくなった位置の行だけ
+/// を指す —— またいで桁を出すと、2 行 目 の桁が 1 行 目 の続きになる
+let exprFindings (source: string) (texts: TextHit list) : Finding list =
+  [ for h in texts do
+      if not (ExprCheck.readable h.Text) then
+        let at = h.Start + ExprCheck.readTo h.Text
+        let struct (line, column) = Scan.lineColumn source at
+        // その行の終わりか、字の終わりか、近いほう
+        let mutable stop = h.Stop
+        let mutable k = at
+        while k < stop && source.[k] <> '\n' do k <- k + 1
+        if k < stop then stop <- k
+        let endColumn = max (column + 1) (column + (stop - at))
+        yield
+          { Kind = BadExpr(not (h.Text.Contains "$"))
+            Name = h.Text
+            Element = h.TagName
+            Line = line
+            Column = column
+            EndColumn = endColumn } ]
+
 /// 2 つ の runtime で同じ答えが返ることを見る口（`guard-fable-parity`）。
 ///
 /// **数えるところは `findings` 1 本。** node 側 と .NET 側 で別々に
@@ -209,7 +255,9 @@ let describe (source: string) : string =
            add (match f.Kind with
                 | NoEntryPoint -> "entry"
                 | UnusedDefinition -> "unused"
-                | MissingRef -> "missing")
+                | MissingRef -> "missing"
+                | BadExpr true -> "expr!"
+                | BadExpr false -> "expr?")
            add ":"
            add f.Element
            add ":"
@@ -228,4 +276,13 @@ let describe (source: string) : string =
   render (findings pairs "" hits)
   add " nopairs="
   render (findings [] "top" hits)
+  // 式（v4.1）。**同じ字を、札のあいだ から数え直す**
+  //
+  // **要素名の表を書かない。** 本番は語彙の `Text`（`#PCDATA` を取るか）から
+  // 引くが、この口は語彙を受け取らない —— **本文に出てくる名前を全部 渡す。**
+  // 突き合わせに要るのは「2 つ の runtime が同じ答えを出すこと」で、
+  // どの要素を見るかは両方 同じなら何でもよい
+  add " expr="
+  let allNames = hits |> List.map (fun t -> t.TagName) |> List.distinct
+  render (exprFindings source (XmlScan.texts source allNames))
   sb.ToString()

@@ -92,6 +92,22 @@ type NodeSpan =
     CloseStart: int
     CloseStop: int }
 
+/// 式が書ける要素の中身（v4.1）。**`#PCDATA` を取る要素の、字のほう。**
+///
+/// `TagHit` は札の中身（名前と属性）しか持たない —— **式は札のあいだ に在る**
+/// ので、別に拾う。
+///
+/// **位置は 0 起点 の文字数で、`Stop` は含まない。** 行桁へ直すのは
+/// `Scan.lineColumn` で、読む側がやる（`TextHit` は表記に依らない）。
+///
+/// **取り方は表記ごとに違う**（XML は札のあいだ、ほかの 3 つ は引用符の中）
+/// が、**答えは同じ 1 つ の字。**
+type TextHit =
+  { TagName: string
+    Text: string
+    Start: int
+    Stop: int }
+
 /// カーソルの居場所。**そこで何を打てるか。**
 type Context =
   /// 本文。直近に開いている要素（無ければ根の外）

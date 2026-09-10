@@ -1227,7 +1227,22 @@ type Playground() as self =
                 // **走るが、書いたものが出ない。** Apply は通る（実測）——
                 // 解けない参照は黙って無視されるだけなので、
                 // 「読めない」（Error）とは別の強さ
-                Monaco.Severity = Monaco.Severity.Warning })
+                Monaco.Severity = Monaco.Severity.Warning }
+            // 読めない式（v4.1）。**強さが 2 段。**
+            //
+            // `$` を含まない式は読み込みの段で畳まれるので**走らない**（赤）。
+            // 含む式はそこを通らず、走行中に NaN になる ——
+            // **走るが値が出ない**（黄）。版の頭で測った：
+            // `<wait>1+*$rank</wait>` は 60 コマ で 61 発 撃つ（間 が空かない）
+            | Semantics.BadExpr stops ->
+              { Monaco.Line = f.Line
+                Monaco.Column = f.Column
+                Monaco.EndColumn = f.EndColumn
+                Monaco.Message =
+                  if stops then f.Element + " の式が読めない —— この本は走らない"
+                  else f.Element + " の式が読めない —— 走るが、この値は数にならない"
+                Monaco.Severity =
+                  if stops then Monaco.Severity.Error else Monaco.Severity.Warning })
       Monaco.markSemantic marks
 
   /// 表記を差し替える。**本文は触らない。**

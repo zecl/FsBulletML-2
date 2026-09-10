@@ -53,6 +53,10 @@
     <Compile Include="Distance.fs" />
     <!-- 参照の規則。**host の波線と ブラウザの rename / Quick Fix が同じ 1 本 を引く** -->
     <Compile Include="Refs.fs" />
+    <!-- 式が読めるかを字から見る（v4.1）。**値は出さない** ——
+         評価器を 2 本 持つと同じ式が 2 通り の値になる。
+         Core の `Expr.parse` との突き合わせは `ExprParity` が数える -->
+    <Compile Include="ExprCheck.fs" />
     <!-- 意味の層（v2.3）。**字から数える** —— 打鍵ごとに回すので WASM へ行かない -->
     <Compile Include="Semantics.fs" />
     <!-- 本文の構造（v2.4）。**深さの並びから木にする** -->

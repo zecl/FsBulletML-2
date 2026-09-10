@@ -67,6 +67,7 @@ let shape: Shape =
     ContextAt = FsbScan.contextAt
     TokenAt = FsbScan.tokenAt
     Tags = FsbScan.tags
+    Texts = FsbScan.texts
     // XML と同じ。`=""` まで入れて引用符の中へカーソルを置く
     AttrSnippet = fun name -> name + "=\"$0\""
     WriteFrame = writeFrame 0

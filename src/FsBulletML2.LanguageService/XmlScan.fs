@@ -230,3 +230,24 @@ module XmlScan =
   let describe (src: string) (cursor: int) : string =
     Scan.describe (tags src) (contextAt src cursor) (tokenAt src cursor)
                   (Scan.nameLenBefore src cursor) (Scan.exprLenBefore src cursor)
+
+  /// 式が書ける要素の中身（v4.1）。**札のあいだ の字。**
+  ///
+  /// **開始札の `>` の次から、次の `<` まで。** 子を持つ要素は
+  /// そこが空白だけになるので、呼ぶ側が捨てる（空は返さない）。
+  ///
+  /// 拾う要素名は呼ぶ側が渡す。**器に表を書かない** ——
+  /// 正本は語彙の `Text`（`#PCDATA` を取るか）で、それは Core の DTD から来る
+  let texts (src: string) (names: string list) : TextHit list =
+    tags src
+    |> List.choose (fun t ->
+         if t.Closing || t.SelfClosing || not (List.contains t.TagName names) then None
+         else
+           let from = t.Stop + 1
+           if from >= src.Length then None
+           else
+             let mutable j = from
+             while j < src.Length && src.[j] <> '<' do j <- j + 1
+             let text = src.Substring(from, j - from)
+             if text.Trim() = "" then None
+             else Some { TagName = t.TagName; Text = text; Start = from; Stop = j })

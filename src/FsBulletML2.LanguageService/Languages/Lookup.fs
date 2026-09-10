@@ -26,6 +26,14 @@ type Shape =
     /// **表記ごとの 1 本 は `XxxScan.tags`。** host 側の `ISourceReader.Tags` が
     /// 同じものを指している —— 波線と rename が同じ数え方を見る
     Tags: string -> TagHit list
+    /// 式が書ける要素の中身（v4.1）。受け取るのは `#PCDATA` を取る要素名。
+    ///
+    /// **取り方は表記ごとに違う** —— XML は札のあいだ、sxml は括弧の中の
+    /// 引用符、fsb は `:` のあとの引用符。**F# の CE は空**（下の但し書き）。
+    ///
+    /// **要素名は渡してもらう。** 正本は語彙の `Text` で、それは Core の
+    /// DTD から来る —— 器に表を書くと、DTD が動いたとき黙って古びる
+    Texts: string -> string list -> TextHit list
     /// 属性を入れるときの字。`$0` がカーソルの置き場
     AttrSnippet: string -> string
     /// 雛形をその表記の字にする（v2.6）。**字下げは 0 段 から** ——
@@ -302,7 +310,17 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
     let v = vocabulary ()
     let pairs =
       Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
-    Semantics.findings pairs v.TopPrefix (shape.Tags source)
+    // 式（v4.1）。**別の 1 本**（材料が `TextHit` で、`TagHit` ではない）
+    let exprNames =
+      v.Elements |> List.filter (fun e -> e.Text) |> List.map (fun e -> e.Name)
+    let expr = Semantics.exprFindings source (shape.Texts source exprNames)
+    // **並べ直す。** 2 本 から来るので、混ぜたら本文の順に戻す ——
+    // `NoEntryPoint` だけは本文全体の話なので先頭 に残す
+    let sem = Semantics.findings pairs v.TopPrefix (shape.Tags source)
+    match sem with
+    | first :: rest when first.Kind = Semantics.NoEntryPoint ->
+        first :: (rest @ expr |> List.sortBy (fun f -> f.Line, f.Column))
+    | _ -> sem @ expr |> List.sortBy (fun f -> f.Line, f.Column)
 
   /// 本文の構造（v2.4）。**中身は `Outline.build` の 1 本**（表記を知らない）。
   ///

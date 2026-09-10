@@ -75,6 +75,7 @@ let shape: Shape =
     ContextAt = XmlScan.contextAt
     TokenAt = XmlScan.tokenAt
     Tags = XmlScan.tags
+    Texts = XmlScan.texts
     // **`=""` まで入れて、引用符の中へカーソルを置く。**
     // 名前だけ入れると、必ず手で 3 文字 足すことになる
     AttrSnippet = fun name -> name + "=\"$0\""

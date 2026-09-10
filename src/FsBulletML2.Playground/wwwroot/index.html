@@ -477,14 +477,18 @@
               <li>読めなければ Apply したときに下のバーへ理由が出て、分かる位置には波線が付く</li>
               <li><strong>読めて・組めても走らないものは、打った時点で波線が付く</strong>
                   （Apply を待たない）。字から数えているので、
-                  <strong>いちばん長い弾幕でも 0.5 ミリ秒</strong>。3 種類 出る。
+                  <strong>いちばん長い弾幕でも 0.7 ミリ秒</strong>。3 色 出る。
                   <ul>
                     <li><strong>赤</strong> —— <code>top</code> で始まる名前の定義が 1 つ も無い。
                         <strong>読めて・組めて、黙って何も起きない</strong>（走らせる側が
-                        <code>top</code> で始まる名前を探すので）</li>
+                        <code>top</code> で始まる名前を探すので）。
+                        <strong>読めない式</strong>で <code>$rand</code> も <code>$rank</code> も
+                        使っていないものも赤（下の節）</li>
                     <li><strong>黄</strong> —— <code>◯◯Ref</code> が指す名前の定義が無い。
                         <strong>Apply は通る</strong> —— 解けない参照は黙って無視されるだけなので、
-                        書いたつもりのものが出ない</li>
+                        書いたつもりのものが出ない。
+                        <strong>読めない式</strong>で <code>$rand</code> か <code>$rank</code> を
+                        使っているものも黄</li>
                     <li><strong>青</strong> —— どこからも呼ばれていない定義。
                         <strong>走りには影響しない</strong>（同梱 176 本 にも 6 件 在る）</li>
                   </ul></li>
@@ -499,6 +503,45 @@
                 <code>tsukawanai</code> が呼ばれていない（青）
               </figcaption>
             </figure>
+
+            <h4>読めない式</h4>
+
+            <figure>
+              <img src="img/help/bad-expr.png" width="470" height="115" loading="lazy"
+                   alt="wait の中の式に波線が付き、読めなくなったところから後ろだけが下線になっている">
+              <figcaption>
+                <strong>読めたところの続きから</strong>下線が付く ——
+                式まるごとではないので、<strong>どこで詰まったかが読める</strong>
+              </figcaption>
+            </figure>
+
+            <ul>
+              <li><code>&lt;wait&gt;</code> や <code>&lt;speed&gt;</code> のように
+                  <strong>中身が式になる 8 つ</strong>（<code>direction</code> /
+                  <code>speed</code> / <code>horizontal</code> / <code>vertical</code> /
+                  <code>term</code> / <code>times</code> / <code>wait</code> /
+                  <code>param</code>）で、<strong>式が読めなければ打った時点で波線</strong></li>
+              <li><strong>色が 2 つ に分かれる。</strong> 同じ「読めない式」でも、
+                  起きることが違う ——
+                  <ul>
+                    <li><strong>赤</strong>（<code>$</code> を使っていない）——
+                        <strong>この本は走らない。</strong> 読み込む段で数に潰そうとして落ちる</li>
+                    <li><strong>黄</strong>（<code>$rand</code> か <code>$rank</code> を使っている）——
+                        <strong>走る。その値だけが数にならない。</strong>
+                        <code>&lt;wait&gt;1+*$rank&lt;/wait&gt;</code> は
+                        <strong>間 が空かず、毎コマ 撃つ</strong>（60 コマ で 61 発。測った）</li>
+                  </ul></li>
+              <li><strong>書ける式は XPath の数式。</strong>
+                  <code>+ - * / %</code> と括弧、<code>$rand</code> / <code>$rank</code>、
+                  そして数。<strong>単項の <code>+</code> は書けない</strong>（<code>+1</code> は読めない）し、
+                  <strong>指数表記も無い</strong>（<code>1E-07</code> は読めない）</li>
+              <li><strong>F# の CE では出ない。</strong> あちらは要素名で書かないので、
+                  <strong>引数のどれが式かを字からは言えない</strong> ——
+                  <code>actionRef "shot"</code> の <code>"shot"</code> は名前であって式ではない。
+                  推定で光らせると、正しい弾幕が赤くなる</li>
+              <li>同梱 176 本 の式 4,582 件 に<strong>読めないものは 1 つ も無い</strong>
+                  （数えた）—— 正しい弾幕がこれで光ることはない</li>
+            </ul>
 
             <h4>時間</h4>
             <ul>
