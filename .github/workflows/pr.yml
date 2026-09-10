@@ -117,6 +117,18 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-control-names.Tests.ps1
 
+      # 開き直しても覚えている口は、id の配列 1 本 で回っている（v3.5）。
+      # **配列と html が食い違っても何も起きない** —— その口だけ静かに
+      # 覚えなくなる。しかも「覚えない決まりの口」が既定で在るので、
+      # 忘れているのか決まりなのかが目では見分けられない（v4.0.2）
+      - name: 覚える口が画面の口を指しているか
+        shell: pwsh
+        run: ./.github/scripts/guard-kept-controls.ps1
+
+      - name: その門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-kept-controls.Tests.ps1
+
       # 使い方の窓は章に割れていて、章は 3 か所 に書かれている ——
       # 目次の札（html）・本文の節（html）・並び（Playground.fs の helpChapters）。
       # **どれか 1 つ を足し忘れても走行は止まらない**ので、対と並びを数える。

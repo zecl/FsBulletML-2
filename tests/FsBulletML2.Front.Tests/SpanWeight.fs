@@ -33,6 +33,15 @@ open FsBulletML2.Playground
 ///   `byIndex.[i] <- 足す` を `<- 上書き`     失敗 1（畳んだ数は、畳む前の合計と変わらない）
 ///   `if countSpans` を `if true`            失敗 1（数えるのを切ると 0 のまま）
 ///
+/// --- 較正（v4.0.2。切り替えと捨てる口）
+///
+/// **`spans.Clear()` は 2 か所 に在った**（面を建て直すところと、捨てる口）——
+/// 全文で置換すると 2 か所 に当たるので、`clearSpans` に畳んでから当てた。
+///
+///   `spans.Clear()` を `spans.Count |> ignore`     失敗 1（捨てると、それまでの数は残らない）
+///   `spanTotal <- 0` を `<- spanTotal + 0`         失敗 1（同上）
+///   `countSpans <- v` を `<- countSpans && v`      失敗 1（切ってから入れ直すと、また数え始める）
+///
 /// **1 つ 目 は、はじめ緑のまま通った。** `Shared` にも同梱の弾幕にも
 /// 添字が決まらない行が 1 つ も無く、**当てる材料が入力に無かった** ——
 /// `vanish` を 2 か所 に書いた `Ambiguous` を足して赤になる
@@ -150,3 +159,34 @@ type SpanWeight() =
     runFor f 60
     f.Focus.SpanTotal |> should equal 0
     f.Focus.SpanCount |> should equal 0
+
+  /// **切ったあとも入れ直せる**（v4.0.2）。印のチェックは何度でも押せるので、
+  /// 片道 の切り替えだと 2 度 目 から効かない
+  [<Test>]
+  member _.``切ってから入れ直すと、また数え始める``() =
+    let f = field DeterministicField.Xml
+    f.Focus.SetCountSpans false
+    runFor f 60
+    f.Focus.SpanTotal |> should equal 0
+    f.Focus.SetCountSpans true
+    runFor f 60
+    f.Focus.SpanTotal |> should be (greaterThan 0)
+
+  /// **入れ直したら数え直す**（v4.0.2）。捨てないと、切っているあいだの穴が
+  /// 空いた数を「その行に居た弾コマ の割合」と呼ぶことになる ——
+  /// 穴の大きさを決めるのは人（いつ入れ直したか）なので、
+  /// **同じ弾幕・同じ種でも出る数が違ってしまう**
+  [<Test>]
+  member _.``捨てると、それまでの数は残らない``() =
+    let whole = field DeterministicField.Xml
+    runFor whole 120
+    let a = field DeterministicField.Xml
+    runFor a 60
+    a.Focus.ResetSpans()
+    a.Focus.SpanTotal |> should equal 0
+    a.Focus.SpanCount |> should equal 0
+    runFor a 60
+    // 捨てたあとも数え続ける（切ったわけではない）
+    a.Focus.SpanTotal |> should be (greaterThan 0)
+    // **前の 60 コマ ぶんは足されていない。** 同じ走りを通しで数えたほうが多い
+    a.Focus.SpanTotal |> should be (lessThan whole.Focus.SpanTotal)

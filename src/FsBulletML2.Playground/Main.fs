@@ -44,6 +44,14 @@ type PlaygroundHost() =
   /// 2 つ 目 の弾幕。**無ければ 1 面。**
   let mutable second : Bulletml option = None
 
+  /// 字の右に印を出すか（v4.0.2）。**面が持つのは「数えるか」だけ** ——
+  /// 出すか出さないかはブラウザ側の話で、こちらは
+  /// **数えるのを止められる**（`Focus` の `countSpans`）。
+  ///
+  /// **建て直しのたびに配り直す。** 新しい `Focus` は数える側で始まるので、
+  /// ここを通さないと Apply や Reset で黙って数え始める
+  let mutable marksOn = true
+
   /// 面を建てる。**乱数の並びを頭へ戻してから。**
   ///
   /// 戻さないと、同じ種でも「建て直したあと」が別の走りになる ——
@@ -57,6 +65,7 @@ type PlaygroundHost() =
     env.RestartRandom()
     let pf = Playfield.Create env bulletml
     env.SetField pf.Field
+    pf.Focus.SetCountSpans marksOn
     pf
 
   /// 2 つ 目 の面。**同じ手順を別の env で。** 1 本 にまとめられないのは
@@ -81,6 +90,7 @@ type PlaygroundHost() =
     env2.RestartRandom()
     let pf = Playfield.Create env2 bulletml
     env2.SetField pf.Field
+    pf.Focus.SetCountSpans marksOn
     pf
 
   let mutable field = build current
@@ -414,6 +424,27 @@ type PlaygroundHost() =
   /// 載っている弾幕の一部ではない（拡大率と同じ扱い）
   [<JSInvokable>]
   member _.SetRate(n: int) = pacing <- Pacing.withRate n
+
+  /// 字の右の印を出すか（v4.0.2）。**面がやめられるのは「数えるのを」だけ。**
+  ///
+  /// 撃った数（`TallyAt`）は撃つたびに 1 つ 足すだけなので止めない ——
+  /// 止めると、入れ直したときに**撃った延べ が嘘になる**（面ごとの総数なので、
+  /// 抜けたぶんを後から埋められない）。
+  ///
+  /// 弾コマ（`countSpans`）は止める。**あちらは毎コマ、弾の数ぶん**動く ——
+  /// 印を出さないなら、数えたものの行き先が無い。
+  ///
+  /// **入れ直したら数え直す。** 理由は `Focus.ResetSpans` に書いた
+  [<JSInvokable>]
+  member _.SetMarks(on: bool) =
+    marksOn <- on
+    let apply (pf: Playfield) =
+      pf.Focus.SetCountSpans on
+      if on then pf.Focus.ResetSpans()
+    apply field
+    match field2 with
+    | Some f2 -> apply f2
+    | None -> ()
 
   /// 難易度。**0 から 1。**
   ///

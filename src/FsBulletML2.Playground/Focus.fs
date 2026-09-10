@@ -103,6 +103,12 @@ type Focus () =
   /// 素との差を測るのに焼き直しを 2 回 するより、同じ走行の中で切り替えたい
   let mutable countSpans = true
 
+  /// 弾コマ の数を捨てる。**面を建て直すときと、印を入れ直したとき**（v4.0.2）——
+  /// 2 か所 に同じ 2 行 を書くと、片方 だけ直した形が黙って残る
+  let clearSpans () =
+    spans.Clear()
+    spanTotal <- 0
+
   let onVisit =
     fun (node: obj) ->
       if countSpans then
@@ -209,8 +215,7 @@ type Focus () =
     tally.Clear()
     tallyTotal <- 0
     // 走った字ごとの弾コマ（v3.9）。**こちらも面ごと**
-    spans.Clear()
-    spanTotal <- 0
+    clearSpans ()
     // **書いてある順の並びも、ここで 1 回 だけ組む。** 走行中には要らない
     // （引くのは選んだ弾の 1 コマ に 1 回）ので、毎コマ 歩かない
     let walk = NodeOrder.walk bulletml
@@ -324,8 +329,17 @@ type Focus () =
   /// 弾コマの総数
   member _.SpanTotal = spanTotal
 
-  /// 数えるかどうか。**版の頭の A/B のため**
+  /// 数えるかどうか。**印を切ると、ここも切れる**（v4.0.2）——
+  /// 版の頭の A/B のために置いた口が、そのまま本番の口になった
   member _.SetCountSpans(v: bool) = countSpans <- v
+
+  /// それまでに数えた弾コマ を捨てる（v4.0.2）。
+  ///
+  /// **入れ直したら数え直す。** 捨てないと、切っているあいだの穴が
+  /// 空いた数を「その行に居た弾コマ の割合」と呼ぶことになる ——
+  /// **穴の大きさを決めるのは人**（いつ入れ直したか）なので、
+  /// 同じ弾幕・同じ種でも出る数が違ってしまう
+  member _.ResetSpans() = clearSpans ()
 
   /// 選んだ弾の 1 コマ の前。**`NodeOrigin` もここで繋ぐ** ——
   /// 輪を書いた本は走行中にも新しいノードを作る（同梱では 1 件 も出ないが、
