@@ -722,29 +722,37 @@
 
             <figure>
               <img src="img/help/tally.png" width="600" height="288" loading="lazy"
-                   alt="本文の fire タグの右に、撃った数が × 付きで出ている">
+                   alt="本文の fire タグの右に、撃った数と生きている数が ×288（217） の形で出ている">
               <figcaption>
-                撃つ腕の右に<strong>それまでに何発 撃ったか</strong>が出る。
-                <code>&lt;action&gt;</code> の <code>7%</code> は<strong>別の軸</strong>（重さ）——
-                <strong>× と ％ は付く行が違う</strong>
+                撃つ腕の右に <code>×288（217）</code> ——
+                <strong>288 発 撃って、いま 217 発 生きている</strong>。
+                <code>&lt;action&gt;</code> の <code>7%</code> は<strong>別の軸</strong>（重さ）
               </figcaption>
             </figure>
 
             <ul>
               <li>走らせると、<code>&lt;fire&gt;</code> の右に
-                  <strong>その面でそれまでに何発 撃ったか</strong>が出る。
-                  <strong>どの行が弾を増やしているか</strong>が、走らせながら読める</li>
-              <li><strong>出るのは多い順に 5 つ だけ。</strong>
-                  全部 出すと字が埋まる —— 同梱 176 本 で数えると
-                  <strong>上位 3 つ で撃った数の 93%</strong>
-                  （<code>fire</code> が 4 個 以上 の 130 本 の中央値）なので、
-                  5 つ で足りる</li>
+                  <strong><code>×24（12）</code></strong> が出る ——
+                  <strong>24 発 撃って、いま 12 発 生きている</strong>。
+                  ×は<strong>どの行が弾を増やしているか</strong>、
+                  括弧は<strong>いま面に出ている弾がどの行から来たか</strong></li>
+              <li><strong>括弧の中を全部 足すと、下の <code>Bullets:</code> と同じ数になる。</strong>
+                  そのために<strong>生きている弾を持つ腕は 1 本 も落とさない</strong> ——
+                  多い順に 5 つ で切ると、<strong>同梱 176 本 のうち 85 本 で
+                  合計が合わなくなる</strong>（生きている腕は中央 5 / 最大 34 本。数えた）</li>
+              <li><strong>×が 0 でも括弧が 0 でないことが在る</strong>
+                  （<code>×0（5）</code>）。撃った数は<strong>面ごとに 0 から</strong>
+                  数え直すので、建て直した直後は
+                  「<strong>撃った覚えは無いが、弾は生きている</strong>」腕が在る</li>
               <li><strong>色ではなく数を出している。</strong>
                   走っている場所（黄）と出どころ（緑）がもう在るので、
                   <strong>3 色 目 を足すとどれが何か覚えられなくなる</strong></li>
               <li><strong>書き直すのは 30 コマ に 1 度。</strong>
                   毎コマ 並べ替えると、<strong>弾の数と関係なく</strong>
-                  腕の数だけ費用が乗る</li>
+                  腕の数だけ費用が乗る。
+                  ただし<strong>止めたときは 1 度 だけ書き直す</strong> ——
+                  そうしないと、止めた瞬間 の <code>Bullets:</code> と
+                  <strong>最大 30 コマ 前 の印</strong>を見比べることになる</li>
               <li><strong>面を建て直すと 0 から。</strong>
                   Reset・Apply・弾幕の選び直しで数え直す ——
                   残すと、別の弾幕の数が前の弾幕の行に乗る</li>
@@ -800,10 +808,10 @@
 
             <figure>
               <img src="img/help/span.png" width="505" height="384" loading="lazy"
-                   alt="本文の action と repeat の右に 22% / 23%、fireRef の右に ×105 / ×93 が出ている">
+                   alt="本文の action と repeat の右に 22% / 23%、fireRef の右に ×105（104） / ×93（93） が出ている">
               <figcaption>
                 <strong>％ が重さ、× が撃った数</strong>で、<strong>付く行が違う</strong> ——
-                24 発 撃った 6 行 目 に％ は無く、重いのは弾の側の
+                <code>×24（24）</code> の 6 行 目 に％ は無く、重いのは弾の側の
                 <code>&lt;action&gt;</code>（22%）
               </figcaption>
             </figure>

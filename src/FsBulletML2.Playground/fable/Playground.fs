@@ -371,8 +371,12 @@ type Playground() as self =
   // 毎コマ 出し直さないのは、並べ替えが**腕の数ぶん**要るから ——
   // 弾の数と関係なく効くので、重い弾幕ほど損が目立つ
   let tallyEvery = 30
-  // 字の上に出す上位いくつ。**同梱 176 本 で上位 3 つ が 93%**
-  // （`fire` が 4 個 以上 の 130 本 の中央値）なので、5 で足りる
+  // **撃った数**で切る上位いくつ。**同梱 176 本 で上位 3 つ が 93%**
+  // （`fire` が 4 個 以上 の 130 本 の中央値）なので、5 で足りる。
+  //
+  // **生きている弾を持つ腕は、この数で切られない**（v4.0.1）——
+  // 切ると字の上の合計が `Bullets:` に届かなくなる。
+  // 和集合を作るのは `Main.TallyTop` の側
   let tallyTopN = 5
   /// 重さを出す行の上限（v3.9）。**割合で切るので、ここは天井**。
   /// 版の頭で数えた —— 5% 以上 の行は**中央 5 / 9 割 9 / 最大 12**
@@ -385,6 +389,10 @@ type Playground() as self =
   /// あちらの数を見て「同じコマか」で判じると、
   /// **止めているあいだ毎コマ 引きに行く**（コマが進まないので差が 0 のまま）
   let mutable spanAt = -1000
+  // 前に呼ばれたときのコマ（v4.0.1）。**進んだかどうかを見る** ——
+  // 止めているあいだは `frame` が動かないので、30 コマ の間引きだけだと
+  // **印が永久に古いまま**になる（`Bullets:` は毎コマ 書き直される）
+  let mutable markFrame = -1
   // 打った字を残すときの待ち（v3.5）。**0 は「予約が無い」**
   let mutable saveTimer = 0.0
   // 重さの帯（v3.3 の段 2）。**弾数とコマ時間の 2 本。**
@@ -774,11 +782,21 @@ type Playground() as self =
         put (maxMs.ToString "F1" + " ms/Frame") "#f09a78"
         if maxMsFrame > 0 then put ("　（Frame " + groupDigits maxMsFrame + "）") "#9aa0aa"
 
-  /// 撃った数を字の右へ出す（v3.3 の段 1）。**印ではなく数を足す。**
+  /// 撃った数と、**いま生きている数**を字の右へ出す（v3.3 の段 1 / v4.0.1）。
+  /// **印ではなく数を足す。**
   ///
   /// 走っている場所（黄）と撃った場所（緑）がもう在るので、
   /// **3 色 目 を足さない** —— どれが何かを覚えられなくなる。
   /// 数そのものを字の後ろに置けば、色を使わずに済む。
+  ///
+  /// 出す形は **`×24（12）`** —— 24 発 撃って、いま 12 発 生きている。
+  /// **括弧で 1 つ の印にまとめる**（別の印にすると、`%`（重さ）と合わせて
+  /// 覚えるものが 3 つ になる）。
+  ///
+  /// **括弧の中の合計は `Bullets:` と一致する。** そのために
+  /// **生きている弾を持つ腕は 1 本 も落とさない** —— 上位 n だけでは
+  /// 足りないと版の頭で数えた（生きている腕は中央 5 / 9 割 14 / 最大 34 本 で、
+  /// 176 本 中 85 本 が 5 本 を超える）。並べるのは `TallyTop` の側。
   ///
   /// **間引く。** 並べ替えは腕の数ぶんで、弾の数と関係なく効く
   member _.lightTally(frame: int) =
@@ -786,27 +804,40 @@ type Playground() as self =
       if tallyShown then
         tallyShown <- false
         Monaco.clearTally ()
-    elif frame - tallyAt >= tallyEvery then
+    // **止まったら 1 度 だけ書き直す。** 走っているあいだは 30 コマ に 1 度 で
+    // 足りるが、止めた瞬間 の印は最大 30 コマ 前 のもの ——
+    // **そこで人は `Bullets:` と見比べる。**
+    //
+    // `frame = markFrame` は「前に呼ばれたときからコマが進んでいない」。
+    // 書き直したら `tallyAt <- frame` になるので、**止まっているあいだ
+    // 繰り返しはしない**（1 度 だけ）
+    elif frame - tallyAt >= tallyEvery || (frame = markFrame && tallyAt <> frame) then
       tallyAt <- frame
       if not litScanned then
         litScanned <- true
         litSpans <- current.NodeSpans (Monaco.getValue ()) nodeNames
       let raw = unbox<float[]> (invoke1 dotNet "TallyTop" (box tallyTopN))
-      // **先頭 2 つ は 総数 と 腕の数。** そこから後ろが (添字, 数) の対
-      let pairs = (raw.Length - 2) / 2
+      // **先頭 2 つ は 総数 と 腕の数。** そこから後ろが
+      // (添字, 撃った延べ, 生きている) の 3 つ 組
+      let rows = (raw.Length - 2) / 3
       let span = List.length litSpans
       let marks = ResizeArray<int * int * string>()
-      for k in 0 .. pairs - 1 do
-        let idx = int raw.[2 + k * 2]
-        let cnt = int raw.[3 + k * 2]
+      for k in 0 .. rows - 1 do
+        let idx = int raw.[2 + k * 3]
+        let cnt = int raw.[3 + k * 3]
+        let now = int raw.[4 + k * 3]
         // **並びの外は出さない。** 添字が外れているのに隣へ数を付けると、
         // 「その行が撃った」という嘘になる（光らせる側と同じ守り）
-        if idx >= 0 && idx < span && cnt > 0 then
+        //
+        // **撃った数が 0 でも、生きているなら出す。** 撃った数は面ごとに
+        // 数え直すので（Reset / Apply）、**建て直した直後は 0 のまま
+        // 弾だけが生きている**ことが在る —— そこで落とすと合計が合わない
+        if idx >= 0 && idx < span && (cnt > 0 || now > 0) then
           let sp = List.item idx litSpans
           // **札の後ろに置く。** 名前の後ろに置くと `<fire ×252>` になって
           // **属性のように読める**（実機で見て気づいた）——
           // 開き札の終わりなら `<fire> ×252` で、字と添え物が分かれる
-          marks.Add(sp.OpenStart, sp.OpenStop, "  ×" + groupDigits cnt)
+          marks.Add(sp.OpenStart, sp.OpenStop, "  ×" + groupDigits cnt + "（" + groupDigits now + "）")
       tallyShown <- marks.Count > 0
       Monaco.showTally (marks.ToArray())
 
@@ -826,7 +857,8 @@ type Playground() as self =
       if spanShown then
         spanShown <- false
         Monaco.clearSpans ()
-    elif frame - spanAt >= tallyEvery then
+    // **止まったら 1 度 だけ書き直す**（`lightTally` と同じ理由）
+    elif frame - spanAt >= tallyEvery || (frame = markFrame && spanAt <> frame) then
       spanAt <- frame
       if not litScanned then
         litScanned <- true
@@ -2182,7 +2214,11 @@ type Playground() as self =
             // **軌跡は 2 面 とも塗ってから落とす。** 先に落とすと、
             // 1 面 目 で消えて 2 面 目 に効かない
             wipe <- false
-            self.hud (n, n2, t, int (unbox<float> (jsItem ret 2)))
+            // **人に見せるのは弾の数**（v4.0.1）。`n` は `Pack` が詰めた点の数で、
+            // **根の敵が入っている** —— 描くのと添字はそちら、数はこちら
+            let bn = int (unbox<float> (jsItem ret 18))
+            let bn2 = int (unbox<float> (jsItem ret 19))
+            self.hud (bn, bn2, t, int (unbox<float> (jsItem ret 2)))
             // 分かれるまで送っている最中だけ引きに来る（v3.8）
             if divergeWatch then self.pollDiverge ()
             // **光らせるのが先。** 帯にはその行番号を出すので、
@@ -2196,9 +2232,12 @@ type Playground() as self =
             // **撃った数のあと。** あちらが間引きの数を進めるので、
             // こちらは「進んだコマ」を見て同じコマで書き直す
             self.lightSpans (int (unbox<float> (jsItem ret 2)))
+            // **2 つ の印を書いたあとで進める。** 手前 で進めると
+            // 「止まった」が 1 度 も見えない
+            markFrame <- int (unbox<float> (jsItem ret 2))
             // 重さの帯（v3.3 の段 2）。**弾数は 1 面 目 だけ** ——
             // 2 面 を足すと「どちらが重いか」が混ざる
-            self.weight (n, stepMs, int (unbox<float> (jsItem ret 2)))
+            self.weight (bn, stepMs, int (unbox<float> (jsItem ret 2)))
             self.focusHud (
               pickIdx,
               int (unbox<float> (jsItem ret 12)),
