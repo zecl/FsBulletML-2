@@ -46,6 +46,15 @@ let private thenCatch (p: obj) (ok: obj -> unit) (err: obj -> unit) : unit = jsN
 [<Emit("$0.getContext('2d', { alpha: false })")>]
 let private getCtx (c: HTMLCanvasElement) : CanvasRenderingContext2D = jsNative
 
+/// いまの時刻（ミリ秒）。**rAF が渡してくる `t` と同じ物差し。**
+///
+/// **分解能は 0.1 ms**（測った。`crossOriginIsolated` が false なので
+/// Spectre 対策で丸められる —— 連続で 2 回 呼んで差が 0 なのが 99.75%）。
+/// 1 コマ の走行は .NET の平均 0.076 ms を 40 倍 して 3 ms くらいなので、
+/// **30 刻み では読める。軽い弾幕では階段になる。**
+[<Emit("performance.now()")>]
+let private now () : float = jsNative
+
 [<Emit("new FileReader()")>]
 let private newFileReader () : FileReader = jsNative
 
@@ -256,6 +265,25 @@ type Playground() as self =
   // 字の上に出す上位いくつ。**同梱 176 本 で上位 3 つ が 93%**
   // （`fire` が 4 個 以上 の 130 本 の中央値）なので、5 で足りる
   let tallyTopN = 5
+  // 重さの帯（v3.3 の段 2）。**弾数とコマ時間の 2 本。**
+  //
+  // 1 本 では足りない —— 同じ本の中でも相関は中央値 0.569 で、
+  // 176 本 中 55 本 は 0.5 も無い（版の頭で測った）。
+  //
+  // **環で持つ。** 毎コマ 足すので、伸びる入れ物だと確保が増え続ける
+  let weightLen = 600
+  let weightN = Array.zeroCreate<float> weightLen
+  let weightMs = Array.zeroCreate<float> weightLen
+  // そのコマが走行の何コマ 目 か。**いちばん重かったのがどこかを字に出す** ——
+  // 立ち上がりなのか走行中なのかで、読み方がまるで違う
+  let weightFrameAt = Array.zeroCreate<int> weightLen
+  // 次に書く場所と、溜まった数（`weightLen` で頭打ち）
+  let mutable weightAt = 0
+  let mutable weightCount = 0
+  // 面を建て直したかを見る。**コマ数が減ったら建て直された** ——
+  // Reset / Apply / 選び直し で 0 に戻る
+  let mutable weightLastFrame = -1
+  let mutable weightCanvas: HTMLCanvasElement = null
   // 木のノードになる要素名。**host から起動時に 1 回**。正本は Core の DTD.fs
   let mutable nodeNames: string list = []
   // 軌跡。**過去の位置を貯めない** —— 面を消さずに薄く塗り重ねるだけなので、
@@ -457,6 +485,80 @@ type Playground() as self =
           fromLine <-
             Monaco.highlightOrigin sp.OpenStart sp.OpenStop sp.CloseStart sp.CloseStop
       fromLine
+
+  /// 重さの帯に 1 コマ 分 足して描く（v3.3 の段 2）。
+  ///
+  /// **弾数とコマ時間の 2 本。** 1 本 では足りないことは版の頭で測ってある ——
+  /// 同じ本の中でも相関は中央値 0.569 で、176 本 中 55 本 は 0.5 も無い。
+  ///
+  /// **それぞれの最大で正規化する。** 単位が違う（発 と ミリ秒）ので
+  /// 同じ目盛りには乗らない —— 見たいのは「どこで跳ねたか」であって
+  /// 「どちらが大きいか」ではない
+  member _.weight(n: int, ms: float, frame: int) =
+    if isNull weightCanvas then weightCanvas <- el "weight" |> unbox
+    if isNull weightCanvas then ()
+    else
+      // 面を建て直したら捨てる。**残すと前の弾幕の山が残ったまま**
+      if frame < weightLastFrame then
+        weightAt <- 0
+        weightCount <- 0
+      weightLastFrame <- frame
+      // **立ち上がりの 1 コマ は溜めない。** 実機で見たら、最初のコマだけ
+      // 26.0 ms 出て（以降 は 1 ms 未満）、そこで正規化された残りが
+      // 全部 底に張り付いた —— あれは走行の重さではなく初回の費用
+      // （JIT と、面が最初に伸ばす入れ物）。
+      //
+      // **2 コマ 目 以降 も重いなら、下の字に「2 コマ 目」と出る** ——
+      // 捨てた数を増やす前に、そこを見る
+      if frame > 1 then
+        weightN.[weightAt] <- float n
+        weightMs.[weightAt] <- ms
+        weightFrameAt.[weightAt] <- frame
+        weightAt <- (weightAt + 1) % weightLen
+        if weightCount < weightLen then weightCount <- weightCount + 1
+
+      let ctx = getCtx weightCanvas
+      let w = float weightCanvas.width
+      let h = float weightCanvas.height
+      ctx.fillStyle <- U3.Case1 "#101018"
+      ctx.fillRect (0., 0., w, h)
+      if weightCount >= 2 then
+        // **古い順に読む。** 環なので、溜まりきる前は 0 から、
+        // 溜まったあとは書いた次から
+        let start = if weightCount < weightLen then 0 else weightAt
+        let at (k: int) = (start + k) % weightLen
+        let mutable maxN = 1.0
+        let mutable maxMs = 0.0001
+        let mutable maxMsFrame = -1
+        for k in 0 .. weightCount - 1 do
+          let i = at k
+          if weightN.[i] > maxN then maxN <- weightN.[i]
+          if weightMs.[i] > maxMs then
+            maxMs <- weightMs.[i]
+            maxMsFrame <- weightFrameAt.[i]
+        let line (values: float[]) (top: float) (color: string) =
+          ctx.strokeStyle <- U3.Case1 color
+          ctx.lineWidth <- 1.0
+          ctx.beginPath ()
+          for k in 0 .. weightCount - 1 do
+            let x = w * float k / float (max 1 (weightCount - 1))
+            // **1px の余白を上下 に取る。** 天井に張り付くと線が切れて見える
+            let y = h - 1.0 - (h - 2.0) * values.[at k] / top
+            if k = 0 then ctx.moveTo (x, y) else ctx.lineTo (x, y)
+          ctx.stroke ()
+        // **弾数が先。** コマ時間を後に描くと、重なったとき時間が上に出る ——
+        // 見たいのは時間のほう
+        line weightN maxN "#5aa0e0"
+        line weightMs maxMs "#e07a5a"
+        // 目盛りの代わりに最大値を字で。**線だけだと桁が分からない**
+        ctx.fillStyle <- U3.Case1 "#8a9099"
+        ctx.font <- "10px monospace"
+        // **「いちばん重かったのがどこか」まで出す。** 数だけだと、
+        // 立ち上がりの 1 発 なのか走行中に跳ねたのかが読めない
+        ctx.fillText
+          ("弾 " + groupDigits (int maxN) + " / コマ " + maxMs.ToString "F1" + " ms"
+           + (if maxMsFrame > 0 then "（" + groupDigits maxMsFrame + " コマ 目）" else ""),
+           4., 11.)
 
   /// 撃った数を字の右へ出す（v3.3 の段 1）。**印ではなく数を足す。**
   ///
@@ -1534,7 +1636,11 @@ type Playground() as self =
         else
           window.requestAnimationFrame loop |> ignore
           try
+            // 走行にかかった時間を測る（v3.3 の段 2）。**rAF の間隔ではない** ——
+            // あちらは描画も他の処理も含むので、「どこが重いか」には答えない
+            let stepT0 = now ()
             let ret = invokeStep dotNet "StepFrame" t playerX playerY
+            let stepMs = now () - stepT0
             let n = int (unbox<float> (jsItem ret 0))
             let packed =
               if n > 0 then
@@ -1579,6 +1685,9 @@ type Playground() as self =
             // 撃った数（v3.3 の段 1）。**弾を選んでいなくても出る** ——
             // 「どこが弾を増やしているか」は、追う前に知りたいこと
             self.lightTally (int (unbox<float> (jsItem ret 2)))
+            // 重さの帯（v3.3 の段 2）。**弾数は 1 面 目 だけ** ——
+            // 2 面 を足すと「どちらが重いか」が混ざる
+            self.weight (n, stepMs, int (unbox<float> (jsItem ret 2)))
             self.focusHud (
               pickIdx,
               int (unbox<float> (jsItem ret 12)),
