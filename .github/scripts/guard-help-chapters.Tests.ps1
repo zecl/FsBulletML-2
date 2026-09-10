@@ -13,6 +13,7 @@
       順          集合は同じで並びだけ違う（ここを見ていないと目次と切り替えがずれる）
       初期状態    開いた瞬間 に出る節と、印の付いた札がちょうど 1 つ ずつで、同じ章
       絵          参照と実物のずれを**両方向 で**
+      寸          書いてある width / height と、実物の比（縦横 で同じか）
 
   **通る側 も当てる。** 落ちるほうだけ見ていると「常に赤」の門が緑に見える。
 
@@ -37,7 +38,10 @@ function Base-Html {
   param([string[]]$Tabs = $chapters, [string[]]$Sections = $chapters,
         [string]$OpenSection = 'start', [switch]$AllOpen,
         [string[]]$CurrentTabs = @('start'),
-        [string[]]$ImgRefs = @('img/help/a.png'))
+        [string[]]$ImgRefs = @('img/help/a.png'),
+        # **寸を書かない `<img>`** も作れるようにする（門が数える点の 1 つ）
+        [switch]$NoImgSize,
+        [int]$ImgW = 10, [int]$ImgH = 10)
   $navLines = $Tabs | ForEach-Object {
     $cur = if ($_ -in $CurrentTabs) { ' aria-current="true"' } else { '' }
     "      <button type=`"button`" id=`"help-tab-$_`" class=`"help-tab`"$cur>$_</button>"
@@ -45,7 +49,8 @@ function Base-Html {
   $secLines = $Sections | ForEach-Object {
     $hidden = if ($AllOpen -or $_ -eq $OpenSection) { '' } else { ' hidden' }
     $imgs = if ($_ -eq $Sections[0]) {
-      ($ImgRefs | ForEach-Object { "        <img src=`"$_`" width=`"10`" height=`"10`" alt=`"x`">" }) -join "`n"
+      $sizeAttr = if ($NoImgSize) { '' } else { " width=`"$ImgW`" height=`"$ImgH`"" }
+      ($ImgRefs | ForEach-Object { "        <img src=`"$_`"$sizeAttr alt=`"x`">" }) -join "`n"
     } else { '' }
     "      <section id=`"help-ch-$_`" class=`"help-ch`"$hidden>`n        <h3>$_</h3>`n$imgs`n      </section>"
   }
@@ -87,6 +92,24 @@ $baseCss = @'
 }
 '@
 
+# **頭だけ本物の PNG。** 門は IHDR しか読まないので、画は要らない
+function Png-Bytes {
+  param([int]$W, [int]$H)
+  $b = [System.Collections.Generic.List[byte]]::new()
+  $b.AddRange([byte[]]@(137, 80, 78, 71, 13, 10, 26, 10))      # 署名
+  $b.AddRange([byte[]]@(0, 0, 0, 13))                          # IHDR の長さ
+  $b.AddRange([Text.Encoding]::ASCII.GetBytes('IHDR'))
+  foreach ($v in @($W, $H)) {
+    # **括弧で 1 つ ずつ包む。** コンマは -band より先に結ぶので、包まないと
+    # 0xFF から後ろ が配列になって落ちる
+    $b.AddRange([byte[]]@(((($v -shr 24) -band 0xFF)), ((($v -shr 16) -band 0xFF)),
+                          ((($v -shr 8) -band 0xFF)), (($v -band 0xFF))))
+  }
+  $b.AddRange([byte[]]@(8, 6, 0, 0, 0))                        # 深さ・色・その他
+  $b.AddRange([byte[]]@(0, 0, 0, 0))                           # crc（門は見ない）
+  return $b.ToArray()
+}
+
 function Check {
   param([string]$Name, [string]$Html, [string]$Fs, [string[]]$Images,
         [bool]$WantPass, [string]$Expect, [string]$CssText = $baseCss,
@@ -102,7 +125,21 @@ function Check {
   [IO.File]::WriteAllText($fsPath, $Fs)
   if (-not $NoCss) { [IO.File]::WriteAllText($cssPath, $CssText) }
   foreach ($img in $Images) {
-    [IO.File]::WriteAllBytes((Join-Path $www ('img/help/' + $img)), [byte[]]@(0))
+    # `名前` か `名前:WxH`。**既定は 10x10** —— Base-Html が width="10" height="10" と書く。
+    #
+    # **`$name` という名前は使えない。** PowerShell の変数は大小を区別しないので、
+    # 引数の `$Name` を黙って潰す（試験の名前が全部 絵の名前になった）
+    $file = $img
+    $iw = 10; $ih = 10
+    $bare = $false
+    if ($img -match '^(?<n>[^:]+):(?<w>\d+)x(?<h>\d+)$') {
+      $file = $Matches['n']; $iw = [int]$Matches['w']; $ih = [int]$Matches['h']
+    } elseif ($img -match '^(?<n>[^:]+):なま$') {
+      # **PNG でないもの。** 頭が壊れている絵を置いたときに落ちるか
+      $file = $Matches['n']; $bare = $true
+    }
+    $bytes = if ($bare) { [byte[]]@(0) } else { Png-Bytes -W $iw -H $ih }
+    [IO.File]::WriteAllBytes((Join-Path $www ('img/help/' + $file)), $bytes)
   }
 
   $msg = ''
@@ -155,6 +192,16 @@ Write-Host '絵。**両方向 で数える** —— 片方向 だけだと消し
 Check '参照している絵が無い' (Base-Html) (Base-Fs) @() $false '参照している絵が無い: img/help/a.png'
 Check '誰も参照していない絵' (Base-Html) (Base-Fs) @('a.png', 'nokori.png') $false '誰も参照していない絵が在る: img/help/nokori.png'
 Check '絵が 2 枚 とも参照されている' (Base-Html -ImgRefs @('img/help/a.png', 'img/help/b.png')) (Base-Fs) @('a.png', 'b.png') $true ''
+
+Write-Host ''
+Write-Host '寸。**書いてある大きさと実物の比が、縦横 で同じか** —— 比が 1 とは限らない'
+Check '実物と書いた寸が同じ' (Base-Html) (Base-Fs) @('a.png:10x10') $true ''
+Check '  2 倍 で焼いた絵は通る' (Base-Html) (Base-Fs) @('a.png:20x20') $true ''
+Check '  1.5 倍 でも通る' (Base-Html -ImgW 100 -ImgH 40) (Base-Fs) @('a.png:150x60') $true ''
+Check '  縦横 の比が違う' (Base-Html) (Base-Fs) @('a.png:20x10') $false '縦横 の比が違う'
+Check '  実物のほうが小さい' (Base-Html) (Base-Fs) @('a.png:5x5') $false '実物が小さい'
+Check '  寸を書いていない' (Base-Html -NoImgSize) (Base-Fs) @('a.png:10x10') $false 'width / height が書いていない'
+Check '  PNG として読めない' (Base-Html) (Base-Fs) @('a.png:なま') $false 'PNG として読めない'
 
 Write-Host ''
 Write-Host '閉じた窓が生き残らないか。**素の `.help` に display を書くと、閉じても消えない**'

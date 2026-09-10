@@ -426,6 +426,16 @@
                   ほかの 2 表記 に<strong>コメントが無い</strong>ので、
                   入れると本文が壊れる</li>
             </ul>
+
+            <figure>
+              <img src="img/help/theme-light.png" width="520" height="400" loading="lazy"
+                   alt="明るい配色の欄。白い地に色の付いた本文と、行の右の印">
+              <figcaption>
+                <strong>明るい</strong>にしたところ。替わるのは<strong>欄の見た目だけ</strong>で、
+                弾幕にも本文にも触らない ——
+                行の右の印も、明るい地に合わせて色が替わる
+              </figcaption>
+            </figure>
           </section>
 
           <!-- **書く から割った**。1 つ に置くと 1440x900 で 3.66 画面分 に在った ——
@@ -435,10 +445,14 @@
 
             <h4>名前を追う</h4>
             <ul>
-              <li><kbd>Ctrl</kbd>+<kbd>.</kbd> は<strong>綴りの直し方</strong>を出す。
-                  <code>actionRef label="tp"</code> のように指す先が無いとき、
-                  <strong>1 文字 違いの定義が在れば</strong>「tp を top に直す」が出る。
-                  <strong>近い名前が無ければ何も出ない</strong>（当てずっぽうを出さない）。
+              <li><kbd>Ctrl</kbd>+<kbd>.</kbd> は<strong>直し方</strong>を出す。
+                  <code>actionRef label="shot"</code> のように指す先が無いとき、
+                  候補は 2 通り ——
+                  <strong>1 文字 違いの定義が在れば</strong>「shot を shoot に直す」、
+                  そして<strong>いつでも</strong>「shot の <code>&lt;action&gt;</code> を作る」。
+                  <strong>近い名前が無いときは「作る」だけ</strong>になる ——
+                  <strong>綴りの当てずっぽうは出さない</strong>（押した人は直ったと思って、
+                  別の名前に化けた本文を持つことになるので）。
                   波線が消えていても出る</li>
               <li><kbd>F2</kbd> は <code>label</code> の名前を<strong>まとめて変える</strong>。
                   <code>action label="a"</code> の上でも <code>actionRef label="a"</code> の上でも、
@@ -450,6 +464,16 @@
                   <strong>決めているところが無ければ飛ばない</strong>（そこは波線と
                   <kbd>Ctrl</kbd>+<kbd>.</kbd> の担当）</li>
             </ul>
+
+            <figure>
+              <img src="img/help/quickfix.png" width="435" height="168" loading="lazy"
+                   alt="指す先の無い shot の上で Ctrl+. を押して、直すと作るの 2 つ が並んだ候補の窓">
+              <figcaption>
+                指す先の無い <code>shot</code> の上で <kbd>Ctrl</kbd>+<kbd>.</kbd>。
+                <strong>直す</strong>と<strong>作る</strong>の 2 つ が出ている ——
+                <code>shoot</code> が 1 文字 違いなので上が出る
+              </figcaption>
+            </figure>
 
             <h4>形を見る</h4>
             <ul>
@@ -523,6 +547,24 @@
               <li>F# の CE では<strong>光らない</strong>。CE は要素名で書かないので、
                   走っている場所と字を結ぶ手がかりが無い（アウトラインが別の木になるのと同じ理由）</li>
             </ul>
+
+            <figure>
+              <img src="img/help/pick-bullet.png" width="428" height="420" loading="lazy"
+                   alt="面の中で、押した 1 発 だけが橙の丸で描かれている">
+              <figcaption>
+                押した弾に<strong>丸が付く</strong>（橙）。ほかの弾は白い四角のまま
+              </figcaption>
+            </figure>
+
+            <figure class="fig-wide">
+              <img src="img/help/focus-band.png" width="553" height="32" loading="lazy"
+                   alt="帯に 追跡: 79 行 の wait、その後ろに stop / 鎖 / 道 の数と、出どころの行が矢印で 2 つ 出ている">
+              <figcaption>
+                同じときの帯。<strong>行番号が在り処</strong> ——
+                <code>wait</code> で止まっている行が先に出て、
+                そのあとに<strong>撃った弾の列</strong>が<strong>根に近い順</strong>で続く
+              </figcaption>
+            </figure>
 
             <h4>出どころを見る</h4>
             <ul>
@@ -616,6 +658,15 @@
                   <strong>さっき見た絵と同じにならない</strong></li>
             </ul>
 
+            <figure class="fig-wide">
+              <img src="img/help/time.png" width="556" height="86" loading="lazy"
+                   alt="Play / Pause / 1 コマ 送り / コマ の数の欄 / 飛ぶ / 分かれるまで / Reset の列と、下の段の Frame">
+              <figcaption>
+                時間の列と、下の段の <code>Frame</code>。
+                <strong>飛ぶ</strong> はその数のコマまで進めて<strong>止まる</strong>
+              </figcaption>
+            </figure>
+
             <h4>走らせ方の軸</h4>
             <ul>
               <li><strong>難度</strong>は <code>$rank</code>（0 から 1）。
@@ -635,6 +686,15 @@
                   同じ種・同じ難度なら同じ絵になる</li>
             </ul>
 
+            <figure class="fig-wide">
+              <img src="img/help/axes.png" width="466" height="44" loading="lazy"
+                   alt="難度のつまみと 50、種の欄と 振 ボタン、自機のプルダウン">
+              <figcaption>
+                3 つ とも<strong>走らせ方</strong>で、弾幕の字は動かない。
+                <strong>振</strong> を押すと種が変わって別の走りになる
+              </figcaption>
+            </figure>
+
             <h4>面</h4>
             <ul>
               <li><strong>面の向きは弾幕が決める。</strong>
@@ -647,6 +707,16 @@
                   面を薄く塗り重ねているだけなので、放っておけば消える。
                   塗り重ねる先は面ぜんぶなので、<strong>自機の跡も残る</strong></li>
             </ul>
+
+            <figure>
+              <img src="img/help/field-horizontal.png" width="642" height="482" loading="lazy"
+                   alt="横長の面。左に青い自機、右のほうから弾が出ていて、通った跡がうっすら残っている">
+              <figcaption>
+                <code>type="horizontal"</code> の弾幕。<strong>横長の面</strong>になって、
+                自機（青）が左・弾は右から出る。
+                <strong>軌跡</strong> を入れてあるので通った跡が薄く残る
+              </figcaption>
+            </figure>
 
             <h4>どこが撃っているか</h4>
 
@@ -729,11 +799,11 @@
             <h4>どこに時間が居るか</h4>
 
             <figure>
-              <img src="img/help/span.png" width="505" height="392" loading="lazy"
-                   alt="本文の action と repeat の右に 22% / 23%、fireRef の右に ×131 / ×117 が出ている">
+              <img src="img/help/span.png" width="505" height="384" loading="lazy"
+                   alt="本文の action と repeat の右に 22% / 23%、fireRef の右に ×105 / ×93 が出ている">
               <figcaption>
                 <strong>％ が重さ、× が撃った数</strong>で、<strong>付く行が違う</strong> ——
-                28 発 撃った 6 行 目 に％ は無く、重いのは弾の側の
+                24 発 撃った 6 行 目 に％ は無く、重いのは弾の側の
                 <code>&lt;action&gt;</code>（22%）
               </figcaption>
             </figure>
@@ -900,6 +970,15 @@
                   同じ弾幕でも頭のほうと途中では倍 くらい違う（実測）</li>
             </ul>
 
+            <figure class="fig-wide">
+              <img src="img/help/recording.png" width="660" height="40" loading="lazy"
+                   alt="録る が 録画中 に変わって押せなくなり、右に 録っている（300 コマ）と出ている">
+              <figcaption>
+                押すと <strong>録画中</strong> になって押せなくなる。
+                右に出るのは<strong>これから録る長さ</strong>（5 秒 = 300 コマ）
+              </figcaption>
+            </figure>
+
             <h4>閉じても残る</h4>
             <ul>
               <li><strong>打った字はこのブラウザに残る。</strong> 開き直すと
@@ -919,6 +998,14 @@
                   「サイトデータを保存しない」設定では<strong>残らない</strong>
                   （そのときも普通に使える）</li>
             </ul>
+
+            <figure class="fig-wide">
+              <img src="img/help/restored.png" width="215" height="38" loading="lazy"
+                   alt="帯に Frame の数と 前の続きから が出ている">
+              <figcaption>
+                開き直したところ。帯に <strong>前の続きから</strong> が出る
+              </figcaption>
+            </figure>
           </section>
 
           <section id="help-ch-keys" class="help-ch" hidden>
