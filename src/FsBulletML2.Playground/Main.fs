@@ -1,5 +1,6 @@
 namespace FsBulletML2.Playground
 
+open System.Collections.Generic
 open System.Text.Json
 open System.Threading.Tasks
 open Bolero
@@ -150,9 +151,14 @@ type PlaygroundHost() =
       | None -> false
   // `[n; ptr; frame; playerX; playerY; width; height]` に、
   // 2 つ 目 の `[n2; ptr2; width2; height2]` と、追っている弾の
-  // `[pick; stops; depth; serial; paths; order; from]` を足した 18 数。
+  // `[pick; stops; depth; serial; paths; order; from]`、
+  // **弾の数 `[bullets; bullets2]`**（v4.0.1）を足した 20 数。
   // **2 つ 目 が無ければ `n2` は -1**（0 は「弾が 1 つ も無い面」で別の意味）
-  let ret = Array.zeroCreate<float> 18
+  //
+  // **点の数（`n`）と弾の数（`bullets`）を別に返す。** `n` は `Pack` が
+  // 詰めた点の数で**根の敵が入る** —— 描く側と `pick` の添字はそちらを使い、
+  // 人に見せる数はこちらを使う
+  let ret = Array.zeroCreate<float> 20
   /// プルダウンに出す並び。**同梱のあとに公式配布のサンプルを繋ぐ**（v2.4.1）。
   ///
   /// 番号で引く口（`SelectPattern` / `InitialIndex`）が在るので、
@@ -224,6 +230,10 @@ type PlaygroundHost() =
     //
     // **`paths` が 2 以上 のコマでは、出しているのは 1 本 目 だけ。**
     // 黙って落とさないために数で出す（同梱では wait 全体 の 1.31%）
+    // 人に見せる弾の数（v4.0.1）。**根の敵を含まない** ——
+    // 字の上の「腕ごとの生き残り」の合計と一致する数
+    ret.[18] <- float field.BulletCount
+    ret.[19] <- (match field2 with Some f2 -> float f2.BulletCount | None -> -1.0)
     ret.[11] <- float field.PickedIndex
     ret.[12] <- float field.Focus.Stops
     ret.[13] <- float field.Focus.Depth
@@ -320,16 +330,48 @@ type PlaygroundHost() =
       out.[3 + k * 2] <- float count
     out
 
+  /// 撃った腕の印（v3.3 の段 1）と、**いま生きている数**（v4.0.1）。
+  /// 戻りは `[撃った延べ; 腕の数; 添字; 撃った延べ; 生きている; ...]`。
+  ///
+  /// **出す腕は 2 つ の和集合。**
+  ///
+  ///     生きている弾を持つ腕   **全部**。1 本 でも落とすと、
+  ///                          字の上の合計が `Bullets:` に届かない
+  ///     撃った数の上位 n 個    もう生きていない腕も、どこが増やしたかは読める
+  ///
+  /// **上位 n だけでは足りない**と版の頭で数えた —— 生きている弾を持つ腕は
+  /// **中央 5 / 9 割 14 / 最大 34 本**で、**176 本 中 85 本 が 5 本 を超える。**
+  ///
+  /// **1 回 の呼び出しで両方 返す。** 境界を越えて数を 1 つ 渡すのに
+  /// 6 マイクロ秒（v3.7 で測った）—— 2 本 に割ると 30 コマ ごとに 2 度 払う
   [<JSInvokable>]
   member _.TallyTop(n: int) : float[] =
-    let top = field.Focus.TallyTop n
-    let out = Array.zeroCreate<float> (2 + top.Length * 2)
+    let fired = field.Focus.TallyTop n
+    let alive = field.AliveByFire()
+    let aliveAt = Dictionary<int, int>()
+    for struct (idx, cnt) in alive do aliveAt.[idx] <- cnt
+    // **和集合を作る。** 並びは「生きている順 -> 撃った順」——
+    // どちらも多い順に来るので、そのまま繋ぐと読める並びになる
+    let seen = HashSet<int>()
+    let rows = ResizeArray<struct (int * int * int)>()
+    let firedAt (i: int) =
+      let mutable v = 0
+      for struct (idx, cnt) in fired do
+        if idx = i then v <- cnt
+      v
+    for struct (idx, cnt) in alive do
+      if seen.Add idx then rows.Add(struct (idx, firedAt idx, cnt))
+    for struct (idx, cnt) in fired do
+      if seen.Add idx then
+        rows.Add(struct (idx, cnt, (match aliveAt.TryGetValue idx with | true, v -> v | _ -> 0)))
+    let out = Array.zeroCreate<float> (2 + rows.Count * 3)
     out.[0] <- float field.Focus.TallyTotal
     out.[1] <- float field.Focus.TallyCount
-    for k in 0 .. top.Length - 1 do
-      let struct (idx, count) = top.[k]
-      out.[2 + k * 2] <- float idx
-      out.[3 + k * 2] <- float count
+    for k in 0 .. rows.Count - 1 do
+      let struct (idx, f, a) = rows.[k]
+      out.[2 + k * 3] <- float idx
+      out.[3 + k * 3] <- float f
+      out.[4 + k * 3] <- float a
     out
 
   /// **飛ぶのをやめる。** 飛んでいる最中の Play は「もう待たない」なので、

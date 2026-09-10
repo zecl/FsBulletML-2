@@ -61,7 +61,53 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
     live.Add(Live(run, field.EnemyX, field.EnemyY, true, -1, null))
     Playfield(front, live, field, focus)
 
+  /// `Pack` が返す点の数。**根の敵が入る** —— 描く側はこの数で回す
   member _.Count = live.Count
+
+  /// **弾の数。根の敵は入らない**（v4.0.1）。
+  ///
+  /// `Count` と 1 だけ違う。**その 1 を呼ぶ側に引かせない** ——
+  /// `Count - 1` と書くと「根がちょうど 1 個 で、必ず生きている」が
+  /// 呼ぶ側の知識になる。数えれば、根を 2 つ にしても増やしても合う。
+  ///
+  /// **字の上の合計と一致するのはこちら。** 腕ごとの生き残りを足すと
+  /// この数になる（同梱 176 本 / 600 コマ で 1 度 も外れない。版の頭で数えた）
+  member _.BulletCount =
+    let mutable n = 0
+    for it in live do
+      if not it.IsRoot then n <- n + 1
+    n
+
+  /// 生きている弾を、**撃った腕の添字**で束ねる（v4.0.1）。
+  /// 戻りは (書いてある順の添字, いま生きている数)。**多い順**。
+  ///
+  /// **鎖は辿らない。** `From` は撃たれた時点で引いてある（v3.2）ので、
+  /// ここは束ねるだけ —— 弾数ぶんの走査 1 回 で済む。
+  ///
+  /// **`From` が -1 の弾は入らない。** 根の敵と、結べなかったコマで
+  /// 産まれた弾がそれ（`AliveUnattributed` で数えられる）——
+  /// **黙って落とさない。** 落とすと、字の上の合計と `Bullets:` が
+  /// 食い違う理由が読めなくなる
+  member _.AliveByFire() : struct (int * int)[] =
+    let byIndex = Dictionary<int, int>()
+    for it in live do
+      if it.From >= 0 then
+        byIndex.[it.From] <- (match byIndex.TryGetValue it.From with | true, v -> v | _ -> 0) + 1
+    byIndex
+    |> Seq.sortByDescending (fun kv -> kv.Value)
+    |> Seq.map (fun kv -> struct (kv.Key, kv.Value))
+    |> Seq.toArray
+
+  /// どの腕にも結べない、生きている弾の数（v4.0.1）。**根の敵を含む。**
+  ///
+  /// `Count` から `AliveByFire` の合計を引いた数と同じ ——
+  /// **引き算を呼ぶ側にさせない**（`Count` に根が入っていることを
+  /// 知っている必要が出る）
+  member _.AliveUnattributed =
+    let mutable n = 0
+    for it in live do
+      if it.From < 0 then n <- n + 1
+    n
 
   /// 生きている弾の並び。**外へは出さない** —— `Differ` が使うだけ
   member private _.Live = live
