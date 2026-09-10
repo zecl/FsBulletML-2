@@ -4,29 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FsBulletML2 Playground</title>
-    <!--
-      外から読むのは Monaco だけ。**取ってこられる先を字で閉じる。**
-      SRI（下の integrity）が守るのは loader.js 1 本 だけで、そのローダが
-      あとから取りに行く分（editor.main.js / css / nls）には掛からない。
-      そこを塞ぐのがここ。
-
-      **本番では header で送ること。** meta は frame-ancestors も
-      report-only も持てないし、head より前に注入された物には効かない。
-
-      **「v2.0 でそちらへ移す」と書いてあったが、移していない。**
-      理由は「忘れた」ではなく、**この repo に header を送れる場所が 1 つ も無い**
-      から —— `_headers` も `staticwebapp.config.json` も `wrangler.toml` も
-      `web.config` も在らず、配っているのは wwwroot の静的ファイルだけ。
-      置き場が決まった時点で、そこへ 1 枚 足して meta を外す。
-
-      **埋め込み（v2.8）で効いてくるのは frame-ancestors。** meta では
-      指定できないので、**いまは誰でも枠に入れられる**。読み取り専用の
-      デモなので実害は測っていないが、絞りたくなったら header が要る。
-
-      wasm-unsafe-eval  Blazor WASM の runtime が要る
-      unsafe-inline     Monaco が style を差し込む（script には出していない）
-      blob:             Monaco の worker
-    -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
       script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net;
@@ -41,14 +18,6 @@
       form-action 'none'">
     <base href="/">
     <link rel="stylesheet" href="css/playground.css">
-    <!--
-      **空のまま。** SDK は資産に指紋を付けたときだけここへ対応表を書くが、
-      上の CSP は `'unsafe-inline'` を出していないので**書かれたら効かない**
-      —— publish した成果物だけが「起動待ち」で止まる。
-      指紋は csproj で止めてある（`WasmFingerprintAssets` の但し書き）。
-
-      中身が入っていないことは `guard-published-boot.ps1` が publish 成果物で見ている
-    -->
     <script type="importmap"></script>
   </head>
   <body>
@@ -56,99 +25,39 @@
       <h1>FsBulletML2 Playground</h1>
       <div class="row">
         <canvas id="stage" width="480" height="640"></canvas>
-        <!-- 2 つ 目 の面（v2.1）。**同じコマを進む** ——
-             乱数は面ごとに分けてあるので、1 面 で見たときと同じ絵が出る -->
         <canvas id="stage2" width="480" height="640" hidden></canvas>
         <div class="editor">
-        <!-- **層でまとめてある**（v2.4.2）。並びは
-             本文 -> 軸 -> 見る側の都合 -> 助け。
-             `id` とラベルは 1 つ も変えていない —— あれを変えると
-             `Playground.fs` の `el "id"`（45 回 / 別の id 24 個）と
-             使い方の窓の説明が動く。
-             **並べ替えだけなら、直すのは README の表 1 か所。** -->
         <div class="picker">
-          <!-- 本文。**字が変わる側** -->
-          <!-- **名前を `aria-label` で持つ**（v2.4.3）。ほかの口は
-               `<label class="mode">配色<select …></label>` のように包まれていて、
-               包む label も名前になる。ここだけは横に字を置く場所が無い ——
-               プルダウン自体が弾幕の名前を出すので、ラベルを足すと 2 つ 名前が並ぶ -->
           <select id="pattern" aria-label="弾幕">
             <option value="">（編集 / Open）</option>
           </select>
-          <!-- 中身は空。**表記の表を html に書かない** —— 登録されている
-               並び（Playground.fs の languages）から Fable が作る -->
           <label class="mode embed-hide">表記<select id="mode"></select></label>
-          <!-- 走らせ方の軸。**弾幕は同じで走りが変わる**（Share に乗る）。
-               2 つ 目 の面に載せる弾幕（v2.1）。中身は空 ——
-               並びは `#pattern` と同じ 1 本 から Fable が作る -->
           <label class="mode embed-hide grow">2 面<select id="pattern2"><option value="">なし</option></select></label>
-          <!-- 面 2 の走らせ方をずらす（v3.8）。**v2.1 は「難度・種・自機は
-               同じ値を配る」と決めた** —— そこを崩さずに、選んだときだけ
-               面 2 が別の値で走る。
-               版の頭で数えた：種で 104 / 176 本 が分かれ、1 コマ目 で
-               分かれる本は 0 本。難度 0 と 1 なら 172 / 176 本。
-               **選ぶと、2 面 が「なし」でも面 1 と同じ弾幕で建つ** -->
           <label class="mode embed-hide">ずらす<select id="shift" title="面 2 の走らせ方をずらす">
             <option value="0" selected>なし</option>
             <option value="1">種</option>
             <option value="2">難度</option>
           </select></label>
-          <!-- 見る側の都合。**弾幕にも本文にも触らない**。
-               中身は空 —— Monaco が素で持っている並び（fable/Monaco.fs の themes）から -->
           <label class="mode embed-hide">配色<select id="theme"></select></label>
-          <!-- 比べる先。**中身は空** —— 表記の並びは Fable が作る（`mode` と同じ理由）。
-               並べているあいだは**読むだけ**で、直すのは元の欄でやる -->
           <label class="mode embed-hide">比べる<select id="compare"></select></label>
-          <!-- 助け -->
           <button class="embed-hide" type="button" id="help" title="補完の使い方">?</button>
         </div>
-        <!-- 中身は空。**XML を html に書かない** —— 起動時の本文は host が
-             同梱カタログの CE から焼いて渡す（Main.fs の InitialSource） -->
         <div id="source" class="source"></div>
-        <!-- 並べて見るとき、`source` と入れ替わる（v2.1）。
-             **同じ場所に出す** —— 横に並べると、弾幕は縦に長いので
-             どちらも読めない幅になる -->
         <div id="diff" class="source" hidden></div>
         </div>
       </div>
-      <!-- 重さの帯（v3.3 の段 2）。**弾数とコマ時間の 2 本。**
-           1 本 では足りないことは測ってある —— 同じ本の中でも
-           弾数と 1 コマ の時間の相関は中央値 0.569 で、
-           176 本 中 55 本 は 0.5 も無い。
-
-           **`.row` の外に置く。** 面の下へ入れようとすると `#stage` を
-           包むことになり、`align-self` と `max-height: 100%` の基準が
-           変わる（面が縦に伸びて自機の丸が楕円になる形）。
-           ここなら既存の規則を 1 つ も触らない。 -->
       <canvas id="weight" class="embed-hide" width="1200" height="68"
               aria-label="弾数とコマ時間の推移"></canvas>
-      <!-- **層でまとめてある**（v2.4.2）。並びは
-           時間 -> 見る側の都合 -> 走らせ方の軸 -> 本文。
-           **`Reset` は時間の側**（`Apply` の隣から離した）——
-           片方 は走行を頭へ戻し、もう片方 は本文を反映する。
-           押し間違えると失うものが違う。 -->
       <div class="bar">
-        <!-- 時間。**走行の制御** -->
         <button type="button" id="play">Play</button>
         <button type="button" id="pause">Pause</button>
         <button class="embed-hide" type="button" id="step-once" title="1 コマ 進める（押すと止まる）">&#9654;|</button>
-        <!-- 飛び先。上限と丸め方は host の Seek が持つ（html には書かない）。
-             **押しても画面は止まらない** —— 着くまで何フレームか かかる -->
         <label class="rate embed-hide">コマ
           <input id="seek-to" type="number" min="0" step="60" value="600" title="飛び先のコマ数">
         </label>
         <button class="embed-hide" type="button" id="seek" title="そのコマまで進める（着いたら止まる）">飛ぶ</button>
-        <!-- 2 面 が分かれたコマまで送る（v3.8）。**見る範囲は上の「コマ」欄**
-             —— 押した時点で頭から建て直すので、「そこまで見る」と
-             「そこへ飛ぶ」が同じ数になる。上限をここに書かない。
-             **判定は座標まで見る** —— 弾の数だけ見ると、同梱 176 本 の
-             中央で 22.3 倍 遅れる（6 コマ 目 で位置が違うのに、
-             数が食い違うのは 134 コマ 目） -->
         <button class="embed-hide" type="button" id="diverge" title="2 面 が分かれるコマまで送る">分かれるまで</button>
         <button type="button" id="reset">Reset</button>
-        <!-- 見る側の都合。**弾幕にも本文にも触らない**（Apply / Reset でも戻さない）。
-             数の意味は host の Pacing が持つ。正なら 1 コマ に何回 進めるか、
-             負なら何コマ に 1 回 進めるか -->
         <label class="rate embed-hide">速さ
           <select id="rate">
             <option value="-4">1/4</option>
@@ -158,22 +67,15 @@
             <option value="4">x4</option>
           </select>
         </label>
-        <!-- 過去の位置は貯めない。面を薄く塗り重ねるだけ（fable の draw） -->
         <label class="rate embed-hide"><input id="trail" type="checkbox"> 軌跡</label>
-        <!-- 走らせ方の軸。**弾幕は同じで走りが変わる** —— どれも Share に乗る。
-             難度（$rank）は 176 本 中 173 本 が使う軸で、v1.9 まで 0.5 固定だった。
-             動かすと host が面を建て直す（rank は木を組む段で焼き込まれる） -->
         <label class="rate">難度
           <input id="rank" type="range" min="0" max="100" step="1" value="50" title="$rank（0 から 1）">
           <span id="rank-value">50</span>
         </label>
-        <!-- 乱数の種。**同じ種なら同じ走り。** Share URL に乗る -->
         <label class="rate embed-hide">種
           <input id="seed" type="number" min="1" max="999999" step="1" value="1" title="同じ種なら同じ走り">
         </label>
         <button class="embed-hide" type="button" id="seed-roll" title="種を振り直す（別の走りを見る）">振</button>
-        <!-- 自機の動かし方。**176 本 中 103 本 が狙いを使う**（実測）ので、
-             自機をどこに置くかは半分 以上 の弾幕で絵そのものを変える -->
         <label class="rate embed-hide">自機
           <select id="player" title="狙い弾の基準になる自機をどう動かすか">
             <option value="0">追う</option>
@@ -181,29 +83,12 @@
             <option value="2">回る</option>
           </select>
         </label>
-        <!-- 本文。**字が変わる側** -->
         <button class="embed-hide" type="button" id="apply">Apply</button>
         <button class="embed-hide" type="button" id="open">Open</button>
-        <!-- 落とす先の名前と拡張子は Fable が表記から組む。**html に書かない** ——
-             書くと、表記を足したとき 2 か所 直すことになる -->
         <button class="embed-hide" type="button" id="save" title="いまの本文をファイルに落とす">Save</button>
-        <!-- 読んで同じ表記で書き直す。**口は Transcode の行き先を同じにするだけ**。
-             字が変わるときは 1 回 目 で知らせて、もう一度 押すと入れ替える -->
         <button class="embed-hide" type="button" id="format" title="読んで書き直す（コメントは残らない）">整形</button>
-        <!-- accept は Fable が入れる（登録されている表記の拡張子）。
-             ここに書くと、表記を足したとき 2 か所 直すことになる -->
         <input id="open-file" type="file" hidden>
-        <!-- いまの本文を URL にする。行き先は fragment（# の後ろ）なので
-             サーバへは送られない。作るのは Fable（Share.fs と 器 の ShareLink） -->
         <button class="embed-hide" type="button" id="share" title="いまの本文を URL にする">Share</button>
-        <!-- 面を動く絵にして落とす（v2.5）。**形式は Fable が選ぶ** ——
-             焼ける形はブラウザで違うので、html に mime も拡張子も書かない
-             （書くと、焼けない環境で黙って落ちる）。
-             **録るのは実時間** —— 重い本は録画の中でもコマが落ちる。
-             それが見えている速さなので、そこは直さない。
-             長さの既定は 300 コマ（5 秒）—— 同梱 176 本 中 165 本 は、
-             そこまでに使う撃ち方が全部 1 度 は出る（実測）。
-             足りない本のために 10 秒 も置く（175 / 176 本） -->
         <label class="rate embed-hide">長さ
           <select id="rec-len" title="録る長さ">
             <option value="180">3 秒</option>
@@ -214,46 +99,17 @@
         <button class="embed-hide" type="button" id="record" title="面を動く絵にして落とす">録る</button>
         <span class="embed-hide">FPS: <span id="fps">0</span></span>
         <span class="embed-hide">Bullets: <span id="bullet-count">0</span></span>
-        <!-- 面を建ててから何コマ 進めたか。**飛んでいる最中はここが速く動く** ——
-             進んでいることの唯一の合図 -->
         <span>Frame: <span id="frame-count">0</span></span>
-        <!-- 追っている弾の再開点（v3.1 の段 3）。**面の弾を押すと出る** ——
-             何も押していないときは空。押した場所に弾が無ければ追うのをやめる -->
         <span class="embed-hide" id="focus"></span>
         <span class="error" id="loop-error">起動待ち</span>
-        <!-- 済んだことの知らせ。**error と別に置く** ——
-             同じところへ赤で出すと、コピーできたことが失敗に見える -->
         <span class="done embed-hide" id="share-note"></span>
       </div>
       <div id="main"></div>
     </div>
 
-    <!--
-      使い方。**中身は字だけで、ロジックは書かない** ——
-      開け閉めと章の出し入れは Fable（playground.help / closeHelp / showChapter）。
-      **`dialog` が素で持っているのは Esc だけ。** 但し書きには長いあいだ
-      「背景のクリックも素で付いてくる」と書いてあったが、測ったら閉じなかった ——
-      背景（`::backdrop`）の当たり判定は dialog 自身 に付くので、
-      押しても中の何にも当たらず、誰も受け取らない。背景で閉じるのは
-      Fable の側 で足してある（clickedBackdrop）。
-
-      **章は 7 つ で、`help-tab-◯◯` と `help-ch-◯◯` が対**。並びは Fable の
-      helpChapters と合わせる —— 片方 だけ足すと「目次に出ない章」か
-      「開かない札」ができて、どちらも黙って通る。対と並びは
-      guard-help-chapters.ps1 が数えている。
-
-      絵は img/help/ に置いてある。**撮り直す手順は docs/help-shots.md** ——
-      参照と実物のずれは門が見るが、**画の中身が古びたことは誰も見ない**
-    -->
     <dialog id="help-dialog" class="help">
       <div class="help-head">
         <h2>使い方</h2>
-        <!-- **上に置く**。前の版は本文のいちばん下に在ったので、
-             閉じるだけのために 4.9 画面分 送る必要が在った ——
-             1080 の窓では札そのものが画面の外（y=1060）に居て、実質 押せなかった。
-
-             **字は × だが、名前は aria-label で持つ。** × は「口の中の字」として
-             名前が在ることになってしまうが、読み上げても意味にならない -->
         <button type="button" id="help-close" class="help-close" aria-label="閉じる" title="閉じる">&#215;</button>
       </div>
 
@@ -438,8 +294,6 @@
             </figure>
           </section>
 
-          <!-- **書く から割った**。1 つ に置くと 1440x900 で 3.66 画面分 に在った ——
-               打つ側（候補・雛形・欄）と、書いたものをたどる側で切れる -->
           <section id="help-ch-trace" class="help-ch" hidden>
             <h3>たどる</h3>
 
@@ -486,8 +340,8 @@
                   <strong>入れ子のまま</strong>出て、<code>label</code> の付いたものは名前も添う。
                   <ul>
                     <li>入れ子の知り方は表記ごとに違う（閉じ札・括弧の対・字下げ）が、
-                        <strong>同梱 176 本 とも 3 表記 で同じ木</strong>になった ——
-                        だから<strong>表記を切り替えても並びは変わらない</strong></li>
+                        <strong>同梱 176 本 とも 3 表記 で同じ並び</strong>になる ——
+                        だから<strong>表記を切り替えてもアウトラインは変わらない</strong></li>
                     <li>F# の CE だけは <code>{ }</code> の段を見るので、別の木になる
                         （176 本 中 145 本 で違う）。<strong>そちらが正しい</strong> ——
                         見ているのが要素の入れ子ではなく CE の本文なので</li>
@@ -673,7 +527,7 @@
                   <strong>同梱 176 本 のうち 173 本 が使う軸</strong>で、
                   0 と 1 に振ると <strong>171 本 で走りが変わる</strong>（弾数が数倍 になるものも在る）。
                   動かすと弾幕は最初から走り直す —— <code>$rank</code> は
-                  <strong>木を組む段で焼き込まれる</strong>ので、走っている面には効かない</li>
+                  <strong>弾幕を読み込むときに決まる</strong>ので、走っている面には効かない</li>
               <li><strong>種</strong>は <code>$rand</code> の並びを決める。
                   <strong>同じ種なら同じ走り</strong>で、<strong>振</strong> を押すと別の走りになる。
                   Reset で頭に戻しても<strong>同じ絵をもう一度</strong>見られる</li>
@@ -737,27 +591,21 @@
                   ×は<strong>どの行が弾を増やしているか</strong>、
                   括弧は<strong>いま面に出ている弾がどの行から来たか</strong></li>
               <li><strong>括弧の中を全部 足すと、下の <code>Bullets:</code> と同じ数になる。</strong>
-                  そのために<strong>生きている弾を持つ腕は 1 本 も落とさない</strong> ——
-                  多い順に 5 つ で切ると、<strong>同梱 176 本 のうち 85 本 で
-                  合計が合わなくなる</strong>（生きている腕は中央 5 / 最大 34 本。数えた）</li>
+                  面に出ている弾は、どれか 1 行 から来ている</li>
               <li><strong>×が 0 でも括弧が 0 でないことが在る</strong>
                   （<code>×0（5）</code>）。撃った数は<strong>面ごとに 0 から</strong>
-                  数え直すので、建て直した直後は
-                  「<strong>撃った覚えは無いが、弾は生きている</strong>」腕が在る</li>
-              <li><strong>色ではなく数を出している。</strong>
-                  走っている場所（黄）と出どころ（緑）がもう在るので、
-                  <strong>3 色 目 を足すとどれが何か覚えられなくなる</strong></li>
+                  数え直すので、Reset や Apply の直後は
+                  「<strong>撃った覚えは無いが、弾は生きている</strong>」行が出る</li>
+              <li><strong>色ではなく数で出している。</strong>
+                  走っている場所（黄）と出どころ（緑）は色で出ているので、
+                  ここは色を使わない</li>
               <li><strong>書き直すのは 30 コマ に 1 度。</strong>
-                  毎コマ 並べ替えると、<strong>弾の数と関係なく</strong>
-                  腕の数だけ費用が乗る。
-                  ただし<strong>止めたときは 1 度 だけ書き直す</strong> ——
-                  そうしないと、止めた瞬間 の <code>Bullets:</code> と
-                  <strong>最大 30 コマ 前 の印</strong>を見比べることになる</li>
+                  <strong>止めると、その時点の数に書き直す</strong> ——
+                  <code>Bullets:</code> と見比べるなら、止めてから</li>
               <li><strong>面を建て直すと 0 から。</strong>
-                  Reset・Apply・弾幕の選び直しで数え直す ——
-                  残すと、別の弾幕の数が前の弾幕の行に乗る</li>
+                  Reset・Apply・弾幕の選び直しで数え直す</li>
               <li><strong>1 文字 でも打つと消える。</strong>
-                  走らせた結果から出す数なので、字が動いた時点で行が嘘になる ——
+                  走らせた結果から出す数なので、字が動くと行が合わなくなる ——
                   <strong>Apply し直すとまた出る</strong></li>
               <li>印は<strong>見えている行にしか出ない</strong>（欄は画面の外の行を
                   組み立てない）。上位の腕が画面の外に在るときは、
@@ -787,18 +635,19 @@
               <li><strong>等幅で書いてある。</strong> ここは毎コマ 書き換わるので、
                   字幅が桁ごとに違うフォントだと
                   <strong><code>7.4</code> が <code>8.0</code> になるだけで
-                  後ろが左右へ動く</strong>（一度 そうなった）。
+                  後ろが左右へ動く</strong>。
                   いま動くのは<strong>桁が増えた瞬間だけ</strong>で、右へ一方向</li>
               <li><strong>2 本 在るのは、片方 では読めないから。</strong>
                   同じ弾幕の中でも弾数と時間の相関は中央値 0.569 で、
-                  同梱 176 本 のうち <strong>55 本 は 0.5 も無い</strong>（測った）——
+                  同梱 176 本 のうち <strong>55 本 は 0.5 も無い</strong> ——
                   <strong>弾が少ないのに重いコマが在る</strong></li>
               <li><strong>目盛りはそれぞれの最大。</strong> 単位が違う（発 と ミリ秒）ので
                   同じ物差しには乗らない —— 読むのは<strong>「どこで跳ねたか」</strong>で、
                   2 本 の高さを比べるものではない</li>
               <li><strong>立ち上がりの 1 コマ は入っていない。</strong>
-                  最初のコマだけ他の 20 倍 かかることが在り（走行の重さではなく、
-                  初回に要る費用）、そこで目盛りが決まると残りが底に張り付く</li>
+                  <strong>最初のコマだけ他の 20 倍 かかることが在る</strong> ——
+                  走らせる重さではなく立ち上がりのぶんで、
+                  そこで目盛りが決まると残りが底に張り付く</li>
               <li>橙の線は<strong>走行にかかった時間だけ</strong>で、描画や画面の更新は
                   入っていない。<strong>タブが後ろに居るときの数は当てにならない</strong> ——
                   ブラウザが走らせる回数を間引くので、1 コマ が実際より重く出る</li>
@@ -935,22 +784,19 @@
                   読めない書きかけでも落とせる。拡張子は表記から付くので、
                   落としたものを Open すると同じ表記に戻る</li>
               <li><strong>整形</strong> は読んで同じ表記で書き直す。
-                  <strong>コメントは残らない</strong>（木がコメントを持たないので、
-                  読んだ時点で落ちる）。だから<strong>字が変わるときは 1 回 目 で知らせて、
+                  <strong>コメントは残らない。</strong>
+                  だから<strong>字が変わるときは 1 回 目 で知らせて、
                   もう一度 押すと入れ替える</strong>。
                   知らせたあとに打つと、待っているものは消える</li>
               <li><strong><kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> でも整形できる</strong>
                   （右クリックの「ドキュメントのフォーマット」も同じ）。
                   <strong>ボタンとは止まり方が違う</strong> ——
                   こちらは<strong>コメントが消えるときだけ</strong>止まって
-                  「何個 消えるか」を知らせ、<strong>字が 1 文字 も動かない</strong>。
-                  コメントが無ければ<strong>1 回 で整形される</strong>
-                  （BulletML の現物 173 本 にコメントは 1 つ も無い。数えた）。
-                  入れ替えたいときは<strong>整形のボタン</strong>から</li>
-              <li><strong>選んだところだけの整形は無い。</strong>
-                  範囲整形も打鍵整形も繋いでいない ——
-                  整形は<strong>本文まるごとを読んで木にする</strong>ので、
-                  <strong>選択範囲からは木が作れない</strong></li>
+                  「何個 消えるか」を知らせ、<strong>字は 1 文字 も動かない</strong>。
+                  コメントが無ければ<strong>1 回 で整形される</strong>。
+                  それでも入れ替えたいときは<strong>整形のボタン</strong>から</li>
+              <li><strong>整形は本文ぜんぶが対象。</strong>
+                  選んだところだけを整形することはできない</li>
             </ul>
 
             <figure class="fig-wide">
@@ -980,7 +826,7 @@
                   走らせなくていい相手（記事や本）には、こちらで足りる</li>
               <li><strong>長さは 3 / 5 / 10 秒。既定は 5 秒。</strong>
                   同梱 176 本 のうち <strong>165 本</strong> は、5 秒 までに
-                  その弾幕が使う撃ち方が全部 1 度 は出る（数えた）。
+                  その弾幕が使う撃ち方が全部 1 度 は出る。
                   10 秒 にすると 175 本。<strong>1 発 目 まで 2 秒 かかる本も在る</strong>ので、
                   短いほうは頭が空になることが在る</li>
               <li><strong>押すと走り出す。</strong> 止めていても録り始める ——
@@ -999,7 +845,7 @@
                   <strong>GIF にはできない</strong> —— ブラウザに焼く口が無い。
                   大きさは 5 秒 で <strong>100 KB から 1 MB</strong> くらい ——
                   <strong>弾が多いほど太る</strong>ので、
-                  同じ弾幕でも頭のほうと途中では倍 くらい違う（実測）</li>
+                  同じ弾幕でも頭のほうと途中では倍 くらい違う</li>
             </ul>
 
             <figure class="fig-wide">
@@ -1072,43 +918,10 @@
         </div>
       </div>
     </dialog>
-    <!--
-      Monaco は CDN。**版はこの 1 行 だけに在る** —— `Monaco.fs` はこの src から
-      vsBase を読むので、上げるときここだけ直す。repo に本体を置かないのは、
-      guard-text が見る追跡ファイルに binary を足さないため。
-
-      **integrity が掛かるのは loader.js 1 本 だけ。** AMD のローダは、
-      このあと editor.main とその塊を自分で取りに行くが、そちらには掛からない。
-      そこを閉じているのは head の CSP（取ってこられる先を origin で絞る）で、
-      **中身までは見ていない。**
-
-      版と hash は一緒に動かすこと。片方 だけ直すとブラウザが loader.js を
-      捨てるので、`Monaco.fs` の `failwith`（ローダが読めていない）で赤が出る。
-      **走行では出ず、開いた人にだけ見える。**
-    -->
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.56.0/min/vs/loader.js"
             integrity="sha384-jwxunh5pHKFzi60XobDcwOM7qnk4lSGpdBU/hNn9pUGp+ZUpaHJqadNLRF2k+jPu"
             crossorigin="anonymous"></script>
-    <!--
-      **素の名前で書く。指紋（`#[.{fingerprint}]`）を付けない。**
-
-      付けると SDK が素の名前との対応を**インラインの importmap** で入れてくるが、
-      上の CSP は `'unsafe-inline'` を出していないので効かない ——
-      publish した成果物だけが「起動待ち」で止まる（実際に踏んだ。
-      顛末は csproj の `WasmFingerprintAssets` のところ）。
-
-      指紋は csproj で止めてあるので、publish 成果物にもこの名前で出る
-    -->
     <script src="_framework/blazor.webassembly.js" autostart="false"></script>
-    <!--
-      **ここにロジックを書かない。** 読み込むだけ。
-      WASM を起こすのは Playground.js（Fable）の末尾 ——
-      html に書くと、そこだけ型も検査も掛からない。
-
-      **src で読む。** 前は `<script type="module">import ...</script>` と
-      インラインで書いていたが、CSP に `'unsafe-inline'` を出していないので
-      黙って弾かれる（実際に踏んだ。**エラーは出ず、起動待ちのまま止まる**）
-    -->
     <script type="module" src="js/Playground.js"></script>
   </body>
 </html>
