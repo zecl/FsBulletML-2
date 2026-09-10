@@ -250,3 +250,42 @@ module FsbScan =
   let describe (src: string) (cursor: int) : string =
     Scan.describe (tags src) (contextAt src cursor) (tokenAt src cursor)
                   (Scan.nameLenBefore src cursor) (Scan.exprLenBefore src cursor)
+
+  /// 式が書ける要素の中身（v4.1）。**`:` のあとの引用符。**
+  ///
+  ///     wait:"30-$rank*8"
+  ///     direction type="absolute":"180+$rand*30"
+  ///
+  /// **属性は `=` で、中身は `:`。** 引用符の中に入っているあいだは
+  /// どちらも数えない —— 値に `:` を書ける
+  let texts (src: string) (names: string list) : TextHit list =
+    tags src
+    |> List.choose (fun t ->
+         if not (List.contains t.TagName names) then None
+         else
+           let stop = min t.Stop (src.Length - 1)
+           let mutable i = t.NameStop
+           let mutable inQuote = false
+           let mutable found = None
+           while found.IsNone && i <= stop do
+             let c = src.[i]
+             if inQuote then
+               if c = '"' then inQuote <- false
+               i <- i + 1
+             elif c = '"' then
+               inQuote <- true
+               i <- i + 1
+             elif c = ':' then
+               let mutable k = i + 1
+               while k < src.Length && (src.[k] = ' ' || src.[k] = '\t') do k <- k + 1
+               if k < src.Length && src.[k] = '"' then
+                 let from = k + 1
+                 let mutable j = from
+                 while j < src.Length && src.[j] <> '"' do j <- j + 1
+                 let text = src.Substring(from, j - from)
+                 found <- (if text.Trim() = "" then None
+                           else Some { TagName = t.TagName; Text = text; Start = from; Stop = j })
+                 i <- j + 1
+               else i <- i + 1
+             else i <- i + 1
+           found)

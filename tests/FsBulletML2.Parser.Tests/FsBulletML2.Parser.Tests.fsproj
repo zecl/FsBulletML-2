@@ -66,6 +66,8 @@
     <Compile Include="NodeOrder.fs" />
     <!-- 順番は上、**こちらは幅**。色ごとに要る範囲が違う -->
     <Compile Include="NodeSpans.fs" />
+    <!-- 読めない式（v4.1）。**器の読み手と Core の `Expr` を突き合わせる** -->
+    <Compile Include="ExprParity.fs" />
   </ItemGroup>
   <ItemGroup>
     <!-- **CE の本文を試験の出力へ写す。** 期待値は `Bullets.Dsl` の値なので、

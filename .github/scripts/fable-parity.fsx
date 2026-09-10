@@ -16,6 +16,8 @@
 #load "../../src/FsBulletML2.LanguageService/FsharpScan.fs"
 // 意味の層（v2.3）。**Refs を先に読む** —— Semantics は対の形を借りる
 #load "../../src/FsBulletML2.LanguageService/Refs.fs"
+// 式が読めるか（v4.1）。**Semantics より先** —— あちらが引く
+#load "../../src/FsBulletML2.LanguageService/ExprCheck.fs"
 #load "../../src/FsBulletML2.LanguageService/Semantics.fs"
 #load "../../src/FsBulletML2.LanguageService/Outline.fs"
 
