@@ -46,6 +46,37 @@ let private thenCatch (p: obj) (ok: obj -> unit) (err: obj -> unit) : unit = jsN
 [<Emit("$0.getContext('2d', { alpha: false })")>]
 let private getCtx (c: HTMLCanvasElement) : CanvasRenderingContext2D = jsNative
 
+/// `localStorage` を読む。**読めなければ null。**
+///
+/// **例外を握る。** プライベートウィンドウや「サイトデータを保存しない」設定では
+/// `localStorage` に触った時点で投げる —— そこで起動が止まると、
+/// **残す機能を足したせいで開かなくなる。**
+[<Emit("(function(){ try { return localStorage.getItem($0) } catch (e) { return null } })()")>]
+let private lsGet (key: string) : string = jsNative
+
+/// `localStorage` に書く。**書けなければ false。**
+///
+/// 上限（5 MB くらい）を超えると `QuotaExceededError` を投げる。
+/// 同梱の最大は 28.5 KB（上限の 0.557%）なので当たらないはずだが、
+/// **人が書いた字に上限は無い。**
+[<Emit("(function(){ try { localStorage.setItem($0, $1); return true } catch (e) { return false } })()")>]
+let private lsSet (key: string) (value: string) : bool = jsNative
+
+/// 残す口の id。**本文と `mode` は別**（下の但し書き）。
+///
+/// **`pattern` は入れない** —— 本文が正で、同梱を選んだ状態も
+/// 「その字が入っている」で表せる。プルダウンだけ戻すと、
+/// 字と食い違ったときにどちらが本当か読めなくなる。
+///
+/// `pattern2` / `compare`（2 面 と 比べる）も入れていない ——
+/// あちらは 2 本 目 の弾幕を建てるので、戻す順が本文と絡む
+let private keptControls =
+  [| "theme"; "seed"; "rank"; "rate"; "player"; "trail"; "seek-to" |]
+
+let private sourceKey = "fsbulletml2.source"
+let private modeKey = "fsbulletml2.mode"
+let private settingsKey = "fsbulletml2.settings"
+
 /// いまの時刻（ミリ秒）。**rAF が渡してくる `t` と同じ物差し。**
 ///
 /// **分解能は 0.1 ms**（測った。`crossOriginIsolated` が false なので
@@ -265,6 +296,8 @@ type Playground() as self =
   // 字の上に出す上位いくつ。**同梱 176 本 で上位 3 つ が 93%**
   // （`fire` が 4 個 以上 の 130 本 の中央値）なので、5 で足りる
   let tallyTopN = 5
+  // 打った字を残すときの待ち（v3.5）。**0 は「予約が無い」**
+  let mutable saveTimer = 0.0
   // 重さの帯（v3.3 の段 2）。**弾数とコマ時間の 2 本。**
   //
   // 1 本 では足りない —— 同じ本の中でも相関は中央値 0.569 で、
@@ -1487,6 +1520,78 @@ type Playground() as self =
             (fun _ -> self.showNote "URL 欄 に入れた（コピーはできなかった）"))
       (fun err -> setError (errText err))
 
+  /// 打った字と設定を残す（v3.5）。**口の一覧を 1 か所 に持って、
+  /// 変わったら丸ごと書く** —— 口ごとにハンドラを足すと、
+  /// 口が増えたときに足し忘れたものだけが静かに残らなくなる。
+  ///
+  /// **書けなくても黙って進む。** プライベートウィンドウでは
+  /// `localStorage` に触った時点で投げる（`lsSet` が握る）。
+  member _.saveSettings() =
+    let o = createObj []
+    for id in keptControls do
+      let e = el id
+      if not (isNull e) then
+        let v =
+          if id = "trail" then box (unbox<HTMLInputElement>(box e)).``checked``
+          else box (unbox<HTMLInputElement>(box e)).value
+        o?(id) <- v
+    lsSet settingsKey (JS.JSON.stringify o) |> ignore
+    lsSet modeKey current.Kind.Id |> ignore
+
+  /// 打った字を残す。**打鍵ごとには書かない** ——
+  /// 最大 28.5 KB で 1 回 0.074 ms（測った）なので払えはするが、
+  /// **打ち終わってから 1 回**で足りる
+  member _.saveSourceSoon() =
+    if saveTimer > 0.0 then window.clearTimeout saveTimer
+    saveTimer <-
+      window.setTimeout((fun _ ->
+        saveTimer <- 0.0
+        lsSet sourceKey (Monaco.getValue ()) |> ignore), 500)
+
+  /// 残してあった字と設定を戻す（v3.5）。**共有リンクより先に呼ぶ** ——
+  /// URL に本文が乗っているときは、そちらが明示された指定なので勝つ。
+  ///
+  /// **読めなければ捨てる。** 前の版が書いた形かもしれないし、
+  /// 手で書き換えられているかもしれない —— そこで落ちると開かなくなる
+  member _.restoreLocal() =
+    // **URL に共有リンクが在るときは何もしない。** あちらが明示された指定で、
+    // ここで建てても直後に上書きされる —— 面を 2 回 建てることになり、
+    // リンクが読める（非同期）までのあいだ**別の弾幕が走って見える**
+    let hash = window.location.hash
+    if not (isNull hash) && hash <> "" && hash <> "#" then ()
+    else
+    try
+      match lsGet settingsKey with
+      | null -> ()
+      | json ->
+          let o = JS.JSON.parse json
+          for id in keptControls do
+            let e = el id
+            let v = o?(id)
+            if not (isNull e) && not (isNull v) then
+              if id = "trail" then (unbox<HTMLInputElement>(box e)).``checked`` <- unbox<bool> v
+              else (unbox<HTMLInputElement>(box e)).value <- unbox<string> v
+              // **既存の道を通す。** 値を入れるだけでは配色も速さも効かない
+              e.dispatchEvent (Event.Create "change") |> ignore
+      match lsGet sourceKey with
+      | null -> ()
+      | "" -> ()
+      | text ->
+          // **表記を本文と一緒に戻す。** `mode` の `change` は本文を
+          // 書き換える（表記の変換）ので、そこは通さず `useLanguage` を直に
+          Monaco.setValue text
+          match lsGet modeKey with
+          | null -> ()
+          | kindId ->
+              match languages |> List.tryFind (fun l -> l.Kind.Id = kindId) with
+              | Some lang -> self.useLanguage lang
+              | None -> ()
+          self.showNote "前の続きから"
+          self.apply ()
+    with _ ->
+      // 壊れていたら捨てる。**次の保存で上書きされる**
+      ()
+
   /// URL に共有リンクが在れば、それを載せる。**無ければ何もしない。**
   ///
   /// **カタログは選ばない** —— 本文が上書きされるので、プルダウンが
@@ -1583,11 +1688,19 @@ type Playground() as self =
               // **意味の層は逆に、打鍵ごとに引き直す**（v2.3）——
               // 字から出るので往復が要らない。上の 2 つ は「往復して出た
               // ものが古びる」ので消す側で、こちらは持ち主が別
-              self.refreshFindings ())
+              self.refreshFindings ()
+              // 打った字を残す（v3.5）。**打ち終わってから 1 回**
+              self.saveSourceSoon ())
             // 起動時に 1 回。**打鍵を待たない** —— リンクから開いた本文や
             // 同梱の弾幕にも、その場で波線が要る
             self.refreshFindings ()
             self.showInitialInPatterns ()
+            // 前に打った字と設定を戻す（v3.5）。**共有リンクより先** ——
+            // URL に本文が乗っているときは、そちらが明示された指定なので勝つ
+            self.restoreLocal ()
+            // 設定が変わったら残す。**口ごとにハンドラを足さない** ——
+            // 口が増えたときに足し忘れたものだけが静かに残らなくなる
+            document.addEventListener ("change", fun _ -> self.saveSettings ())
             // **同梱を載せたあとで上書きする。** 先に空で建てると、
             // リンクが読めなかったときに空の欄だけが残る ——
             // 起動時の弾幕が見えているほうが、何が起きたか読み解ける
