@@ -45,6 +45,8 @@
     <Compile Include="FocusResume.fs" />
     <!-- どの撃つ腕が何発 撃ったか（v3.3 の段 1）。**合計で当てる** -->
     <Compile Include="FocusTally.fs" />
+    <!-- 弾の系譜（v3.6）。**この弾を撃った弾を根まで辿る** -->
+    <Compile Include="BulletLineage.fs" />
   </ItemGroup>
   <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
        手のせいか版のせいかが割れない -->

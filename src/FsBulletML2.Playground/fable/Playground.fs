@@ -281,6 +281,11 @@ type Playground() as self =
   // 撃った場所（v3.2）。**弾を選んだ時点で決まって動かない**
   let mutable fromIndex = -2
   let mutable fromLine = -1
+  // 選んだ弾（v3.6）。**`from` だけでは足りない** ——
+  // 同じ `fire` から撃たれた別の弾は `from` が同じで、親の親が違う
+  let mutable fromPick = -2
+  // 系譜の行の列（1 起点）。**根に近い順**。帯に出す
+  let mutable fromLines : int[] = [||]
   // 撃った数（v3.3 の段 1）。**出したかどうかだけ持つ** ——
   // 数そのものは出すたびに引き直す（貯めると、面を建て直したときに古い数が残る）
   let mutable tallyShown = false
@@ -491,32 +496,57 @@ type Playground() as self =
           litLine <- Monaco.highlight sp.NameStart sp.NameStop
       litLine
 
-  /// 撃った場所を光らせる（v3.2）。戻りは行（1 起点）。**無ければ -1。**
+  /// 撃った場所を光らせる（v3.2 / v3.6）。戻りは**いちばん近い親**の
+  /// 行（1 起点）。**無ければ -1。**
   ///
   /// **再開点と別の入れ物・別の色。** 再開点は毎コマ 変わり、こちらは
-  /// 弾を選んだ時点で決まる —— 変わったときだけ字へ寄せる
-  member _.lightOrigin(from: int) : int =
+  /// 弾を選んだ時点で決まる —— 変わったときだけ字へ寄せる。
+  ///
+  /// **系譜ぜんぶ を出す**（v3.6）。撃った弾がまた撃つので、1 発 の弾には
+  /// 撃った弾の列が在る —— 同梱の深さは**最大 5 段 / 中央 3 段**（測った）。
+  ///
+  /// **引くのは選び直したときだけ。** 系譜は弾を選んだ時点で決まって動かず、
+  /// `pick` が変わらなければ同じ物が返る
+  member _.lightOrigin(from: int, pick: int) : int =
     if not litOpen then
       if fromIndex <> -2 then
         fromIndex <- -2
+        fromPick <- -2
         fromLine <- -1
+        fromLines <- [||]
         Monaco.clearOrigin ()
       -1
     else
       if not litScanned then
         litScanned <- true
         litSpans <- current.NodeSpans (Monaco.getValue ()) nodeNames
-      if from <> fromIndex then
+      // **`from` だけでは足りない。** 同じ `fire` から撃たれた別の弾は
+      // `from` が同じで、親の親が違う —— 選び直したかも見る
+      if from <> fromIndex || pick <> fromPick then
         fromIndex <- from
-        if from < 0 || from >= List.length litSpans then
+        fromPick <- pick
+        let span = List.length litSpans
+        let raw =
+          if pick < 0 then [||]
+          else unbox<float[]> (invoke0 dotNet "PickedLineage")
+        // **並びの外は出さない**（光らせる側と同じ守り）
+        let spans = ResizeArray<int * int * int * int>()
+        let lines = ResizeArray<int>()
+        for v in raw do
+          let idx = int v
+          if idx >= 0 && idx < span then
+            let sp = List.item idx litSpans
+            spans.Add(sp.OpenStart, sp.OpenStop, sp.CloseStart, sp.CloseStop)
+        if spans.Count = 0 then
           fromLine <- -1
+          fromLines <- [||]
           Monaco.clearOrigin ()
         else
-          // **こちらは開き札と閉じ札。** `fire` は名前 4 文字 だと見つけにくく、
-          // 要素まるごとだと中央 5 行 が染まって黄を飲む（1,289 件 で数えた）
-          let sp = List.item from litSpans
-          fromLine <-
-            Monaco.highlightOrigin sp.OpenStart sp.OpenStop sp.CloseStart sp.CloseStop
+          fromLine <- Monaco.highlightOriginChain (spans.ToArray())
+          // 帯に出す行の列。**字へ寄せたあとに引く**（行番号は Monaco が持つ）
+          for (os, _, _, _) in spans do
+            lines.Add(Monaco.lineOfOffset os)
+          fromLines <- lines.ToArray()
       fromLine
 
   /// 重さの帯に 1 コマ 分 足して描く（v3.3 の段 2）。
@@ -676,11 +706,26 @@ type Playground() as self =
       lastPaths <- paths
       lastLine <- line
       lastFromLine <- fromLine
+      // 撃った場所（v3.2）と、そこまでの系譜（v3.6）。
+      //
+      // **再開点が無いコマでも出す。** 出どころは弾を選んだ時点で決まっていて、
+      // 走行がいま止まっているかとは関係が無い —— v3.2 では「再開点なし」で
+      // 早く返っていたので、**同梱の 86.66% のコマで出どころが消えていた**
+      // （v3.6 で系譜を出して初めて気づいた）。
+      //
+      // 2 段 以上 なら矢印で繋ぐ —— **根に近い順**なので、読むと
+      // 「ここから撃たれて、そこからここへ」になる。
+      // 同梱の深さは最大 5 段（測った）ので 1 行 に収まる
+      let origin =
+        if fromLines.Length >= 2 then
+          " ／ 出どころ " + String.concat " → " (fromLines |> Array.map string) + " 行"
+        elif fromLine >= 1 then " ／ 出どころ " + string fromLine + " 行"
+        else ""
       fo.textContent <-
         if pick < 0 then ""
         // **追っているのに再開点が無いコマは在る** —— 台本を持たない弾と、
         // 全 top が終わったコマ（同梱の 86.66%）。空にせず、そう書く
-        elif serial < 0 then "追跡: 再開点なし"
+        elif serial < 0 then "追跡: 再開点なし" + origin
         else
           // **道が 2 本 以上 のときは 1 本 目 だけ出している。** 数で見せる ——
           // 黙って落とすと、出ている場所が全部 だと読めてしまう
@@ -690,8 +735,8 @@ type Playground() as self =
            else "追跡: " + resumeName)
           + "（stop " + string stops + " / 鎖 " + string depth
           + " / 道 " + string paths + "）"
-          // 撃った場所（v3.2）。**根の敵は撃たれていないので出ない**
-          + (if fromLine >= 1 then " ／ 出どころ " + string fromLine + " 行" else "")
+          // **根の敵は撃たれていないので出ない**（上で組んである）
+          + origin
 
   /// 面の置き場所を host から引き直す。**大きさが変わったときだけ。**
   ///
@@ -1794,7 +1839,8 @@ type Playground() as self =
             // **光らせるのが先。** 帯にはその行番号を出すので、
             // あとに回すと 1 コマ 遅れた行が出る
             let litLine = self.lightRunning (int (unbox<float> (jsItem ret 16)))
-            let fromLine = self.lightOrigin (int (unbox<float> (jsItem ret 17)))
+            let fromLine =
+              self.lightOrigin (int (unbox<float> (jsItem ret 17)), pickIdx)
             // 撃った数（v3.3 の段 1）。**弾を選んでいなくても出る** ——
             // 「どこが弾を増やしているか」は、追う前に知りたいこと
             self.lightTally (int (unbox<float> (jsItem ret 2)))

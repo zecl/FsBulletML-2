@@ -506,8 +506,18 @@ let clearHighlight () =
 /// 撃った場所は**弾を選んだ時点で決まって動かない** —— 押した人が
 /// 見に行きたい場所なので、画面の外なら 1 回 だけ寄せる
 /// （`...IfOutsideViewport` なので、見えているときは動かさない）
-let highlightOrigin (openStart: int) (openStop: int) (closeStart: int) (closeStop: int) : int =
-  if isNull editor then -1
+/// 撃った場所を光らせる（v3.2 / v3.6）。`spans` は
+/// (開き札の頭, 開き札の尻, 閉じ札の頭, 閉じ札の尻) の並びで、
+/// **根に近い順**。戻りは**いちばん近い親**の開き札の行（1 起点）。
+///
+/// **系譜ぜんぶ を同じ色で出す**（v3.6）。段ごとに濃さを変えない ——
+/// 同梱の深さは最大 5 段 で、5 種類 の濃さは覚えられない。
+/// **どの順で来たかは帯に行の列で出す。**
+///
+/// **寄せるのはいちばん近い親。** 押した弾に直につながる場所が、
+/// まず見たいところ
+let highlightOriginChain (spans: (int * int * int * int)[]) : int =
+  if isNull editor || spans.Length = 0 then -1
   else
     if isNull origin then origin <- newDecorations editor
     let deco (fromOffset: int) (toOffset: int) =
@@ -523,13 +533,24 @@ let highlightOrigin (openStart: int) (openStop: int) (closeStart: int) (closeSto
           "className" ==> "fired-node"
           "overviewRuler" ==> createObj [ "color" ==> "#1aa06a"; "position" ==> 7 ]
           "minimap" ==> createObj [ "color" ==> "#1aa06a"; "position" ==> 1 ] ] ]
-    let items =
-      if closeStart = openStart && closeStop = openStop then [| deco openStart openStop |]
-      else [| deco openStart openStop; deco closeStart closeStop |]
-    setDecorations origin items
-    let line = unbox<int> (positionAt editor openStart)?lineNumber
+    let items = ResizeArray<obj>()
+    for (os, oe, cs, ce) in spans do
+      items.Add(deco os oe)
+      // **同じなら 1 枚。** 下地は半透明なので、重ねると色が濃くなって
+      // 別の意味に見える（閉じ札を持たない表記では同じ範囲が渡ってくる）
+      if cs <> os || ce <> oe then items.Add(deco cs ce)
+    setDecorations origin (items.ToArray())
+    // いちばん近い親 = 並びの最後
+    let (lastOpen, _, _, _) = spans.[spans.Length - 1]
+    let line = unbox<int> (positionAt editor lastOpen)?lineNumber
     revealLine editor line
     line
+
+/// 本文の添字 -> 行（1 起点）。**帯に出す番号はここから引く** ——
+/// 行の数え方は Monaco が持っていて、`\r\n` も折り返しも見なくて済む
+let lineOfOffset (offset: int) : int =
+  if isNull editor then -1
+  else unbox<int> (positionAt editor offset)?lineNumber
 
 let clearOrigin () =
   if not (isNull origin) then setDecorations origin [||]
