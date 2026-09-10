@@ -239,13 +239,30 @@ let configureLanguages () =
     (createObj [
       "tokenizer" ==> createObj [
         "root" ==> [|
-          // `(@` —— 属性リストの頭。要素名と間違えないよう先に当てる
-          box [| box "\\(\\s*@" ; box "delimiter" |]
-          // `(名前` —— 要素名（か属性名）。**2 つ を分けるのは段 3**
+          // `(@` —— 属性リストの頭。**中は要素ではなく属性**なので状態を分ける
+          box [| box "\\(\\s*@"
+                 box (createObj [ "token" ==> "delimiter"; "next" ==> "@attrs" ]) |]
+          // `(名前` —— 要素名
           box [| box "(\\()(\\s*)([a-zA-Z][\\w.-]*)"
                  box [| box "delimiter"; box "white"; box "tag" |] |]
           box [| box "\"" ; box (createObj [ "token" ==> "string.quote"; "next" ==> "@str" ]) |]
           box [| box "[()]" ; box "delimiter" |]
+          box [| box "[ \\t]+" ; box "white" |] |]
+        // 属性リストの中。**括弧の深さを数える** ——
+        // `(@ (label "a") (type "b"))` は `)` が 3 つ で、
+        // 数えないと最初の `)` で抜けて残りが要素名に見える
+        "attrs" ==> [|
+          box [| box "\\("
+                 box (createObj [ "token" ==> "delimiter"; "next" ==> "@attrPair" ]) |]
+          box [| box "\\)"
+                 box (createObj [ "token" ==> "delimiter"; "next" ==> "@pop" ]) |]
+          box [| box "[ \\t]+" ; box "white" |] |]
+        // 属性 1 つ。`(名前 "値")`
+        "attrPair" ==> [|
+          box [| box "[a-zA-Z][\\w.-]*" ; box "attribute.name" |]
+          box [| box "\"" ; box (createObj [ "token" ==> "string.quote"; "next" ==> "@str" ]) |]
+          box [| box "\\)"
+                 box (createObj [ "token" ==> "delimiter"; "next" ==> "@pop" ]) |]
           box [| box "[ \\t]+" ; box "white" |] |]
         "str" ==> inString ] ])
 
