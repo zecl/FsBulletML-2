@@ -444,6 +444,8 @@ let mutable private origin: obj = null
 /// 上の 2 つ と混ぜられない —— あちらは 1 か所 ずつで毎コマ 書き換わり、
 /// こちらは何か所 も同時に出て、間引いて書き換わる
 let mutable private tallyDeco: obj = null
+/// 重さの札（v3.9）。**撃った数と別に持つ** —— 同じ行に両方 出る
+let mutable private spanDeco: obj = null
 
 [<Emit("$0.getModel().getLineMaxColumn($1)")>]
 let private lineMaxColumn (editor: obj) (line: int) : int = jsNative
@@ -589,6 +591,51 @@ let showTally (marks: (int * int * string)[]) : unit =
 
 let clearTally () =
   if not (isNull tallyDeco) then setDecorations tallyDeco [||]
+
+/// 走った重さを字の右へ出す（v3.9）。**`showTally` と別の入れ物。**
+///
+/// 同じ行に両方 出ることが在る（撃つ腕は撃ちもするし、重くもある）ので、
+/// **1 つ にまとめると片方 を消したときにもう片方 も消える。**
+///
+/// 色も別 —— あちらは青（撃った数）、こちらは橙（重さ）で、
+/// **下の帯の線と同じ色**。どちらの軸かが色で分かる。
+///
+/// **置くのは行末。開き札の直後 ではない。**
+/// 重さが付く行には本文を持つ要素が来る（`wait` / `times` を持つ札）ので、
+/// 開き札の後ろへ足すと `<wait>  13%20-$rank*8</wait>` になり、
+/// **印が値の一部 に読める**（実機で見て気づいた）。
+/// 撃った数は `fire` と `fireRef` にしか付かず、あちらは本文を持たない。
+///
+/// **閉じ札の後ろ ではなく行末**にしてある —— 3 表記 のうち
+/// `sxml` と `fsb` は閉じ札を持たず、そこでは開き札と同じ範囲が入るので、
+/// 閉じ札で書くと 2 表記 で元の位置に戻る
+let showSpans (marks: (int * string)[]) : unit =
+  if isNull editor then ()
+  else
+    if isNull spanDeco then spanDeco <- newDecorations editor
+    let items =
+      marks
+      |> Array.map (fun (fromOffset, text) ->
+          let a = positionAt editor fromOffset
+          let line = unbox<int> a?lineNumber
+          let col = lineMaxColumn editor line
+          createObj [
+            // **範囲を潰さない。** 潰した範囲に `after` を付けると
+            // **木には入るのに DOM が組まれない**（撃った数のほうは
+            // 札ぶんの幅を持っていたので出ていた）。行末の 1 文字 を掴む
+            "range" ==> createObj [
+              "startLineNumber" ==> line
+              "startColumn" ==> max 1 (col - 1)
+              "endLineNumber" ==> line
+              "endColumn" ==> col ]
+            "options" ==> createObj [
+              "after" ==> createObj [
+                "content" ==> text
+                "inlineClassName" ==> "span-mark" ] ] ])
+    setDecorations spanDeco items
+
+let clearSpans () =
+  if not (isNull spanDeco) then setDecorations spanDeco [||]
 
 /// 波線 1 本 ぶん。行・桁 は 1 起点。**`endColumn` が 0 なら行末まで。**
 type Mark =

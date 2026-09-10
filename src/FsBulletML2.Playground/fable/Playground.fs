@@ -365,6 +365,17 @@ type Playground() as self =
   // 字の上に出す上位いくつ。**同梱 176 本 で上位 3 つ が 93%**
   // （`fire` が 4 個 以上 の 130 本 の中央値）なので、5 で足りる
   let tallyTopN = 5
+  /// 重さを出す行の上限（v3.9）。**割合で切るので、ここは天井**。
+  /// 版の頭で数えた —— 5% 以上 の行は**中央 5 / 9 割 9 / 最大 12**
+  let spanTopN = 20
+  /// これ未満 の行には出さない。**全部 に出すと字が埋まる** ——
+  /// 字に出せる行は中央 25 / 最大 87 で、1% で切ると中央 11 行 に印が付く
+  let spanMinShare = 0.05
+  let mutable spanShown = false
+  /// 最後に書き直したコマ。**撃った数と別に持つ** ——
+  /// あちらの数を見て「同じコマか」で判じると、
+  /// **止めているあいだ毎コマ 引きに行く**（コマが進まないので差が 0 のまま）
+  let mutable spanAt = -1000
   // 打った字を残すときの待ち（v3.5）。**0 は「予約が無い」**
   let mutable saveTimer = 0.0
   // 重さの帯（v3.3 の段 2）。**弾数とコマ時間の 2 本。**
@@ -790,6 +801,45 @@ type Playground() as self =
       tallyShown <- marks.Count > 0
       Monaco.showTally (marks.ToArray())
 
+  /// 走った重さを字の右へ出す（v3.9）。**撃った数の隣 の軸。**
+  ///
+  /// あちらは「その `fire` が何発 撃ったか」、こちらは
+  /// **「その行に弾が何 弾コマ 居たか」** —— 撃たない行にも重さは在る
+  /// （毎コマ 読み直される `changeDirection` など）。
+  ///
+  /// **出すのは割合。** 弾コマ の生の数は本によって桁が違うので、
+  /// 「全体の何 %」でしか比べられない。
+  ///
+  /// **重さは 1 行 に集まりきらない**（版の頭で数えた。上位 5 行 で 77.8%、
+  /// いちばん低い本は 23.5%）ので、上位 n 個 ではなく**割合で切る**
+  member _.lightSpans(frame: int) =
+    if not litOpen then
+      if spanShown then
+        spanShown <- false
+        Monaco.clearSpans ()
+    elif frame - spanAt >= tallyEvery then
+      spanAt <- frame
+      if not litScanned then
+        litScanned <- true
+        litSpans <- current.NodeSpans (Monaco.getValue ()) nodeNames
+      let raw = unbox<float[]> (invoke1 dotNet "SpanTop" (box spanTopN))
+      let total = raw.[0]
+      let pairs = (raw.Length - 2) / 2
+      let span = List.length litSpans
+      let marks = ResizeArray<int * string>()
+      if total > 0.0 then
+        for k in 0 .. pairs - 1 do
+          let idx = int raw.[2 + k * 2]
+          let cnt = raw.[3 + k * 2]
+          let share = cnt / total
+          // **並びの外は出さない**（`lightTally` と同じ守り）
+          if idx >= 0 && idx < span && share >= spanMinShare then
+            let sp = List.item idx litSpans
+            // **渡すのは開き札の頭 だけ。** 置き先は行末で、`Monaco` が引く
+            marks.Add(sp.OpenStart, "  " + string (int (share * 100.0 + 0.5)) + "%")
+      spanShown <- marks.Count > 0
+      Monaco.showSpans (marks.ToArray())
+
   /// 印の窓を開ける。**本文と走っている木が同じところで揃った瞬間だけ。**
   ///
   /// 呼ぶのは Apply が通ったとき・弾幕を選び直したとき・表記を書き直したとき・
@@ -803,6 +853,7 @@ type Playground() as self =
     // 窓を開けたら**次のコマで出す**（間引きの数を待たない）——
     // 建て直した直後は数が 0 なので、待つと空白の 0.5 秒 が見える
     tallyAt <- -1000
+    spanAt <- -1000
 
   /// 印の窓を閉じる。**打った瞬間に。**
   member _.closeLight() =
@@ -812,6 +863,8 @@ type Playground() as self =
       litSpans <- []
       tallyShown <- false
       Monaco.clearTally ()
+      spanShown <- false
+      Monaco.clearSpans ()
       litIndex <- -2
       fromIndex <- -2
       fromLine <- -1
@@ -2084,6 +2137,9 @@ type Playground() as self =
             // 撃った数（v3.3 の段 1）。**弾を選んでいなくても出る** ——
             // 「どこが弾を増やしているか」は、追う前に知りたいこと
             self.lightTally (int (unbox<float> (jsItem ret 2)))
+            // **撃った数のあと。** あちらが間引きの数を進めるので、
+            // こちらは「進んだコマ」を見て同じコマで書き直す
+            self.lightSpans (int (unbox<float> (jsItem ret 2)))
             // 重さの帯（v3.3 の段 2）。**弾数は 1 面 目 だけ** ——
             // 2 面 を足すと「どちらが重いか」が混ざる
             self.weight (n, stepMs, int (unbox<float> (jsItem ret 2)))

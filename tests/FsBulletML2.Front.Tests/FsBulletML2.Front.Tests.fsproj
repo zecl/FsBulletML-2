@@ -50,6 +50,8 @@
     <Compile Include="BulletLineage.fs" />
     <!-- 2 面 が分かれるコマ（v3.8）。**位置で見る。数では遅れる** -->
     <Compile Include="DivergeFrames.fs" />
+    <!-- 走った字ごとの弾コマ（v3.9）。**畳むところが本体** -->
+    <Compile Include="SpanWeight.fs" />
   </ItemGroup>
   <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
        手のせいか版のせいかが割れない -->

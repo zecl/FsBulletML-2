@@ -298,6 +298,28 @@ type PlaygroundHost() =
   member _.PickedLineage() : float[] =
     field.PickedLineage |> Array.map float
 
+  /// 走った字ごとの**弾コマ**の多い順に n 個（v3.9）。
+  /// 戻りは `[総数; 数えた字の数; 添字; 弾コマ; 添字; 弾コマ; ...]`。
+  ///
+  /// **`TallyTop` と同じ形。** あちらは「撃った発数」、こちらは「弾コマ」——
+  /// 単位が違うだけで、出し方は揃えてある。
+  ///
+  /// 版の頭で数えた —— 字に出せる行は**中央 25 / 最大 87** で、
+  /// **上位 5 行 が 77.8% / 上位 20 行 で 99.9%**（本の中央値）。
+  /// **いちばん低い本は上位 5 行 で 23.5%** —— 1 行 に集まりきらない本が
+  /// 在るので、呼ぶ側は上位 n 個 ではなく割合で切る
+  [<JSInvokable>]
+  member _.SpanTop(n: int) : float[] =
+    let top = field.Focus.SpanTop n
+    let out = Array.zeroCreate<float> (2 + top.Length * 2)
+    out.[0] <- float field.Focus.SpanTotal
+    out.[1] <- float field.Focus.SpanCount
+    for k in 0 .. top.Length - 1 do
+      let struct (idx, count) = top.[k]
+      out.[2 + k * 2] <- float idx
+      out.[3 + k * 2] <- float count
+    out
+
   [<JSInvokable>]
   member _.TallyTop(n: int) : float[] =
     let top = field.Focus.TallyTop n
