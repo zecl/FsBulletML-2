@@ -412,15 +412,6 @@ module internal Step =
     | [] -> QNone
     | h :: t -> if isDone h then quietFirst t else quietOf h
 
-  /// **静かな n コマ を飛ばした後の実行位置。**（v4.9.2）
-  ///
-  /// 速い道はエンジンを呼ばないので、**飛ばしたあいだ `wait` が減らない。**
-  /// 減らさずに素の道へ戻すと、その弾は n コマ 余分 に待つ ——
-  /// 同梱 176 本 のうち 118 本 で座標が割れた形がこれ。
-  ///
-  /// **`quietOf` と対で読むこと。** 同じ「現在位置」を辿って、
-  /// そこの `wait` だけを n 減らす。`quietOf` が返した数より大きい n を
-  /// 渡してはいけない（`left` が負に回って wait が早く終わる）。
   /// **1 ずつ n 回 引く。** `l - float32 n` と 1 行 で書くと
   /// **float32 の丸めが素の道と違う** —— 素の道は毎コマ `left - 1.0f` を
   /// 通るので、同じ順で引かないと下の桁がずれる。
@@ -430,6 +421,119 @@ module internal Step =
     for _ in 1 .. n do v <- v - 1.0f
     v
 
+  /// **この top が、これから何コマ 一定の割合で変わるか**（v4.9.3）
+  ///
+  /// ## 見る形を絞ってある
+  ///
+  /// `accel` / `changeSpeed` は `Stopped` ではなく **`Continue`** を返すので、
+  /// `action` の fold は**その先の子も同じコマ で実行する** ——
+  /// `quietOf` の「最初の未完了の子だけ」では拾えない。
+  /// ここでは**頭から `wait` で止まるまで**をなめて、その途中 に
+  ///
+  ///     進行中の accel          足す量 を集める
+  ///     進行中の changeSpeed    足す量 を集める
+  ///     それ以外               **その場でやめる**（`LNone`）
+  ///
+  /// **入れ子の action には入らない。** `fire` / `vanish` / `repeat` /
+  /// `changeDirection` / まだ始まっていない `wait` に出会ったらやめる ——
+  /// **`repeat` は `times` を評価して `$rand` を読む**（v4.9.2 で 136 本 を
+  /// 割った形）し、まだ始まっていない `wait` も `getValue` を通る。
+  ///
+  /// ## 残りコマ数の数え方が 2 通り
+  ///
+  ///     accel         left < 0 で終わる。**そのコマ は足さない**
+  ///     changeSpeed   left <= 0 で終わる。**足してから終わる**
+  ///
+  /// どちらも `PXxx (true, L, ..)` から**あと floor L コマ 足す**
+  /// （accel は L=3 -> left 2,1,0 で 3 回、changeSpeed は L=3 -> 同じく 3 回）。
+  /// `wait` の残りと合わせて、**いちばん小さい数**まで。
+  let linearOf (p: Progress) : Linear =
+    match p with
+    | PAction (false, _, children) ->
+        let mutable frames = System.Int32.MaxValue
+        let mutable sstep = 0.0f
+        let mutable ax = 0.0f
+        let mutable ay = 0.0f
+        // **足すものが 1 つ も無ければ乗せない。** 定数なら段 2 の仕事
+        let mutable moving = false
+        // `wait` で止まったか。**止まらなくてもよい** ——
+        // `accel` / `changeSpeed` が進行中 なら `action` は `Continue` を返し、
+        // **次のコマ も同じ位置から走る**（子が尽きても `Ended` にならない）。
+        //
+        // いちばん多い形がまさにそれだった ——
+        //
+        //     <bullet label="round"><action>
+        //       <accel><vertical>10</vertical><term>250</term></accel>
+        //     </action></bullet>
+        //
+        // `wait` を要ると書いていたせいで、この弾を 1 発 も乗せていなかった
+        let mutable stopped = false
+        let mutable bad = false
+        let mutable rest = children
+        while not bad && not stopped && not (List.isEmpty rest) do
+          let h = List.head rest
+          rest <- List.tail rest
+          if isDone h then () else
+          match h with
+          | PWait (true, l) when l >= 1.0f ->
+              stopped <- true
+              frames <- min frames (int l)
+          | PAccel (true, l, dx, dy) when l >= 0.0f ->
+              moving <- true
+              ax <- ax + dx
+              ay <- ay + dy
+              frames <- min frames (int l)
+          | PChangeSpeed (true, false, l, d) when l >= 0.0f ->
+              moving <- true
+              sstep <- sstep + d
+              // **終わるコマ は飛ばさない。** `changeSpeed` は
+              // **足してから `left <= 0` で終わる**ので、floor L コマ 飛ばすと
+              // 最後の 1 コマ で `done_` が立ち、木の形が変わる ——
+              // `skipLinear` は残りを引くだけなので `done_` が立たず、
+              // **次の step で 1 回 余分 に足される**（同梱 10 本 が割れた形）。
+              // `accel` は `left < 0` で終わる（足さずに終わる）ので、
+              // この 1 を引く要らない
+              frames <- min frames (int l - 1)
+          | _ -> bad <- true
+        // **`stopped` は要らない。** 足すものが在れば `Continue` で
+        // 同じ位置に留まる —— 要るのは「途中 に知らない子が無い」ことだけ
+        ignore stopped
+        if bad || not moving || frames < 1 then LNone
+        else LStep (frames, sstep, ax, ay)
+    | _ -> LNone
+
+  /// **線形の n コマ を飛ばした後の実行位置**（v4.9.3）。
+  ///
+  /// `linearOf` と**同じ道を同じ順で**辿って、`accel` / `changeSpeed` /
+  /// `wait` の残りを n 減らす。2 つ が食い違うと、その弾だけ余分 に走る。
+  ///
+  /// **`Speed` / `Accel` はここでは触らない** —— あちらは `BulletState` に
+  /// 在って、呼ぶ側（`SkipLinear`）が n 回 分 進める
+  let rec skipLinear (n: int) (p: Progress) : Progress =
+    match p with
+    | PAction (false, loop, children) ->
+        let mutable stopped = false
+        PAction (false, loop, children |> List.map (fun h ->
+          if stopped || isDone h then h
+          else
+            match h with
+            | PWait (true, l) when l >= 1.0f ->
+                stopped <- true
+                PWait (true, minusOnes n l)
+            | PAccel (true, l, dx, dy) when l >= 0.0f -> PAccel (true, minusOnes n l, dx, dy)
+            | PChangeSpeed (true, false, l, d) when l >= 0.0f -> PChangeSpeed (true, false, minusOnes n l, d)
+            | _ -> h))
+    | _ -> p
+
+  /// **静かな n コマ を飛ばした後の実行位置。**（v4.9.2）
+  ///
+  /// 速い道はエンジンを呼ばないので、**飛ばしたあいだ `wait` が減らない。**
+  /// 減らさずに素の道へ戻すと、その弾は n コマ 余分 に待つ ——
+  /// 同梱 176 本 のうち 118 本 で座標が割れた形がこれ。
+  ///
+  /// **`quietOf` と対で読むこと。** 同じ「現在位置」を辿って、
+  /// そこの `wait` だけを n 減らす。`quietOf` が返した数より大きい n を
+  /// 渡してはいけない（`left` が負に回って wait が早く終わる）。
   let rec skipQuiet (n: int) (p: Progress) : Progress =
     match p with
     | PWait (true, l) when l >= 1.0f -> PWait (true, minusOnes n l)

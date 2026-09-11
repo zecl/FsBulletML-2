@@ -67,6 +67,20 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
   /// 1 本 に畳んである —— 2 本 に分けると「どちらの道に居るか」を
   /// 2 か所 で持つことになり、消しで詰めるときに片方 だけ直す事故が出る
   let mutable quiet = Array.zeroCreate<int> 256
+  /// 線形の道の残り（v4.9.3）。**0 なら乗っていない。**
+  ///
+  /// `quiet` と**同時には立たない** —— あちらは差分が動かない弾、
+  /// こちらは**一定の割合で動く**弾
+  let mutable lin = Array.zeroCreate<int> 256
+  /// 線形の道の姿。**1 点 6 つ** ——
+  /// speed / accel.X / accel.Y / speed に足す量 / accel.X に足す量 / 同 Y
+  let mutable linf = Array.zeroCreate<float32> (256 * 6)
+  /// 線形の道の向き。**1 点 2 つ** —— sin dir / cos dir。
+  ///
+  /// **`float`（double）で持つ。** `Step.fs` の出口 は
+  /// `float32 (Math.Sin dir * speed)` と **double で掛けてから落とす**ので、
+  /// ここを float32 にすると 1 ビット ずれる
+  let mutable lind = Array.zeroCreate<float> (256 * 2)
   let mutable born : Born[] = Array.zeroCreate 256
   let mutable n = 0
 
@@ -94,14 +108,23 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
       let p = Array.zeroCreate<float32> (cap * 3)
       let v = Array.zeroCreate<float32> (cap * 2)
       let f = Array.zeroCreate<int> cap
+      let l = Array.zeroCreate<int> cap
+      let lf = Array.zeroCreate<float32> (cap * 6)
+      let ld = Array.zeroCreate<float> (cap * 2)
       let b : Born[] = Array.zeroCreate cap
       Array.blit pos 0 p 0 (n * 3)
       Array.blit vel 0 v 0 (n * 2)
       Array.blit quiet 0 f 0 n
+      Array.blit lin 0 l 0 n
+      Array.blit linf 0 lf 0 (n * 6)
+      Array.blit lind 0 ld 0 (n * 2)
       Array.blit born 0 b 0 n
       pos <- p
       vel <- v
       quiet <- f
+      lin <- l
+      linf <- lf
+      lind <- ld
       born <- b
       rePin ()
     elif not pin.IsAllocated then rePin ()
@@ -114,6 +137,7 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
     vel.[n * 2] <- 0.0f
     vel.[n * 2 + 1] <- 0.0f
     quiet.[n] <- 0
+    lin.[n] <- 0
     born.[n] <- b
     n <- n + 1
 
@@ -132,6 +156,12 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
       vel.[i * 2] <- vel.[last * 2]
       vel.[i * 2 + 1] <- vel.[last * 2 + 1]
       quiet.[i] <- quiet.[last]
+      lin.[i] <- lin.[last]
+      // **6 つ と 2 つ を写す。** 詰めた枠は次のコマ から走るので、
+      // 姿ごと持っていかないと別の弾の速さで飛ぶ
+      for k in 0 .. 5 do linf.[i * 6 + k] <- linf.[last * 6 + k]
+      lind.[i * 2] <- lind.[last * 2]
+      lind.[i * 2 + 1] <- lind.[last * 2 + 1]
       born.[i] <- born.[last]
     // **末尾の参照を落とす。** 残すと、消えた弾を配列が握り続ける。
     //
@@ -197,6 +227,17 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
     let mutable c = 0
     for i in 0 .. n - 1 do
       if quiet.[i] > 0 then c <- c + 1
+    c
+
+  /// 一定の割合で変わるので速い道に居る弾の数（v4.9.3）。
+  ///
+  /// **3 本 目 の数え口。** `ConstCount` / `QuietCount` と別に持つのは、
+  /// **どれか 1 つ が死んでも他 の 2 つ が緑を出し続ける**から ——
+  /// 門はそれぞれを名指しで数える
+  member _.LinearCount =
+    let mutable c = 0
+    for i in 0 .. n - 1 do
+      if lin.[i] > 0 then c <- c + 1
     c
 
   /// 生きている弾を、**撃った腕の添字**で束ねる（v4.0.1）。
@@ -312,6 +353,36 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
           focus.End()
         if x < 0.0f || x > w || y < 0.0f || y > h then removeAt i unpick
         else i <- i + 1
+      elif lin.[i] > 0 then
+        // --- 一定の割合で変わる弾も、エンジンを呼ばない（v4.9.3）----------
+        //
+        // `accel` / `changeSpeed` が進行中 の弾は止まっていないが、
+        // **毎コマ 同じ量 が足される**ので先が読める（`LinearPlan`）。
+        //
+        // **差分に増分を足し込まない。** `Speed` / `Accel` を持ち歩いて
+        // **`Step.fs` の出口 と同じ式**を計算する —— そうしないと丸めが
+        // 合わない。`sin dir` / `cos dir` はこのあいだ 変わらないので、
+        // 入るときに 1 度 だけ引いてある
+        lin.[i] <- lin.[i] - 1
+        let b = i * 3
+        let g = i * 6
+        // **h を使わない。** あちらは面の高さ（field.Height）
+        let d2 = i * 2
+        let speed = linf.[g] + linf.[g + 3]
+        let cx = linf.[g + 1] + linf.[g + 4]
+        let cy = linf.[g + 2] + linf.[g + 5]
+        linf.[g] <- speed
+        linf.[g + 1] <- cx
+        linf.[g + 2] <- cy
+        let x = pos.[b] + (cx + float32 (lind.[d2] * float speed))
+        let y = pos.[b + 1] + (cy + float32 (-lind.[d2 + 1] * float speed))
+        pos.[b] <- x
+        pos.[b + 1] <- y
+        if i = picked then
+          focus.Begin()
+          focus.End()
+        if x < 0.0f || x > w || y < 0.0f || y > h then removeAt i unpick
+        else i <- i + 1
       else
 
       let it = born.[i]
@@ -398,6 +469,25 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
             vel.[i * 2 + 1] <- f.Delta.Y
             quiet.[i] <- q
             it.Run <- it.Run.SkipQuiet q
+          else
+            // **止まっていなくても、一定の割合で変わるなら乗る**（v4.9.3）
+            match it.Run.LinearPlan with
+            | ValueSome (struct (k, s, ax, ay)) ->
+              // **入るときの姿は step の出口 のもの。** 次のコマ はここから
+              let m = it.Run.Motion
+              let g = i * 6
+              let d2 = i * 2
+              linf.[g] <- m.Speed
+              linf.[g + 1] <- m.Accel.X
+              linf.[g + 2] <- m.Accel.Y
+              linf.[g + 3] <- s
+              linf.[g + 4] <- ax
+              linf.[g + 5] <- ay
+              lind.[d2] <- Math.Sin(float m.Dir)
+              lind.[d2 + 1] <- Math.Cos(float m.Dir)
+              lin.[i] <- k
+              it.Run <- it.Run.SkipLinear k
+            | ValueNone -> ()
       if dead then
         // 追っていた弾が消えたら追うのをやめる。**数も消す** ——
         // 残すと、消えた弾の最後のコマの数がそのまま出続ける

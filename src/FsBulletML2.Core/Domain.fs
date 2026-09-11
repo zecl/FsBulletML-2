@@ -131,6 +131,22 @@ module Domain =
     /// 毎コマ 動くので、静かではない
     | QBusy
 
+  /// この top が、これから何コマ **一定の割合で**変わるか（v4.9.3）
+  ///
+  /// `accel` / `changeSpeed` が進行中 の弾は止まっていないので `Quiet` では
+  /// 拾えないが、**毎コマ 同じ量 が足される**ので先が読める ——
+  /// `Speed` と `Accel` を持ち歩けば、**差分の式だけ**を計算して
+  /// エンジン（木の走査）を呼ばずに済む。
+  ///
+  /// **`changeDirection` は入らない。** `Dir` が動くと `sin dir` になり、
+  /// 一定の割合では変わらない。
+  type internal Linear =
+    /// 分からない（乗せない）
+    | LNone
+    /// あと `Frames` コマ、毎コマ `Speed += SpeedStep` と
+    /// `Accel += (AccelX, AccelY)` が起きる
+    | LStep of frames: int * speedStep: float32 * accelX: float32 * accelY: float32
+
 
   /// 直前の fire の値。sequence の累積がここに乗る
   type FireContext =

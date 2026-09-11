@@ -72,7 +72,24 @@ open FsBulletML2.Playground
 /// 「1 ずつ引く」も同じで、同梱 176 本 では丸めの差が出なかった ——
 /// **出うるのは事実**なので残す（`Step.minusOnes` の但し書き）。
 ///
-/// 「終わった子を飛ばさず」は**保守的に外れる**変異で、答えは変わらない
+/// --- v4.9.3（一定の割合で変わる弾）の較正
+///
+///   `changeSpeed` の終わるコマ も飛ばす        赤 2
+///   `changeDirection` を線形と言う             赤 1
+///   `wait` で止まることを要る形に戻す           赤 2
+///   `Speed` を 1 回 でまとめて足す             赤 3
+///   向きを float32 で持つ                      赤 1
+///   詰めるときに姿を写さない                    赤 1
+///   線形の残りを減らさない                      赤 2
+///   `accel` の残りを 1 少なくする              **赤 0**
+///
+/// **空振りは 1 件 だけ。** `accel` を 1 コマ 短く飛ばすのは
+/// **保守的に外れる**変異で、答えは変わらない（乗る弾が減るだけ）。
+///
+/// 「向きを float32 で持つ」が赤 1 なのが効いている ——
+/// `Step.fs` の出口 は `float32 (Math.Sin dir * speed)` と
+/// **double で掛けてから落とす**ので、**持ち方を 1 段 落とすと 1 ビット ずれる。**
+////// 「終わった子を飛ばさず」は**保守的に外れる**変異で、答えは変わらない
 /// （現在位置でない子は `QNone` になり、その弾が素の道へ落ちるだけ）。
 /// **速さは落ちるが、赤くはならない。**
 [<TestFixture>]
@@ -190,6 +207,31 @@ type ConstStep() =
           </bullet>
         </fire>
         <wait>2</wait>
+      </action>
+    </repeat>
+    <wait>300</wait>
+  </action>
+</bulletml>"""
+
+  /// **`accel` だけを持つ弾**（v4.9.3）。
+  ///
+  /// 同梱でいちばん多かった形がこれ ——
+  /// `wait` が 1 つ も無く、`accel` が `Continue` を返し続けるので
+  /// **action は同じ位置に留まる。**
+  /// 「`wait` で止まるまで」を条件にしていたときは 1 発 も乗らなかった
+  static let accelXml = """<?xml version="1.0" ?>
+<bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
+  <action label="top">
+    <repeat><times>20</times>
+      <action>
+        <fire><direction type="sequence">17</direction><speed>1</speed>
+          <bullet>
+            <action>
+              <accel><vertical>6</vertical><term>200</term></accel>
+            </action>
+          </bullet>
+        </fire>
+        <wait>3</wait>
       </action>
     </repeat>
     <wait>300</wait>
@@ -609,3 +651,105 @@ type ConstStep() =
       b.Delta.Y |> should equal a.Delta.Y
       b.Run.QuietFrames |> should equal a.Run.QuietFrames
       (List.length b.Spawned) |> should equal (List.length a.Spawned)
+
+  // --- v4.9.3 —— 一定の割合で変わる弾も速い道へ ------------------------------
+
+  /// **答えが変わらないこと。**
+  [<Test>]
+  member _.``accel だけの弾でも、毎コマ 呼ぶ面と座標がビット一致する``() =
+    let a = reference (DeterministicField.env (DeterministicField.stream ())) (Bulletml.readXmlString accelXml) Frames
+    let b = actual (DeterministicField.env (DeterministicField.stream ())) (Bulletml.readXmlString accelXml) Frames
+    sameShots a b |> should equal None
+
+  /// **その道を通ったことを、門が自分で数える。**
+  /// `ConstCount` / `QuietCount` とは別の口で見る
+  [<Test>]
+  member _.``accel で変わる弾が、速い道に居る``() =
+    let front = DeterministicField.env (DeterministicField.stream ())
+    let f = Playfield.Create front (Bulletml.readXmlString accelXml)
+    let mutable withLin = 0
+    let mutable all = 0
+    for _ in 1 .. Frames do
+      f.Tick()
+      all <- all + f.BulletCount
+      withLin <- withLin + f.LinearCount
+    all |> should be (greaterThan 500)
+    withLin |> should be (greaterThan (all / 4))
+
+  /// **飛ばした後 の姿が、毎コマ 進めた姿と同じか。**
+  ///
+  /// `SkipLinear` は実行位置の残りを引くだけでなく
+  /// **`Speed` と `Accel` を n 回 分 進める** —— 1 回 で
+  /// `speed + step * n` とすると、素の道（毎コマ 足す）と丸めが合わない
+  [<Test>]
+  member _.``SkipLinear を通した弾は、毎コマ 進めた弾と同じ所に居る``() =
+    let front = DeterministicField.env (DeterministicField.stream ())
+    let bulletml = Bulletml.readXmlString accelXml
+    let script = Runner.load front.Rand front.Rank bulletml
+    let mutable run = Runner.newRoot BulletType.Enemy script
+    let mutable found = ValueNone
+    let mutable k = 0
+    while found.IsNone && k < 60 do
+      let fr = Driver.step front Space.YDown SpawnOrigin.AtShooter run run.Motion
+      run <- fr.Run
+      for c in fr.Spawned do
+        if found.IsNone then found <- ValueSome c
+      k <- k + 1
+    match found with
+    | ValueNone -> failwith "弾が出ない"
+    | ValueSome c0 ->
+      let start = (Driver.step front Space.YDown SpawnOrigin.AtShooter c0 c0.Motion).Run
+      match start.LinearPlan with
+      | ValueNone -> failwith "線形の弾にならない"
+      | ValueSome (struct (nn, _, _, _)) ->
+        // **当てる先が在ることを、門が自分で数える**
+        nn |> should be (greaterThan 5)
+        let mutable slow = start
+        for _ in 1 .. nn do
+          slow <- (Driver.step front Space.YDown SpawnOrigin.AtShooter slow slow.Motion).Run
+        let fast = start.SkipLinear nn
+        // **姿がビット で一致する**
+        fast.Motion.Speed |> should equal slow.Motion.Speed
+        fast.Motion.Accel.X |> should equal slow.Motion.Accel.X
+        fast.Motion.Accel.Y |> should equal slow.Motion.Accel.Y
+        // **次の 1 コマ も一致する**（実行位置の残りまで合っているか）
+        let x = Driver.step front Space.YDown SpawnOrigin.AtShooter slow slow.Motion
+        let y = Driver.step front Space.YDown SpawnOrigin.AtShooter fast fast.Motion
+        y.Delta.X |> should equal x.Delta.X
+        y.Delta.Y |> should equal x.Delta.Y
+        (List.length y.Spawned) |> should equal (List.length x.Spawned)
+
+  /// **`changeDirection` が混じる形は乗らない。**
+  /// `Dir` が動くと `sin dir` になり、一定の割合では変わらない
+  [<Test>]
+  member _.``changeDirection が進行中 なら、線形と言わない``() =
+    let xml = """<?xml version="1.0" ?>
+<bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
+  <action label="top">
+    <fire><direction type="absolute">180</direction><speed>1</speed>
+      <bullet>
+        <action>
+          <changeDirection><direction type="absolute">90</direction><term>100</term></changeDirection>
+          <wait>200</wait>
+        </action>
+      </bullet>
+    </fire>
+    <wait>500</wait>
+  </action>
+</bulletml>"""
+    let front = DeterministicField.env (DeterministicField.stream ())
+    let bulletml = Bulletml.readXmlString xml
+    let script = Runner.load front.Rand front.Rank bulletml
+    let run = Runner.newRoot BulletType.Enemy script
+    let fr = Driver.step front Space.YDown SpawnOrigin.AtShooter run run.Motion
+    let child = fr.Spawned |> List.head
+    let mutable c = (Driver.step front Space.YDown SpawnOrigin.AtShooter child child.Motion).Run
+    // **当てる先が在ることを、門が自分で数える** —— 向きが動く
+    let d0 = c.Motion.Dir
+    let mutable moved = false
+    for _ in 1 .. 30 do
+      c <- (Driver.step front Space.YDown SpawnOrigin.AtShooter c c.Motion).Run
+      if c.Motion.Dir <> d0 then moved <- true
+      // 向きが動いているあいだ、線形とは言わない
+      c.LinearPlan.IsNone |> should equal true
+    moved |> should equal true

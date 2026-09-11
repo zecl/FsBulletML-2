@@ -226,6 +226,72 @@ type BulletRun internal (script: BulletmlScript, state: BulletState) =
         | QNone | QBusy -> all <- false
       if all && m >= 1.0f then int m else 0
 
+  /// **あと何コマ 一定の割合で変わるか**と、その 1 コマ 分 の増分（v4.9.3）。
+  /// `ValueNone` なら分からない。
+  ///
+  /// 返るのは `(コマ数, Speed に足す量, Accel.X に足す量, Accel.Y に足す量)`。
+  ///
+  /// ## 呼ぶ側がすること
+  ///
+  /// **差分の式はここで返さない。** 呼ぶ側が `Motion` を持ち歩いて、
+  /// **`Step.fs` の出口 と同じ式**を毎コマ 計算する ——
+  ///
+  ///     speed  <- speed + speedStep
+  ///     accel  <- accel + (ax, ay)
+  ///     dx     <- accel.X + float32 (sin dir * float speed)
+  ///     dy     <- accel.Y + float32 (-cos dir * float speed)
+  ///
+  /// **`dx` に増分を足し込む形にしない。** あちらは丸めが素の道と合わない ——
+  /// 式を同じにするから**ビット で一致する**。`sin dir` / `cos dir` は
+  /// このあいだ 変わらないので、**1 度 だけ計算して持てばよい**
+  /// （`changeDirection` が混じる形は `LNone` になる）。
+  ///
+  /// **`Dir` は動かない。** 動く形はここへ来ない。
+  ///
+  /// ## 効き
+  ///
+  /// 段 2 の後 に素の道へ残る 11.4% のうち、**階差がビット で一定**なのが
+  /// 52.3%（`measure-ecs-linear.fsx`）。上界は 88.6% -> 94.1%。
+  member _.LinearPlan : struct (int * float32 * float32 * float32) voption =
+    // **top が 2 本 以上 なら見ない。** 2 本 が同じ `Speed` / `Accel` を
+    // 足しに来る形まで面倒を見ると、走査と `SkipLinear` の対が合わせにくい。
+    // コーパス 227 本 のうち **204 本 が 1 本**（`Step.fs` の但し書き）
+    match state.Tops with
+    | [ (_, prog, _) ] ->
+        match Step.linearOf prog with
+        | LStep (f, s, ax, ay) -> ValueSome (struct (f, s, ax, ay))
+        | LNone -> ValueNone
+    | _ -> ValueNone
+
+  /// **線形の n コマ を飛ばした後の姿**（v4.9.3）。
+  ///
+  /// 実行位置の残りを n 減らし、**`Speed` と `Accel` を n 回 分 進める。**
+  /// 1 回 で `speed + step * n` としないのは `minusOnes` と同じ理由 ——
+  /// **素の道は毎コマ 足すので、同じ順で足さないと下の桁がずれる。**
+  ///
+  /// **`LinearPlan` が返した数より大きい n を渡さないこと。**
+  member _.SkipLinear (n: int) : BulletRun =
+    if n <= 0 then BulletRun(script, state)
+    else
+      match state.Tops with
+      | [ (a, prog, fc) ] ->
+          match Step.linearOf prog with
+          | LStep (_, s, ax, ay) ->
+              let mutable speed = state.Speed
+              let mutable cx = state.Accel.X
+              let mutable cy = state.Accel.Y
+              for _ in 1 .. n do
+                speed <- speed + s
+                cx <- cx + ax
+                cy <- cy + ay
+              BulletRun(script,
+                { state with
+                    Speed = speed
+                    Accel = { X = cx; Y = cy }
+                    Tops = [ a, Step.skipLinear n prog, fc ] })
+          | LNone -> BulletRun(script, state)
+      | _ -> BulletRun(script, state)
+
   /// **静かな n コマ を飛ばした後の姿。**（v4.9.2）
   ///
   /// 速い道はエンジンを呼ばないので、**飛ばしたあいだ `wait` が減らない。**
