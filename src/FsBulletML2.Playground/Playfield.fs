@@ -7,12 +7,17 @@ open FsBulletML2
 open FsBulletML2.Domain
 open FsBulletML2.Front
 
-/// 参照型。struct だと `let it = live.[i]` がコピーになって書き戻せない。
+/// 弾 1 発 の、**生涯 で 1 度 しか触らないもの**（v4.9.1 の段 2）。
+///
+/// 座標と差分はここに置かない —— あちらは毎コマ 全部 の弾をなめるので、
+/// **成分ごとの配列**（`Playfield` の `pos` / `vel`）に居る。
+///
+/// **`Parent` は参照のまま握る。** 添字にすると消しで詰めたときに壊れ、
+/// 世代を付けると**消えた親を辿れなくなる** —— v3.6 の系譜が変わる。
+/// 握ると消えた親が解放されないのは前からで、深さのぶんだけ残る。
 [<Sealed; AllowNullLiteral>]
-type Live(run: BulletRun, x: float32, y: float32, isRoot: bool, from: int, parent: Live) =
+type Born(run: BulletRun, isRoot: bool, from: int, parent: Born) =
   member val Run = run with get, set
-  member val X = x with get, set
-  member val Y = y with get, set
   member _.IsRoot = isRoot
   /// この弾を撃った `fire` が、読んだ木の**書いてある順**の何番目 か（v3.2）。
   /// **撃たれていなければ -1**（根の敵）。決まらないときも -1
@@ -21,30 +26,123 @@ type Live(run: BulletRun, x: float32, y: float32, isRoot: bool, from: int, paren
   ///
   /// **`From` を辿っても系譜にならない** —— あれは「撃った `fire` の添字」で、
   /// 同じ `fire` から撃たれた弾は全部 同じ数になる。親そのものが要る。
-  ///
-  /// **握ると、消えた親が解放されない。** 深さのぶんだけ残る ——
-  /// そこは版の頭で数えた
   member _.Parent = parent
 
 /// 生きている弾の一覧。Bolero を知らない。
 ///
 /// 1 コマの順は MonoGame の `RunTask` と同じ
 /// （`Driver.step` → Delta を足す → Spawn は次コマ → Finished なら restart）。
-/// **回している最中に `live.Add` しない。** 今コマの Spawn は溜めて、消しのあとで足す。
+/// **回している最中に足さない。** 今コマの Spawn は溜めて、消しのあとで足す。
+///
+/// ## 弾は成分ごとの配列に居る（v4.9.1 の段 2）
+///
+///     pos    1 点 3 つ —— x / y / 撃った腕の添字。**JS が読むのはこれ**
+///     vel    1 点 2 つ —— 速い道の 1 コマ の差分
+///     fast   速い道に居るか
+///     born   生涯 で 1 度 だけ触るもの（`Born`）
+///
+/// **詰めた並びそのものを置き場にしてある。** 以前は弾 1 発 が
+/// `Live` オブジェクトで、毎コマ
+///
+///     Tick          1 巡（位置を足す）
+///     Pack          1 巡（3 つ 組 へ写す）
+///     BulletCount   1 巡（根を除いて数える）
+///
+/// と **3 回 なめて**いた。1,706 発 のところで `Tick` が 1 発 46 ns ——
+/// `x += dx` に 120 サイクル は出ないので、**散ったオブジェクトを
+/// 引きに行く待ち**だった。
+///
+/// 置き場を詰めた並びそのものにすると、**`Pack` は数を返すだけ**になる。
 [<Sealed>]
-type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field, focus: Focus) =
+type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: BulletRun) =
 
-  let spawned = ResizeArray<Live>()
+  // **1 点 につき 3 つ。** x / y / 撃った腕の添字（v4.7）——
+  // **撃たれていない弾は -1**（根の敵がそう）。JS 側はそこを外す
+  let mutable pos = Array.zeroCreate<float32> (256 * 3)
+  // 速い道の 1 コマ の差分。**JS へは渡らない**
+  let mutable vel = Array.zeroCreate<float32> (256 * 2)
+  let mutable fast = Array.zeroCreate<bool> 256
+  let mutable born : Born[] = Array.zeroCreate 256
+  let mutable n = 0
+
+  // 今コマ に産まれた弾。**回している最中に足さない**
+  let spawned = ResizeArray<struct (Born * float32 * float32)>()
+
   let mutable frame = 0
-  let mutable xs = Array.zeroCreate<float32> 256
   let mutable pin = Unchecked.defaultof<GCHandle>
-  /// 追っている弾（v3.1 の段 3）。**参照で握る** —— 死んだ枠には末尾を移すので
-  /// （`Tick`）、添字はそのコマのものでしかない
-  let mutable picked = Unchecked.defaultof<Live>
+
+  /// 追っている弾（v3.1 の段 3）。**添字で持ち、消しで詰めたら追随させる。**
+  ///
+  /// 以前は参照で握っていた（添字はそのコマのものでしかないため）が、
+  /// 弾がオブジェクトでなくなったので握る先が無い ——
+  /// 代わりに**消すところで 1 か所 だけ直す**。追っていなければ -1
+  let mutable picked = -1
 
   let rePin () =
     if pin.IsAllocated then pin.Free()
-    pin <- GCHandle.Alloc(xs, GCHandleType.Pinned)
+    pin <- GCHandle.Alloc(pos, GCHandleType.Pinned)
+
+  /// 場所を確かめる。**足りなければ倍にする** —— pin し直しもここ
+  let ensure (need: int) =
+    if fast.Length < need then
+      let cap = max (need * 2) 256
+      let p = Array.zeroCreate<float32> (cap * 3)
+      let v = Array.zeroCreate<float32> (cap * 2)
+      let f = Array.zeroCreate<bool> cap
+      let b : Born[] = Array.zeroCreate cap
+      Array.blit pos 0 p 0 (n * 3)
+      Array.blit vel 0 v 0 (n * 2)
+      Array.blit fast 0 f 0 n
+      Array.blit born 0 b 0 n
+      pos <- p
+      vel <- v
+      fast <- f
+      born <- b
+      rePin ()
+    elif not pin.IsAllocated then rePin ()
+
+  let add (b: Born) (x: float32) (y: float32) =
+    ensure (n + 1)
+    pos.[n * 3] <- x
+    pos.[n * 3 + 1] <- y
+    pos.[n * 3 + 2] <- float32 b.From
+    vel.[n * 2] <- 0.0f
+    vel.[n * 2 + 1] <- 0.0f
+    fast.[n] <- false
+    born.[n] <- b
+    n <- n + 1
+
+  /// 死んだ枠に末尾を移す。**追っている弾の添字もここで直す** ——
+  /// 直さないと、詰めたコマに黙って別の弾を指す
+  let removeAt (i: int) (onUnpick: unit -> unit) =
+    let last = n - 1
+    if picked = i then
+      picked <- -1
+      onUnpick ()
+    elif picked = last then picked <- i
+    if i <> last then
+      pos.[i * 3] <- pos.[last * 3]
+      pos.[i * 3 + 1] <- pos.[last * 3 + 1]
+      pos.[i * 3 + 2] <- pos.[last * 3 + 2]
+      vel.[i * 2] <- vel.[last * 2]
+      vel.[i * 2 + 1] <- vel.[last * 2 + 1]
+      fast.[i] <- fast.[last]
+      born.[i] <- born.[last]
+    // **末尾の参照を落とす。** 残すと、消えた弾を配列が握り続ける。
+    //
+    // ### この守りは振る舞いに出ない
+    //
+    // 較正で当てて **赤 0 点**。読むのは `0 .. n - 1` だけなので、
+    // 末尾より後ろ に何が残っていても答えは変わらない ——
+    // **変わるのは、消えた弾（と その親の鎖）がいつ解放されるか**だけ。
+    //
+    // **それでも残す。** 面は建て直すまで生き続けるので、落とさないと
+    // **いちばん多かったコマの弾が全部 残る**。門では見えないので書いておく。
+    born.[last] <- null
+    n <- last
+
+  // 根の敵は撃たれていないので、撃った場所は無い
+  do add (Born(rootRun, true, -1, null)) field.EnemyX field.EnemyY
 
   static member Create (front: IFrontEnv) (bulletml: Bulletml) =
     // **対の表は組む段でしか作れない**（`Focus.Collect` の但し書き）。
@@ -56,13 +154,10 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
     // **面の形は弾幕が決める。** 横画面と名乗る弾幕は、縦の面に置くと
     // 弾が横へ抜けていく（`Stage.landscape` の但し書き）
     let field = Stage.ofDirection script.ShootingDirection
-    let live = ResizeArray<Live>()
-    // 根の敵は撃たれていないので、撃った場所は無い
-    live.Add(Live(run, field.EnemyX, field.EnemyY, true, -1, null))
-    Playfield(front, live, field, focus)
+    Playfield(front, field, focus, run)
 
   /// `Pack` が返す点の数。**根の敵が入る** —— 描く側はこの数で回す
-  member _.Count = live.Count
+  member _.Count = n
 
   /// **弾の数。根の敵は入らない**（v4.0.1）。
   ///
@@ -73,10 +168,20 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
   /// **字の上の合計と一致するのはこちら。** 腕ごとの生き残りを足すと
   /// この数になる（同梱 176 本 / 600 コマ で 1 度 も外れない。版の頭で数えた）
   member _.BulletCount =
-    let mutable n = 0
-    for it in live do
-      if not it.IsRoot then n <- n + 1
-    n
+    let mutable c = 0
+    for i in 0 .. n - 1 do
+      if not born.[i].IsRoot then c <- c + 1
+    c
+
+  /// 速い道に居る弾の数（v4.9.1）。**エンジンを呼ばない弾。**
+  ///
+  /// **門がこれを数える** —— 0 件 のまま「毎コマ 呼ぶ面と一致した」と
+  /// 言えてしまうと、**速い道を 1 度 も通らずに緑**になる
+  member _.ConstCount =
+    let mutable c = 0
+    for i in 0 .. n - 1 do
+      if fast.[i] then c <- c + 1
+    c
 
   /// 生きている弾を、**撃った腕の添字**で束ねる（v4.0.1）。
   /// 戻りは (書いてある順の添字, いま生きている数)。**多い順**。
@@ -90,9 +195,10 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
   /// 食い違う理由が読めなくなる
   member _.AliveByFire() : struct (int * int)[] =
     let byIndex = Dictionary<int, int>()
-    for it in live do
-      if it.From >= 0 then
-        byIndex.[it.From] <- (match byIndex.TryGetValue it.From with | true, v -> v | _ -> 0) + 1
+    for i in 0 .. n - 1 do
+      let from = born.[i].From
+      if from >= 0 then
+        byIndex.[from] <- (match byIndex.TryGetValue from with | true, v -> v | _ -> 0) + 1
     byIndex
     |> Seq.sortByDescending (fun kv -> kv.Value)
     |> Seq.map (fun kv -> struct (kv.Key, kv.Value))
@@ -104,13 +210,14 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
   /// **引き算を呼ぶ側にさせない**（`Count` に根が入っていることを
   /// 知っている必要が出る）
   member _.AliveUnattributed =
-    let mutable n = 0
-    for it in live do
-      if it.From < 0 then n <- n + 1
-    n
+    let mutable c = 0
+    for i in 0 .. n - 1 do
+      if born.[i].From < 0 then c <- c + 1
+    c
 
-  /// 生きている弾の並び。**外へは出さない** —— `Differ` が使うだけ
-  member private _.Live = live
+  /// 生きている弾の座標。**外へは出さない** —— `Differ` が使うだけ。
+  /// 1 点 3 つ の並びで、長さは `Count * 3` 以上
+  member private _.Positions = struct (pos, n)
 
   /// 2 つ の面が分かれているか（v3.8）。**弾の数か、同じ添字の座標が違うか。**
   ///
@@ -123,17 +230,17 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
   /// （**22.3 倍 遅れる**）。数だけ見ると、位置は 6 コマ 目 から違うのに
   /// 134 コマ 目 まで気づかない。
   ///
-  /// **`Pack` を通さない。** あちらは pin した 1 本 の配列へ写す口なので、
-  /// 2 つ の面を続けて呼ぶと片方 が上書きされる
+  /// **`Pack` を呼ばなくてよくなった**（v4.9.1 の段 2）—— 座標は詰めた並び
+  /// そのものに居るので、2 つ の面を続けて読んでも上書きが起きない
   static member Differ (a: Playfield) (b: Playfield) : bool =
-    let xs = a.Live
-    let ys = b.Live
-    if xs.Count <> ys.Count then true
+    let struct (xs, na) = a.Positions
+    let struct (ys, nb) = b.Positions
+    if na <> nb then true
     else
       let mutable i = 0
       let mutable diff = false
-      while not diff && i < xs.Count do
-        if xs.[i].X <> ys.[i].X || xs.[i].Y <> ys.[i].Y then diff <- true
+      while not diff && i < na do
+        if xs.[i * 3] <> ys.[i * 3] || xs.[i * 3 + 1] <> ys.[i * 3 + 1] then diff <- true
         i <- i + 1
       diff
 
@@ -153,12 +260,45 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
     // 撃った場所を拾う窓（v3.2）。**1 コマ の頭で 1 回 だけ** ——
     // 弾ごとに付け替えると、そのぶんを毎コマ 払う
     focus.BeginFrame()
+    let w = field.Width
+    let h = field.Height
+    let unpick () = focus.Clear()
     let mutable i = 0
-    while i < live.Count do
-      let it = live.[i]
+    while i < n do
+      // --- 台本の無い弾は、位置を足すだけ（v4.9.1）------------------------
+      //
+      // **エンジンを呼ばない。** 差分はもう変わらないので
+      // （`BulletRun.ConstantDelta` の但し書き）、撃たないし消えないし
+      // 走らせ直しも空を歩くだけ —— 残る仕事は足し算と面の外の判定。
+      //
+      // 同梱 176 本 x 300 コマ で**弾コマ の 84.0%** がここを通り、
+      // **座標は 1 ビット も変わらない**（`Front.Tests/ConstStep.fs`）。
+      //
+      // **成分の配列の上で回す**（段 2）—— 読むのは 5 つ の float32 だけで、
+      // オブジェクトを 1 つ も引きに行かない
+      if fast.[i] then
+        let b = i * 3
+        let a = i * 2
+        let x = pos.[b] + vel.[a]
+        let y = pos.[b + 1] + vel.[a + 1]
+        pos.[b] <- x
+        pos.[b + 1] <- y
+        // **追っている弾なら、再開点は「無い」に戻す**（v3.1）。
+        // 素の道では `Begin` -> step -> `End` を通り、台本が空の弾は
+        // 受け口を 1 度 も鳴らさないので `End` が全部 消していた ——
+        // ここを飛ばすと**前のコマの再開点が残る**。
+        // **1 コマ に 1 発 だけなので、値段はここに乗らない**
+        if i = picked then
+          focus.Begin()
+          focus.End()
+        if x < 0.0f || x > w || y < 0.0f || y > h then removeAt i unpick
+        else i <- i + 1
+      else
+
+      let it = born.[i]
       let m0 = it.Run.Motion
       let motion =
-        { Pos = { X = it.X; Y = it.Y }
+        { Pos = { X = pos.[i * 3]; Y = pos.[i * 3 + 1] }
           Speed = m0.Speed
           Dir = m0.Dir
           Accel = m0.Accel }
@@ -166,7 +306,7 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
       // **追っている弾のときだけ繋ぐ。** 呼びを 1 本 にまとめて try/finally を
       // 全部 の弾に掛けると、選んでいない人にもその分 を払わせる
       let f =
-        if obj.ReferenceEquals(it, picked) then
+        if i = picked then
           focus.Begin()
           try
             Driver.step front Space.YDown SpawnOrigin.AtShooter it.Run motion
@@ -174,8 +314,8 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
             focus.End()
         else Driver.step front Space.YDown SpawnOrigin.AtShooter it.Run motion
       if not it.IsRoot then
-        it.X <- it.X + f.Delta.X
-        it.Y <- it.Y + f.Delta.Y
+        pos.[i * 3] <- pos.[i * 3] + f.Delta.X
+        pos.[i * 3 + 1] <- pos.[i * 3 + 1] + f.Delta.Y
       it.Run <- if f.Finished then Driver.restart front f.Run else f.Run
       // 撃った場所を弾に持たせる（v3.2）。**走査した撃つ腕の並びと
       // `Spawned` の並びは 1 対 1**（同梱 176 本 の撃ったコマ 17,945 で
@@ -190,27 +330,42 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
       for child in f.Spawned do
         let p = child.Motion.Pos
         let from = if pairable then focus.FiredIndex k else -1
-        spawned.Add(Live(child, p.X, p.Y, false, from, it))
+        spawned.Add(struct (Born(child, false, from, it), p.X, p.Y))
         // 撃った腕ごとに数える（v3.3 の段 1）。**引いた添字を使い回す** ——
         // 数えるためにもう一度 鎖を辿ると、弾 1 発 につき 2 度 辿ることになる
         focus.TallyAt from
         k <- k + 1
+      let x = pos.[i * 3]
+      let y = pos.[i * 3 + 1]
       let dead =
         not it.IsRoot && (
           f.Vanished || f.Retired
-          || it.X < 0.0f || it.X > field.Width
-          || it.Y < 0.0f || it.Y > field.Height)
+          || x < 0.0f || x > w
+          || y < 0.0f || y > h)
+      // **台本が空になったら、次のコマから速い道へ移す**（v4.9.1）。
+      //
+      // ### 根を外す守りは冗長で、外しても答えが変わらない
+      //
+      // 較正で当てて **0 点** だった。台本を持たない根は速さが 0 なので、
+      // `ConstantDelta` も (0, 0) —— 速い道へ入れても動かない。
+      //
+      // **それでも残す。** 素の道は `IsRoot` のとき差分を**足さない**と
+      // 決めていて、速い道にその枝は無い。根に速さが入る形
+      // （フロントが `WithMotion` で入れる）ができた日に、
+      // **根だけが静かに動き出す。** 残す理由を書いておく。
+      if not dead && not it.IsRoot then
+        match it.Run.ConstantDelta with
+        | ValueSome (d: Vec2) ->
+          vel.[i * 2] <- d.X
+          vel.[i * 2 + 1] <- d.Y
+          fast.[i] <- true
+        | ValueNone -> ()
       if dead then
-        let last = live.Count - 1
         // 追っていた弾が消えたら追うのをやめる。**数も消す** ——
         // 残すと、消えた弾の最後のコマの数がそのまま出続ける
-        if obj.ReferenceEquals(it, picked) then
-          picked <- Unchecked.defaultof<Live>
-          focus.Clear()
-        if i <> last then live.[i] <- live.[last]
-        live.RemoveAt last
+        removeAt i unpick
       else i <- i + 1
-    live.AddRange spawned
+    for struct (b, x, y) in spawned do add b x y
     focus.EndFrame()
     frame <- frame + 1
 
@@ -218,39 +373,25 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
   ///
   /// **1 点 につき 3 つ**（v4.7）—— x / y / **撃った腕の添字**。
   ///
-  /// 3 つ 目 を足したのは「字から弾へ」のため。**系譜は辿らない** ——
-  /// `Live.From` が撃った腕の添字を既に持っている（v3.2）ので、**写すだけ。**
-  ///
-  /// **足したのに速くなった** —— 1,481 点 で 0.0134 ms -> 0.0096〜0.0119 ms。
-  /// 書く数は 2 つ から 3 つ に増えたが、`live.[i]` を 2 度 引くのを
-  /// **1 度 に畳んだ**ぶんのほうが大きい（`ResizeArray` の添字は境界を見る）。
-  /// **別々 の走行で測った数**なので、幅で書く。
+  /// **写す仕事が消えた**（v4.9.1 の段 2）—— 詰めた並びそのものが弾の置き場に
+  /// なったので、ここは数を返して pin を確かめるだけ。
+  /// 以前は毎コマ 弾の数だけ `live.[i]` を引いて 3 つ ずつ書いていた
+  /// （1,709 点 で 10.9 us。1 コマ の 3 巡 のうち 10.3%）。
   ///
   /// **撃たれていない弾は -1**（根の敵がそう）。JS 側はそこを外す
   member _.Pack() =
-    let n = live.Count
-    let need = n * 3
-    if xs.Length < need then
-      xs <- Array.zeroCreate (max (need * 2) 256)
-      rePin ()
-    elif not pin.IsAllocated then
-      rePin ()
-    for i in 0 .. n - 1 do
-      let it = live.[i]
-      xs.[i * 3] <- it.X
-      xs.[i * 3 + 1] <- it.Y
-      xs.[i * 3 + 2] <- float32 it.From
+    ensure (max n 1)
     n
 
-  /// `Pack` が書いた並びそのもの（v4.7）。**本番は使わない** ——
+  /// `Pack` が読む並びそのもの（v4.7）。**本番は使わない** ——
   /// JS はポインタ（`PackedPtr`）で読む。
   ///
   /// **中身を字で確かめられる口が要る。** 3 つ 組 の並びは
   /// JS と .NET のあいだの取り決めで、崩れても走行は落ちない
   /// （弾がおかしな場所に描かれるだけ）—— **門が届く形にしておく。**
   ///
-  /// 長さは `Pack` の戻り x 3 以上（先に確保してあるので、それより長い）
-  member _.Packed = xs
+  /// 長さは `Count * 3` 以上（先に確保してあるので、それより長い）
+  member _.Packed = pos
 
   member _.PackedPtr =
     if not pin.IsAllocated then rePin ()
@@ -259,23 +400,23 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
   /// 追っている弾の再開点（v3.1 の段 3）。**選んでいなければ何も出ない**
   member _.Focus = focus
 
-  /// `Pack` した並びの添字で選ぶ。**握るのは参照** ——
-  /// 添字はそのコマのもので、次のコマには別の弾を指しうる。
+  /// `Pack` した並びの添字で選ぶ。**添字をそのまま覚える**（v4.9.1 の段 2）——
+  /// 消しで詰めるところが 1 か所 しか無いので、そこで追随させれば足りる。
   /// 範囲の外なら追うのをやめる
   member _.Pick(i: int) =
-    if i >= 0 && i < live.Count then picked <- live.[i]
+    if i >= 0 && i < n then picked <- i
     else
-      picked <- Unchecked.defaultof<Live>
+      picked <- -1
       focus.Clear()
 
   member _.Unpick() =
-    picked <- Unchecked.defaultof<Live>
+    picked <- -1
     focus.Clear()
 
   /// 追っている弾を撃った `fire` が、読んだ木の書いてある順の何番目 か（v3.2）。
   /// **追っていないときと、撃たれていない弾（根の敵）は -1**
   member _.PickedFrom =
-    if obj.ReferenceEquals(picked, null) then -1 else picked.From
+    if picked < 0 then -1 else born.[picked].From
 
   /// 追っている弾の系譜（v3.6）。撃った `fire` の**書いてある順の添字**を、
   /// **根に近い順**で並べる。追っていなければ空。
@@ -283,40 +424,33 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
   /// **上限を置く。** 環はできないはずだが、置かないと万一のとき
   /// **赤くならずに止まらなくなる**（門も目も何も出ない）
   member _.PickedLineage : int[] =
-    if obj.ReferenceEquals(picked, null) then Array.empty
+    if picked < 0 then Array.empty
     else
       let acc = ResizeArray<int>()
-      let mutable cur = picked
-      let mutable n = 0
-      while not (obj.ReferenceEquals(cur, null)) && n < 64 do
+      let mutable cur = born.[picked]
+      let mutable k = 0
+      while not (obj.ReferenceEquals(cur, null)) && k < 64 do
         if cur.From >= 0 then acc.Add cur.From
         cur <- cur.Parent
-        n <- n + 1
+        k <- k + 1
       acc.Reverse()
       acc.ToArray()
 
   /// 系譜の深さ（v3.6）。**辿れた段の数**で、`PickedLineage` の長さとは別 ——
   /// 撃った場所が決まらなかった段（`From` が -1）も 1 段 として数える
   member _.PickedDepth =
-    if obj.ReferenceEquals(picked, null) then 0
+    if picked < 0 then 0
     else
-      let mutable cur = picked
-      let mutable n = 0
-      while not (obj.ReferenceEquals(cur, null)) && n < 64 do
+      let mutable cur = born.[picked]
+      let mutable k = 0
+      while not (obj.ReferenceEquals(cur, null)) && k < 64 do
         cur <- cur.Parent
-        n <- n + 1
-      n
+        k <- k + 1
+      k
 
   /// 追っている弾が `Pack` の並びの何番目 か。**無ければ -1**（消えたときも）。
   ///
-  /// **添字を覚えない。** 覚えると、消しで詰めたコマに黙って別の弾を指す
-  /// —— 絵は隣の弾に付き、再開点は追っている弾のものという食い違いが出る
-  member _.PickedIndex =
-    if obj.ReferenceEquals(picked, null) then -1
-    else
-      let mutable i = 0
-      let mutable found = -1
-      while found < 0 && i < live.Count do
-        if obj.ReferenceEquals(live.[i], picked) then found <- i
-        i <- i + 1
-      found
+  /// **探さなくなった**（v4.9.1 の段 2）—— 添字そのものを持っていて、
+  /// 消しで詰めるところで直している。以前は毎コマ 弾の数だけ
+  /// 参照を突き合わせていた
+  member _.PickedIndex = picked

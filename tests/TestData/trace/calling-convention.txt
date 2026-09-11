@@ -27,8 +27,8 @@ src/FsBulletML2.MonoGame/BaseBullet.fs
     apply f.Delta.X f.Delta.Y
 
 src/FsBulletML2.Playground/Playfield.fs
-    it.X <- it.X + f.Delta.X
-    it.Y <- it.Y + f.Delta.Y
+    pos.[i * 3] <- pos.[i * 3] + f.Delta.X
+    pos.[i * 3 + 1] <- pos.[i * 3 + 1] + f.Delta.Y
 
 src/FsBulletML2.Unity2D/DefaultBullet.fs
     me.X <- me.X + (x / Settings.Display.PixcelsToUnits)

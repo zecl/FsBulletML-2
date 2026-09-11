@@ -133,6 +133,51 @@ type BulletRun internal (script: BulletmlScript, state: BulletState) =
       Dir = state.Dir
       Accel = state.Accel }
 
+  /// **この弾の 1 コマ の差分が、もう変わらないなら その値。**
+  /// 台本が残っているなら `ValueNone`（v4.9.1）。
+  ///
+  /// ## なぜ言えるのか
+  ///
+  /// 差分は `Accel + (速さ x 向き)` の 1 本 で、
+  /// **`Speed` / `Dir` / `Accel` を変えるのは命令だけ**
+  /// （`changeSpeed` / `changeDirection` / `accel`）。
+  /// 台本が 1 本 も無ければ命令は 1 つ も走らないので、
+  /// **その弾が消えるまで同じ値。**
+  ///
+  /// 同じ理由で、台本の無い弾は
+  ///
+  ///     撃たない    `fire` が走らない
+  ///     消えない    `vanish` が走らない
+  ///     Finished    いつも true（走る top が 0 本）
+  ///     Retired     `IsBullet && HasFired`。**変わらない**
+  ///
+  /// だから `Retired` が false のままここへ来た弾は、**面の外へ出るまで
+  /// エンジンを 1 度 も呼ばなくてよい。**
+  ///
+  /// ## 呼ぶ側の約束
+  ///
+  /// **`Motion` の `Speed` / `Dir` / `Accel` を外から書き換えないこと。**
+  /// 書き換える（外力を足すような）フロントは、この値を使ってはいけない ——
+  /// 使うなら書き換えたコマに引き直す。`Pos` は足す先なので関係ない。
+  ///
+  /// ## 効き
+  ///
+  /// 同梱 176 本 x 300 コマ で、**弾コマ の 84.0% がここに当たる**。
+  /// いちばん弾が多い本（1 コマ 2,253 発）では 100%。
+  /// 使うと .NET で確保が 6.6%・時間が 7.7% になった（**答えはビット一致**。
+  /// 176 本 / 300 コマ の座標を突き合わせて 1 本 も割れない）。
+  member _.ConstantDelta : Vec2 voption =
+    if List.isEmpty state.Tops then
+      let speed = float state.Speed
+      let dir = float state.Dir
+      // **`Step.fs` の出口 と同じ式。** 2 か所 に書くと、片方 だけ直したときに
+      // 「速い道だけ違う場所へ飛ぶ」——`Core.Tests/ConstantDelta.fs` が
+      // 同梱 176 本 で 2 つ を突き合わせている
+      ValueSome
+        { X = state.Accel.X + float32 (System.Math.Sin dir * speed)
+          Y = state.Accel.Y + float32 (-System.Math.Cos dir * speed) }
+    else ValueNone
+
   /// この弾の立場。根を作るときに決まり、撃たれた弾は親から継ぐ。
   ///
   /// **エンジンが持っていて、あとから差し替える口は無い。** aim をどちらへ
