@@ -52,6 +52,20 @@
     <WasmFingerprintAssets>false</WasmFingerprintAssets>
     <BlazorFingerprintBlazorJs>false</BlazorFingerprintBlazorJs>
   </PropertyGroup>
+  <!--
+    AOT を測るための口。**既定では立たない** —— 立てるのは
+
+        dotnet publish ... -p:PlaygroundAot=true
+
+    **`-p:` は全部 の proj の全部 の TFM に降る。** Core / Front / Dsl /
+    Bullets.Dsl は `net10.0;netstandard2.1` の多段（Unity 向け）で、
+    netstandard2.1 はトリミングできないので、`PublishTrimmed` を
+    直に `-p:` で渡すと落ちる。**ここで受けて、ここでだけ立てる。**
+  -->
+  <PropertyGroup Condition="'$(PlaygroundAot)' == 'true'">
+    <PublishTrimmed>true</PublishTrimmed>
+    <RunAOTCompilation>true</RunAOTCompilation>
+  </PropertyGroup>
   <!-- **語彙・補完・hover・診断はここに無い。** 器
        （FsBulletML2.LanguageService と .Host）へ移した。ここに残るのは
        ブラウザのアプリそのもの —— 描画の場と、JS から呼ばれる口。 -->
