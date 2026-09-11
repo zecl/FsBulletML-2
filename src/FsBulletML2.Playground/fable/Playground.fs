@@ -443,6 +443,13 @@ type Playground() as self =
   // 面を建て直したかを見る。**コマ数が減ったら建て直された** ——
   // Reset / Apply / 選び直し で 0 に戻る
   let mutable weightLastFrame = -1
+  /// 帯を**描いた**コマ（v4.9.1 の段 3）。溜めるのとは別 ——
+  /// 溜めるのは毎コマ、描くのは間引く
+  let mutable weightDrawnAt = -999
+  /// 進まないまま呼ばれた回数。**止まっていたかを見分ける** ——
+  /// 連続再生なら 0（毎回 進む）、コマ送りなら 1 以上。
+  /// **止まっていたあとの 1 コマ は間引かない**（1 コマ ずつ追う人に効かない）
+  let mutable weightIdleCalls = 0
   let mutable weightCanvas: HTMLCanvasElement = null
   // 木のノードになる要素名。**host から起動時に 1 回**。正本は Core の DTD.fs
   let mutable nodeNames: string list = []
@@ -704,6 +711,8 @@ type Playground() as self =
       // **進んでいないコマは溜めない。** 前は rAF ごとに足していたので、
       // **Pause で止めていても同じ数が入り続けて波形が流れた** ——
       // 「止めているのに動く」は、見る道具としては嘘をついている
+      // **止まっていたあとの 1 コマ か。** 間引きを外す印（下で読む）
+      let mutable afterPause = false
       if advanced > 0 && frame > 1 then
         weightN.[weightAt] <- float n
         // **1 コマ あたりに直す。** 倍速や「飛ぶ」では 1 回 の呼び出しで
@@ -712,7 +721,32 @@ type Playground() as self =
         weightFrameAt.[weightAt] <- frame
         weightAt <- (weightAt + 1) % weightLen
         if weightCount < weightLen then weightCount <- weightCount + 1
+        afterPause <- weightIdleCalls > 0
+        weightIdleCalls <- 0
+      else weightIdleCalls <- weightIdleCalls + 1
       weightLastFrame <- frame
+
+      // --- ここまでが溜める。以降 が描く -----------------------------------
+      //
+      // **描くほうだけ間引く**（v4.9.1 の段 3）。この帯は幅いっぱいを
+      // 毎コマ 塗り直していて、**1 コマ の 25% を食っていた** ——
+      // 配った物を A/B/B/A で測って 2.0 ms 対 1.5 ms（下限 0.5 ms）。
+      //
+      // **溜めるのは毎コマ のまま。** 間引くと山が落ちる。
+      //
+      // **剰余でなく差で数える**（v4.0.2 で踏んだ）—— `frame % 2 = 0` だと
+      // コマ送りで踏まないコマが出て、帯が永久に更新されない。
+      // 建て直し（`frame` が戻る）でも描き直す。
+      //
+      // **2 コマ に 1 度。** 帯は 600 点 を幅いっぱいに並べるので、
+      // 1 コマ の進みは 2 から 4 px —— 30 回/秒 で足りる。
+      //
+      // **コマ送りは間引かない。** 1 コマ ずつ追っている人には
+      // 「押したのに帯が変わらない」が出る（実機で数えたら 6 回 中 3 回）——
+      // 止まっていたあとの 1 コマ は必ず描く
+      if not afterPause && frame - weightDrawnAt < 2 && frame >= weightDrawnAt then () else
+
+      weightDrawnAt <- frame
 
       // **箱に合わせて内部解像度を取り直す。**
       //
