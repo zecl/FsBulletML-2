@@ -169,6 +169,42 @@ Check '弾幕 DSL 版はサンプル 4 つ と Playground にも届く' `
     'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
     'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
+Write-Host '=== 借りたソース（Compile Include で他の proj から引いている）'
+
+# **参照ではなく借り。** `Front.Tests` は Playground のソース 10 本 を
+# `<Compile Include="..\..\src\FsBulletML2.Playground\...">` で compile し直す。
+#
+# **`ProjectReference` だけを追っていたとき、ここは 試験 0 本 だった** ——
+# 速い道（v4.9.2 / v4.9.3）の本体を触っても、それを守る 130 件 が選ばれない。
+# v0.8 で `Parser.Tests` は同じ穴を塞いだのに、**こちらは借りたまま残っていた。**
+#
+# **build の 1 本 も一緒に見る。** 借りた辺を参照と同じ入れ物に入れると
+# Playground が「根」（その集合の誰からも参照されていないもの）でなくなり、
+# **build から静かに落ちる** —— 直す途中で一度 そうなった。
+# 試験の側だけを見ていたら、その退行は緑のまま通っていた。
+#
+# **較正**: `affected.ps1` の借りの表を引く鍵をずらす（`$f` -> `$f + '.mutant'`）と
+# **この 3 点 だけが赤くなり、他の 22 点 は緑のまま**。
+# しかも 3 点 は別の壊れ方を見せる —— 試験 0 本 / 片方 だけ欠ける / build が空。
+Check 'Playground のソースは借りている Front.Tests が見る。build の根でもある' `
+  @('src/FsBulletML2.Playground/Playfield.fs') `
+  @('FsBulletML2.Front.Tests') `
+  @('FsBulletML2.Playground')
+
+# 借りる側が 2 本 在るもの。**片方 だけ拾う壊れ方**を止める
+Check 'Host の NodeOrder は 2 本 が借りている' `
+  @('src/FsBulletML2.LanguageService.Host/NodeOrder.fs') `
+  @('FsBulletML2.Front.Tests', 'FsBulletML2.Parser.Tests') `
+  @('FsBulletML2.Playground')
+
+# **向きが逆の借り。** bench が試験のソースを借りている
+# （`..\..\tests\FsBulletML2.Core.Tests\Fake.fs`）。
+# 「試験が実装を借りる」だけを想定した直し方だと、ここが落ちる
+Check '試験のソースを bench が借りている（向きが逆）' `
+  @('tests/FsBulletML2.Core.Tests/Fake.fs') `
+  @('FsBulletML2.Core.Tests') `
+  @('FsBulletML2.Benchmarks')
+
 Write-Host '=== git が返す名前'
 
 # 弾幕の XML は日本語名。git は既定（core.quotepath）で

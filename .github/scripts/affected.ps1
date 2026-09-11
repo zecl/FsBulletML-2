@@ -100,9 +100,15 @@ foreach ($s in $slnx) {
   }
 }
 
+# Split-Path は Windows で `\` を返す。前置きは `/` で比べるので自前で切る。
+# **借りたソースの持ち主を探すのにも使う**ので、参照を読む前に組む
+$projDirs = @{}
+foreach ($p in $projects) { $projDirs[$p] = $p.Substring(0, $p.LastIndexOf('/') + 1) }
+
 # --- 参照を読む -------------------------------------------------------------
 
-$deps = @{}      # proj -> 直接 参照しているもの
+$deps = @{}        # proj -> 直接 参照しているもの（build がたどる辺）
+$borrowedBy = @{}  # 借りられているファイル -> それを借りている proj
 $isTest = @{}
 foreach ($p in $projects) {
   $full = Join-Path $RepoRoot $p
@@ -113,12 +119,48 @@ foreach ($p in $projects) {
   foreach ($m in [regex]::Matches($raw, 'ProjectReference\s+Include\s*=\s*"([^"]+)"')) {
     $d.Add((NormalizePath (Join-Path $dir $m.Groups[1].Value)))
   }
+  # **借りたソースは「ファイル単位」で覚える。参照とは別の入れ物に。**
+  #
+  # `<Compile Include="..\..\src\別の proj\x.fs" Link="x.fs" />` で
+  # 他の proj のソースを compile し直している試験が在る。
+  # **参照だけを追うと、借りた側を触っても借りている試験が選ばれない** ——
+  # v0.8 で `Parser.Tests` はこの形をやめたが（あちらの proj の但し書き）、
+  # `Front.Tests` には 10 行 残っている（Playground のソース）。
+  #
+  # **実測で穴が開いていた**: `src/FsBulletML2.Playground/Playfield.fs`
+  # —— 速い道の本体 —— を触って **試験 0 本**。
+  # それを守る 130 件 は `Front.Tests` に在る。
+  #
+  # **proj 単位 の辺にしてはいけない。** 直す途中で 2 通り 試して、両方 外れた ——
+  #
+  #   `$deps` に混ぜた      借りられた proj が「根」でなくなり、
+  #                        **build から静かに落ちた**（Playground が 1 -> 0 本）。
+  #                        借りる側は借りた先を build しないので、根であり続ける
+  #   別の辺だが proj 単位  `Dsl` を触ると `Bullets.Dsl` -> `Playground` と
+  #                        伝わり、**そこから借りの辺で `Front.Tests` まで**届いた。
+  #                        借りているのは Playground の 10 本 だけで、
+  #                        弾幕を触ってその 10 本 が変わるわけではない
+  #
+  # **借りは、そのファイルが触られたときだけ効く。** だからファイルを鍵にする。
+  # （ワイルドカードの Include はここに変な鍵を入れるが、変更ファイルと
+  #   一致しないので何も起こさない。Unity の Assets は「割り当て不明」側で拾う）
+  foreach ($m in [regex]::Matches($raw, 'Compile\s+Include\s*=\s*"([^"]+)"')) {
+    $inc = $m.Groups[1].Value
+    # 自分の中のファイルは、割り当ての段が見る
+    if (-not $inc.StartsWith('..')) { continue }
+    $src = NormalizePath (Join-Path $dir $inc)
+    if (-not $borrowedBy.ContainsKey($src)) {
+      $borrowedBy[$src] = [System.Collections.Generic.List[string]]::new()
+    }
+    if (-not $borrowedBy[$src].Contains($p)) { $borrowedBy[$src].Add($p) }
+  }
   $deps[$p] = $d
   # 名前でなく「試験ホストを持っているか」で判定する。tests/ の外に置いても効く
   $isTest[$p] = $raw -match 'Microsoft\.NET\.Test\.Sdk'
 }
 
-# 参照の逆向き
+# 参照の逆向き。**借りはここに入れない** —— あちらはファイル単位 で、
+# 割り当ての段（種を作るところ）で効かせる
 $rdeps = @{}
 foreach ($p in $projects) { $rdeps[$p] = [System.Collections.Generic.List[string]]::new() }
 foreach ($p in $projects) {
@@ -143,15 +185,16 @@ $changed = @($ChangedFiles | Where-Object { $_ } | ForEach-Object { ToRel $_ })
 
 # --- 割り当て ---------------------------------------------------------------
 
-# Split-Path は Windows で `\` を返す。前置きは `/` で比べるので自前で切る
-$projDirs = @{}
-foreach ($p in $projects) { $projDirs[$p] = $p.Substring(0, $p.LastIndexOf('/') + 1) }
-
 $seed = [System.Collections.Generic.HashSet[string]]::new()
 $ignored = [System.Collections.Generic.List[string]]::new()
 $unowned = [System.Collections.Generic.List[string]]::new()
 
 foreach ($f in $changed) {
+  # **このファイルを借りている proj も種に入れる。**
+  # 割り当て（場所）とは別に効く —— 借りている側の置き場は関係ない
+  if ($borrowedBy.ContainsKey($f)) {
+    foreach ($q in $borrowedBy[$f]) { [void]$seed.Add($q) }
+  }
   # いちばん深いプロジェクトに割り当てる（入れ子の proj があっても内側が勝つ）
   $owner = $null; $best = -1
   foreach ($p in $projects) {
