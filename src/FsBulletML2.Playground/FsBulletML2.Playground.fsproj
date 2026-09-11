@@ -74,6 +74,31 @@
     <PublishTrimmed>true</PublishTrimmed>
     <RunAOTCompilation>true</RunAOTCompilation>
   </PropertyGroup>
+  <!--
+    ## 焼けないときの逃げ道（v4.9.4 で測った）
+
+    **メモリで殺されるのはリンクの工程。** AOT のコンパイル（82 本）は
+    毎回 最後まで通るのに、`Linking with emcc with -O2` で 12 GB 超 を要る ——
+    段 4 で「メモリ不足なので札のまま残す」と書いたのは、
+    **逃げ道を探さずに諦めていた。** 3 つ ある。
+
+        -p:DisableParallelAot=true            AOT を 1 本 ずつ
+        -p:DisableParallelEmccCompile=true    native を 1 本 ずつ
+        -p:EmccLinkOptimizationFlag=-O1       **これが効いた**
+
+    この機械（空き 13 GB）では 3 つ 目 を入れて 880 秒 で通った。
+
+    ## 大きさを削る設定は、ほぼ既定で効いている
+
+        WasmStripILAfterAOT              **既定が true**（SDK の targets）
+        EmccCompileOptimizationFlag      **既定が -Oz**
+        EmccLinkOptimizationFlag         既定は -O2。ここだけ動かせる
+
+    最初の 2 つ を明示で書いても**何も変わらない** ——
+    「効いているように見えて何もしない設定」になるので書かない。
+    そして `dotnet.native.wasm` は**焼いた機械語そのもの**なので、
+    IL を落としても痩せない。
+  -->
   <!-- **語彙・補完・hover・診断はここに無い。** 器
        （FsBulletML2.LanguageService と .Host）へ移した。ここに残るのは
        ブラウザのアプリそのもの —— 描画の場と、JS から呼ばれる口。 -->
