@@ -61,7 +61,11 @@ if (-not $RepoRoot) { $RepoRoot = (git rev-parse --show-toplevel) }
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 
 $jsDir = Join-Path $RepoRoot 'src/FsBulletML2.Playground/wwwroot/js'
-if (-not $ShareJs) { $ShareJs = Join-Path $jsDir 'Share.js' }
+# **置き場が FsBulletML2.LanguageService.Js/ の下 に移った**（v5.4）——
+# Playground が Danmaku Lab へ移るので、Share.fs と VocabularyJson.fs を
+# エンジン側 の FsBulletML2.LanguageService.Js へ割った。
+# Fable は proj ごとにディレクトリを掘るので、出力の階層がそのぶん深くなる。
+if (-not $ShareJs) { $ShareJs = Join-Path $jsDir 'FsBulletML2.LanguageService.Js/Share.js' }
 if (-not $KindJs) { $KindJs = Join-Path $jsDir 'FsBulletML2.LanguageService/SourceKind.js' }
 if (-not $CorpusDir) { $CorpusDir = Join-Path $RepoRoot 'tests/TestData' }
 if (-not $MjsPath) { $MjsPath = Join-Path $RepoRoot '.github/scripts/guard-share-roundtrip.mjs' }

@@ -14,7 +14,7 @@
 ///
 /// `deflate` も `gzip` も同じ 1 行 で書けるが、ヘッダのぶんだけ長い。
 /// URL に乗る字の話なので短いほうを取る。
-module FsBulletML2.Playground.Share
+module FsBulletML2.Fable.Share
 
 open Fable.Core
 open FsBulletML2.LanguageService

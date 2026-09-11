@@ -4,6 +4,7 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Browser
 open Browser.Types
+open FsBulletML2.Fable
 open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 

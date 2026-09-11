@@ -12,15 +12,13 @@
        ここに残っているのは **Fable でしか走らないもの** ——
        VocabularyJson は [<Emit>]、Monaco と Playground はブラウザの API。 -->
   <ItemGroup>
-    <Compile Include="VocabularyJson.fs" />
     <!-- 圧縮。**組み立てと base64url はここに無い**（器の ShareLink）——
          あちらは .NET でも走るので、突き合わせと .NET の試験が当たる -->
-    <Compile Include="Share.fs" />
     <Compile Include="Monaco.fs" />
     <Compile Include="Playground.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />
+    <ProjectReference Include="..\..\FsBulletML2.LanguageService.Js\FsBulletML2.LanguageService.Js.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Core" Version="5.0.0" />

@@ -6,7 +6,7 @@
 /// 走らないものが混ざると、そこだけ .NET で当てられなくなる。
 ///
 /// 読む先の型は器に在る。**形の正本はあちら。**
-module FsBulletML2.Playground.VocabularyJson
+module FsBulletML2.Fable.VocabularyJson
 
 open Fable.Core
 open Fable.Core.JsInterop

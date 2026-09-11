@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <!--
+    **`LanguageService` を Fable で焼く口。** ここは `FsBulletML2` に残る。
+
+    ## なぜ Playground から割ったか（v5.4）
+
+    Playground は Danmaku Lab へ移る。**が、`guard-fable-parity` が当てる先は
+    全部 `FsBulletML2.LanguageService/*.js`** ——
+    `fable-parity-targets.json` の 8 つ を開いて数えた。
+    **`Monaco.fs` も `Playground.fs` も 1 本 も通っていない。**
+
+    つまり **parity はエンジン側の門**で、Playground が移っても
+    こちらで回り続けなければならない。焼く口が向こうへ行くと回らなくなる。
+
+    **最小の口で確かめた**（`VocabularyJson.fs` 1 本 + LanguageService の参照）——
+    80 本 焼けて、**parity が要る 7 本 が全部 在った。**
+
+    ## ここに在る 2 本 は「Fable でしか走らないもの」
+
+        VocabularyJson   `[<Emit>]` で JSON を読む。語彙の中身は器に在る
+        Share            圧縮。**組み立てと base64url は器の `ShareLink`** ——
+                         あちらは .NET でも走るので、突き合わせと試験が当たる
+
+    **module 名は `FsBulletML2.Fable.*`。** 置き場が変わったので名前も変えた
+    （`FsBulletML2.Playground.*` のままだと、**エンジン側に在るのに
+    Playground のものに見える**）。呼ぶ側は `open FsBulletML2.Fable` で届く。
+  -->
+  <ItemGroup>
+    <Compile Include="VocabularyJson.fs" />
+    <Compile Include="Share.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Core" Version="5.0.0" />
+    <PackageReference Include="Fable.Browser.Dom" Version="2.20.0" />
+  </ItemGroup>
+</Project>

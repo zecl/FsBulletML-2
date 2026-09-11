@@ -69,7 +69,7 @@ try {
   New-Item -ItemType Directory -Path $tmp -Force | Out-Null
 
   $realJsDir = Join-Path $root 'src/FsBulletML2.Playground/wwwroot/js'
-  if (-not (Test-Path -LiteralPath (Join-Path $realJsDir 'Share.js'))) {
+  if (-not (Test-Path -LiteralPath (Join-Path $realJsDir 'FsBulletML2.LanguageService.Js/Share.js'))) {
     throw "較正の材料が無い（$realJsDir/Share.js）。先に dotnet build src/FsBulletML2.Playground で焼くこと"
   }
   # **相対 import ごと写す。** 焼いた JS は `./fable_modules/` と
@@ -78,7 +78,7 @@ try {
   $jsDir = Join-Path $tmp 'js'
   Copy-Item -LiteralPath $realJsDir -Destination $jsDir -Recurse -Force
 
-  $shareJs = Join-Path $jsDir 'Share.js'
+  $shareJs = Join-Path $jsDir 'FsBulletML2.LanguageService.Js/Share.js'
   $kindJs = Join-Path $jsDir 'FsBulletML2.LanguageService/SourceKind.js'
   $linkJs = Join-Path $jsDir 'FsBulletML2.LanguageService/ShareLink.js'
 
