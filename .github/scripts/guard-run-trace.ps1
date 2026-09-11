@@ -187,6 +187,16 @@ $skipFocus = [string]::IsNullOrWhiteSpace($FocusFs)
 if ($skipFocus -and -not $Quiet) {
   Write-Host '受け口を繋ぐ側は見ない（-FocusFs が無い）。**見たのは 3 項目**'
 }
+# **繋ぐ側が別の repo に在ることが在る。** 面（Playground）は Danmaku Lab へ出た。
+# `-FocusFs` に**絶対パス**を渡すと、この repo の走査とは別に、その 1 本 を読む ——
+#
+#     vendor/FsBulletML2/.github/scripts/guard-run-trace.ps1 `
+#       -RepoRoot vendor/FsBulletML2 -FocusFs "$PWD/client/Focus.fs"
+#
+# **そのとき「ほかの場所が繋いでいないか」は、この repo の中でしか言えない。**
+# 向こうの `client/` が別の所で繋いでも、こちらの走査には出ない ——
+# 網が repo をまたがないことを承知で置いている
+$focusAbs = if (-not $skipFocus -and [IO.Path]::IsPathRooted($FocusFs)) { $FocusFs } else { '' }
 foreach ($root in $ConsumerRoots) {
   if ($skipFocus) { break }
   if (-not (Test-Path -LiteralPath $root)) { continue }
@@ -206,6 +216,13 @@ foreach ($root in $ConsumerRoots) {
       }
     }
 }
+if ($focusAbs -and (Test-Path -LiteralPath $focusAbs)) {
+  $focusSeen = $true
+  $t = [IO.File]::ReadAllText($focusAbs)
+  foreach ($port in @('NodeTrace.visit', 'NodeTrace.stop', 'NodeOrigin.pair', 'NodeOrigin.enabled')) {
+    $inFocus[$port] += ([regex]::Matches($t, ($port -replace '\.', '\.') + '\s*<-')).Count
+  }
+}
 if (-not $skipFocus -and -not $focusSeen) {
   $problems.Add("$FocusFs が読めなかった。**0 件 は違反 0 件 と同じ顔をする**ので、ここで落とす")
 }
@@ -221,7 +238,10 @@ $restore = @{
   'NodeOrigin.enabled' = 'NodeOrigin\.enabled\s*<-\s*false'
   'NodeOrigin.pair'    = 'NodeOrigin\.pair\s*<-\s*noPair'
 }
-$focusPath = if ($skipFocus) { '' } else { Join-Path $RepoRoot $FocusFs }
+$focusPath =
+  if ($skipFocus) { '' }
+  elseif ($focusAbs) { $focusAbs }
+  else { Join-Path $RepoRoot $FocusFs }
 $focusText = if (-not $skipFocus -and (Test-Path -LiteralPath $focusPath)) { [IO.File]::ReadAllText($focusPath) } else { '' }
 foreach ($port in @('NodeTrace.visit', 'NodeTrace.stop', 'NodeOrigin.pair', 'NodeOrigin.enabled')) {
   if ($skipFocus) { break }
