@@ -425,6 +425,25 @@ type PlaygroundHost() =
   [<JSInvokable>]
   member _.SetRate(n: int) = pacing <- Pacing.withRate n
 
+  /// 式を畳んで値を返す（v4.4）。**評価器はこの 1 本 だけ。**
+  ///
+  /// 器（`ExprCheck`）は「読めるか」しか答えない —— **値を出す口を
+  /// もう 1 本 書くと、同じ式が 2 通り の値になる。**
+  /// だから字の横に出す値も、ここ（Core の `Expr`）を通す。
+  ///
+  /// **`$rand` は来ない。** 呼ぶ側が落としている（毎回 変わるので、
+  /// 字の横に固定の数を出すと嘘になる）—— 来ても 0 として畳む。
+  ///
+  /// **`$rank` はいまの面の値。** 難度を動かすと横の数も変わる ——
+  /// そこが「この repo でしかできない」ところで、
+  /// **走らせている値をそのまま字の横に出している。**
+  ///
+  /// 読めない式は `nan` を返す。呼ぶ側が落とす（そちらは波線の担当。v4.1）
+  [<JSInvokable>]
+  member _.EvalExprs(exprs: string[]) : float[] =
+    let rank = env.RankValue
+    exprs |> Array.map (fun s -> float (Expr.evalWithValues 0.0f rank (Expr.parse s)))
+
   /// 字の右の印を出すか（v4.0.2）。**面がやめられるのは「数えるのを」だけ。**
   ///
   /// 撃った数（`TallyAt`）は撃つたびに 1 つ 足すだけなので止めない ——

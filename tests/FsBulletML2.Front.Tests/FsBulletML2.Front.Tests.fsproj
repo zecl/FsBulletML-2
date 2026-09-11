@@ -52,6 +52,8 @@
     <Compile Include="DivergeFrames.fs" />
     <!-- 走った字ごとの弾コマ（v3.9）。**畳むところが本体** -->
     <Compile Include="SpanWeight.fs" />
+    <!-- 面から JS へ渡す並び（v4.7）。**1 点 3 つ**（x / y / 撃った腕の添字） -->
+    <Compile Include="PackTriple.fs" />
   </ItemGroup>
   <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
        手のせいか版のせいかが割れない -->

@@ -309,6 +309,18 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-fable-parity.Tests.ps1
 
+      # **同じソースで .NET だけ速い形が在る。** `[ for … do … while … ]` を
+      # Fable は enumerator の鎖に焼くので、1 歩 ごとに物が 3 つ 増える ——
+      # 答えは合っているので build も試験も目も見ない（v4.9 で実機に当てて出た）。
+      # **焼いた JS が此処に在るので、同じ job で見る**
+      - name: 内包表記の中の while
+        shell: pwsh
+        run: ./.github/scripts/guard-fable-loops.ps1
+
+      - name: 内包の門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-fable-loops.Tests.ps1
+
       # **共有リンクの圧縮は片方 の runtime にしか無い。** `CompressionStream` は
       # .NET に無いので、`dotnet test` を何本 増やしても 1 度 も通らない。
       # 焼いた JS が此処に在るので、同じ job で走らせる

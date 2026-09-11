@@ -59,6 +59,46 @@ let private registerDefinition (language: string) (fn: obj -> obj -> obj) : unit
 [<Emit("globalThis.monaco.languages.registerReferenceProvider($0, { provideReferences: $1 })")>]
 let private registerReferences (language: string) (fn: obj -> obj -> obj -> obj) : unit = jsNative
 
+[<Emit("globalThis.monaco.languages.registerDocumentHighlightProvider($0, { provideDocumentHighlights: $1 })")>]
+let private registerHighlights (language: string) (fn: obj -> obj -> obj) : unit = jsNative
+
+[<Emit("globalThis.monaco.languages.registerCodeLensProvider($0, { provideCodeLenses: $1 })")>]
+let private registerCodeLens (language: string) (fn: obj -> obj -> obj) : unit = jsNative
+
+[<Emit("globalThis.monaco.languages.registerInlayHintsProvider($0, { provideInlayHints: $1 })")>]
+let private registerInlayHints (language: string) (fn: obj -> obj -> obj -> obj) : unit = jsNative
+
+[<Emit("globalThis.monaco.languages.registerSignatureHelpProvider($0, { signatureHelpTriggerCharacters: $2, signatureHelpRetriggerCharacters: $3, provideSignatureHelp: $1 })")>]
+let private registerSignature
+  (language: string)
+  (fn: obj -> obj -> obj -> obj -> obj)
+  (triggers: string[])
+  (retriggers: string[])
+  : unit = jsNative
+
+/// **Monaco の command は 1 度 だけ登録する。** 同じ id で 2 度 呼ぶと
+/// 後のほうが黙って勝つ（表記ごとに登録すると、最後の表記のものになる）
+[<Emit("globalThis.monaco.editor.registerCommand($0, $1)")>]
+let private registerCommand (id: string) (fn: obj -> obj -> obj -> unit) : unit = jsNative
+
+[<Emit("globalThis.monaco.editor.getEditors()[0]")>]
+let private firstEditor () : obj = jsNative
+
+[<Emit("$0.setPosition({ lineNumber: $1, column: $2 })")>]
+let private setPosition (editor: obj) (line: int) (column: int) : unit = jsNative
+
+[<Emit("$0.focus()")>]
+let private focusEditor (editor: obj) : unit = jsNative
+
+[<Emit("$0.trigger('codelens', 'editor.action.referenceSearch.trigger', {})")>]
+let private triggerReferences (editor: obj) : unit = jsNative
+
+[<Emit("$0.startLineNumber")>]
+let private rangeStartLine (range: obj) : int = jsNative
+
+[<Emit("$0.endLineNumber")>]
+let private rangeEndLine (range: obj) : int = jsNative
+
 [<Emit("globalThis.monaco.languages.registerRenameProvider($0, { resolveRenameLocation: $1, provideRenameEdits: $2 })")>]
 let private registerRename
   (language: string)
@@ -455,6 +495,30 @@ let private lineCount (editor: obj) : int = jsNative
 
 [<Emit("$0.getModel().onDidChangeContent($1)")>]
 let private onChange (editor: obj) (cb: unit -> unit) : unit = jsNative
+
+[<Emit("$0.onDidChangeCursorPosition($1)")>]
+let private onCursor (editor: obj) (cb: unit -> unit) : unit = jsNative
+
+[<Emit("$0.getModel()")>]
+let private modelOf (editor: obj) : obj = jsNative
+
+[<Emit("$0.getPosition()")>]
+let private positionOf (editor: obj) : obj = jsNative
+
+/// カーソルが動いたら呼ぶ（v4.7）。**位置は渡さない** ——
+/// 受ける側は本文の添字が要るので、そちらで `cursorOffset` を引く
+let onCursorMove (cb: unit -> unit) =
+  let ed = firstEditor ()
+  if not (isNull ed) then onCursor ed cb
+
+/// カーソルの位置（0 起点 の文字数）。**居なければ -1**
+let cursorOffset () : int =
+  let ed = firstEditor ()
+  if isNull ed then -1
+  else
+    let m = modelOf ed
+    let p = positionOf ed
+    if isNull m || isNull p then -1 else offsetAt m p
 
 /// 走っている場所を光らせる。**範囲は本文の添字**（0 起点、`stop` は含まない）。
 /// 戻りは光らせた行（1 起点）。**付けられなければ -1。**
@@ -876,6 +940,161 @@ let registerNavigationProviders
 
   registerDefinition language definition
   registerReferences language references
+
+/// カーソルの下の名前を、本文の中で全部 薄く光らせる（v4.2）。
+///
+/// **材料は `Usages` の 1 本**（定義へ移動・参照・rename と同じ）——
+/// 書き換えずに色だけ付ける。
+///
+/// **濃さを 2 段 に割る。** Monaco の `DocumentHighlightKind` は
+/// `Text = 0 / Read = 1 / Write = 2` で、**書く側のほうが濃く出る** ——
+/// 定義（名前を決めている側）を `Write`、参照を `Read` にすると、
+/// **どれが定義かが色で分かる。** 数を出さずに済む。
+///
+/// **カーソルが名前の上に無ければ空。** Monaco は空を「光らせない」と読む
+/// （`null` を返す必要は無い）。
+///
+/// **打鍵ごとではない。** Monaco は occurrences の計算を遅らせて呼ぶ ——
+/// 版の頭で測った費用は、いちばん長い本（29,190 字）で
+/// 光る位置 0.5865 ms / 光らない位置 0.1415 ms
+let registerHighlightProvider
+  (language: string)
+  (usages: string -> int -> FsBulletML2.LanguageService.SourceLanguage.Usage list)
+  =
+  let highlights (model: obj) (position: obj) : obj =
+    usages (getVal model) (offsetAt model position)
+    |> List.map (fun u ->
+         createObj [
+           "range" ==>
+             createObj [
+               "startLineNumber" ==> u.Line
+               "endLineNumber" ==> u.Line
+               "startColumn" ==> u.Column
+               "endColumn" ==> u.EndColumn ]
+           // **定義が Write、参照が Read。** 濃さが変わる
+           "kind" ==> (if u.IsDefinition then 2 else 1) ])
+    |> List.toArray
+    |> box
+  registerHighlights language highlights
+
+/// 押したときに参照の一覧を開く command の id。**1 本 だけ。**
+let private lensCommandId = "fsbulletml2.showReferences"
+
+let mutable private lensCommandDone = false
+
+/// 押されたときの中身。**その場のラムダで書かない** ——
+/// Monaco は `handler(accessor, ...args)` の形で 1 度 に呼ぶので、
+/// **curry された関数を渡すと、返ってくるのは関数で、中身は 1 度 も走らない**
+/// （実機で踏んだ。押しても位置が 1:1 のまま動かなかった）。
+///
+/// 名前つきの `let` は引数の数ぶんで焼かれる —— この file の
+/// ほかの provider（`provide` / `definition` / `references`）と同じ形
+let private lensHandler (_accessor: obj) (line: obj) (column: obj) : unit =
+  let ed = firstEditor ()
+  if not (isNull ed) then
+    setPosition ed (unbox<int> line) (unbox<int> column)
+    focusEditor ed
+    triggerReferences ed
+
+/// 定義の行の上に「3 か所 から参照」を出す（v4.3）。
+///
+/// **数えるのは器**（`Lenses`）。ここが知っているのは Monaco の形だけ。
+///
+/// **押すと参照の一覧が開く** —— 飛ぶ口は v1.8 で繋いである
+/// （`registerReferenceProvider`）ので、**カーソルをそこへ置いて同じ操作を叩く。**
+/// 参照が 0 の定義には command を付けない —— **開く先が無いのに押せると、
+/// 押して何も起きないほうが「壊れている」に見える。**
+let registerLensProvider
+  (language: string)
+  (lenses: string -> FsBulletML2.LanguageService.SourceLanguage.Lens list)
+  =
+  if not lensCommandDone then
+    lensCommandDone <- true
+    registerCommand lensCommandId lensHandler
+  let provide (model: obj) (_token: obj) : obj =
+    let items =
+      lenses (getVal model)
+      |> List.map (fun l ->
+           let range =
+             createObj [
+               "startLineNumber" ==> l.Line
+               "endLineNumber" ==> l.Line
+               "startColumn" ==> l.Column
+               "endColumn" ==> l.Column ]
+           let command =
+             if l.Clickable then
+               createObj [
+                 "id" ==> lensCommandId
+                 "title" ==> l.Title
+                 "arguments" ==> [| box l.Line; box l.Column |] ]
+             else createObj [ "id" ==> ""; "title" ==> l.Title ]
+           createObj [ "range" ==> range; "command" ==> command ])
+      |> List.toArray
+    box (createObj [ "lenses" ==> items; "dispose" ==> (fun () -> ()) ])
+  registerCodeLens language provide
+
+/// 式の横に値を出す（v4.4）。**`= 12` のように。**
+///
+/// **値を作るのはここではない。** 出す先を集めるのが器（`Hints`）で、
+/// 畳むのが面（`EvalExprs`）—— ここは Monaco の形にするだけ。
+///
+/// **見えている範囲だけ渡ってくる。** Monaco が `range` を寄こすので、
+/// 長い本文でも画面のぶんしか作らない。
+let registerHintProvider
+  (language: string)
+  (hints: string -> int -> int -> (int * int * string) list)
+  =
+  let provide (model: obj) (range: obj) (_token: obj) : obj =
+    let items =
+      hints (getVal model) (rangeStartLine range) (rangeEndLine range)
+      |> List.map (fun (line, column, label) ->
+           createObj [
+             "position" ==> createObj [ "lineNumber" ==> line; "column" ==> column ]
+             "label" ==> label
+             // **字の手前 に隙間を入れる。** 入れないと `10+$rank*5= 12` になる
+             "paddingLeft" ==> true ])
+      |> List.toArray
+    box (createObj [ "hints" ==> items; "dispose" ==> (fun () -> ()) ])
+  registerInlayHints language provide
+
+/// 参照が渡す引数の形を出す（v4.5）。**`shot($1, $2)` の形で。**
+///
+/// **数えるのは器**（`Signature`）。ここが知っているのは Monaco の形だけ。
+///
+/// **出す口を 2 つ 開ける** —— 打鍵の途中で自分から出る（trigger）のと、
+/// `Ctrl`+`Shift`+`Space` で明示的に出すの。
+/// trigger は `<` と `>` にする（`<param>` を打ち終えたところ）。
+///
+/// **カーソルが `◯◯Ref` の外なら `null`。** 空の枠を返すと、
+/// 出ていないことと見分けがつかなくなる
+let registerSignatureProvider
+  (language: string)
+  (signature: string -> int -> FsBulletML2.LanguageService.SourceLanguage.Signature option)
+  =
+  let provide (model: obj) (position: obj) (_token: obj) (_context: obj) : obj =
+    match signature (getVal model) (offsetAt model position) with
+    | None -> null
+    | Some s ->
+      let parameters =
+        s.Params
+        |> List.map (fun (from, until) ->
+             createObj [ "label" ==> [| box from; box until |] ])
+        |> List.toArray
+      let sig_ =
+        createObj [
+          "label" ==> s.Label
+          "documentation" ==> s.Detail
+          "parameters" ==> parameters ]
+      box (createObj [
+             "value" ==>
+               createObj [
+                 "signatures" ==> [| sig_ |]
+                 "activeSignature" ==> 0
+                 // **-1 は「どれにも居ない」。** Monaco は 0 以上 を求めるので、
+                 // 外に居るときは先頭 を光らせずに 0 を渡す
+                 "activeParameter" ==> (if s.Active >= 0 then s.Active else 0) ]
+             "dispose" ==> (fun () -> ()) ])
+  registerSignature language provide [| "<"; ">" |] [| ","; ">" |]
 
 /// 「こう直す」を出す口。**直し方を決めるのは言語モジュール** ——
 /// ここが知っているのは Monaco の形（アクションと WorkspaceEdit）だけ。

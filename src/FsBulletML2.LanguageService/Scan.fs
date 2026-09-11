@@ -238,6 +238,76 @@ module Scan =
   ///
   /// 波線や直し方の位置は表記ごとの数え方が既に持っているが、
   /// **本文へ何かを挿す位置**はそこに無い —— 札の位置（0 起点）からここで作る
+  /// **昇順の位置を、本文 1 巡 で行桁へ直す**（v4.4）。
+  ///
+  /// `lineColumn` は 1 つ につき本文を頭から走る —— 71 個 出す本で呼ぶと
+  /// **29,190 字 を 71 回 走る**（実測 1.08 ms。この repo で
+  /// いちばん重い打鍵ごとの仕事になっていた）。
+  ///
+  /// **渡す位置は昇順でなければならない。** 崩れていたら、そこから先は
+  /// 頭に戻って数え直す（正しさは保つが、そのぶん遅くなる）——
+  /// **黙って間違えるより遅いほうを選ぶ。**
+  ///
+  /// ### 内包表記で書かない（v4.9）
+  ///
+  /// **`[ for … do … while … ]` の中の `while` を、Fable は
+  /// enumerator の鎖に焼く**（`enumerateWhile` + `delay` + `append`）——
+  /// 1 字 進むごとに物が 3 つ 増える。
+  ///
+  ///     .NET      0.50 ms
+  ///     焼いた JS  9.8 ms   ← 同じソース。打鍵ごとの合計の半分 だった
+  ///
+  /// 素の `while` と `ResizeArray` にすると、どちらも本文 1 巡 で済む。
+  /// **隣の `lineColumn` が速いのは、内包の外に在るから**（見比べる先）。
+  let lineColumnsAscending (src: string) (offsets: int list) : struct (int * int) list =
+    let out = ResizeArray<struct (int * int)>()
+    let mutable line = 1
+    let mutable lineStart = 0
+    let mutable at = 0
+    for raw in offsets do
+      let off = max 0 (min raw src.Length)
+      // 昇順が崩れていたら頭から数え直す
+      if off < at then
+        line <- 1
+        lineStart <- 0
+        at <- 0
+      while at < off do
+        if src.[at] = '\n' then
+          line <- line + 1
+          lineStart <- at + 1
+        at <- at + 1
+      out.Add(struct (line, off - lineStart + 1))
+    List.ofSeq out
+
+  /// 位置 -> 行桁 を**何度も・行き来して**引くための表（v4.9）。
+  ///
+  /// `lineColumn` は 1 回 につき本文を頭から走る。アウトラインは札 1 つ に
+  /// つき 2 回 引くので、**29,190 字 を 1,972 回 走っていた** ——
+  /// 焼いた JS で 40 ms（打鍵ごとの 5 本 の合計より重い）。
+  ///
+  /// 改行の位置を 1 度 だけ数えて、あとは二分探索。
+  ///
+  /// **`lineColumnsAscending` との違いは順**。あちらは昇順でしか引けないが
+  /// 表を持たない。こちらは**行き来してよい**代わりに、
+  /// 行の数だけ場所を取る。
+  let lineColumnLookup (src: string) : int -> struct (int * int) =
+    let n = if isNull src then 0 else src.Length
+    let starts = ResizeArray<int>()
+    starts.Add 0
+    let mutable i = 0
+    while i < n do
+      if src.[i] = '\n' then starts.Add(i + 1)
+      i <- i + 1
+    fun offset ->
+      let at = max 0 (min offset n)
+      // その位置以下 でいちばん後ろ の行頭
+      let mutable lo = 0
+      let mutable hi = starts.Count - 1
+      while lo < hi do
+        let mid = (lo + hi + 1) / 2
+        if starts.[mid] <= at then lo <- mid else hi <- mid - 1
+      struct (lo + 1, at - starts.[lo] + 1)
+
   let lineColumn (src: string) (offset: int) : struct (int * int) =
     let at = max 0 (min offset src.Length)
     let mutable line = 1

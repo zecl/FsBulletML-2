@@ -165,6 +165,20 @@
               文字列やコメントの中では出ない。
             </p>
 
+            <p>
+              <strong>CE で出ないものは 3 つ だけ</strong>（v4.8 で 13 本 の口を
+              4 表記 に当てて数えた）——
+              <strong>式の値</strong>と<strong>引数の形</strong>、
+              そして<strong>走行に紐づく印</strong>
+              （走っている場所・出どころ・撃った数・系譜・重さ）。
+              前の 2 つ は「引数の何番目 が式か」を字から言えないため、
+              後ろは CE の入れ子が <code>{ }</code> の段で
+              <strong>要素の入れ子と別物</strong>のため。
+              補完・hover・<kbd>F2</kbd>・<kbd>F12</kbd>・波線・整形・
+              参照の数は<strong>ほかの 3 表記 と同じ 1 本 を通る</strong>。
+              アウトラインも出るが、<strong>別の木になる</strong>（下に書いた）。
+            </p>
+
             <figure>
               <img src="img/help/hover.png" width="745" height="182" loading="lazy"
                    alt="direction の上に hover して、名前・説明・DTD の宣言が出ている欄">
@@ -330,6 +344,141 @@
               </figcaption>
             </figure>
 
+            <h4>引数の形</h4>
+
+            <figure>
+              <img src="img/help/signature.png" width="154" height="66" loading="lazy"
+                   alt="引数の窓。shot($1, $2) と出て、いま打っている $2 が濃く、下に 2 つ 取って、2 つ 渡している と出ている">
+              <figcaption>
+                <code>&lt;param&gt;</code> の中で <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>。
+                <strong>いま打っている引数が濃くなる</strong>
+              </figcaption>
+            </figure>
+
+            <ul>
+              <li><code>&lt;actionRef&gt;</code> や <code>&lt;bulletRef&gt;</code> の中で
+                  <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd> を押すと、
+                  <strong>その定義が使う引数の形</strong>が出る（<code>&lt;</code> を打っても出る）</li>
+              <li><strong>数えているのは定義の本文の <code>$n</code> の最大。</strong>
+                  <code>&lt;param&gt;</code> は<strong>並びで渡す</strong>ので、
+                  <code>$3</code> が使われていれば 3 つ 要る ——
+                  <code>$1</code> を飛ばしていても 3 つ</li>
+              <li><strong><code>$rank</code> と <code>$rand</code> は数えない。</strong>
+                  引数ではなく、走らせ方から来る値</li>
+              <li><strong>数が食い違っても警告は出さない。</strong>
+                  同梱 176 本 に<strong>食い違いが 9 件 在る</strong>（数えた）——
+                  正しく動く弾幕でも起きるので、
+                  <strong>出すのは形であって、正しさの判定ではない</strong>。
+                  足りないぶんは <code>0</code> として走る</li>
+              <li><strong>F# の CE では出ない。</strong>
+                  囲みは決まる（v4.8 で数えたら 176 / 176 揃う）が、
+                  <strong>「渡している数」のほうが数えられない</strong> ——
+                  引数は CE の名前を持たないので札に出ない（同梱で XML 1,460 / CE 0）。
+                  0 と出すと、正しい弾幕に「0 つ しか渡していない」が並ぶ</li>
+            </ul>
+
+            <h4>式の値</h4>
+
+            <figure>
+              <img src="img/help/hints.png" width="520" height="138" loading="lazy"
+                   alt="times や direction の式の横に、畳んだ値が = 8 / = 45 / = 1.45 の形で薄く出ている">
+              <figcaption>
+                式の横に<strong>いまの難度で畳んだ値</strong>が出る。
+                <strong>難度を動かすとこの数も動く</strong> ——
+                <code>$rank</code> は走らせている値そのもの
+              </figcaption>
+            </figure>
+
+            <ul>
+              <li><code>&lt;times&gt;4+8*$rank&lt;/times&gt;</code> のような式の横に、
+                  <strong>畳んだ値</strong>が薄く出る。
+                  <strong>難度のつまみを動かすと、この数も一緒に動く</strong></li>
+              <li><strong>ただの数には出ない。</strong>
+                  <code>&lt;wait&gt;30&lt;/wait&gt;</code> の横に <code>= 30</code> を出しても
+                  字が増えるだけ —— 出るのは<strong>畳んで初めて数になる式</strong>だけ。
+                  同梱 176 本 の式 6,042 件 のうち<strong>出るのは 1,618 件（26.8%）</strong></li>
+              <li><strong><code>$rand</code> を含む式には出ない。</strong>
+                  <strong>毎回 変わる</strong>ので、字の横に固定の数を出すと嘘になる
+                  （式の 5.8%）</li>
+              <li><strong>読めない式にも出ない。</strong> そちらは波線の担当</li>
+              <li><strong>畳んでいるのは走らせているのと同じ 1 本。</strong>
+                  エディタが自分で計算しているのではなく、
+                  <strong>面に聞いている</strong> —— だから
+                  <code>$rank</code> の値がずれようがない</li>
+              <li><strong>F# の CE では出ない</strong>（式の取り出しが無いので。
+                  v4.8 で数え直して、ここは変わらなかった）</li>
+            </ul>
+
+            <h4>参照の数</h4>
+
+            <figure>
+              <img src="img/help/codelens.png" width="470" height="187" loading="lazy"
+                   alt="定義の行の上に、根から走る / 2 か所 から参照 / どこからも参照されていない が出ている">
+              <figcaption>
+                定義の行の上に出る。<strong>3 通り</strong> ——
+                <strong>根から走る</strong> / <strong>N か所 から参照</strong> /
+                <strong>どこからも参照されていない</strong>
+              </figcaption>
+            </figure>
+
+            <ul>
+              <li><code>&lt;action label="…"&gt;</code> のような<strong>定義の行の上</strong>に、
+                  その名前を指している参照の数が出る。
+                  <strong>押すと参照の一覧が開く</strong>（<kbd>Shift</kbd>+<kbd>F12</kbd> と同じもの）</li>
+              <li><strong>根から走る定義には数を出さない。</strong>
+                  <code>top</code> で始まる名前は<strong>誰にも参照されないのが正しい</strong> ——
+                  同梱 176 本 で数えると、参照が 0 の定義 215 件 のうち
+                  <strong>209 件 がそれ</strong>。「0 か所 から参照」と出すと、
+                  ほとんどの弾幕に嘘が並ぶ</li>
+              <li><strong>本当に呼ばれていない定義</strong>には
+                  「どこからも参照されていない」と出る ——
+                  <strong>青い波線と同じもの</strong>（同梱 176 本 に 6 件 在る。
+                  走りには影響しない）</li>
+              <li><strong>打つたびには数え直さない。</strong>
+                  3 文字 打って 1 回 —— いちばん長い弾幕で、
+                  <strong>ブラウザの中で 1.8 ミリ秒</strong>
+                  （ほかの検査の後 なら、本文の走査を使い回すので もっと安い）</li>
+              <li><strong>F# の CE でも出る（v4.8）。</strong>
+                  v4.7 まで「<code>actionRef</code> と打たないので数えると全部 0 になる」
+                  としていたが、<strong>打たないのは字</strong> ——
+                  <code>doActs "x"</code> は <code>actionRef</code> の札として数えている。
+                  同梱 176 本 を CE と XML の両方 で数えて、
+                  <strong>名前も数も見出しの文面も一致する</strong></li>
+            </ul>
+
+            <p>
+              <strong>打鍵 1 回 の合計は 5.6 ミリ秒</strong>（いちばん長い弾幕
+              29,190 字。ブラウザの中で測った）——
+              60 コマ/秒 の 1 コマ（16.7 ミリ秒）の 33%。
+              上に並んだ検査は<strong>同じ本文の走査を使い回す</strong>ので、
+              1 本 ずつの値段を足した数（10.7 ミリ秒）の半分 で済む。
+            </p>
+
+            <h4>同じ名前を光らせる</h4>
+
+            <figure>
+              <img src="img/help/highlight.png" width="470" height="143" loading="lazy"
+                   alt="カーソルが label の中に在り、同じ名前が 3 か所 光っている。定義側だけ色が濃い">
+              <figcaption>
+                <code>shot</code> の上にカーソルを置いたところ。
+                <strong>定義側（9 行 目）だけ色が濃い</strong> ——
+                どれが元かが、数を出さずに分かる
+              </figcaption>
+            </figure>
+
+            <ul>
+              <li><strong>名前の上にカーソルを置くだけ</strong>で、同じ名前が全部 光る。
+                  押さなくてよい —— <strong>F12（定義へ移動）と同じものを見ている</strong>ので、
+                  光った先へそのまま飛べる</li>
+              <li><strong>濃さが 2 段。</strong> 名前を<strong>決めている側</strong>（<code>action label="shot"</code>）が濃く、
+                  <strong>使っている側</strong>（<code>actionRef label="shot"</code>）が薄い</li>
+              <li>光るのは<strong>カーソルが名前の上に在るとき</strong>だけ。
+                  同梱 176 本 で数えると、属性値の位置の
+                  <strong>54.9% で光る</strong>（光る数は中央 3 か所 / 最大 29 か所）</li>
+              <li><strong>打つたびには数え直さない。</strong> カーソルが動いたときだけ ——
+                  いちばん長い弾幕で、<strong>ブラウザの中で 2.6 ミリ秒</strong></li>
+            </ul>
+
             <h4>形を見る</h4>
             <ul>
               <li><kbd>Alt</kbd>+<kbd>O</kbd> は<strong>どこに何が在るかを並べる</strong>。
@@ -421,6 +570,32 @@
               </figcaption>
             </figure>
 
+            <h4>字から弾へ</h4>
+
+            <figure>
+              <img src="img/help/from-line.png" width="300" height="230" loading="lazy"
+                   alt="面に 2 本 の弾の列。カーソルが居る行が撃ったほうだけ緑になっている">
+              <figcaption>
+                <code>&lt;fire&gt;</code> の行にカーソルを置くと、
+                <strong>その行が撃った弾だけ色が変わる</strong>。
+                同じ本文の別の <code>&lt;fire&gt;</code> は白のまま
+              </figcaption>
+            </figure>
+
+            <ul>
+              <li><strong>押さなくてよい。</strong> カーソルを
+                  <code>&lt;fire&gt;</code> の札に置くだけで、
+                  <strong>その行が撃った弾が面の上で緑になる</strong></li>
+              <li><strong>弾を押して字へ飛ぶ</strong>の<strong>逆向き</strong>。
+                  材料は同じ —— 弾は<strong>撃たれた時点で「どの行から来たか」を持っている</strong></li>
+              <li><strong>四角のまま色だけ変わる。</strong>
+                  追っている弾は<strong>丸</strong>なので、
+                  同じ形にすると 2 つ が混ざる</li>
+              <li><strong>1 文字 でも打つと消える</strong>（走らせた結果と字が
+                  食い違うので）。<strong>Apply し直すとまた出る</strong></li>
+              <li>カーソルが動いたときだけ数え直す。<strong>毎コマ ではない</strong></li>
+            </ul>
+
             <h4>出どころを見る</h4>
             <ul>
               <li>追っている弾を<strong>撃った <code>&lt;fire&gt;</code> も光る</strong>（別の色）。
@@ -477,7 +652,7 @@
               <li>読めなければ Apply したときに下のバーへ理由が出て、分かる位置には波線が付く</li>
               <li><strong>読めて・組めても走らないものは、打った時点で波線が付く</strong>
                   （Apply を待たない）。字から数えているので、
-                  <strong>いちばん長い弾幕でも 0.7 ミリ秒</strong>。3 色 出る。
+                  <strong>いちばん長い弾幕で、ブラウザの中で 3.4 ミリ秒</strong>。3 色 出る。
                   <ul>
                     <li><strong>赤</strong> —— <code>top</code> で始まる名前の定義が 1 つ も無い。
                         <strong>読めて・組めて、黙って何も起きない</strong>（走らせる側が
@@ -491,6 +666,14 @@
                         使っているものも黄</li>
                     <li><strong>青</strong> —— どこからも呼ばれていない定義。
                         <strong>走りには影響しない</strong>（同梱 176 本 にも 6 件 在る）</li>
+                  </ul>
+                  黄はもう 1 つ 在る ——
+                  <ul>
+                    <li><strong>同じ名前の定義が 2 つ 以上 在る。</strong>
+                        <strong>走るのは先に書いたほう</strong>（数えた）で、
+                        後のほうは<strong>黙って負ける</strong> ——
+                        光るのは負けるほう。
+                        同梱 176 本 には <strong>1 件 も無い</strong></li>
                   </ul></li>
             </ul>
 
@@ -757,8 +940,9 @@
                   <strong>2 つ で 1 つ の切り替え</strong> —— どちらも
                   同じ仕組みの上に載っていて、別々 に切っても軽くなり方は変わらない</li>
               <li><strong>切ると軽くなる。</strong> いちばん弾が多い同梱の本で測って、
-                  <strong>1 コマ あたり 1.3 ミリ秒</strong>
-                  （60 コマ/秒 の予算 16.7 ミリ秒 に対して <strong>8.7%</strong>）。
+                  <strong>1 コマ あたり 1.0 から 1.3 ミリ秒</strong>
+                  （60 コマ/秒 の予算 16.7 ミリ秒 に対して <strong>6.8% から 8.7%</strong>。
+                  2 度 測った幅）。
                   <strong>減るのは「印を描くぶん」ではない</strong> ——
                   印のために<strong>毎コマ 数えている</strong>ぶんが止まる</li>
               <li><strong>切る理由は重さだけではない。</strong>

@@ -134,6 +134,23 @@ let readable (s: string) : bool =
     | Some pos -> skipWs s pos = s.Length
     | None -> false
 
+/// **ただの数か**（v4.4）。`30` / `1.5` / `-3` / `.5` は真。
+///
+/// **値を横に出す意味が無い側。** `<wait>30</wait>` の横に `= 30` を出しても
+/// 字が増えるだけ —— 出すのは**畳んで初めて数になる式**だけ。
+///
+/// **`readable` と同じ読み手を通す。** 別に数え直すと、
+/// 「読めないのに ただの数 と言う」形が作れてしまう
+let plainNumber (s: string) : bool =
+  if isNull s then false
+  else
+    let i = skipWs s 0
+    // 単項マイナスは数の一部 として扱う（`-3` は式ではなく数）
+    let i = if i < s.Length && s.[i] = '-' then skipWs s (i + 1) else i
+    match tryNumber s i with
+    | Some pos -> skipWs s pos = s.Length
+    | None -> false
+
 /// **どこまで読めたか**（0 起点 の文字数）。読めるなら文字数そのもの。
 ///
 /// 波線をここから引く —— 要素まるごとに引くと、

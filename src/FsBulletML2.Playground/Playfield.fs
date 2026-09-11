@@ -215,18 +215,42 @@ type Playfield private (front: IFrontEnv, live: ResizeArray<Live>, field: Field,
     frame <- frame + 1
 
   /// WASM ヒープ上の `float32[]`。JS は JSON せず `localHeapViewF32` で読む。
+  ///
+  /// **1 点 につき 3 つ**（v4.7）—— x / y / **撃った腕の添字**。
+  ///
+  /// 3 つ 目 を足したのは「字から弾へ」のため。**系譜は辿らない** ——
+  /// `Live.From` が撃った腕の添字を既に持っている（v3.2）ので、**写すだけ。**
+  ///
+  /// **足したのに速くなった** —— 1,481 点 で 0.0134 ms -> 0.0096〜0.0119 ms。
+  /// 書く数は 2 つ から 3 つ に増えたが、`live.[i]` を 2 度 引くのを
+  /// **1 度 に畳んだ**ぶんのほうが大きい（`ResizeArray` の添字は境界を見る）。
+  /// **別々 の走行で測った数**なので、幅で書く。
+  ///
+  /// **撃たれていない弾は -1**（根の敵がそう）。JS 側はそこを外す
   member _.Pack() =
     let n = live.Count
-    let need = n * 2
+    let need = n * 3
     if xs.Length < need then
       xs <- Array.zeroCreate (max (need * 2) 256)
       rePin ()
     elif not pin.IsAllocated then
       rePin ()
     for i in 0 .. n - 1 do
-      xs.[i * 2] <- live.[i].X
-      xs.[i * 2 + 1] <- live.[i].Y
+      let it = live.[i]
+      xs.[i * 3] <- it.X
+      xs.[i * 3 + 1] <- it.Y
+      xs.[i * 3 + 2] <- float32 it.From
     n
+
+  /// `Pack` が書いた並びそのもの（v4.7）。**本番は使わない** ——
+  /// JS はポインタ（`PackedPtr`）で読む。
+  ///
+  /// **中身を字で確かめられる口が要る。** 3 つ 組 の並びは
+  /// JS と .NET のあいだの取り決めで、崩れても走行は落ちない
+  /// （弾がおかしな場所に描かれるだけ）—— **門が届く形にしておく。**
+  ///
+  /// 長さは `Pack` の戻り x 3 以上（先に確保してあるので、それより長い）
+  member _.Packed = xs
 
   member _.PackedPtr =
     if not pin.IsAllocated then rePin ()

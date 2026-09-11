@@ -349,6 +349,19 @@ type Playground() as self =
       sb.Append s.[i] |> ignore
     sb.ToString()
 
+  /// 式の横に出す数（v4.4）。**整数なら整数、そうでなければ小数 2 桁。**
+  ///
+  /// **桁区切りを入れない。** `groupDigits` は撃った発数のように
+  /// 大きくなる数のためで、式の値は角度や速さ —— `1,024` と書くより
+  /// `1024` のほうが、字の上の式と見比べやすい
+  let showNumber (v: float) =
+    if System.Double.IsNaN v then "?"
+    elif v = System.Math.Floor v && abs v < 1e15 then string (int64 v)
+    else
+      let s = sprintf "%.2f" v
+      // **後ろの 0 を落とす。** `2.50` より `2.5`
+      if s.Contains "." then s.TrimEnd('0').TrimEnd('.') else s
+
   let mutable litOpen = false
   // いま光らせている添字。**-2 は「まだ何もしていない」** ——
   // -1（光らせるものが無い）と区別する
@@ -401,6 +414,10 @@ type Playground() as self =
   // 止めているあいだは `frame` が動かないので、30 コマ の間引きだけだと
   // **印が永久に古いまま**になる（`Bullets:` は毎コマ 書き直される）
   let mutable markFrame = -1
+  // 字から弾（v4.7）。**カーソルが居る行の、読んだ木の添字**。
+  // **-1 は「どの行でもない」** —— 面の側は 3 つ 目 の成分に添字を入れていて、
+  // 撃たれていない弾（根の敵）は -1 なので、そこも自然に外れる
+  let mutable fromIdx = -1
   // 字の右に印を出すか（v4.0.2）。**2 つ をまとめて切る** ——
   // 撃った数 も 割合 も同じ仕組み（30 コマ に 1 度 の並べ替え）の上に載っていて、
   // 別々 に切っても減り方は変わらない。切る理由は重さだけではなく、
@@ -520,11 +537,12 @@ type Playground() as self =
       // **半径の 2 乗 で比べる。** 平方根は順を変えないので取らない
       let mutable bestD = 12. * 12.
       if packedN > 0 then
-        let a = subarray (heapF32 ()) packedOff (packedOff + packedN * 2)
+        // **1 点 につき 3 つ**（v4.7。x / y / 撃った腕の添字）
+        let a = subarray (heapF32 ()) packedOff (packedOff + packedN * 3)
         let mutable i = 0
         while i < packedN do
-          let dx = f32 a (i * 2) - x
-          let dy = f32 a (i * 2 + 1) - y
+          let dx = f32 a (i * 3) - x
+          let dy = f32 a (i * 3 + 1) - y
           let d = dx * dx + dy * dy
           if d <= bestD then
             bestD <- d
@@ -894,6 +912,33 @@ type Playground() as self =
       spanShown <- marks.Count > 0
       Monaco.showSpans (marks.ToArray())
 
+  /// カーソルが居る行が撃った弾を、面の上で塗り分ける（v4.7）。
+  ///
+  /// **v3.2 の逆向き。** あちらは「押した弾 -> 字」、こちらは「字 -> 弾」——
+  /// **材料は同じ `Live.From`**（撃った腕の添字）で、
+  /// **系譜は 1 度 も辿らない**（版の頭で確かめた）。
+  ///
+  /// **窓が閉じていれば何もしない。** 字と走っている木が揃っていないので、
+  /// 添字が別のものを指す
+  member _.lightFrom() =
+    if not litOpen then
+      if fromIdx >= 0 then fromIdx <- -1
+    else
+      let off = Monaco.cursorOffset ()
+      if off < 0 then fromIdx <- -1
+      else
+        if not litScanned then
+          litScanned <- true
+          litSpans <- current.NodeSpans (Monaco.getValue ()) nodeNames
+        // **札の中に居るか**で決める。中身（子の要素）に居るときは
+        // その子のほうが近い —— **いちばん内側 を採る**
+        let mutable best = -1
+        List.iteri
+          (fun i (sp: NodeSpan) ->
+            if off >= sp.OpenStart && off < sp.OpenStop then best <- i)
+          litSpans
+        fromIdx <- best
+
   /// 印の窓を開ける。**本文と走っている木が同じところで揃った瞬間だけ。**
   ///
   /// 呼ぶのは Apply が通ったとき・弾幕を選び直したとき・表記を書き直したとき・
@@ -911,6 +956,8 @@ type Playground() as self =
 
   /// 印の窓を閉じる。**打った瞬間に。**
   member _.closeLight() =
+    // 字から弾（v4.7）。**窓を閉じたら消す**
+    fromIdx <- -1
     if litOpen then
       litOpen <- false
       litScanned <- false
@@ -1094,14 +1141,27 @@ type Playground() as self =
     else
       let mutable i = 0
       while i < n do
-        c2d.fillRect (f32 packed (i * 2) - 2., f32 packed (i * 2 + 1) - 2., 4., 4.)
+        c2d.fillRect (f32 packed (i * 3) - 2., f32 packed (i * 3 + 1) - 2., 4., 4.)
         i <- i + 1
+      // 字から弾（v4.7）。**カーソルが居る行が撃った弾を塗り直す** ——
+      // **白の上から描く**ので、先に全部 白で描いてから重ねる。
+      //
+      // **丸にしない。** 追っている弾（v3.1）が丸なので、同じ形にすると
+      // 2 つ が混ざる —— こちらは四角のまま色だけ変える
+      if fromIdx >= 0 then
+        c2d?fillStyle <- "#66ff99"
+        let mutable k = 0
+        while k < n do
+          if int (f32 packed (k * 3 + 2)) = fromIdx then
+            c2d.fillRect (f32 packed (k * 3) - 2., f32 packed (k * 3 + 1) - 2., 4., 4.)
+          k <- k + 1
+        c2d?fillStyle <- "#ffffff"
       // 追っている弾（v3.1 の段 3）。**全部 の弾のあとに描く** ——
       // 先に描くと、あとから来た弾に上書きされて消える
       if pick >= 0 && pick < n then
         c2d?fillStyle <- "#ffcc33"
         c2d.beginPath ()
-        c2d.arc (f32 packed (pick * 2), f32 packed (pick * 2 + 1), 6., 0., System.Math.PI * 2.)
+        c2d.arc (f32 packed (pick * 3), f32 packed (pick * 3 + 1), 6., 0., System.Math.PI * 2.)
         c2d.fill ()
       n
 
@@ -1193,6 +1253,38 @@ type Playground() as self =
   ///
   /// **文面はここで組む。** 器（`Semantics`）は持たない ——
   /// 持たせると、波線と別の出口で文面が割れて、どちらも単独では正しく見える
+  /// 式の横に出す値（v4.4）。**見えている行のぶんだけ。**
+  ///
+  /// **評価は面がやる**（`EvalExprs`）—— 器は評価器を持たない。
+  /// ここは並べ替えと畳みだけ。
+  ///
+  /// **同じ式は 1 度 しか渡さない。** いちばん長い本では 71 個 が 8 個 に畳まる
+  /// （版の頭で数えた）—— 境界を越えるのは 1 回 だが、渡す配列は短いほうがよい。
+  ///
+  /// **起動前 は空。** 面がまだ無いので値が出せない —— そこで 0 を出すと
+  /// 「畳んだ値が 0」に見える
+  member _.hintsIn (src: string) (fromLine: int) (toLine: int) : (int * int * string) list =
+    if isNull dotNet then []
+    else
+      let spots =
+        current.Hints src
+        |> List.filter (fun h -> h.Line >= fromLine && h.Line <= toLine)
+      if List.isEmpty spots then []
+      else
+        let texts = spots |> List.map (fun h -> h.Text) |> List.distinct
+        let values =
+          unbox<float[]> (invoke1 dotNet "EvalExprs" (box (List.toArray texts)))
+        // 式 -> 値。**畳んだぶんを戻す**
+        let byText = System.Collections.Generic.Dictionary<string, float>()
+        List.iteri (fun i (t: string) -> byText.[t] <- values.[i]) texts
+        spots
+        |> List.choose (fun h ->
+             match byText.TryGetValue h.Text with
+             // **読めない式は出さない**（そちらは波線の担当）
+             | true, v when not (System.Double.IsNaN v) ->
+                 Some (h.Line, h.Column, "= " + showNumber v)
+             | _ -> None)
+
   member _.refreshFindings() =
     if not (Monaco.ready ()) then ()
     else
@@ -1227,6 +1319,15 @@ type Playground() as self =
                 // **走るが、書いたものが出ない。** Apply は通る（実測）——
                 // 解けない参照は黙って無視されるだけなので、
                 // 「読めない」（Error）とは別の強さ
+                Monaco.Severity = Monaco.Severity.Warning }
+            // 同じ名前の定義が 2 つ（v4.6）。**走るのは先に書いたほう** ——
+            // 後のほうは読めて・組めて、書いたものが出ない
+            | Semantics.DuplicateDefinition ->
+              { Monaco.Line = f.Line
+                Monaco.Column = f.Column
+                Monaco.EndColumn = f.EndColumn
+                Monaco.Message =
+                  f.Element + " " + f.Name + " は同じ名前が上にも在る —— 走るのは上のほうで、こちらは使われない"
                 Monaco.Severity = Monaco.Severity.Warning }
             // 読めない式（v4.1）。**強さが 2 段。**
             //
@@ -2132,6 +2233,23 @@ type Playground() as self =
               Monaco.registerNavigationProviders
                 lang.EditorLanguageId
                 (fun src offset -> lang.Usages src offset)
+              // 同じ名前を薄く光らせる（v4.2）。**上と同じ 1 本 の上** ——
+              // 光る先と飛ぶ先が食い違わない
+              Monaco.registerHighlightProvider
+                lang.EditorLanguageId
+                (fun src offset -> lang.Usages src offset)
+              // 定義の行の上に参照の数（v4.3）。**押すと上の一覧が開く**
+              Monaco.registerLensProvider
+                lang.EditorLanguageId
+                (fun src -> lang.Lenses src)
+              // 式の横に値（v4.4）。**畳むのは面**（`EvalExprs`）
+              Monaco.registerHintProvider
+                lang.EditorLanguageId
+                (fun src a b -> self.hintsIn src a b)
+              // 参照が渡す引数の形（v4.5）
+              Monaco.registerSignatureProvider
+                lang.EditorLanguageId
+                (fun src offset -> lang.Signature src offset)
               Monaco.registerCodeActionProvider
                 lang.EditorLanguageId
                 (fun src offset -> lang.Fixes src offset)
@@ -2170,6 +2288,9 @@ type Playground() as self =
             // 同梱の弾幕にも、その場で波線が要る
             self.refreshFindings ()
             self.showInitialInPatterns ()
+            // 字から弾（v4.7）。**カーソルが動いたときだけ数え直す** ——
+            // 毎コマ 引くと、本文を走査するのがコマごとになる
+            Monaco.onCursorMove (fun () -> self.lightFrom ())
             // 前に打った字と設定を戻す（v3.5）。**共有リンクより先** ——
             // URL に本文が乗っているときは、そちらが明示された指定なので勝つ
             self.restoreLocal ()

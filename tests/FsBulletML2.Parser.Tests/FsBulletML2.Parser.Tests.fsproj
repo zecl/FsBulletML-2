@@ -68,6 +68,13 @@
     <Compile Include="NodeSpans.fs" />
     <!-- 読めない式（v4.1）。**器の読み手と Core の `Expr` を突き合わせる** -->
     <Compile Include="ExprParity.fs" />
+    <!-- 定義の行の上に参照の数（v4.3）。**青い波線と同じ 6 件 を指すことも見る** -->
+    <Compile Include="Lenses.fs" />
+    <!-- 式の横に値を出す先（v4.4）。**器は評価器を持たない** -->
+    <Compile Include="Hints.fs" />
+    <!-- 参照が渡す引数の形（v4.5）。**食い違いは正しい弾幕にも在る** -->
+    <Compile Include="Signature.fs" />
+    <Compile Include="Memo.fs" />
   </ItemGroup>
   <ItemGroup>
     <!-- **CE の本文を試験の出力へ写す。** 期待値は `Bullets.Dsl` の値なので、

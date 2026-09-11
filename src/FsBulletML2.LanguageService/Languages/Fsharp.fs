@@ -77,11 +77,26 @@ type FsharpLanguage(vocabulary: unit -> Vocab) =
     |> List.tryHead
     |> Option.map (fun (_, _, attr) -> attr)
 
+  // **同じ本文を、1 打鍵 で何度も走査しない**（v4.9）——
+  // ほかの 3 表記 と同じ形（`Lookup.VocabularyLanguage` に理由を書いた）。
+  //
+  // **こちらは語彙にも依る**（`labelTable` を引く）ので、鍵に入れる ——
+  // 語彙は起動時に 1 度 入れ替わる。**同じ物か**で見る
+  // （中身で比べると、表を丸ごと辿ることになって元の走査より高い）
+  let mutable tagVocab: Vocab = Unchecked.defaultof<Vocab>
+  let mutable tagSource: string = null
+  let mutable tagCache: TagHit list = []
+
   /// 本文の中の「名前を載せている CE」。**ほかの 3 表記 の `Tags` と同じ形。**
   let tagsOf (v: Vocab) (source: string) =
-    match labelAttr v with
-    | None -> []
-    | Some attr -> FsharpScan.tags (labelTable v) attr source
+    if not (LanguagePrimitives.PhysicalEquality tagVocab v) || tagSource <> source then
+      tagVocab <- v
+      tagSource <- source
+      tagCache <-
+        match labelAttr v with
+        | None -> []
+        | Some attr -> FsharpScan.tags (labelTable v) attr source
+    tagCache
 
   /// カーソルの下が名前の中なら、それが何の名前か。
   ///
@@ -279,6 +294,38 @@ type FsharpLanguage(vocabulary: unit -> Vocab) =
     /// **推定で光らせない** —— 隣を光らせるより、光らせないほうが読める
     member _.NodeSpans _ _ = []
 
+    /// 定義の行の上に出す字（v4.3）。**中身は `Lookup.lenses` の 1 本** ——
+    /// ほかの 3 表記 と同じ関数を通る（v4.8 で繋いだ）。
+    ///
+    /// v4.7 まで空だった。理由は「`Refs.uses` が数えるのは参照側の要素名で、
+    /// CE では `actionRef` と打たない」と書いてあったが、**打たないのは字**——
+    /// `FsharpScan.tags` が返す `TagName` は語彙が引いた要素名そのもので、
+    /// `doActs "x"` の札は `actionRef` の札として出ている。
+    ///
+    /// 同梱 176 本 を CE と XML の両方 で数えて、
+    /// **定義の名前も参照の数も 176 / 176 揃う**（`Parser.Tests/Lenses.fs`）。
+    member _.Lenses source =
+      let v = vocabulary ()
+      Lookup.lenses v (tagsOf v) source
+
+    /// 値を横に出す先（v4.4）。**CE では出さない** —— 式の取り出しが無い
+    /// （v4.1 の但し書きと同じ）
+    member _.Hints _ = []
+
+    /// 参照が渡す引数の形（v4.5）。**CE では出さない。**
+    ///
+    /// v4.8 まで「`◯◯Ref` と打たないので囲みが決められない」と書いてあったが、
+    /// **それは誤り** —— 囲みは決まる（`Refs.arity` が 176 / 176 揃う）。
+    ///
+    /// 決まらないのは**もう片方 の数**。この見出しは「定義が使う数」と
+    /// 「参照が渡している数」を並べるもので、後者 は参照の直下 に在る
+    /// 引数の札を数える —— **その札が CE には 1 つ も出ない**
+    /// （同梱で xml 1,460 / CE 0。名前を載せる CE の表に引数が無い）。
+    ///
+    /// **0 と出すと、正しい弾幕に「0 つ しか渡していない」が並ぶ** ——
+    /// v2.3 が引いた線に掛かる。
+    member _.Signature _ _ = None
+
     member _.Outline source =
       let v = vocabulary ()
       let detailAttr =
@@ -286,4 +333,5 @@ type FsharpLanguage(vocabulary: unit -> Vocab) =
         |> List.tryHead
         |> Option.map (fun (_, _, attr) -> attr)
         |> Option.defaultValue ""
-      Outline.build detailAttr (Scan.lineColumn source) (tagsOf v source)
+      // **表を 1 度 だけ作る**（v4.9。ほかの 3 表記 と同じ）
+      Outline.build detailAttr (Scan.lineColumnLookup source) (tagsOf v source)

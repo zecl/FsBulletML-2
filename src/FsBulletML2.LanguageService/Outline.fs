@@ -67,38 +67,45 @@ let build
   : Node list =
   // **閉じ札も残す。** 在る表記では、それが中身の最後になる
   let arr = List.toArray tags
-  [ for i in 0 .. arr.Length - 1 do
-      let t = arr.[i]
-      if not t.Closing then
-        let struct (line, column) = positionOf t.NameStart
-        // **この要素の中身が終わるところ。**
-        // 終わらせるのは「同じか浅い開き札」と「浅い閉じ札」（＝親が閉じた）——
-        // 自分の閉じ札（同じ深さ）はまだ中身のうち
-        let mutable j = i + 1
-        while j < arr.Length
-              && not (if arr.[j].Closing then arr.[j].Depth < t.Depth
-                      else arr.[j].Depth <= t.Depth) do
-          j <- j + 1
-        // 1 つ 手前 の札が中身の最後。中身が無ければ自分自身
-        let struct (inner, _) = positionOf arr.[j - 1].NameStart
-        let endLine = max line inner
-        let detail =
-          if detailAttr = "" then ""
-          else
-            t.Attrs
-            |> List.tryFind (fun a -> a.AttrName = detailAttr)
-            |> function
-               | Some a -> a.Value
-               | None -> ""
-        yield
-          { Name = t.TagName
-            Detail = detail
-            Depth = t.Depth
-            Line = line
-            Column = column
-            // 名前の終わりの桁。**`AttrHit` と同じ 1 起点**
-            EndColumn = column + (t.NameStop - t.NameStart)
-            EndLine = endLine } ]
+  // **内包表記の中で `while` を回さない**（v4.9）——
+  // Fable は内包の中の `while` を enumerator の鎖に焼くので、
+  // 1 歩 進むごとに物が 3 つ 増える。ここは札の数だけ内側を歩くので、
+  // 同じソースで .NET は速く、**焼いた JS だけが 56 ms** だった。
+  // 素の `while` と `ResizeArray` なら、どちらも同じ歩数 で済む
+  let out = ResizeArray<Node>()
+  for i in 0 .. arr.Length - 1 do
+    let t = arr.[i]
+    if not t.Closing then
+      let struct (line, column) = positionOf t.NameStart
+      // **この要素の中身が終わるところ。**
+      // 終わらせるのは「同じか浅い開き札」と「浅い閉じ札」（＝親が閉じた）——
+      // 自分の閉じ札（同じ深さ）はまだ中身のうち
+      let mutable j = i + 1
+      while j < arr.Length
+            && not (if arr.[j].Closing then arr.[j].Depth < t.Depth
+                    else arr.[j].Depth <= t.Depth) do
+        j <- j + 1
+      // 1 つ 手前 の札が中身の最後。中身が無ければ自分自身
+      let struct (inner, _) = positionOf arr.[j - 1].NameStart
+      let endLine = max line inner
+      let detail =
+        if detailAttr = "" then ""
+        else
+          t.Attrs
+          |> List.tryFind (fun a -> a.AttrName = detailAttr)
+          |> function
+             | Some a -> a.Value
+             | None -> ""
+      out.Add
+        { Name = t.TagName
+          Detail = detail
+          Depth = t.Depth
+          Line = line
+          Column = column
+          // 名前の終わりの桁。**`AttrHit` と同じ 1 起点**
+          EndColumn = column + (t.NameStop - t.NameStart)
+          EndLine = endLine }
+  List.ofSeq out
 
 /// その行を囲む節を、**内側から外側へ**。
 ///

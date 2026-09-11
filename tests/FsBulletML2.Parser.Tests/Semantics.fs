@@ -27,6 +27,15 @@ open FsBulletML2.LanguageService
 ///   入口を「呼ばれない定義」に数える    6 点（同梱の 6 個 を含む）
 ///   `unused` を並べ替えない            本文の順で返る
 ///
+/// --- 較正（v4.6。同じ名前の定義）
+///
+///   `if not (seen.Add …)` を「1 つ 目 から出す」に   赤 9
+///   `seen` を対をまたいで共有する                    赤 2
+///   並べ直しを消す                                  赤 1
+///
+/// **1 つ 目 が 9 点 に当たるのは、定義が全部 光るから** ——
+/// ほかの検査の点も、余分な指摘が混ざって赤くなる。
+///
 /// **「語彙が引けなければ黙る」は、変異を当てても赤くならない。**
 /// `Semantics` の `topPrefix = ""` の守りは冗長で、外しても答えが同じ
 /// （`StartsWith ""` が全部 当たるので、結局 入口が在ることになる）。
@@ -66,6 +75,57 @@ type Semantics() =
     top |> should not' (equal "")
 
   // --- 入口が無い -------------------------------------------------------------
+
+  // --- 同じ名前の定義（v4.6）-------------------------------------------------
+
+  [<Test>]
+  member _.``同じ名前の定義は 2 つ 目 から光る``() =
+    let src = """<?xml version="1.0" ?>
+<bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
+  <action label="top"><actionRef label="x"/></action>
+  <action label="x"><wait>1</wait></action>
+  <action label="x"><wait>2</wait></action>
+</bulletml>"""
+    let dup = findingsOf src |> List.filter (fun f -> f.Kind = Semantics.DuplicateDefinition)
+    dup |> List.length |> should equal 1
+    // **光るのは負けるほう**（走るのは先に書いたほう。実機で数えた）——
+    // 5 行 目 の `x`
+    (List.head dup).Line |> should equal 5
+
+  [<Test>]
+  member _.``3 つ 在れば 2 件 出る``() =
+    let src = """<?xml version="1.0" ?>
+<bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
+  <action label="top"><actionRef label="x"/></action>
+  <action label="x"><wait>1</wait></action>
+  <action label="x"><wait>2</wait></action>
+  <action label="x"><wait>3</wait></action>
+</bulletml>"""
+    findingsOf src
+    |> List.filter (fun f -> f.Kind = Semantics.DuplicateDefinition)
+    |> List.length
+    |> should equal 2
+
+  [<Test>]
+  member _.``要素が違えば別の名前``() =
+    let src = """<?xml version="1.0" ?>
+<bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
+  <action label="top"><actionRef label="x"/><bulletRef label="x"/></action>
+  <action label="x"><wait>1</wait></action>
+  <bullet label="x"><action><wait>1</wait></action></bullet>
+</bulletml>"""
+    findingsOf src
+    |> List.filter (fun f -> f.Kind = Semantics.DuplicateDefinition)
+    |> should be Empty
+
+  [<Test>]
+  member _.``同梱 176 本 に同じ名前の定義は 1 件 も無い``() =
+    // **偽陽性が無いから出せる**（v2.3 の `NoEntryPoint` と同じ形）。
+    // ここが赤くなったら、出すかどうかの判断ごと見直す
+    [ for (name, text) in corpus do
+        for f in findingsOf text do
+          if f.Kind = Semantics.DuplicateDefinition then yield name, f.Name ]
+    |> should be Empty
 
   [<Test>]
   member _.``入口が無ければ光る``() =

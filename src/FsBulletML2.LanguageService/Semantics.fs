@@ -79,6 +79,16 @@ type FindingKind =
   /// 版の頭で測った —— `<wait>1+*$rank</wait>` は **60 コマ で 61 発** 撃つ
   /// （間 が空かない）。**読めて・組めて・走って・書いたつもりの間 が空かない。**
   | BadExpr of stops: bool
+  /// 同じ名前の定義が 2 つ 以上 在る（v4.6）。**出すのは 2 つ 目 から。**
+  ///
+  /// **走るのは先に書いたほう**（実機で数えた。同じ `label` の `action` を
+  /// 2 つ 置いて、先の 1 発 だけが出た）—— 後のほうは**黙って負ける。**
+  ///
+  /// **読めて・組めて、書いたものが出ない**側なので `MissingRef` と同じ強さ。
+  ///
+  /// 同梱 176 本 に **0 件**（版の頭で数えた）—— 偽陽性が無いので出せる
+  /// （v2.3 の `NoEntryPoint` と同じ形）
+  | DuplicateDefinition
 
 /// 意味の層の指摘 1 つ。
 type Finding =
@@ -178,6 +188,24 @@ let findings
                 Column = a.Column
                 EndColumn = a.EndColumn } ]
 
+  // 同じ名前の定義（v4.6）。**2 つ 目 から出す** ——
+  // 走るのは先に書いたほうなので、**光らせるのは負けるほう。**
+  //
+  // **対ごとに数える。** `action` の `top` と `bullet` の `top` は別の名前空間
+  // （`Refs.pairs` が要素ごとに対を作るのと同じ理由）
+  let duplicates =
+    [ for (_, defName, attrName) in pairs do
+        let seen = System.Collections.Generic.HashSet<string>()
+        for (_, a) in namedOf defName attrName do
+          if not (seen.Add a.Value) then
+            yield
+              { Kind = DuplicateDefinition
+                Name = a.Value
+                Element = defName
+                Line = a.Line
+                Column = a.Column
+                EndColumn = a.EndColumn } ]
+
   // 定義に無い参照。**数え方は `Refs.missing` の 1 本** ——
   // 波線と Quick Fix が同じものを見る（別に数えると、
   // 「波線は出るのに直し方が出ない」が作れてしまう）
@@ -194,7 +222,7 @@ let findings
   // **並べ直す。** 上は対ごとに走るので、対の順に並んでいる ——
   // 人へ見せる側は本文の順で読む（`Refs.missing` と同じ理由）。
   // `noEntry` だけは本文全体の話なので、位置に関わらず先頭
-  noEntry @ (unused @ missing |> List.sortBy (fun f -> f.Line, f.Column))
+  noEntry @ (unused @ missing @ duplicates |> List.sortBy (fun f -> f.Line, f.Column))
 
 /// 読めない式（v4.1）。**`findings` と別の 1 本。**
 ///
@@ -212,23 +240,27 @@ let findings
 /// **行をまたがない。** 式が改行を含んでいたら、読めなくなった位置の行だけ
 /// を指す —— またいで桁を出すと、2 行 目 の桁が 1 行 目 の続きになる
 let exprFindings (source: string) (texts: TextHit list) : Finding list =
-  [ for h in texts do
-      if not (ExprCheck.readable h.Text) then
-        let at = h.Start + ExprCheck.readTo h.Text
-        let struct (line, column) = Scan.lineColumn source at
-        // その行の終わりか、字の終わりか、近いほう
-        let mutable stop = h.Stop
-        let mutable k = at
-        while k < stop && source.[k] <> '\n' do k <- k + 1
-        if k < stop then stop <- k
-        let endColumn = max (column + 1) (column + (stop - at))
-        yield
-          { Kind = BadExpr(not (h.Text.Contains "$"))
-            Name = h.Text
-            Element = h.TagName
-            Line = line
-            Column = column
-            EndColumn = endColumn } ]
+  // **内包表記の中で `while` を回さない**（v4.9）——
+  // Fable は内包の中の `while` を enumerator の鎖に焼く（`Scan.fs` に書いた）
+  let out = ResizeArray<Finding>()
+  for h in texts do
+    if not (ExprCheck.readable h.Text) then
+      let at = h.Start + ExprCheck.readTo h.Text
+      let struct (line, column) = Scan.lineColumn source at
+      // その行の終わりか、字の終わりか、近いほう
+      let mutable stop = h.Stop
+      let mutable k = at
+      while k < stop && source.[k] <> '\n' do k <- k + 1
+      if k < stop then stop <- k
+      let endColumn = max (column + 1) (column + (stop - at))
+      out.Add
+        { Kind = BadExpr(not (h.Text.Contains "$"))
+          Name = h.Text
+          Element = h.TagName
+          Line = line
+          Column = column
+          EndColumn = endColumn }
+  List.ofSeq out
 
 /// 2 つ の runtime で同じ答えが返ることを見る口（`guard-fable-parity`）。
 ///
@@ -257,7 +289,8 @@ let describe (source: string) : string =
                 | UnusedDefinition -> "unused"
                 | MissingRef -> "missing"
                 | BadExpr true -> "expr!"
-                | BadExpr false -> "expr?")
+                | BadExpr false -> "expr?"
+                | DuplicateDefinition -> "dup")
            add ":"
            add f.Element
            add ":"
