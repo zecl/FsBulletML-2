@@ -1,10 +1,9 @@
 step が返すのは差分。呼ぶ側が座標に足す。
-係数と Y の符号はフロントごとに違う（MonoGame / Playground は 1 倍、Unity2D は 1/100 で Y を反転）。
+係数と Y の符号はフロントごとに違う（MonoGame は 1 倍、Unity2D は 1/100 で Y を反転）。
 
-Playground の vel.[...] <- f.Delta.X は**足していない** ——
-速い道（v4.9.1 / v4.9.2）が次のコマ から使う差分を、出口 の値のまま持つ行。
-足すのは速い道の中（pos.[b] + vel.[a]）で、そこに f.Delta の字は無いので
-**この網には出ない**。速い道が答えを変えないことは Front.Tests が見ている。
+**面（Playground）は Danmaku Lab へ出た**（v5.4）。あちらの Playfield.fs も
+同じ規約で足すが、**この網はこの repo しか見ない** ——
+向こうが規約を破っても、ここは緑のまま。
 
 samples/FsBulletML2.Sample.MonoGame.CSharp/Enemy.cs
     base.RunTask((x, y) => { this.self.X = this.self.X + x; this.self.Y = this.self.Y + y; });
@@ -31,12 +30,6 @@ src/FsBulletML2.MonoGame/BaseBullet.fs
     let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
     apply f.Delta.X f.Delta.Y
 
-src/FsBulletML2.Playground/Playfield.fs
-    pos.[i * 3] <- pos.[i * 3] + f.Delta.X
-    pos.[i * 3 + 1] <- pos.[i * 3 + 1] + f.Delta.Y
-    vel.[i * 2] <- f.Delta.X
-    vel.[i * 2 + 1] <- f.Delta.Y
-
 src/FsBulletML2.Unity2D/DefaultBullet.fs
     me.X <- me.X + (x / Settings.Display.PixcelsToUnits)
     me.Y <- me.Y - (y / Settings.Display.PixcelsToUnits)
@@ -46,4 +39,4 @@ run の経路に居ないが、座標を足している所（件数だけ）:
   samples/FsBulletML2.Sample.MonoGame.FSharp/Background.fs         1 行
   samples/FsBulletML2.Sample.MonoGame.FSharp/Player.fs             4 行
 
-―― 本体 9 ファイル / 18 行（0 なら走査か網が壊れている）
+―― 本体 8 ファイル / 14 行（0 なら走査か網が壊れている）

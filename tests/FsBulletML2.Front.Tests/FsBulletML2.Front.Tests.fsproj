@@ -13,60 +13,8 @@
     <Compile Include="PublicSurface.fs" />
     <Compile Include="NoAimSkip.fs" />
     <Compile Include="DriverEquiv.fs" />
-    <!--
-      Playground のソースを借りて compile し直す。**参照はしない** ——
-      あちらは Blazor WASM のアプリで、こちらから引くものではない。
-      借りている中身は Core / Front の型しか使わないので、依存は増えない。
-      **`Parser.Tests` では借りられない** —— あちらは Front を参照していない。
-      同じ形の前例: Parser.Tests が Vocabulary.fs / XmlScan.fs を借りている。
-
-      ## **Playground を別の repo へ移すと、この 10 行 が壊れる**（v5.0 で数えた）
-
-      借りている形なので `ProjectReference` のグラフには出ない ——
-      **参照を数えても見つからない。** 数えるなら `Compile Include="..` で。
-      repo 全体でも **11 行 だけ**（ここの 10 行 と `Benchmarks` の 1 行）。
-
-      そして**この proj の試験は、ほとんどが借りた側を試している** ——
-      属性で数えて 145 のうち **130 が `DeterministicField` 以降**。
-      エンジンだけを試すのは `AimingFreeze` / `PublicSurface` /
-      `NoAimSkip` / `DriverEquiv` の 15 属性 ぶん。
-      **`Front.Tests` は proj 単位 では割れない。ここの並びの途中で割れる。**
-    -->
-    <Compile Include="..\..\src\FsBulletML2.Playground\Stage.fs" Link="Stage.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\Rand.fs" Link="Rand.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\Player.fs" Link="Player.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\BrowserEnv.fs" Link="BrowserEnv.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\Pacing.fs" Link="Pacing.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\Seek.fs" Link="Seek.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\Diverge.fs" Link="Diverge.fs" />
-    <!-- **器 の Host からも 1 本 借りる。** `Focus.fs` が読んだ木を歩くのに使う。
-         参照を足さないのは、あちらが Parser / Dsl まで引くから ——
-         この 1 本 が使うのは Core の型と reflection だけ -->
-    <Compile Include="..\..\src\FsBulletML2.LanguageService.Host\NodeOrder.fs" Link="NodeOrder.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\Focus.fs" Link="Focus.fs" />
-    <Compile Include="..\..\src\FsBulletML2.Playground\Playfield.fs" Link="Playfield.fs" />
-    <Compile Include="DeterministicField.fs" />
-    <Compile Include="StepPacing.fs" />
-    <Compile Include="SeekFrames.fs" />
-    <!-- 種と難度（v2.0）。**リンクが指しているのは「その走り」** -->
-    <Compile Include="SeededRuns.fs" />
-    <!-- 画面の向きと自機（v2.0）。**弾幕が面の形を決める** -->
-    <Compile Include="ViewFacing.fs" />
-    <!-- 2 面（v2.1）。**並べたことで絵が変わったら比べられない** -->
-    <Compile Include="TwoFields.fs" />
-    <!-- 追っている弾の再開点（v3.1 の段 3）。**読んだ木と参照で突き合わせる** -->
-    <Compile Include="FocusResume.fs" />
-    <!-- どの撃つ腕が何発 撃ったか（v3.3 の段 1）。**合計で当てる** -->
-    <Compile Include="FocusTally.fs" />
-    <!-- 弾の系譜（v3.6）。**この弾を撃った弾を根まで辿る** -->
-    <Compile Include="BulletLineage.fs" />
-    <!-- 2 面 が分かれるコマ（v3.8）。**位置で見る。数では遅れる** -->
-    <Compile Include="DivergeFrames.fs" />
-    <!-- 走った字ごとの弾コマ（v3.9）。**畳むところが本体** -->
-    <Compile Include="SpanWeight.fs" />
-    <!-- 面から JS へ渡す並び（v4.7）。**1 点 3 つ**（x / y / 撃った腕の添字） -->
-    <Compile Include="PackTriple.fs" />
-    <Compile Include="ConstStep.fs" />
+    <!-- **面（Playground）の試験は Danmaku Lab へ出た**（v5.4）。
+         ここに残るのは、エンジンだけを試す 4 本 —— 118 件 が向こう、11 件 がここ -->
   </ItemGroup>
   <!-- 版は Core.Tests に合わせる。別の版を混ぜると、落ちたときに
        手のせいか版のせいかが割れない -->

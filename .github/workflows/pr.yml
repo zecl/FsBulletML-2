@@ -86,19 +86,9 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-abs-paths.Tests.ps1
 
-      # ブラウザ側が守ると決めた線。**どれも目で確かめると書いてあったもの** ——
-      # 手書きの .js、Core からの表示側への参照、Fable 側の要素名、
-      # html に書いた起動のロジック、例外の文面を字で出す設定
-      - name: Playground の線
-        shell: pwsh
-        run: ./.github/scripts/guard-playground-boundaries.ps1
-
-      - name: Playground の門の校正
-        shell: pwsh
-        run: ./.github/scripts/guard-playground-boundaries.Tests.ps1
-
       # **build も dotnet test も落ちない形。** wasm はスレッドが 1 本 しか
-      # 無いので、待つ書き方は押した瞬間に画面ごと止まる（v1.0 で踏んだ）
+      # 無いので、待つ書き方は押した瞬間に画面ごと止まる（v1.0 で踏んだ）。
+      # **入口は 3 本**（面が Danmaku Lab へ出たので、1 本 から辿れない）
       - name: ブラウザで止まる待ち方が無いか
         shell: pwsh
         run: ./.github/scripts/guard-wasm-blocking.ps1
@@ -106,57 +96,10 @@ jobs:
       - name: その門の校正
         shell: pwsh
         run: ./.github/scripts/guard-wasm-blocking.Tests.ps1
-      # キーだけで回る人には、フォーカスが当たった口の名前しか手がかりが無い。
-      # **画面に字が在っても、口に結びついていなければ届かない** ——
-      # 包む label / aria-label / 口の中の字 の 3 通り を見る（v2.4.3）
-      - name: 操作の口に名前が在るか
-        shell: pwsh
-        run: ./.github/scripts/guard-control-names.ps1
-
-      - name: その門の校正
-        shell: pwsh
-        run: ./.github/scripts/guard-control-names.Tests.ps1
-
-      # 開き直しても覚えている口は、id の配列 1 本 で回っている（v3.5）。
-      # **配列と html が食い違っても何も起きない** —— その口だけ静かに
-      # 覚えなくなる。しかも「覚えない決まりの口」が既定で在るので、
-      # 忘れているのか決まりなのかが目では見分けられない（v4.0.2）
-      - name: 覚える口が画面の口を指しているか
-        shell: pwsh
-        run: ./.github/scripts/guard-kept-controls.ps1
-
-      - name: その門の校正
-        shell: pwsh
-        run: ./.github/scripts/guard-kept-controls.Tests.ps1
-
-      # 使い方の窓は章に割れていて、章は 3 か所 に書かれている ——
-      # 目次の札（html）・本文の節（html）・並び（Playground.fs の helpChapters）。
-      # **どれか 1 つ を足し忘れても走行は止まらない**ので、対と並びを数える。
-      # 絵の参照と実物も両方向 で見る（消し忘れが残り続けないように）
-      - name: 使い方の窓の章が揃っているか
-        shell: pwsh
-        run: ./.github/scripts/guard-help-chapters.ps1
-
-      - name: その門の校正
-        shell: pwsh
-        run: ./.github/scripts/guard-help-chapters.Tests.ps1
-
-      # 記事の枠に貼られた形（html.embed）。印（html）・規則（css）・配線（Fable）が
-      # 3 か所 に散っていて、どれが欠けても走行は止まらない。
-      # **いちばん危ないのは順番** —— css の html.embed が送る画面用のメディアより
-      # 前 に来ると、詳細度が同じなので負けて黙って効かなくなる
-      - name: 埋め込みの体裁が成り立つ形か
-        shell: pwsh
-        run: ./.github/scripts/guard-embed-layout.ps1
-
-      - name: その門の校正
-        shell: pwsh
-        run: ./.github/scripts/guard-embed-layout.Tests.ps1
 
       # 走行の記録の受け口（v3.1 の段 1）。**OFF が素に戻る形**で置かれているか。
-      # 口が減っても走行は止まらないので、呼び先の数を数える。
-      # 確保そのものは走らせないと出ない —— bench の --alloc を素と並べる
-      # （README の v3.1 の節に記録が在る）。
+      # **繋ぐ側（Focus.fs）は Danmaku Lab に在る**ので、ここで見るのは 3 項目 ——
+      # 受け口の既定・呼び先の数・compile の順（v5.4）
       - name: 走行の記録の受け口が素に戻る形か
         shell: pwsh
         run: ./.github/scripts/guard-run-trace.ps1
@@ -218,31 +161,6 @@ jobs:
       - uses: actions/checkout@v4
       - run: dotnet build ${{ matrix.project.path }} -c Release
 
-      # **build が通ることと、publish した物が起動することは別だった。**
-      #
-      # SDK は publish のとき資産に指紋を付け、素の名前との対応をインラインの
-      # importmap で html に入れる。Playground の CSP は 'unsafe-inline' を
-      # 出していないのでそれが効かず、**publish 成果物だけが「起動待ち」で
-      # 止まっていた** —— build でも dev server でも出ない（dev は指紋を付けない）。
-      #
-      # ここまで来ないと出ないので、Playground のときだけ publish して見る。
-      #
-      # **step を割る。** 1 つ の `run:` に 3 行 並べると、pwsh は最後の
-      # exit code しか返さない —— 門が落ちても、後ろの校正が通れば緑になる
-      - name: publish する
-        if: matrix.project.label == 'Playground'
-        run: dotnet publish ${{ matrix.project.path }} -c Release -o ${{ runner.temp }}/pub
-
-      - name: publish した物が起動する形か
-        if: matrix.project.label == 'Playground'
-        shell: pwsh
-        run: ./.github/scripts/guard-published-boot.ps1 -PublishDir ${{ runner.temp }}/pub
-
-      - name: その門の校正
-        if: matrix.project.label == 'Playground'
-        shell: pwsh
-        run: ./.github/scripts/guard-published-boot.Tests.ps1 -PublishDir ${{ runner.temp }}/pub
-
   # 同梱 dll に対して Unity C# のソースを compile し直す。
   # **Unity が見るのと同じものを参照する** —— 焼き忘れると、ソースは新しい
   # 名前を指し dll は古い名前しか持たない状態になる（実際に 2 回 やっている）。
@@ -293,13 +211,13 @@ jobs:
     runs-on: [self-hosted, windows, fsbulletml2]
     steps:
       - uses: actions/checkout@v4
-      # **Playground まるごとは建てない。** あちらは WASM workload が要る。
-      # 焼くのに要るのは Fable 側の proj だけ
+      # **焼くのは器の側だけ。** 面（Playground）は Danmaku Lab へ出たが、
+      # 当てる先は元から `FsBulletML2.LanguageService/*.js` だけだった（v5.4）
       - name: 焼く
-        working-directory: src/FsBulletML2.Playground
+        working-directory: src/FsBulletML2.LanguageService.Js
         run: |
           dotnet tool restore
-          dotnet tool run fable -- fable/FsBulletML2.Playground.Js.fsproj -o wwwroot/js
+          dotnet tool run fable -- FsBulletML2.LanguageService.Js.fsproj -o js
 
       - name: 焼いた JS と .NET の突き合わせ
         shell: pwsh

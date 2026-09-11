@@ -26,8 +26,6 @@
     <Project Path="src/FsBulletML2.LanguageService.Js/FsBulletML2.LanguageService.Js.fsproj" />
     <Project Path="src/FsBulletML2.MonoGame/FsBulletML2.MonoGame.fsproj" />
     <Project Path="src/FsBulletML2.Parser/FsBulletML2.Parser.fsproj" />
-    <Project Path="src/FsBulletML2.Playground/FsBulletML2.Playground.fsproj" />
-    <Project Path="src/FsBulletML2.Playground/fable/FsBulletML2.Playground.Js.fsproj" />
     <Project Path="src/FsBulletML2.TypeProviders/FsBulletML2.TypeProviders.fsproj" />
     <Project Path="src/FsBulletML2.Unity2D/FsBulletML2.Unity2D.fsproj" />
 

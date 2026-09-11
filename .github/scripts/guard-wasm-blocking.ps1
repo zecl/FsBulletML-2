@@ -43,8 +43,9 @@
 [CmdletBinding()]
 param(
   [string]$RepoRoot,
-  # 閉包の入口。ここから `ProjectReference` を辿る
-  [string]$EntryProject,
+  # 閉包の入口。ここから `ProjectReference` を辿る。**複数 取る** ——
+  # Playground（面）が Danmaku Lab へ出たので、載る側を 1 本 から辿れなくなった
+  [string[]]$EntryProject,
   # 拾えた `.fs` の下限。**下回ったら落とす**（拾えていない状態は 0 件 と同じ顔）
   [int]$MinFiles = 20,
   [switch]$Quiet
@@ -58,10 +59,25 @@ if (-not $RepoRoot) {
 }
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 if (-not $EntryProject) {
-  $EntryProject = Join-Path $RepoRoot 'src/FsBulletML2.Playground/FsBulletML2.Playground.fsproj'
+  # **面（Playground）が Danmaku Lab へ出たので、入口が 3 本 になった。**
+  # あちらを入口にしていた頃と**同じ閉包**（proj 8 個 / .fs 93 本）を作る ——
+  #
+  #     Front                走行の側
+  #     Bullets.Dsl          弾幕の定義（Core と Dsl を引く）
+  #     LanguageService.Host 器の側（Parser と LanguageService を引く）
+  #
+  # **1 本 でも欠けると網が縮む。** 数は下の `$MinFiles` と、
+  # 走行の末尾に出る proj 数 で見る
+  $EntryProject = @(
+    'src/FsBulletML2.Front/FsBulletML2.Front.fsproj'
+    'src/FsBulletML2.Bullets.Dsl/FsBulletML2.Bullets.Dsl.fsproj'
+    'src/FsBulletML2.LanguageService.Host/FsBulletML2.LanguageService.Host.fsproj'
+  ) | ForEach-Object { Join-Path $RepoRoot $_ }
 }
-if (-not (Test-Path -LiteralPath $EntryProject)) {
-  throw "入口の proj が無い（$EntryProject）。**違反 0 件 と同じ顔をする**ので、ここで落とす"
+foreach ($e in $EntryProject) {
+  if (-not (Test-Path -LiteralPath $e)) {
+    throw "入口の proj が無い（$e）。**違反 0 件 と同じ顔をする**ので、ここで落とす"
+  }
 }
 
 $bad = [System.Collections.Generic.List[string]]::new()
@@ -69,7 +85,7 @@ $bad = [System.Collections.Generic.List[string]]::new()
 # --- ProjectReference の閉包 -------------------------------------------------
 $closure = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 $queue = [System.Collections.Generic.Queue[string]]::new()
-$queue.Enqueue((Resolve-Path -LiteralPath $EntryProject).Path)
+foreach ($e in $EntryProject) { $queue.Enqueue((Resolve-Path -LiteralPath $e).Path) }
 while ($queue.Count -gt 0) {
   $proj = $queue.Dequeue()
   if (-not $closure.Add($proj)) { continue }

@@ -3,84 +3,84 @@
     "_note": "export の綴りは焼く側の都合で動く。ファイルの中の top-level が module 1 つ だけなら素の名前、型が並ぶと接頭辞が付く（SourceKind がそう）。v0.9 で XmlScan から型を Scan.fs へ出したら XmlScan_describe が describe になった。古い名前に戻して回すと『XmlScan_describe が焼いた JS に無い』で落ちる（確かめた）",
     "target": "XmlScan",
     "note": "XML の字を数える 1 本。host（波線）と Fable（補完・hover）が同じソースを compile する",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/XmlScan.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/XmlScan.js",
     "export": "describe",
     "args": [ "src", "cursor" ]
   },
   {
     "target": "SxmlScan",
     "note": "S 式 の字を数える 1 本。XmlScan と同じ型を返し、字にするところも共通（Scan.describe）",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/SxmlScan.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/SxmlScan.js",
     "export": "describe",
     "args": [ "src", "cursor" ]
   },
   {
     "target": "FsbScan",
     "note": "インデント記法の字を数える 1 本。入れ子が行頭の空白で決まるので、行の切り方が両方 で一致している必要がある（改行の扱いは runtime ごとに違う）",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsbScan.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/FsbScan.js",
     "export": "describe",
     "args": [ "src", "cursor" ]
   },
   {
     "target": "FsharpScan",
     "note": "F# の CE の字を数える 1 本。ほかの 3 本 と違って返すのは名前だけ。文字列とコメントの外だけを数えるので、逃がしと入れ子の扱いが 2 つ の runtime で一致している必要がある",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsharpScan.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/FsharpScan.js",
     "export": "describe",
     "args": [ "src", "cursor" ]
   },
   {
     "target": "SourceKind",
     "note": "表記の名前と拡張子。host と ブラウザ側 が同じ 1 本 を引く",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/SourceKind.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/SourceKind.js",
     "export": "SourceKindModule_describe",
     "args": [ "id" ]
   },
   {
     "target": "ShareLink",
     "note": "共有リンクの組み立てと base64url。リンクを作るのはブラウザ、読むのもブラウザだが、字の形は .NET でも走る 1 本 が決めている。base64 は runtime ごとに別の実装（btoa と Convert）へ落ちるので、答えが一致するかは走らせないと分からない",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/ShareLink.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/ShareLink.js",
     "export": "ShareLinkModule_describe",
     "args": [ "fragment" ]
   },
   {
     "target": "Scan",
     "note": "位置まわり（行の頭・桁・行と桁・手前が空白だけか）。**「定義を作る」が挿す場所をここから作る。** LastIndexOf(char, int) の向きのように runtime ごとに割れうるものが混ざっていて、割れても片方 では正しく動く",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/Scan.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/Scan.js",
     "export": "Scan_describePosition",
     "args": [ "src", "cursor" ]
   },
   {
     "target": "FsharpTags",
     "note": "F# の CE の名前を数える 1 本（v1.9）。rename・参照・直し方・波線がここに載る。**表は case に在る** —— 器に要素名を書けないので、当てる表を器の中で作れない。配列で渡すのは、F# の list が焼くと連結リストになるから",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsharpScan.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/FsharpScan.js",
     "export": "describeTags",
     "args": [ "labels", "attr", "src" ]
   },
   {
     "target": "Outline",
     "note": "本文の構造（v2.4）。深さの並びから木にする 1 本。**入れ子の数え方は表記ごとに違う**（XML は閉じ札、sxml は再帰、fsb は字下げ、CE は { }）ので、2 つ の runtime で割れうるところが 4 本 ある。アウトラインと折りたたみが両方 この上に載る",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/Outline.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/Outline.js",
     "export": "describe",
     "args": [ "src" ]
   },
   {
     "target": "Semantics",
     "note": "意味の層（v2.3）。**打鍵ごとに回るのはブラウザ側**なので、答えが .NET と一致していないと『手元では出るのに本番では出ない』（逆も）になる。StartsWith は runtime ごとに別の実装へ落ちるので、走らせないと分からない",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/Semantics.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/Semantics.js",
     "export": "describe",
     "args": [ "src" ]
   },
   {
     "target": "FsharpBlocks",
     "note": "F# の CE で「いまどの { } の中に居るか」（v1.9）。**候補がここに載る。** 本文の全部 の位置で数えるので、数え方が 1 文字 でもずれれば出る",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/FsharpScan.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/FsharpScan.js",
     "export": "describeBlocks",
     "args": [ "src" ]
   },
   {
     "target": "OutlineEnclosing",
     "note": "その行を囲む節の列（v2.4.5）。「囲む要素を選ぶ」がこの上に載る。**行だけで見る** —— 版の頭で数えたら、同じ行に節の始まりが 2 つ 以上 在る行は 3 表記 とも 0 件（13121 行）だった。だから割れるとしたら桁ではなく行の数え方で、Outline と同じ木を別の切り口で読む",
-    "js": "src/FsBulletML2.Playground/wwwroot/js/FsBulletML2.LanguageService/Outline.js",
+    "js": "src/FsBulletML2.LanguageService.Js/js/FsBulletML2.LanguageService/Outline.js",
     "export": "describeEnclosing",
     "args": [ "src", "line" ]
   }

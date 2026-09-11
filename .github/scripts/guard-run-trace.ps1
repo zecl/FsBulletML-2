@@ -59,7 +59,12 @@ param(
   [string]$OpsFs,
   [string]$ApiFs,
   [string[]]$ConsumerRoots,
-  [string]$FocusFs = 'src/FsBulletML2.Playground/Focus.fs',
+  # 受け口を繋ぐ 1 か所。**面（Playground）は Danmaku Lab へ出たので、
+  # この repo には無い** —— 既定は空で、渡されたときだけ 4 つ 目 を見る。
+  # Lab からは `vendor/FsBulletML2/.github/scripts/guard-run-trace.ps1
+  # -FocusFs client/Focus.fs` と呼ぶ（**門の写しを 2 か所 に置かない**）。
+  # 渡されなかったことは走行の頭に出す —— 黙って飛ばすと 3 項目 が 4 項目 に見える
+  [string]$FocusFs = '',
   [switch]$Quiet
 )
 
@@ -178,7 +183,12 @@ if ($api -notmatch 'if NodeOrigin\.enabled then FoldOrigin\.walk') {
 $hooked = [System.Collections.Generic.List[string]]::new()
 $inFocus = @{ 'NodeTrace.visit' = 0; 'NodeTrace.stop' = 0; 'NodeOrigin.pair' = 0; 'NodeOrigin.enabled' = 0 }
 $focusSeen = $false
+$skipFocus = [string]::IsNullOrWhiteSpace($FocusFs)
+if ($skipFocus -and -not $Quiet) {
+  Write-Host '受け口を繋ぐ側は見ない（-FocusFs が無い）。**見たのは 3 項目**'
+}
 foreach ($root in $ConsumerRoots) {
+  if ($skipFocus) { break }
   if (-not (Test-Path -LiteralPath $root)) { continue }
   Get-ChildItem -LiteralPath $root -Recurse -File -Include *.fs, *.fsx, *.cs |
     Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } |
@@ -196,7 +206,7 @@ foreach ($root in $ConsumerRoots) {
       }
     }
 }
-if (-not $focusSeen) {
+if (-not $skipFocus -and -not $focusSeen) {
   $problems.Add("$FocusFs が読めなかった。**0 件 は違反 0 件 と同じ顔をする**ので、ここで落とす")
 }
 # **繋ぐ側と素へ戻す側を、別々に数える。**
@@ -211,9 +221,10 @@ $restore = @{
   'NodeOrigin.enabled' = 'NodeOrigin\.enabled\s*<-\s*false'
   'NodeOrigin.pair'    = 'NodeOrigin\.pair\s*<-\s*noPair'
 }
-$focusPath = Join-Path $RepoRoot $FocusFs
-$focusText = if (Test-Path -LiteralPath $focusPath) { [IO.File]::ReadAllText($focusPath) } else { '' }
+$focusPath = if ($skipFocus) { '' } else { Join-Path $RepoRoot $FocusFs }
+$focusText = if (-not $skipFocus -and (Test-Path -LiteralPath $focusPath)) { [IO.File]::ReadAllText($focusPath) } else { '' }
 foreach ($port in @('NodeTrace.visit', 'NodeTrace.stop', 'NodeOrigin.pair', 'NodeOrigin.enabled')) {
+  if ($skipFocus) { break }
   $off = ([regex]::Matches($focusText, $restore[$port])).Count
   $on = $inFocus[$port] - $off
   if (-not $Quiet) { Write-Host "$FocusFs の $port  繋ぐ $on 件 / 戻す $off 件" }
@@ -224,7 +235,7 @@ foreach ($port in @('NodeTrace.visit', 'NodeTrace.stop', 'NodeOrigin.pair', 'Nod
     $problems.Add("$FocusFs に $port を素へ戻す側が無い（$($restore[$port])）。繋ぎっぱなしだと、選んでいない弾も受け口を通る")
   }
 }
-if (-not $Quiet) { Write-Host "ほかの場所が繋いでいる件数  $($hooked.Count) 件（0 件 のはず）" }
+if (-not $Quiet -and -not $skipFocus) { Write-Host "ほかの場所が繋いでいる件数  $($hooked.Count) 件（0 件 のはず）" }
 if ($hooked.Count -gt 0) {
   $problems.Add("繋ぐのは $FocusFs だけ。ほかに繋いだ場所が在る:`n        " + ($hooked -join "`n        "))
 }
@@ -238,6 +249,7 @@ if ($problems.Count -gt 0) {
 }
 
 if (-not $Quiet) {
-  Write-Host ("受け口は 2 本 とも既定が ignore、呼び先は 通った 2 / 止まった 3、" +
-    "繋ぐのは $FocusFs だけ（口は 4 つ）")
+  Write-Host ("受け口は 2 本 とも既定が ignore、呼び先は 通った 2 / 止まった 3" +
+    $(if ($skipFocus) { "（繋ぐ側は見ていない —— **3 項目**）" }
+      else { "、繋ぐのは $FocusFs だけ（口は 4 つ）" }))
 }

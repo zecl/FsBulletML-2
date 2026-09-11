@@ -43,7 +43,7 @@ Set-StrictMode -Version Latest
 
 if (-not $RepoRoot) { $RepoRoot = (git rev-parse --show-toplevel) }
 $RepoRoot = ($RepoRoot -replace '\\', '/').TrimEnd('/')
-if (-not $JsRoot) { $JsRoot = "$RepoRoot/src/FsBulletML2.Playground/wwwroot/js" }
+if (-not $JsRoot) { $JsRoot = "$RepoRoot/src/FsBulletML2.LanguageService.Js/js" }
 
 # **指紋は 1 つ。** `enumerateWhile` は Fable が内包の中の while にだけ使う
 $Fingerprint = 'enumerateWhile('

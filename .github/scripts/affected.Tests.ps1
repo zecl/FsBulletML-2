@@ -86,16 +86,15 @@ $allTests = @(
 'FsBulletML2.Unity2D.Tests')
 $allBuilds = @(
   'FsBulletML2.Benchmarks',
-  'FsBulletML2.Playground',
   'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
   'FsBulletML2.Sample.TypeProviders.Debug',
   'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
 # **どちらも Core を 1 つ も参照しない。** Core を触っても建たない —— 建つのは
 # 「全部」を意味する起点（proj の外・slnx・global.json）を触ったときだけ。
-# StubShapeCheck は弾幕を参照しない道具、Playground.Js は Fable に渡す側で
+# StubShapeCheck は弾幕を参照しない道具、LanguageService.Js は Fable に渡す側で
 # .NET の参照を持たない
-$allBuildsAndTools = $allBuilds + 'FsBulletML2.Playground.Js' + 'StubShapeCheck'
+$allBuildsAndTools = $allBuilds + 'FsBulletML2.LanguageService.Js' + 'StubShapeCheck'
 
 Write-Host '=== 多いほう'
 
@@ -124,14 +123,13 @@ Check '.Compile 自身なら 1 本 だけ' `
 
 Write-Host '=== 少ないほう'
 
-# Dsl は src/Bullets.Dsl 経由でサンプル 4 つ と Playground に届く。
+# Dsl は src/Bullets.Dsl 経由でサンプル 4 つ に届く（面は Danmaku Lab へ出た）。
 # **試験は 2 本。** v1.0 で Parser.Tests が Bullets.Dsl を引くようになった ——
 # F# の CE を読む口の目盛りが、その弾幕の**値**を正本にしている
-Check 'Dsl だけなら試験は Dsl.Tests と Parser.Tests、build は弾幕を使う 5 本' `
+Check 'Dsl だけなら試験は Dsl.Tests と Parser.Tests、build は弾幕を使う 4 本' `
   @('src/FsBulletML2.Dsl/BulletDsl.fs') `
   @('FsBulletML2.Dsl.Tests', 'FsBulletML2.Parser.Tests') `
-  @('FsBulletML2.Playground',
-    'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
+  @(    'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
     'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
 Check 'MonoGame だけなら MonoGame.Tests と、それが build しないサンプル 2 つ' `
@@ -147,7 +145,7 @@ Check 'MonoGame だけなら MonoGame.Tests と、それが build しないサ�
 Check 'Parser だけなら Dsl.Tests は走らない' `
   @('src/FsBulletML2.Parser/Sxml.fs') `
   @('FsBulletML2.Core.Tests', 'FsBulletML2.Front.Tests', 'FsBulletML2.MonoGame.Tests', 'FsBulletML2.Parser.Tests', 'FsBulletML2.TypeProviders.Tests', 'FsBulletML2.Unity2D.Tests') `
-  @('FsBulletML2.Benchmarks', 'FsBulletML2.Playground',
+  @('FsBulletML2.Benchmarks',
     'FsBulletML2.Sample.MonoGame.CSharp',
     'FsBulletML2.Sample.MonoGame.FSharp', 'FsBulletML2.Sample.TypeProviders.Debug')
 
@@ -162,40 +160,28 @@ Check '試験そのものを触ったらその試験だけ' `
 Check 'サンプルの弾幕は Dsl.Tests が見ている' `
   @('samples/FsBulletML2.Bullets/Dodonpachi.fs') @('FsBulletML2.Dsl.Tests') @()
 
-Check '弾幕 DSL 版はサンプル 4 つ と Playground にも届く' `
+Check '弾幕 DSL 版はサンプル 4 つ に届く' `
   @('src/FsBulletML2.Bullets.Dsl/Dodonpachi.fs') `
   @('FsBulletML2.Dsl.Tests', 'FsBulletML2.Parser.Tests') `
-  @('FsBulletML2.Playground',
-    'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
+  @(    'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
     'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
 Write-Host '=== 借りたソース（Compile Include で他の proj から引いている）'
 
-# **参照ではなく借り。** `Front.Tests` は Playground のソース 10 本 を
-# `<Compile Include="..\..\src\FsBulletML2.Playground\...">` で compile し直す。
+# **参照ではなく借り。** `<Compile Include="..\..\別の proj\x.fs">` で
+# 他の proj のソースを compile し直す形。
+# `ProjectReference` だけを追っていたとき、借りた側を触っても試験が選ばれなかった。
 #
-# **`ProjectReference` だけを追っていたとき、ここは 試験 0 本 だった** ——
-# 速い道（v4.9.2 / v4.9.3）の本体を触っても、それを守る 130 件 が選ばれない。
-# v0.8 で `Parser.Tests` は同じ穴を塞いだのに、**こちらは借りたまま残っていた。**
-#
-# **build の 1 本 も一緒に見る。** 借りた辺を参照と同じ入れ物に入れると
-# Playground が「根」（その集合の誰からも参照されていないもの）でなくなり、
-# **build から静かに落ちる** —— 直す途中で一度 そうなった。
-# 試験の側だけを見ていたら、その退行は緑のまま通っていた。
+# **面（Playground）が Danmaku Lab へ出て、この repo に残る借りは 1 本 だけ**
+# （v5.4）—— 下 の bench の 1 行。借りの仕組みそのものは向こうでも要るので、
+# **Lab 側 の CI にも同じ形が要る。**
 #
 # **較正**: `affected.ps1` の借りの表を引く鍵をずらす（`$f` -> `$f + '.mutant'`）と
-# **この 3 点 だけが赤くなり、他の 22 点 は緑のまま**。
-# しかも 3 点 は別の壊れ方を見せる —— 試験 0 本 / 片方 だけ欠ける / build が空。
-Check 'Playground のソースは借りている Front.Tests が見る。build の根でもある' `
-  @('src/FsBulletML2.Playground/Playfield.fs') `
-  @('FsBulletML2.Front.Tests') `
-  @('FsBulletML2.Playground')
-
-# 借りる側が 2 本 在るもの。**片方 だけ拾う壊れ方**を止める
-Check 'Host の NodeOrder は 2 本 が借りている' `
+# **下 の点 と NodeOrder の点 が赤くなり、他は緑のまま。**
+Check 'Host の NodeOrder は Parser.Tests が借りている' `
   @('src/FsBulletML2.LanguageService.Host/NodeOrder.fs') `
-  @('FsBulletML2.Front.Tests', 'FsBulletML2.Parser.Tests') `
-  @('FsBulletML2.Playground')
+  @('FsBulletML2.Parser.Tests') `
+  @()
 
 # **向きが逆の借り。** bench が試験のソースを借りている
 # （`..\..\tests\FsBulletML2.Core.Tests\Fake.fs`）。
@@ -300,7 +286,7 @@ function CheckShape {
 
 CheckShape '0 件 でも空配列' @('README.md') 0 0
 CheckShape '1 件 が配列のまま出る' @('tests/FsBulletML2.Parser.Tests/ReadEntryPoints.fs') 1 0
-CheckShape '複数' @('src/FsBulletML2.Parser/Sxml.fs') 6 5
+CheckShape '複数' @('src/FsBulletML2.Parser/Sxml.fs') 6 4
 
 Write-Host ''
 if ($fails -gt 0) {

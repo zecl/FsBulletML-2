@@ -107,13 +107,13 @@ try {
     if ($hit.Count -ne 1) { throw "表の中で『$Target』が $($hit.Count) 本 当たった（1 本 のはず）" }
     $hit[0].js
   }
-  $realJsDir = Join-Path $root 'src/FsBulletML2.Playground/wwwroot/js'
+  $realJsDir = Join-Path $root 'src/FsBulletML2.LanguageService.Js/js'
   foreach ($x in $targets) {
     if (-not (Test-Path -LiteralPath (Join-Path $root $x.js))) {
-      throw "較正の材料が無い（$($x.js)）。先に dotnet build src/FsBulletML2.Playground で焼くこと"
+      throw "較正の材料が無い（$($x.js)）。先に src/FsBulletML2.LanguageService.Js で fable を回すこと"
     }
   }
-  $jsParent = Join-Path $tmp 'src/FsBulletML2.Playground/wwwroot'
+  $jsParent = Join-Path $tmp 'src/FsBulletML2.LanguageService.Js'
   New-Item -ItemType Directory -Path $jsParent -Force | Out-Null
   Copy-Item -LiteralPath $realJsDir -Destination (Join-Path $jsParent 'js') -Recurse -Force
 
