@@ -358,6 +358,94 @@ module internal Step =
     | PChangeSpeed (_, d, _, _) -> d
     | PNoop -> false
 
+  /// **この位置が、これから何コマ 何も起こさないか**（v4.9.2）
+  ///
+  /// ## 現在位置だけを見る
+  ///
+  /// 木には**走っていない wait が started のまま残る** ——
+  /// `repeat` の次周のために term を戻す形があるので、
+  /// **木を丸ごとなめて最小の wait を取ると、現在位置でない wait を拾う。**
+  ///
+  ///     A[ W(true,0); CD(false,false,0); W(true,69.15); F; V ]
+  ///                                      ^^^^^^^^^^^^ 現在位置ではない
+  ///
+  /// この形を「あと 69 コマ 静か」と読んで、**同梱 176 本 のうち 120 本 で
+  /// 座標が割れた。** 次のコマ で起きるのは 1 つ 目 の wait の終了と
+  /// `changeDirection` の実行で、向きが変わる。
+  ///
+  /// **走査は `action` の中の `step` と同じ順**にする ——
+  /// `isDone` を飛ばして、**最初の「終わっていない子」だけ**を見る。
+  /// 2 つ の走り方が食い違うと、また同じ割れ方をする。
+  ///
+  /// ## ブロックするのは wait だけ
+  ///
+  /// `accel` / `changeSpeed` / `changeDirection` は term コマ かけて
+  /// 効きながら、**action はその先へ進む**。だから現在位置がそれらなら
+  /// `QBusy` —— 止まって見えても `Speed` / `Dir` / `Accel` が毎コマ 動く。
+  ///
+  /// 現在位置が「まだ始まっていない命令」（`PWait (false, _)` /
+  /// `PFire false` / 展開前 の `PNoop`）なら `QNone`。
+  /// 次のコマ に何が起きるか分からないので、**静かとは言わない。**
+  let rec quietOf (p: Progress) : Quiet =
+    match p with
+    | PWait (true, l) -> if l >= 1.0f then QWait l else QNone
+    | PAccel (true, l, _, _) -> if l >= 0.0f then QBusy else QNone
+    | PChangeDir (true, false, l, _) -> if l >= 0.0f then QBusy else QNone
+    | PChangeSpeed (true, false, l, _) -> if l >= 0.0f then QBusy else QNone
+    | PAction (false, _, children) -> quietFirst children
+    // **`repeat` は静かではない。** 現在位置が repeat なら、中の wait が
+    // 進行中でも**毎コマ `repeat` が呼ばれて `times` を評価する**
+    // （この下の `repeat` の頭 の `getValue env timesStr`）。
+    // `times` に `$rand` が在ると、**位置は 1 ミリ も動かないのに
+    // 乱数の列が 1 つ 進む** —— `$rand` は弾ごとではなく**場に 1 本**なので、
+    // 読む順がずれると以降 の弾の向きが丸ごと変わる。
+    //
+    // **見つけるのに いちばん手間 が掛かった形。** 位置・撃つ・消える を
+    // 見る検算は 80 万 コマ で 1 件 も拾わず、**`$rand` を読んだ回数を
+    // 数えて初めて出た**（同梱 176 本 のうち 46 本 が割れていた）。
+    | _ -> QNone
+
+  /// 頭から見て、**最初の「終わっていない子」だけ**を見る。
+  /// そこが現在位置で、その先は走らない
+  and private quietFirst (xs: Progress list) : Quiet =
+    match xs with
+    | [] -> QNone
+    | h :: t -> if isDone h then quietFirst t else quietOf h
+
+  /// **静かな n コマ を飛ばした後の実行位置。**（v4.9.2）
+  ///
+  /// 速い道はエンジンを呼ばないので、**飛ばしたあいだ `wait` が減らない。**
+  /// 減らさずに素の道へ戻すと、その弾は n コマ 余分 に待つ ——
+  /// 同梱 176 本 のうち 118 本 で座標が割れた形がこれ。
+  ///
+  /// **`quietOf` と対で読むこと。** 同じ「現在位置」を辿って、
+  /// そこの `wait` だけを n 減らす。`quietOf` が返した数より大きい n を
+  /// 渡してはいけない（`left` が負に回って wait が早く終わる）。
+  /// **1 ずつ n 回 引く。** `l - float32 n` と 1 行 で書くと
+  /// **float32 の丸めが素の道と違う** —— 素の道は毎コマ `left - 1.0f` を
+  /// 通るので、同じ順で引かないと下の桁がずれる。
+  /// **答えをビット で突き合わせているので、その 1 ビット が割れになる。**
+  let private minusOnes (n: int) (l: float32) =
+    let mutable v = l
+    for _ in 1 .. n do v <- v - 1.0f
+    v
+
+  let rec skipQuiet (n: int) (p: Progress) : Progress =
+    match p with
+    | PWait (true, l) when l >= 1.0f -> PWait (true, minusOnes n l)
+    | PAction (false, loop, children) -> PAction (false, loop, skipQuietFirst n children)
+    // **`repeat` の中へは入らない。** `quietOf` が repeat を静かと言わない
+    // ので、ここへ repeat が来ることはない —— 2 つ が同じ道を辿ることが、
+    // この対の正しさの条件
+    | _ -> p
+
+  /// `quietFirst` と同じ順で辿る。**終わった子は素通り、最初の
+  /// 「終わっていない子」だけを書き換えて、尻尾はそのまま共有する**
+  and private skipQuietFirst (n: int) (xs: Progress list) : Progress list =
+    match xs with
+    | [] -> []
+    | h :: t -> if isDone h then h :: skipQuietFirst n t else skipQuiet n h :: t
+
   /// 終わりの印を立てる。旧の setFinish
   let setDone (p: Progress) =
     match p with

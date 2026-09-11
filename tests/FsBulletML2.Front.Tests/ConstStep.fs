@@ -49,6 +49,32 @@ open FsBulletML2.Playground
 /// **速い弾と遅い弾を 1 発 ずつ撃つ本文**に替えて、狙って起こした。
 ///
 /// 最後の 1 つ は振る舞いに出ない（GC の話）。こちらも但し書きに残した。
+///
+/// --- v4.9.2（`wait` で止まっている弾）の較正
+///
+///   `repeat` の中の wait を静かと言う           赤 1
+///   飛ばすぶんの wait を消化しない               赤 2
+///   速い道の残りを減らさない                     赤 5
+///   終わった子を飛ばさず、頭の子だけ見る          **赤 0**
+///   `changeSpeed` の途中 を静かと言う            **赤 0**
+///   `accel` の途中 を静かと言う                  **赤 0**
+///   1 ずつでなく まとめて引く                    **赤 0**
+///
+/// **空振り 4 件 の理由は 1 つ。**
+/// `Step.quietFirst` が**現在位置だけを見る**形になったので、
+/// **`QBusy` と `QNone` は同じ効果**（どちらも「静かと言わない」）。
+/// 木を全部 なめていた頃 は、後ろ に在る進行中の変化を拾うために
+/// `QBusy` が要った —— **その形が 136 本 を割ったので捨てた。**
+///
+/// 腕は残してある。**「`accel` は静かではない」を字で言う場所**が要るのと、
+/// 走査を全なめに戻した日に、腕が無いと静かに壊れるため。
+///
+/// 「1 ずつ引く」も同じで、同梱 176 本 では丸めの差が出なかった ——
+/// **出うるのは事実**なので残す（`Step.minusOnes` の但し書き）。
+///
+/// 「終わった子を飛ばさず」は**保守的に外れる**変異で、答えは変わらない
+/// （現在位置でない子は `QNone` になり、その弾が素の道へ落ちるだけ）。
+/// **速さは落ちるが、赤くはならない。**
 [<TestFixture>]
 type ConstStep() =
 
@@ -137,6 +163,36 @@ type ConstStep() =
       </action>
     </repeat>
     <wait>200</wait>
+  </action>
+</bulletml>"""
+
+  /// **弾の action に長い `wait` を置く**（v4.9.2）。
+  ///
+  /// `repeat` の中では速い道に乗らない（`Step.quietOf` の但し書き ——
+  /// `repeat` は毎コマ `times` を評価するので `$rand` を読みうる）。
+  /// ここで乗せたいのは**弾が持つ台本の wait** なので、repeat の外 に置く。
+  ///
+  /// `changeSpeed` を挟んであるのは、**その途中 を静かと言わないこと**を
+  /// 同じ本文で踏むため —— あれは action をブロックせず、
+  /// 止まって見えるまま速さが動く
+  static let waitXml = """<?xml version="1.0" ?>
+<bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
+  <action label="top">
+    <repeat><times>20</times>
+      <action>
+        <fire><direction type="sequence">17</direction><speed>1.5</speed>
+          <bullet>
+            <action>
+              <wait>40</wait>
+              <changeSpeed><speed>3</speed><term>10</term></changeSpeed>
+              <wait>100</wait>
+            </action>
+          </bullet>
+        </fire>
+        <wait>2</wait>
+      </action>
+    </repeat>
+    <wait>300</wait>
   </action>
 </bulletml>"""
 
@@ -382,3 +438,174 @@ type ConstStep() =
     jumped |> should equal 0
     // 遅い弾はまだ生きていて、追えている
     f.PickedIndex |> should be (greaterThanOrEqualTo 0)
+
+  // --- v4.9.2 —— `wait` で止まっているだけの弾も速い道へ ----------------------
+
+  /// **答えが変わらないこと。** 速い道は近似ではない
+  [<Test>]
+  member _.``wait で止まる本文でも、毎コマ 呼ぶ面と座標がビット一致する``() =
+    let a = reference (DeterministicField.env (DeterministicField.stream ())) (Bulletml.readXmlString waitXml) Frames
+    let b = actual (DeterministicField.env (DeterministicField.stream ())) (Bulletml.readXmlString waitXml) Frames
+    sameShots a b |> should equal None
+
+  /// **その道を通ったことを、門が自分で数える** ——
+  /// 0 件 なら、上の点は「段 2 を 1 度 も通らずに一致した」だけ。
+  ///
+  /// **`ConstCount` と分けて数える。** 同じ配列の別の意味なので、
+  /// 片方 だけ見ていると、もう片方 が死んでいても緑のまま
+  [<Test>]
+  member _.``wait で止まる弾が、速い道に居る``() =
+    let front = DeterministicField.env (DeterministicField.stream ())
+    let f = Playfield.Create front (Bulletml.readXmlString waitXml)
+    let mutable withQuiet = 0
+    let mutable all = 0
+    for _ in 1 .. Frames do
+      f.Tick()
+      all <- all + f.BulletCount
+      withQuiet <- withQuiet + f.QuietCount
+    all |> should be (greaterThan 500)
+    withQuiet |> should be (greaterThan (all / 4))
+
+  /// **速さが動く本文で、言ったことが嘘でないか。**
+  ///
+  /// `changeSpeed` は `wait` と違って action をブロックせず、
+  /// **その先の `wait` まで進んでから**毎コマ 速さを動かす ——
+  /// 木には `[CS(進行中); W(true, 199)]` が並ぶ。
+  /// **wait だけを見て「199 コマ 静か」と読むと、位置は動かないのに
+  /// 速さが変わる**（同梱 176 本 のうち 136 本 で座標が割れた形）。
+  ///
+  /// **「0 と言うこと」は見ない。** 撃たれた弾は `resetChild` を通るので、
+  /// 木の形が素の `initial` と違う —— この本文では 0 にならないことがある。
+  /// 見るのは**言った数だけ進めて姿が動かないこと**で、
+  /// **0 と言っても、170 と言っても、嘘でなければ緑**。
+  /// 嘘を言った瞬間 だけ赤くなる形にしてある
+  [<Test>]
+  member _.``速さが動く本文でも、静かと言ったなら嘘でない``() =
+    let xml = """<?xml version="1.0" ?>
+<bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
+  <action label="top">
+    <fire><direction type="absolute">180</direction><speed>1</speed>
+      <bullet>
+        <action>
+          <changeSpeed><speed>5</speed><term>30</term></changeSpeed>
+          <wait>200</wait>
+        </action>
+      </bullet>
+    </fire>
+    <wait>500</wait>
+  </action>
+</bulletml>"""
+    let front = DeterministicField.env (DeterministicField.stream ())
+    let bulletml = Bulletml.readXmlString xml
+    let script = Runner.load front.Rand front.Rank bulletml
+    let run = Runner.newRoot BulletType.Enemy script
+    let fr = Driver.step front Space.YDown SpawnOrigin.AtShooter run run.Motion
+    let child = fr.Spawned |> List.head
+    let c1 = (Driver.step front Space.YDown SpawnOrigin.AtShooter child child.Motion).Run
+    // **当てる先が在ることを、門が自分で数える** ——
+    // この本文の弾は `changeSpeed` を持っていて、速さが動く
+    let speedMoves =
+      let mutable c = c1
+      let s0 = c.Motion.Speed
+      let mutable moved = false
+      for _ in 1 .. 40 do
+        c <- (Driver.step front Space.YDown SpawnOrigin.AtShooter c c.Motion).Run
+        if c.Motion.Speed <> s0 then moved <- true
+      moved
+    speedMoves |> should equal true
+    // **言った数だけ進めて、姿が動かないことを見る。**
+    //
+    // 0 と言うなら「言えないことを言わなかった」で、それも正しい ——
+    // **見たいのは「言ったことが嘘でない」ほう。**
+    // 速さが動くあいだ 静かと言えば、ここが赤くなる
+    let c2 = (Driver.step front Space.YDown SpawnOrigin.AtShooter child child.Motion).Run
+    let q = c2.QuietFrames
+    let m0 = c2.Motion
+    let mutable c = c2
+    for _ in 1 .. q do
+      let step = Driver.step front Space.YDown SpawnOrigin.AtShooter c c.Motion
+      step.Spawned |> should be Empty
+      step.Vanished |> should equal false
+      c <- step.Run
+      c.Motion.Speed |> should equal m0.Speed
+      c.Motion.Dir |> should equal m0.Dir
+
+  /// **言った「あと n コマ」のあいだ、エンジンは何も起こさない。**
+  ///
+  /// 位置・撃つ・消える だけでなく **`Motion` が動かないこと**まで見る ——
+  /// 速い道は差分を据え置くので、速さや向きが動いたら答えが割れる
+  [<Test>]
+  member _.``静かと言ったあいだ、撃たず消えず 姿も動かない``() =
+    let front = DeterministicField.env (DeterministicField.stream ())
+    let bulletml = Bulletml.readXmlString waitXml
+    let script = Runner.load front.Rand front.Rank bulletml
+    let mutable run = Runner.newRoot BulletType.Enemy script
+    let mutable found = ValueNone
+    let mutable f = 0
+    while found.IsNone && f < 60 do
+      let fr = Driver.step front Space.YDown SpawnOrigin.AtShooter run run.Motion
+      run <- fr.Run
+      for c in fr.Spawned do
+        if found.IsNone then found <- ValueSome c
+      f <- f + 1
+    match found with
+    | ValueNone -> failwith "弾が出ない"
+    | ValueSome c0 ->
+      // 1 コマ 進めて wait を始めさせる
+      let fr0 = Driver.step front Space.YDown SpawnOrigin.AtShooter c0 c0.Motion
+      let mutable c = fr0.Run
+      let q = c.QuietFrames
+      // **当てる先が在ることを、門が自分で数える**
+      q |> should be (greaterThan 5)
+      let m0 = c.Motion
+      let d0 = fr0.Delta
+      for _ in 1 .. q do
+        let fr = Driver.step front Space.YDown SpawnOrigin.AtShooter c c.Motion
+        fr.Spawned |> should be Empty
+        fr.Vanished |> should equal false
+        fr.Retired |> should equal false
+        fr.Delta.X |> should equal d0.X
+        fr.Delta.Y |> should equal d0.Y
+        c <- fr.Run
+        c.Motion.Speed |> should equal m0.Speed
+        c.Motion.Dir |> should equal m0.Dir
+
+  /// **飛ばしたぶんの `wait` を消化してあるか。**
+  ///
+  /// 速い道はエンジンを呼ばないので、放っておくと `wait` が減らない ——
+  /// 素の道へ戻った弾が n コマ 余分 に待つ（同梱 176 本 のうち
+  /// 118 本 で座標が割れた形）。**`SkipQuiet` を通した Run は、
+  /// 毎コマ 進めた Run と同じ所に居る**
+  [<Test>]
+  member _.``SkipQuiet を通した弾は、毎コマ 進めた弾と同じ所に居る``() =
+    let front = DeterministicField.env (DeterministicField.stream ())
+    let bulletml = Bulletml.readXmlString waitXml
+    let script = Runner.load front.Rand front.Rank bulletml
+    let mutable run = Runner.newRoot BulletType.Enemy script
+    let mutable found = ValueNone
+    let mutable f = 0
+    while found.IsNone && f < 60 do
+      let fr = Driver.step front Space.YDown SpawnOrigin.AtShooter run run.Motion
+      run <- fr.Run
+      for c in fr.Spawned do
+        if found.IsNone then found <- ValueSome c
+      f <- f + 1
+    match found with
+    | ValueNone -> failwith "弾が出ない"
+    | ValueSome c0 ->
+      let start = (Driver.step front Space.YDown SpawnOrigin.AtShooter c0 c0.Motion).Run
+      let q = start.QuietFrames
+      q |> should be (greaterThan 5)
+      // 毎コマ 進めた側
+      let mutable slow = start
+      for _ in 1 .. q do
+        slow <- (Driver.step front Space.YDown SpawnOrigin.AtShooter slow slow.Motion).Run
+      // 飛ばした側
+      let fast = start.SkipQuiet q
+      // **次の 1 コマ が一致する。** ここがずれると、その弾だけ余分 に待つ
+      let a = Driver.step front Space.YDown SpawnOrigin.AtShooter slow slow.Motion
+      let b = Driver.step front Space.YDown SpawnOrigin.AtShooter fast fast.Motion
+      b.Delta.X |> should equal a.Delta.X
+      b.Delta.Y |> should equal a.Delta.Y
+      b.Run.QuietFrames |> should equal a.Run.QuietFrames
+      (List.length b.Spawned) |> should equal (List.length a.Spawned)

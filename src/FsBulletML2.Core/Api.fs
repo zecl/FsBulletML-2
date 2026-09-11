@@ -178,6 +178,66 @@ type BulletRun internal (script: BulletmlScript, state: BulletState) =
           Y = state.Accel.Y + float32 (-System.Math.Cos dir * speed) }
     else ValueNone
 
+  /// **あと何コマ、この弾は何も起こさないか。** 0 なら「分からない」（v4.9.2）。
+  ///
+  /// `ConstantDelta` が乗せるのは**台本が空になった弾**だけで、
+  /// **`wait` で止まっているだけの弾は素の道を通っていた** ——
+  /// 同梱 176 本 で、素の道を通る弾コマ の **45.7%** がそれ。
+  ///
+  /// ## なぜ言えるのか
+  ///
+  /// **ブロックするのは `wait` だけ。**
+  /// `accel` / `changeSpeed` / `changeDirection` は term コマ かけて
+  /// 効きながら、**action はその先へ進む** —— だから「wait で止まっている」
+  /// ことと「静か」は別。`ProgressQuiet.quietOf` が両方 を見て、
+  /// 進行中の変化が在る top は `QBusy` で外す。
+  ///
+  /// **ここを取り違えて、同梱 176 本 のうち 136 本 で座標が割れた。**
+  /// 上界（事後に見て静かだったコマ）が 91.3% と先に測ってあったので、
+  /// **95.7% と出た時点で「言い過ぎ」だと数で分かった。**
+  ///
+  /// `Step.fs` の `wait` は **1 減らしてから判定する**ので、
+  /// `PWait (true, L)` の top は **あと floor L コマ** `Stopped` を返す。
+  /// 全部 の top がそうなら、そのあいだ この弾は
+  ///
+  ///     撃たない            走るのは wait だけ
+  ///     消えない            `vanish` が走らない
+  ///     Speed / Dir / Accel  変える命令が走らない
+  ///
+  /// ので、**差分はその コマ のものと同じまま。**
+  ///
+  /// ## 呼ぶ側の約束
+  ///
+  /// `ConstantDelta` と同じ ——**`Motion` を外から書き換えないこと。**
+  ///
+  /// **差分はここで組み直さない。** 返すのはコマ数だけで、値は呼ぶ側が
+  /// 持っている `Frame.Delta` を使う（同じ式を 3 か所 目 に書かないため）。
+  ///
+  /// **`Finished` が立ったコマ には使えない。** そのコマ の呼ぶ側は
+  /// `restart` を通すので、走り直した後の top は別物になる。
+  member _.QuietFrames : int =
+    if List.isEmpty state.Tops then 0
+    else
+      let mutable m = System.Single.MaxValue
+      let mutable all = true
+      for (_, prog, _) in state.Tops do
+        match Step.quietOf prog with
+        | QWait l -> if l < m then m <- l
+        | QNone | QBusy -> all <- false
+      if all && m >= 1.0f then int m else 0
+
+  /// **静かな n コマ を飛ばした後の姿。**（v4.9.2）
+  ///
+  /// 速い道はエンジンを呼ばないので、**飛ばしたあいだ `wait` が減らない。**
+  /// 速い道へ入れるときに 1 度 だけ通して、**先に消化しておく。**
+  ///
+  /// **`QuietFrames` が返した数より大きい n を渡さないこと。**
+  /// `wait` の残りが負に回って、その弾だけ早く動き出す。
+  member _.SkipQuiet (n: int) : BulletRun =
+    if n <= 0 then BulletRun(script, state)
+    else
+      BulletRun(script, { state with Tops = state.Tops |> List.map (fun (a, p, fc) -> a, Step.skipQuiet n p, fc) })
+
   /// この弾の立場。根を作るときに決まり、撃たれた弾は親から継ぐ。
   ///
   /// **エンジンが持っていて、あとから差し替える口は無い。** aim をどちらへ

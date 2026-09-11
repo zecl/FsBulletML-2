@@ -38,7 +38,7 @@ type Born(run: BulletRun, isRoot: bool, from: int, parent: Born) =
 ///
 ///     pos    1 点 3 つ —— x / y / 撃った腕の添字。**JS が読むのはこれ**
 ///     vel    1 点 2 つ —— 速い道の 1 コマ の差分
-///     fast   速い道に居るか
+///     quiet  速い道の残り —— **-1 生涯 / 正 あと n コマ / 0 素の道**
 ///     born   生涯 で 1 度 だけ触るもの（`Born`）
 ///
 /// **詰めた並びそのものを置き場にしてある。** 以前は弾 1 発 が
@@ -61,7 +61,12 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
   let mutable pos = Array.zeroCreate<float32> (256 * 3)
   // 速い道の 1 コマ の差分。**JS へは渡らない**
   let mutable vel = Array.zeroCreate<float32> (256 * 2)
-  let mutable fast = Array.zeroCreate<bool> 256
+  /// 速い道の残り。**-1 は生涯**（台本が空。v4.9.1 の段 1）、
+  /// **正 は あと n コマ**（`wait` で止まっている。v4.9.2）、**0 は素の道**。
+  ///
+  /// 1 本 に畳んである —— 2 本 に分けると「どちらの道に居るか」を
+  /// 2 か所 で持つことになり、消しで詰めるときに片方 だけ直す事故が出る
+  let mutable quiet = Array.zeroCreate<int> 256
   let mutable born : Born[] = Array.zeroCreate 256
   let mutable n = 0
 
@@ -84,19 +89,19 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
 
   /// 場所を確かめる。**足りなければ倍にする** —— pin し直しもここ
   let ensure (need: int) =
-    if fast.Length < need then
+    if quiet.Length < need then
       let cap = max (need * 2) 256
       let p = Array.zeroCreate<float32> (cap * 3)
       let v = Array.zeroCreate<float32> (cap * 2)
-      let f = Array.zeroCreate<bool> cap
+      let f = Array.zeroCreate<int> cap
       let b : Born[] = Array.zeroCreate cap
       Array.blit pos 0 p 0 (n * 3)
       Array.blit vel 0 v 0 (n * 2)
-      Array.blit fast 0 f 0 n
+      Array.blit quiet 0 f 0 n
       Array.blit born 0 b 0 n
       pos <- p
       vel <- v
-      fast <- f
+      quiet <- f
       born <- b
       rePin ()
     elif not pin.IsAllocated then rePin ()
@@ -108,7 +113,7 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
     pos.[n * 3 + 2] <- float32 b.From
     vel.[n * 2] <- 0.0f
     vel.[n * 2 + 1] <- 0.0f
-    fast.[n] <- false
+    quiet.[n] <- 0
     born.[n] <- b
     n <- n + 1
 
@@ -126,7 +131,7 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
       pos.[i * 3 + 2] <- pos.[last * 3 + 2]
       vel.[i * 2] <- vel.[last * 2]
       vel.[i * 2 + 1] <- vel.[last * 2 + 1]
-      fast.[i] <- fast.[last]
+      quiet.[i] <- quiet.[last]
       born.[i] <- born.[last]
     // **末尾の参照を落とす。** 残すと、消えた弾を配列が握り続ける。
     //
@@ -180,7 +185,18 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
   member _.ConstCount =
     let mutable c = 0
     for i in 0 .. n - 1 do
-      if fast.[i] then c <- c + 1
+      if quiet.[i] < 0 then c <- c + 1
+    c
+
+  /// `wait` で止まっているので速い道に居る弾の数（v4.9.2）。
+  ///
+  /// **`ConstCount` と分けてある。** あちらは「台本が空」で戻ってこない弾、
+  /// こちらは「あと n コマ で素の道へ戻る」弾 —— **同じ配列の別の意味**で、
+  /// 門がどちらを見ているかが分からなくなると、片方 が 0 件 のまま緑になる
+  member _.QuietCount =
+    let mutable c = 0
+    for i in 0 .. n - 1 do
+      if quiet.[i] > 0 then c <- c + 1
     c
 
   /// 生きている弾を、**撃った腕の添字**で束ねる（v4.0.1）。
@@ -276,7 +292,10 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
       //
       // **成分の配列の上で回す**（段 2）—— 読むのは 5 つ の float32 だけで、
       // オブジェクトを 1 つ も引きに行かない
-      if fast.[i] then
+      if quiet.[i] <> 0 then
+        // **あと n コマ の道（v4.9.2）は 1 つ 減らす。**
+        // -1（生涯。段 1）は減らさない —— 戻ってこないので数える意味が無い
+        if quiet.[i] > 0 then quiet.[i] <- quiet.[i] - 1
         let b = i * 3
         let a = i * 2
         let x = pos.[b] + vel.[a]
@@ -353,13 +372,32 @@ type Playfield private (front: IFrontEnv, field: Field, focus: Focus, rootRun: B
       // 決めていて、速い道にその枝は無い。根に速さが入る形
       // （フロントが `WithMotion` で入れる）ができた日に、
       // **根だけが静かに動き出す。** 残す理由を書いておく。
+      //
+      // ### `wait` で止まっているだけの弾も移す（v4.9.2）
+      //
+      // 台本が残っていても、**全部 の top が `wait` の途中 なら、その残りの
+      // あいだ は何も起こさない**（`BulletRun.QuietFrames`）。
+      // 素の道を通っていた弾コマ の 45.7% がそれ。
+      //
+      // **差分はここで組み直さない** —— 出口 が返した `f.Delta` をそのまま
+      // 持つ（同じ式を 3 か所 目 に書かないため）。
+      //
+      // **`SkipQuiet` で先に `wait` を消化する。** 速い道はエンジンを
+      // 呼ばないので、放っておくと飛ばしたあいだ `wait` が減らず、
+      // その弾だけ n コマ 余分 に待つ。
       if not dead && not it.IsRoot then
         match it.Run.ConstantDelta with
         | ValueSome (d: Vec2) ->
           vel.[i * 2] <- d.X
           vel.[i * 2 + 1] <- d.Y
-          fast.[i] <- true
-        | ValueNone -> ()
+          quiet.[i] <- -1
+        | ValueNone ->
+          let q = it.Run.QuietFrames
+          if q > 0 then
+            vel.[i * 2] <- f.Delta.X
+            vel.[i * 2 + 1] <- f.Delta.Y
+            quiet.[i] <- q
+            it.Run <- it.Run.SkipQuiet q
       if dead then
         // 追っていた弾が消えたら追うのをやめる。**数も消す** ——
         // 残すと、消えた弾の最後のコマの数がそのまま出続ける

@@ -121,6 +121,17 @@ module Domain =
           PAction (false, None, children |> List.map initial)
       | ActionElm.ActionRef _ -> PNoop
 
+  /// この top が、これから何コマ 何も起こさないか（v4.9.2）
+  type internal Quiet =
+    /// 進行中のものが無い（この枝では何も分からない）
+    | QNone
+    /// `wait` で止まっていて、残り L コマ
+    | QWait of float32
+    /// **進行中の変化が在る。** 止まって見えても `Speed` / `Dir` / `Accel` が
+    /// 毎コマ 動くので、静かではない
+    | QBusy
+
+
   /// 直前の fire の値。sequence の累積がここに乗る
   type FireContext =
     { SrcDir : float32

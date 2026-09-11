@@ -159,6 +159,13 @@ type CallingConvention() =
       [ yield "step が返すのは差分。呼ぶ側が座標に足す。"
         yield "係数と Y の符号はフロントごとに違う（MonoGame / Playground は 1 倍、Unity2D は 1/100 で Y を反転）。"
         yield ""
+        // **足している行だけが並んでいるように見えるが、1 か所 だけ違う。**
+        // 網は `f.Delta` の字で拾うので、「足す」と「持つ」が同じ表に出る
+        yield "Playground の vel.[...] <- f.Delta.X は**足していない** ——"
+        yield "速い道（v4.9.1 / v4.9.2）が次のコマ から使う差分を、出口 の値のまま持つ行。"
+        yield "足すのは速い道の中（pos.[b] + vel.[a]）で、そこに f.Delta の字は無いので"
+        yield "**この網には出ない**。速い道が答えを変えないことは Front.Tests が見ている。"
+        yield ""
         for (file, _, hit) in core |> List.sortBy (fun (n, _, _) -> n) do
           yield file
           for l in hit do yield sprintf "    %s" l

@@ -61,6 +61,14 @@
     Bullets.Dsl は `net10.0;netstandard2.1` の多段（Unity 向け）で、
     netstandard2.1 はトリミングできないので、`PublishTrimmed` を
     直に `-p:` で渡すと落ちる。**ここで受けて、ここでだけ立てる。**
+
+    **立てたあとは `obj` を消してから焼き直すこと。**
+    AOT の成果物は `obj/Release/net10.0/wasm/for-publish/` に残り、
+    **次の publish が `PlaygroundAot` 無しでもそれを拾う** ——
+    publish のログに `wasm-opt` が出ていたら、それは AOT の工程。
+    （v4.9.2 の実測で踏んだ：速い道の効きを測ろうとして、
+    AOT 込みの物と素の物を並べていた。**起動しないので気づけた**が、
+    起動していたら「効きが出ない」と読み違えていた。）
   -->
   <PropertyGroup Condition="'$(PlaygroundAot)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
