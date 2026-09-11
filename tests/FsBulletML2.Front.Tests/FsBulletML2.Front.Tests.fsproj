@@ -19,6 +19,18 @@
       借りている中身は Core / Front の型しか使わないので、依存は増えない。
       **`Parser.Tests` では借りられない** —— あちらは Front を参照していない。
       同じ形の前例: Parser.Tests が Vocabulary.fs / XmlScan.fs を借りている。
+
+      ## **Playground を別の repo へ移すと、この 10 行 が壊れる**（v5.0 で数えた）
+
+      借りている形なので `ProjectReference` のグラフには出ない ——
+      **参照を数えても見つからない。** 数えるなら `Compile Include="..` で。
+      repo 全体でも **11 行 だけ**（ここの 10 行 と `Benchmarks` の 1 行）。
+
+      そして**この proj の試験は、ほとんどが借りた側を試している** ——
+      属性で数えて 145 のうち **130 が `DeterministicField` 以降**。
+      エンジンだけを試すのは `AimingFreeze` / `PublicSurface` /
+      `NoAimSkip` / `DriverEquiv` の 15 属性 ぶん。
+      **`Front.Tests` は proj 単位 では割れない。ここの並びの途中で割れる。**
     -->
     <Compile Include="..\..\src\FsBulletML2.Playground\Stage.fs" Link="Stage.fs" />
     <Compile Include="..\..\src\FsBulletML2.Playground\Rand.fs" Link="Rand.fs" />

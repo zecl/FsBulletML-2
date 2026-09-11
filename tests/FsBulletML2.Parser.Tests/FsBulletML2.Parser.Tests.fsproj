@@ -112,6 +112,18 @@
       借りて compile し直していた。**`affected.ps1` は `Link` を追わない**ので、
       借りたソースを触っても、借りている試験が CI で選ばれなかった
       （実測。移す前は 7 本 どれを触っても 試験 0 本）。
+      **道具の側は v4.9.5 で直した** —— 借りたファイルを鍵にして、
+      借りている proj を種に入れる。だからもう「参照に移す」だけが道ではない。
+
+      ## **この 2 本 は Danmaku Lab へ移せない**（v5.0 で数えた）
+
+      名前は器の部品に見えるが、**引いているのはエンジン側の試験** ——
+      この proj の **40 ファイル**が `LanguageService` の字を使っている。
+      `Bullets.Dsl` とまったく同じ構図（すぐ下の「目盛りの正本」）。
+
+      ロードマップは「`LanguageService` は `ProjectReference` が 0 本 だから
+      切り口が在る」と書いていたが、**引く側を数えていなかった。**
+      **出る辺が 0 本 でも、入る辺が 40 ファイル 在れば動かせない。**
     -->
     <ProjectReference Include="..\..\src\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.LanguageService.Host\FsBulletML2.LanguageService.Host.fsproj" />
