@@ -86,6 +86,9 @@ $allTests = @(
 'FsBulletML2.Unity2D.Tests')
 $allBuilds = @(
   'FsBulletML2.Benchmarks',
+  # `guard-core-fable` の材料。**試験が 1 本 も触らないが Core と Dsl を参照する**
+  # ので、サンプルと同じ側に立つ —— Core の公開型を変えたときに此処が壊れる
+  'CoreFableProbe',
   'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
   'FsBulletML2.Sample.TypeProviders.Debug',
   'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
@@ -126,10 +129,11 @@ Write-Host '=== 少ないほう'
 # Dsl は src/Bullets.Dsl 経由でサンプル 4 つ に届く（面は Danmaku Lab へ出た）。
 # **試験は 2 本。** v1.0 で Parser.Tests が Bullets.Dsl を引くようになった ——
 # F# の CE を読む口の目盛りが、その弾幕の**値**を正本にしている
-Check 'Dsl だけなら試験は Dsl.Tests と Parser.Tests、build は弾幕を使う 4 本' `
+Check 'Dsl だけなら試験は Dsl.Tests と Parser.Tests、build は弾幕を使う 4 本と probe' `
   @('src/FsBulletML2.Dsl/BulletDsl.fs') `
   @('FsBulletML2.Dsl.Tests', 'FsBulletML2.Parser.Tests') `
-  @(    'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
+  @('CoreFableProbe',
+    'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
     'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
 
 Check 'MonoGame だけなら MonoGame.Tests と、それが build しないサンプル 2 つ' `

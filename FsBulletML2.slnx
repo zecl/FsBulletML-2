@@ -39,6 +39,7 @@
     <Project Path="src/UnityEngine.Stub/UnityEngine.Stub.csproj" />
   </Folder>
   <Folder Name="/tools/">
+    <Project Path="tools/CoreFableProbe/CoreFableProbe.fsproj" />
     <Project Path="tools/StubShapeCheck/StubShapeCheck.csproj" />
   </Folder>
   <Folder Name="/tests/">

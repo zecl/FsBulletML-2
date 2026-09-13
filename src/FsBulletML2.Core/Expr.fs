@@ -13,12 +13,17 @@ open System.Globalization
 /// ここを通る。**
 ///
 /// ここは「同じ文字列を同じ意味で読む」木と評価器で、`getValueByXPath`
-/// （旧の評価器。走行はもう通らないが、突き合わせの相手として残してある）と
-/// 1 ビットも違わない値を返すことを目標にする。速さは、その次。
+/// （旧の評価器。突き合わせの相手）と 1 ビットも違わない値を返すことを
+/// 目標にする。速さは、その次。
+///
+/// **旧の評価器は Core に無い。** `System.Xml.XPath` を引くと Core が
+/// Fable で焼けなくなるので、v5.5 で
+/// `tests/FsBulletML2.Core.Tests/XPathOracle.fs` へ移した。
+/// **相手は試験の側にしか要らない** —— 走行も畳みもここを通る。
 ///
 /// ## 何に合わせるのか
 ///
-/// `getValueByXPath` が通る `Util.TryParse.xpathNumber` は
+/// 旧の `xpathNumber`（いまは `XPathOracle`）は
 ///
 ///   1. + - * の前後に空白を入れる
 ///   2. "/" を " div " に、"%" を " mod " に置き換える
@@ -45,6 +50,12 @@ open System.Globalization
 /// NaN を返す。落とすほうへ寄せると、いま静かに進んでいる台本が落ちる
 /// —— ただし同梱の 227 本 に読めない式は 1 つも無い（ExprTests が数える）
 /// ので、この差で走行が変わる台本は無い。
+///
+/// **ただし畳む段だけは落ちる。** `$` を含まない式は読み込みの段で
+/// `BulletmlRead.foldConstants` が値に潰していて、**そこは旧の XPath でも
+/// 落ちていた**（`Diagnosis` の 4 層 目 がそれ）。XPath を外したときに
+/// `NumExpr.isReadable` で同じ線を引き直してある —— 走行（`getValue`）は
+/// 素通りのままで、変わったのは例外の型だけ。
 ///
 /// どちらも「旧が落ち、こちらは落ちない」向きの差。直っている側だが、
 /// 差であることを書いておく。
@@ -322,6 +333,21 @@ module Expr =
       { Source = s; Ast = ast; NeedRand = needRand; NeedRank = needRank }
 
     let text (e: NumExpr) = e.Source
+
+    /// **読めた式か。** 読めなかった節（`Invalid`）が 1 つ でも在れば false。
+    ///
+    /// 走行は読めない式を NaN で素通りさせる（そう決めてある）。が、
+    /// **定数を畳む段は昔から落ちていた** —— `System.Xml.XPath` に
+    /// "1+" を渡すと XPathException になり、それが `Diagnosis` の
+    /// 4 層 目（式）になっていた。XPath を外したので、同じ線をここで引く。
+    let isReadable (e: NumExpr) : bool =
+      let rec ok node =
+        match node with
+        | Invalid -> false
+        | Num _ | Rand | Rank -> true
+        | Neg a -> ok a
+        | Add (a, b) | Sub (a, b) | Mul (a, b) | Div (a, b) | Mod (a, b) -> ok a && ok b
+      ok e.Ast
 
     /// 走行中の入口。木を歩くのは計算のときだけで、
     /// $rand / $rank を使うかは読んだときに決まっている

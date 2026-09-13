@@ -1,26 +1,34 @@
 ﻿namespace FsBulletML2
 
 open System
-open System.IO 
-open System.Text 
-open System.Xml
 open System.Text.RegularExpressions
 open Microsoft.FSharp.Reflection 
 
 [<AutoOpen>]
 module DTD =
-  let stringifyFullName (discriminatedUnion:'T) = 
+  /// DU を「型名.腕名 中身」の字にする。**`ToString` の override 専用** ——
+  /// 走行も trace も通らない。
+  ///
+  /// **`inline` なのは Fable の都合。** ここは F# の reflection を使うので、
+  /// 総称のままだと Fable が「実行時に総称が消えるので型が引けない」と言って
+  /// Core ごと焼けなくなる。`inline` にすると呼ぶ側で `'T` が決まる。
+  ///
+  /// `info.DeclaringType` を `typeof<'T>` に替えてあるのも同じ理由
+  /// （`UnionCaseInfo.DeclaringType` は Fable に無い）。**DU の腕の
+  /// `DeclaringType` はその DU 自身**なので、出る字は変わらない。
+  let inline stringifyFullName (discriminatedUnion:'T) =
     if box discriminatedUnion = null  then
-      nullArg  "discriminatedUnion"  
+      nullArg  "discriminatedUnion"
     if FSharpType.IsUnion(typeof<'T>)|> not then
       invalidArg "discriminatedUnion" (sprintf "not DU:%s" typeof<'T>.FullName)
- 
+
     let info, objects = FSharpValue.GetUnionFields(discriminatedUnion, typeof<'T>)
-    let typeName = 
-      if info.DeclaringType.IsGenericType then
-        info.DeclaringType.Name.Substring(0, info.DeclaringType.Name.LastIndexOf("`"))  + "." + info.Name
+    let duType = typeof<'T>
+    let typeName =
+      if duType.IsGenericType then
+        duType.Name.Substring(0, duType.Name.LastIndexOf("`"))  + "." + info.Name
       else
-        info.DeclaringType.Name + "." + info.Name
+        duType.Name + "." + info.Name
     match objects  with
     | [||] -> typeName
     | elements ->
@@ -575,57 +583,12 @@ module DTD =
         children |> Seq.iter writeTopElm
         sink.End()
 
-    /// XML の受け口。**いままでの `XmlWriter` を包むだけ** ——
-    /// エスケープも字下げもあちらが持っている
-    type private XmlSink(writer: XmlWriter) =
-      interface IBulletmlSink with
-        member _.Start name = writer.WriteStartElement name
-        member _.Attr(name, value) = writer.WriteAttributeString(name, value)
-        member _.Text value = writer.WriteString value
-        member _.End() = writer.WriteEndElement()
-
-    let getXmlString formatting (encdoc: EncodingAndDoctype) indentation (this: Bulletml) =
-      let output = new StringBuilder()             
-      let sw =
-        { new StringWriter(output) with
-          override this.Encoding with get () = Encoding.UTF8 }
-      sw.NewLine <- "\r\n"
-
-      use writer = new XmlTextWriter(sw, Formatting=formatting, Indentation = indentation)
-      encdoc |> function
-      | Nothing -> ()
-      | Exist -> writer.WriteStartDocument()
-                 let docType = "bulletml"
-                 let sysid = "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml/bulletml.dtd"
-                 writer.WriteDocType(docType, null, sysid, null)
-
-      writeContentTo (XmlSink(writer)) this
-      output.ToString()
-
-    let toXmlString (encodingAndDoctype: EncodingAndDoctype) (this: Bulletml) =
-      getXmlString Formatting.None encodingAndDoctype 0 this
-
-    let toIndentedXmlString (indentation: int) (encodingAndDoctype: EncodingAndDoctype) (this: Bulletml) =
-      getXmlString Formatting.Indented encodingAndDoctype indentation this
-
-  /// **弾幕の木を歩いて、受け口へ流す 1 本。表記を知らない。**
-  ///
-  /// XML を書くのも S 式 を書くのも インデント記法 を書くのも、歩きはこれ 1 本。
-  /// 違うのは受け口だけ —— **表記が増えても、ここは増えない。**
-  ///
-  /// F# の CE だけはこの形に乗らない（要素名ではなく DSL の名前で書くので、
-  /// 木の形がそのまま字にならない）。あちらは別の口。
-  module BulletmlWriter =
-
-    let writeTo (sink: IBulletmlSink) (bulletml: Bulletml) = BulletmlXml.writeContentTo sink bulletml
-
-    /// XML の字にする。**定数を畳まない。**
-    ///
-    /// `Parser` の `Bulletml.ToIndentedXmlString` は `foldConstants` を通す ——
-    /// `8` が `8.0000000000` になる。**表記を行き来する用途ではそれが困る**
-    /// （`<wait>8</wait>` を sxml にして戻すと字が化ける）。
-    ///
-    /// 人が書いた字を保つ側が要るので、こちらを開けてある。
-    /// 同梱カタログを焼くのは畳む側のまま（v1.4 より前 からの挙動）。
-    let toIndentedXml (indentation: int) (bulletml: Bulletml) =
-      BulletmlXml.toIndentedXmlString indentation EncodingAndDoctype.Nothing bulletml
+  // **XML の受け口（`XmlSink`）と、字にする口はここに無い。**
+  //
+  // 受け口は「その表記を読むパーサと同じところに置く」決めなので、
+  // sxml / fsb の受け口と同じ `FsBulletML2.Parser` に居る（`XmlWrite.fs`）。
+  // 歩き（`writeContentTo`）だけがここに残る —— **表記を知らないから。**
+  //
+  // 置き場を動かしたのは Fable の都合でもある。`System.Xml` は Fable に無く、
+  // Fable は proj まるごとしか焼けないので、**Core に 1 か所 でも在ると
+  // Core ごと焼けなくなる。**

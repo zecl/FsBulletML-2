@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2
+namespace FsBulletML2
 open System
 open System.Globalization
 // DTD は AutoOpen だが、open System が先に来るので Action が System.Action に
@@ -614,44 +614,59 @@ module BulletmlRead =
   /// test は小数の書き方だけを変える（下の toStr）。
   let private foldConstants' bulletml test =
     // 値は BulletML の文書と同じ書き方（小数点は . ）で持ち回る。
-    // F10 を既定カルチャで作ると , が混ざり、XPath が引数区切りと読んで落ちる。
+    // F10 を既定カルチャで作ると , が混ざり、読み直す側が桁区切りと読んで落ちる。
     // test の側は元から不変（F# の string 演算子）で、明示に揃えただけ
     let toStr (single: float32) =
       if test then single.ToString(CultureInfo.InvariantCulture)
       else single.ToString("F10", CultureInfo.InvariantCulture)
+    /// 畳むのは **$ を含まない式だけ**（下の rep が見ている）。
+    /// 乱数も難度も読まれないので 0 を渡す。
+    ///
+    /// **走行の `getValue` と同じ木・同じ評価**を通す。以前はここだけ
+    /// `System.Xml.XPath` で字を評価していて、Core が xml に縛られていた。
+    /// 両者が同じ値を返すことは ExprTests が実物の式で突き合わせている。
+    ///
+    /// **読めない式で落ちるのは、XPath だったころと同じ。**
+    /// `number("1 + ")` が XPathException になり、それが `Diagnosis` の
+    /// 4 層 目（式）だった。木は NaN を返すので落ちない —— **畳む側で線を引く。**
+    /// 走行（`getValue`）は素通りのまま（読めない式で台本を止めない決め）。
+    let foldEval (x: Expr.NumExpr) =
+      if not (Expr.NumExpr.isReadable x) then
+        new BulletmlDTDViolationException(sprintf "式として読めない:[%s]" (Expr.NumExpr.text x)) |> raise
+      Expr.NumExpr.evalWithValues 0.0f 0.0f x
     let rep (s: Expr.NumExpr) x (y:Lazy<'T>) = if (Expr.NumExpr.text s).Contains("$") then x else y.Force()
     let repDir direction = direction |> function
       | Some d -> d |> function 
-        | Direction(a,x) -> rep x direction (lazy (Some (Direction(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr))))
+        | Direction(a,x) -> rep x direction (lazy (Some (Direction(a,foldEval x |> toStr |> numExpr))))
       | None -> direction
 
     let repSpd speed = speed |> function
       | Some s -> s |> function 
-        | Speed(a,x) -> rep x speed (lazy (Some (Speed(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr))))
+        | Speed(a,x) -> rep x speed (lazy (Some (Speed(a,foldEval x |> toStr |> numExpr))))
       | None -> speed
 
     let repTimes times = times |> function 
-      | Times(x) -> rep x times (lazy (Times(TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
+      | Times(x) -> rep x times (lazy (Times(foldEval x |> toStr |> numExpr)))
 
     let repTerm term = term |> function 
-      | Term(x) -> rep x term (lazy (Term(TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
+      | Term(x) -> rep x term (lazy (Term(foldEval x |> toStr |> numExpr)))
 
     let repHorizontal horizontal = horizontal |> function
       | Some h -> h |> function 
-        | Horizontal(a,x) -> rep x horizontal (lazy (Some (Horizontal(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr))))
+        | Horizontal(a,x) -> rep x horizontal (lazy (Some (Horizontal(a,foldEval x |> toStr |> numExpr))))
       | None -> horizontal
 
     let repVertical vertical = vertical |> function
       | Some v -> v |> function 
-        | Vertical(a,x) -> rep x vertical (lazy (Some (Vertical(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr))))
+        | Vertical(a,x) -> rep x vertical (lazy (Some (Vertical(a,foldEval x |> toStr |> numExpr))))
       | None -> vertical
 
     let repDirOne direction = direction |> function
-      | Direction(a,x) -> rep x direction (lazy (Direction(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
+      | Direction(a,x) -> rep x direction (lazy (Direction(a,foldEval x |> toStr |> numExpr)))
     let repSpdOne speed = speed |> function
-      | Speed(a,x) -> rep x speed (lazy (Speed(a,TryParse.eval (Expr.NumExpr.text x) |> toStr |> numExpr)))
+      | Speed(a,x) -> rep x speed (lazy (Speed(a,foldEval x |> toStr |> numExpr)))
     let repWait times =
-      rep times times (lazy (TryParse.eval (Expr.NumExpr.text times) |> toStr |> numExpr))
+      rep times times (lazy (foldEval times |> toStr |> numExpr))
 
     // 位置ごとに変換する。公開の Bulletml ファミリと走らせる木が同じ形を
     // しているので、腕が 1 対 1 に並ぶ。以前は平らな DU 同士だったので

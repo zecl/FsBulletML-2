@@ -13,7 +13,7 @@ open FsBulletML2.LanguageService
 ///     XML の構文        XmlException                  行・桁 あり
 ///     BulletML でない   tryReadXmlString が None      位置なし
 ///     木は組めない      BulletmlDTDViolationException 位置なし
-///     式                XPathException                位置なし
+///     式                BulletmlDTDViolationException 位置なし
 ///
 /// **本番と同じ道を通す。** `Diagnosis.apply` は「載せるところ」を引数で
 /// 受け取るので、host は `Playfield` を作り、ここは `Runner.load` を通す。

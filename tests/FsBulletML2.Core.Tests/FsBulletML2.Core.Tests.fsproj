@@ -30,6 +30,7 @@
     <Compile Include="Degenerate.fs" />
     <Compile Include="Expressions.fs" />
     <Compile Include="ShootingType.fs" />
+    <Compile Include="XPathOracle.fs" />
     <Compile Include="Culture.fs" />
     <Compile Include="Omitted.fs" />
     <Compile Include="FireShapes.fs" />

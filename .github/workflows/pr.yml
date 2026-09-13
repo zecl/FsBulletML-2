@@ -227,6 +227,24 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-fable-parity.Tests.ps1
 
+      # **`Core` が Fable で焼けるか。** Fable は proj まるごとしか焼けないので、
+      # `System.Xml` や F# の reflection が `Core` に 1 か所 でも入ると
+      # **`Core` ごと焼けなくなる** —— build も dotnet test も見ない（.NET では通る）。
+      # 焼いて、node で走らせて、**.NET で走らせた答えと突き合わせる。**
+      #
+      # .NET 側は `dotnet fsi -r:` で dll を引く。**この job は build しない**ので
+      # ここで焼く（`Build ·` の job とは走行が別で、bin を当てにできない）
+      - name: 焼ける門の材料を build
+        run: dotnet build tools/CoreFableProbe/CoreFableProbe.fsproj -c Release
+
+      - name: Core が Fable で焼けるか
+        shell: pwsh
+        run: ./.github/scripts/guard-core-fable.ps1
+
+      - name: 焼ける門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-core-fable.Tests.ps1
+
       # **同じソースで .NET だけ速い形が在る。** `[ for … do … while … ]` を
       # Fable は enumerator の鎖に焼くので、1 歩 ごとに物が 3 つ 増える ——
       # 答えは合っているので build も試験も目も見ない（v4.9 で実機に当てて出た）。

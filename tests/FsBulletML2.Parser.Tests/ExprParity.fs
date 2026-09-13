@@ -28,11 +28,12 @@ open FsBulletML2.LanguageService
 ///
 /// --- 壊れ方は 2 通り（測った）
 ///
-///     <wait>1+*2</wait>       $ なし   **走らせると XPathException**
+///     <wait>1+*2</wait>       $ なし   **走らせると落ちる**
 ///     <wait>1+*$rank</wait>   $ あり   **走る。60 コマ で 61 発**（間 が空かない）
 ///
-/// 割れ目は `BulletmlRead.foldConstants'` —— **`$` を含まない式だけ**を
-/// 旧の評価器（XPath）で畳む。
+/// 割れ目は `BulletmlRead.foldConstants'` —— **`$` を含まない式だけ**を畳む。
+/// 落ちる口 は v5.5 で替わった（旧の評価器の XPathException ->
+/// `Expr.NumExpr.isReadable`）。**線は同じで、例外の型だけ違う。**
 ///
 /// --- 較正（1 か所 ずつ当てて、赤くなった点を数えた）
 ///

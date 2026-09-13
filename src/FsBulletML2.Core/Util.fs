@@ -17,26 +17,16 @@ module internal Util =
 
 [<RequireQualifiedAccess>]
 module internal TryParse =
-  /// 式の値は BulletML の文書と同じ書き方（小数点は . ）で持ち回る。
-  /// 読む側を既定カルチャのままにすると、de-DE は "2.5" の . を桁区切りと読んで
-  /// 例外なく 25 を返す。作る側だけ直すと、落ちる不具合が静かな不具合に変わる。
+  /// **式を字のまま評価する口はここに無い。**
   ///
-  /// 作る側はここでは元から不変（F# の string 演算子）。明示にしてあるのは、
-  /// その不変性が実装に依るところなので、版が変わっても動くようにするため
-  let private xpathNumber (expression:string) =
-    let regx = new System.Text.RegularExpressions.Regex(@"([\+\-\*])")
-    let xexpr = regx.Replace(expression, " ${1} ").Replace("/", " div ").Replace("%", " mod ")
-    let doc = new System.Xml.XPath.XPathDocument(new StringReader("<r/>"))
-    let nav = doc.CreateNavigator()
-    Convert.ToString(nav.Evaluate(String.Format("number({0})", xexpr)), CultureInfo.InvariantCulture)
-
-  let tryEval (expression:string) =
-    Single.TryParse(xpathNumber expression, NumberStyles.Float, CultureInfo.InvariantCulture)
-
-  let eval (expression:string) =
-    Single.Parse(xpathNumber expression, NumberStyles.Float, CultureInfo.InvariantCulture)
-
-  let tryParseWith tryParseFunc = 
+  /// 以前は `xpathNumber`（`System.Xml.XPath.XPathDocument` に "number(...)" を
+  /// 評価させる）が居て、`eval` / `tryEval` / `parseEval` がそれを包んでいた。
+  /// **Core が xml に縛られていたのはここを含む 3 か所** —— 落として、
+  /// 式は `Expr.NumExpr` の木を評価する 1 本 に寄せた。
+  ///
+  /// 旧実装は tests/FsBulletML2.Core.Tests/XPathOracle.fs に在る。
+  /// 木が同じ値を返すかを突き合わせる相手なので、**試験の側にしか要らない。**
+  let tryParseWith tryParseFunc =
     tryParseFunc >> function
     | true, v    -> Some v
     | false, _   -> None
@@ -47,7 +37,6 @@ module internal TryParse =
   let parseSingle = tryParseWith (fun (s: string) -> System.Single.TryParse(s))
   let parseDouble = tryParseWith (fun (s: string) -> System.Double.TryParse(s))
   let parseDecimal = tryParseWith (fun (s: string) -> System.Decimal.TryParse(s))
-  let parseEval = tryParseWith tryEval
 
 [<AutoOpen>]
 module TryParseActivePattern =
@@ -57,7 +46,6 @@ module TryParseActivePattern =
   let (|Single|_|) = TryParse.parseSingle
   let (|Double|_|) = TryParse.parseDouble
   let (|Decimal|_|) = TryParse.parseDecimal
-  let (|Eval|_|) = TryParse.parseEval
 
 [<AutoOpen>]
 module Monad = 

@@ -1,4 +1,4 @@
-﻿namespace FsBulletML2
+namespace FsBulletML2
 
 open System.Xml
 open System.Runtime.InteropServices
@@ -103,30 +103,30 @@ module Bulletml =
     // ここを member のままにできないのは、名前が同じで自分を呼ぶため
     member this.ToXmlString() =
       this |> BulletmlRead.foldConstants
-           |> BulletmlXml.toXmlString EncodingAndDoctype.Nothing
+           |> BulletmlXmlWrite.toXmlString EncodingAndDoctype.Nothing
 
     member this.ToXmlStringForTest() =
       this |> BulletmlRead.foldConstantsForTest
-           |> BulletmlXml.toXmlString EncodingAndDoctype.Nothing
+           |> BulletmlXmlWrite.toXmlString EncodingAndDoctype.Nothing
 
     member this.ToXmlString(?encodingAndDoctype) =
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
       this |> BulletmlRead.foldConstants
-           |> BulletmlXml.toXmlString encodingAndDoctype
+           |> BulletmlXmlWrite.toXmlString encodingAndDoctype
 
     member this.ToXmlStringForTest(?encodingAndDoctype) =
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
       this |> BulletmlRead.foldConstantsForTest
-           |> BulletmlXml.toXmlString encodingAndDoctype
+           |> BulletmlXmlWrite.toXmlString encodingAndDoctype
 
     member this.ToIndentedXmlString([<Optional; DefaultParameterValue(4)>]?indentation : int, ?encodingAndDoctype) =
       let indentation = defaultArg indentation 4
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
       this |> BulletmlRead.foldConstants
-           |> BulletmlXml.toIndentedXmlString indentation encodingAndDoctype
+           |> BulletmlXmlWrite.toIndentedXmlString indentation encodingAndDoctype
 
     member this.ToIndentedXmlStringForTest([<Optional; DefaultParameterValue(4)>]?indentation : int, ?encodingAndDoctype) =
       let indentation = defaultArg indentation 4
       let encodingAndDoctype = defaultArg encodingAndDoctype EncodingAndDoctype.Nothing
       this |> BulletmlRead.foldConstantsForTest
-           |> BulletmlXml.toIndentedXmlString indentation encodingAndDoctype
+           |> BulletmlXmlWrite.toIndentedXmlString indentation encodingAndDoctype

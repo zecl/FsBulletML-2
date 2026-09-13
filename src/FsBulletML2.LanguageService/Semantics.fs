@@ -5,7 +5,7 @@
 ///     構文              XmlException / FParsec        行・桁 あり
 ///     BulletML でない   tryRead… が None              位置なし
 ///     木は組めない      BulletmlDTDViolationException 位置なし
-///     式                XPathException                位置なし
+///     式                BulletmlDTDViolationException 位置なし
 ///
 /// どれも通るのに走らない弾幕が在る。`top` で始まる定義が 1 つ も無い本は、
 /// **読めて・組めて・黙って何も起きない**（走らせる側が `StartsWith` で
@@ -73,8 +73,11 @@ type FindingKind =
   ///     Stops = false   **走る。値が NaN になるだけ**
   ///
   /// 割れ目は Core の畳みに在る —— **`$` を含まない式だけ**が読み込みの段で
-  /// 畳まれ、そこで旧の評価器（XPath）が落ちる。`$` を含む式はそこを通らず、
-  /// 走行中に NaN になる。
+  /// 畳まれ、そこで落ちる。`$` を含む式はそこを通らず、走行中に NaN になる。
+  ///
+  /// **落とす口 は v5.5 で替わった**（旧の評価器の XPathException ->
+  /// `Expr.NumExpr.isReadable`）が、**どちらが落ちるかの線は同じ** ——
+  /// 畳む式だけ。`Core` から `System.Xml` を外したときに引き直してある。
   ///
   /// 版の頭で測った —— `<wait>1+*$rank</wait>` は **60 コマ で 61 発** 撃つ
   /// （間 が空かない）。**読めて・組めて・走って・書いたつもりの間 が空かない。**

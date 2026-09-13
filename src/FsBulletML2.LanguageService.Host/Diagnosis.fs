@@ -25,7 +25,7 @@ type Failure =
 ///     構文              XmlException / FParsec        行・桁 あり
 ///     BulletML でない   tryRead… が None              位置なし
 ///     木は組めない      BulletmlDTDViolationException 位置なし（label 名は在る）
-///     式                XPathException                位置なし
+///     式                BulletmlDTDViolationException 位置なし
 ///
 /// **層の並びは表記に依らない。** 1 層 目 だけが表記ごとで、そこは
 /// `apply` / `applySxml` に分けてある（束ねるのは `SourceReader`）。

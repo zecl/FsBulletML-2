@@ -22,7 +22,6 @@
     <Compile Include="BulletmlOps.fs" />
     <Compile Include="Step.fs" />
     <Compile Include="Api.fs" />
-    <Compile Include="Xml.fs" />
     <Compile Include="BulletmlInfo.fs" />
   </ItemGroup>
 </Project>

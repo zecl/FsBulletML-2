@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- 門の材料で、配る物ではない。**slnx には載せる** ——
+         載せないと CI が 1 度 も build しないので、.NET 側で壊れても緑のまま
+         （`guard-slnx.ps1` がそれを見ている）。置き場を `tools/` にしたのは
+         `StubShapeCheck`（`guard-stub-shape.ps1` の材料）と同じ立場だから -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <!--
+    **`FsBulletML2.Core` が Fable で焼けることを見る門の材料。**
+
+    Fable は proj まるごとしか焼けないので、`Core` に `System.Xml` や
+    F# の reflection が 1 か所 でも入ると **`Core` ごと焼けなくなる。**
+    build も `dotnet test` もそれを見ない —— .NET では全部 通るから。
+
+    `guard-core-fable.ps1` がこれを焼いて、焼いた JS を node で走らせ、
+    同じソースを .NET で走らせた答えと突き合わせる。
+
+    **`Parser` を参照しない。** あちらは FParsec（F# ソース同梱でない）と
+    `System.Xml` を持つので焼けない。参照した瞬間にこの門は常に赤になる。
+  -->
+  <ItemGroup>
+    <Compile Include="Probe.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
+  </ItemGroup>
+</Project>
