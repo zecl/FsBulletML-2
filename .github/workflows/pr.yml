@@ -108,6 +108,16 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-run-trace.Tests.ps1
 
+      # MagicOnion の client（E1.2）。**帯 1 が示すものは「F# が 0 本」に尽きる。**
+      # 消し忘れても絵 は出てしまう（参照が残っているだけで動く）ので、目 では出ない
+      - name: client が F# を抱えていないか
+        shell: pwsh
+        run: ./.github/scripts/guard-client-has-no-fsharp.ps1
+
+      - name: その門の校正
+        shell: pwsh
+        run: ./.github/scripts/guard-client-has-no-fsharp.Tests.ps1
+
       - name: 変更から選ぶ
         id: pick
         shell: pwsh

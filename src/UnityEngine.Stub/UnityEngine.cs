@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 // COMPILE-ONLY stub of UnityEngine and the Unity packages the samples use.
 //
@@ -527,6 +527,13 @@ namespace UnityEngine
     }
 
     /// <summary>Inspector に出すスライダの範囲。値は使われない</summary>
+    /// <summary>Inspector の欄に出る説明。<b>焼くだけなら何もしない</b></summary>
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class TooltipAttribute : Attribute
+    {
+        public TooltipAttribute(string tooltip) { }
+    }
+
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class RangeAttribute : Attribute
     {

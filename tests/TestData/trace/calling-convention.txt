@@ -1,5 +1,6 @@
 step が返すのは差分。呼ぶ側が座標に足す。
 係数と Y の符号はフロントごとに違う（MonoGame は 1 倍、Unity2D は 1/100 で Y を反転）。
+MagicOnion の サーバーは Unity2D と同じ —— **空間 を決めて配るのがサーバー**なので、換算 もそちら側 に在る。
 
 **面（Playground）は Danmaku Lab へ出た**（v5.4）。あちらの Playfield.fs も
 同じ規約で足すが、**この網はこの repo しか見ない** ——
@@ -10,6 +11,10 @@ samples/FsBulletML2.Sample.MonoGame.CSharp/Enemy.cs
 
 samples/FsBulletML2.Sample.MonoGame.FSharp/Enemy.fs
     let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
+
+samples/FsBulletML2.Sample.Server.MagicOnion/Engine/ServerBullet.cs
+    X += f.Delta.X / 100f;
+    Y -= f.Delta.Y / 100f;
 
 samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/BaseBullet.cs
     X = X + (f.Delta.X / 100);
@@ -39,4 +44,4 @@ run の経路に居ないが、座標を足している所（件数だけ）:
   samples/FsBulletML2.Sample.MonoGame.FSharp/Background.fs         1 行
   samples/FsBulletML2.Sample.MonoGame.FSharp/Player.fs             4 行
 
-―― 本体 8 ファイル / 14 行（0 なら走査か網が壊れている）
+―― 本体 9 ファイル / 16 行（0 なら走査か網が壊れている）

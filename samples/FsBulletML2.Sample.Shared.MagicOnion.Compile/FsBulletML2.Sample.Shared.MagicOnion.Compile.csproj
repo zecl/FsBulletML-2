@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    サーバーと client が両方 参照する「口」を焼く。**F# を 1 つ も参照しない。**
+
+    参照した瞬間、client 側 に FSharp.Core が戻ってくる ——
+    この帯 が示そうとしているものが、そこで消える。
+    門（.github/scripts/guard-client-has-no-fsharp.ps1）が数えている。
+
+    ## なぜ csproj が package の外 に在るか
+
+    ソースは隣（`FsBulletML2.Sample.Shared.MagicOnion/Runtime/`）に在って、
+    **あちらは Unity の UPM package**（`package.json` が在る）。
+    csproj をあの中に置くと、`obj/` と `bin/` が package の中に出て、
+    **Unity がその dll を資産 として読みに行く。**
+
+        Plugin '.../obj/Release/net10.0/refint/FsBulletML2.Sample.Shared.MagicOnion.dll'
+        has the same filename as Assembly Definition File '.../FsBulletML2.Sample.Shared.MagicOnion.asmdef'
+
+    そのうえ古い dll のほうを読もうとして参照解決に失敗する。**実際に踏んだ。**
+
+    `BaseIntermediateOutputPath` で `obj~/` へ逃がすのは効かない ——
+    csproj に書くと MSB3539（`Microsoft.Common.props` より後 なので手遅れ）で、
+    NuGet はそれでも `obj/` に書く。
+
+    **写しは作らない。** ソースは 1 か所 で、Unity は package として、
+    サーバーはこの csproj として、同じ `Runtime/*.cs` を読む。
+
+    netstandard2.1 も出すのは Unity と揃えるため（Unity は net10.0 を読めない）。
+  -->
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML2.Sample.MagicOnion.Shared</RootNamespace>
+    <AssemblyName>FsBulletML2.Sample.Shared.MagicOnion</AssemblyName>
+    <!-- DTO の public に説明が要る。**口 は client が読む唯一の資料** -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\FsBulletML2.Sample.Shared.MagicOnion\Runtime\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MagicOnion.Abstractions" Version="7.10.2" />
+  </ItemGroup>
+
+</Project>

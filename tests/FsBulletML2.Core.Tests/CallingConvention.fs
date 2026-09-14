@@ -152,6 +152,7 @@ type CallingConvention() =
     let lines =
       [ yield "step が返すのは差分。呼ぶ側が座標に足す。"
         yield "係数と Y の符号はフロントごとに違う（MonoGame は 1 倍、Unity2D は 1/100 で Y を反転）。"
+        yield "MagicOnion の サーバーは Unity2D と同じ —— **空間 を決めて配るのがサーバー**なので、換算 もそちら側 に在る。"
         yield ""
         // **この網はこの repo しか見ない。** 面（Playground）が Danmaku Lab へ
         // 出たので、**守る対象の 1 つ が網の外に在る**

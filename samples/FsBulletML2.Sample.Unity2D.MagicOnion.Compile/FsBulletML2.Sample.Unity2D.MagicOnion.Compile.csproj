@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsPackable>false</IsPackable>
+    <Description>COMPILE-ONLY twin of the Unity MagicOnion client. Unity owns the sources; this project only compiles them.</Description>
+  </PropertyGroup>
+
+  <!--
+    **Unity を立てずに、client のソースが焼けるかを見る。**
+
+    ここが在ることでいちばん効くのは E1.2 の門 ——
+    「Assets の下 に F# が 1 本 も居ない」を、**参照が足りなくて落ちる**形で
+    確かめられる。Unity の側 は dll を消し忘れても絵 が出てしまうので、
+    目 では出ない。
+
+    元 の双子（FsBulletML2.Sample.Unity2D.CSharp.Compile）と違って、
+    **F# を 1 本 も参照していない。** 足したら落ちるのではなく、
+    足さないと落ちないのが正しい形。
+  -->
+
+  <ItemGroup>
+    <Compile Include="..\FsBulletML2.Sample.Unity2D.CSharp.Compile\R3UnityShim.cs" />
+    <Compile Include="..\FsBulletML2.Sample.Unity2D.MagicOnion\Assets\Scripts\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML2.Sample.Shared.MagicOnion.Compile\FsBulletML2.Sample.Shared.MagicOnion.Compile.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MagicOnion.Client" Version="7.10.2" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
+    <PackageReference Include="R3" Version="1.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\UnityEngine.Stub\UnityEngine.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Unity.Mathematics.Stub\Unity.Mathematics.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Unity.Entities.Stub\Unity.Entities.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Unity.Transforms.Stub\Unity.Transforms.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Unity.Entities.Graphics.Stub\Unity.Entities.Graphics.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Unity.RenderPipelines.Universal.Runtime.Stub\Unity.RenderPipelines.Universal.Runtime.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Cysharp.Net.Http.Stub\Cysharp.Net.Http.Stub.csproj" />
+  </ItemGroup>
+
+</Project>

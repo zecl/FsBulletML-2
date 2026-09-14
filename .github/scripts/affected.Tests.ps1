@@ -91,13 +91,19 @@ $allBuilds = @(
   'CoreFableProbe',
   'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
   'FsBulletML2.Sample.TypeProviders.Debug',
-  'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
+  'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp',
+  # MagicOnion の サーバー。**サンプルのうち、これだけが Core を参照する** ——
+  # 弾幕を走らせるのがサーバーの仕事になったので、Core を触ると此処が建つ
+  'FsBulletML2.Sample.Server.MagicOnion')
 
 # **どちらも Core を 1 つ も参照しない。** Core を触っても建たない —— 建つのは
 # 「全部」を意味する起点（proj の外・slnx・global.json）を触ったときだけ。
 # StubShapeCheck は弾幕を参照しない道具、LanguageService.Js は Fable に渡す側で
 # .NET の参照を持たない
-$allBuildsAndTools = $allBuilds + 'FsBulletML2.LanguageService.Js' + 'StubShapeCheck'
+# MagicOnion の client 2 本 は **F# を 1 本 も参照しない**（それが門 の主題）。
+# Core を触っても建たず、「全部」を意味する起点のときだけ建つ
+$allBuildsAndTools = $allBuilds + 'FsBulletML2.LanguageService.Js' + 'StubShapeCheck' +
+  'FsBulletML2.Sample.Client.MagicOnion' + 'FsBulletML2.Sample.Unity2D.MagicOnion.Compile'
 
 Write-Host '=== 多いほう'
 
@@ -119,22 +125,25 @@ Check 'slnx を触ると全部' @('FsBulletML2.slnx') $allTests $allBuildsAndToo
 Check 'Unity の Assets は割り当て不明。全部 走るので .Compile も入る' `
   @('samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/CSharpEnv.cs') $allTests $allBuildsAndTools
 
-# **.Compile 自身を触ったら、それ 1 本 だけ。** 何も参照していないので
-Check '.Compile 自身なら 1 本 だけ' `
+# **.Compile 自身を触ったら 2 本。** 参照はしていないが、MagicOnion 版 の双子 が
+# `R3UnityShim.cs` を `Compile Include` で借りている（借りたソース は下 の節）ので
+Check '.Compile 自身なら、借りている側 と 2 本' `
   @('samples/FsBulletML2.Sample.Unity2D.CSharp.Compile/R3UnityShim.cs') `
-  @() @('FsBulletML2.Sample.Unity2D.CSharp.Compile')
+  @() @('FsBulletML2.Sample.Unity2D.CSharp.Compile',
+        'FsBulletML2.Sample.Unity2D.MagicOnion.Compile')
 
 Write-Host '=== 少ないほう'
 
-# Dsl は src/Bullets.Dsl 経由でサンプル 4 つ に届く（面は Danmaku Lab へ出た）。
+# Dsl は src/Bullets.Dsl 経由でサンプル 5 つ に届く（面は Danmaku Lab へ出た）。
 # **試験は 2 本。** v1.0 で Parser.Tests が Bullets.Dsl を引くようになった ——
 # F# の CE を読む口の目盛りが、その弾幕の**値**を正本にしている
-Check 'Dsl だけなら試験は Dsl.Tests と Parser.Tests、build は弾幕を使う 4 本と probe' `
+Check 'Dsl だけなら試験は Dsl.Tests と Parser.Tests、build は弾幕を使う 5 本と probe' `
   @('src/FsBulletML2.Dsl/BulletDsl.fs') `
   @('FsBulletML2.Dsl.Tests', 'FsBulletML2.Parser.Tests') `
   @('CoreFableProbe',
     'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
-    'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
+    'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp',
+    'FsBulletML2.Sample.Server.MagicOnion')
 
 Check 'MonoGame だけなら MonoGame.Tests と、それが build しないサンプル 2 つ' `
   @('src/FsBulletML2.MonoGame/Manager.fs') `
@@ -164,11 +173,14 @@ Check '試験そのものを触ったらその試験だけ' `
 Check 'サンプルの弾幕は Dsl.Tests が見ている' `
   @('samples/FsBulletML2.Bullets/Dodonpachi.fs') @('FsBulletML2.Dsl.Tests') @()
 
-Check '弾幕 DSL 版はサンプル 4 つ に届く' `
+# 自機 の弾（PlayerBullet）を MagicOnion の サーバーが Runner.Load で読むので、
+# **5 つ 目 が此処で増えた**
+Check '弾幕 DSL 版はサンプル 5 つ に届く' `
   @('src/FsBulletML2.Bullets.Dsl/Dodonpachi.fs') `
   @('FsBulletML2.Dsl.Tests', 'FsBulletML2.Parser.Tests') `
   @(    'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
-    'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp')
+    'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp',
+    'FsBulletML2.Sample.Server.MagicOnion')
 
 Write-Host '=== 借りたソース（Compile Include で他の proj から引いている）'
 

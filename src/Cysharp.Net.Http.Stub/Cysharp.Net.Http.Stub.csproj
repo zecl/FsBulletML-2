@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Cysharp.Net.Http.YetAnotherHttpHandler</AssemblyName>
+    <RootNamespace>Cysharp.Net.Http</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <Description>COMPILE-ONLY stub of YetAnotherHttpHandler. NOT a substitute for the Unity package.</Description>
+  </PropertyGroup>
+</Project>

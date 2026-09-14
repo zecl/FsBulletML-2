@@ -1,0 +1,7 @@
+{
+  "name": "com.zecl.fsbulletml2.sample.shared.magiconion",
+  "version": "0.1.0",
+  "displayName": "FsBulletML2 Sample Shared (MagicOnion)",
+  "description": "サーバーと client が共有する口 と DTO。**写しを作らないために package にしてある** —— Unity は file: 参照でここを直に読み、サーバー側 は同じ Runtime/ を csproj で焼く。",
+  "unity": "6000.0"
+}

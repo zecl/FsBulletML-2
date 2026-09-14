@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    弾幕エンジンを走らせる側。**F# を参照してよいのはここだけ。**
+    口（Shared）が F# に触れた瞬間、client に FSharp.Core が戻ってくる。
+
+    **Sdk.Web ではなく素 の Sdk。** 立てるのは gRPC の口 だけで、
+    静的ファイルも Razor も要らない。Web の Sdk だと staticwebassets の
+    段 が毎回 走って、obj に使わない物 が並ぶ。
+    Kestrel と WebApplication は FrameworkReference で引ける。
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>FsBulletML2.Sample.Server.MagicOnion</RootNamespace>
+    <AssemblyName>FsBulletML2.Sample.Server.MagicOnion</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Engine\**\*.cs" />
+    <Compile Include="Hubs\**\*.cs" />
+    <Compile Include="Logging\**\*.cs" />
+    <Compile Include="Rooms\**\*.cs" />
+    <Compile Include="Services\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MagicOnion.Server" Version="7.10.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML2.Sample.Shared.MagicOnion.Compile\FsBulletML2.Sample.Shared.MagicOnion.Compile.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Front\FsBulletML2.Front.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Bullets.Dsl\FsBulletML2.Bullets.Dsl.fsproj" />
+  </ItemGroup>
+
+</Project>
