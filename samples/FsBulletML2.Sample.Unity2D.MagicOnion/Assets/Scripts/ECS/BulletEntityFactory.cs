@@ -62,10 +62,15 @@ public static class BulletEntityFactory
     /// 毎回 送ってくるので、居なくなったことは**出てこないことでしか分からない**
     /// （消えた合図 は送られてこない）。
     /// </summary>
-    public static void Apply(BulletDto[] bullets)
+    /// <param name="room">
+    /// 盤面。<b>配ってくる位置 は 0..65535 の目盛り</b>なので、
+    /// ここで描く値 へ戻す。**戻す式 はサーバーが配った盤面 から決まる** ——
+    /// client が数 を持つわけではない（<c>Wire</c> は口 の package に在る）。
+    /// </param>
+    public static void Apply(BulletDto[] bullets, RoomInfo room)
     {
         var world = World.DefaultGameObjectInjectionWorld;
-        if (world == null || bullets == null)
+        if (world == null || bullets == null || room == null)
         {
             return;
         }
@@ -80,16 +85,20 @@ public static class BulletEntityFactory
 
             var kind = b.Kind == 1 ? BulletKind.Player : BulletKind.Enemy;
 
+            float x = Wire.FromGrid(b.X, room.MinX, room.MaxX);
+            float y = Wire.FromGrid(b.Y, room.MinY, room.MaxY);
+            float dir = Wire.FromDir(b.Dir);
+
             if (_byId.TryGetValue(b.Id, out var entity) && em.Exists(entity))
             {
                 var sim = em.GetComponentObject<BulletSim>(entity);
-                sim.X = b.X;
-                sim.Y = b.Y;
-                sim.Dir = b.Dir;
+                sim.X = x;
+                sim.Y = y;
+                sim.Dir = dir;
                 continue;
             }
 
-            _byId[b.Id] = Spawn(kind, b.Id, b.X, b.Y, b.Dir);
+            _byId[b.Id] = Spawn(kind, b.Id, x, y, dir);
         }
 
         _gone.Clear();

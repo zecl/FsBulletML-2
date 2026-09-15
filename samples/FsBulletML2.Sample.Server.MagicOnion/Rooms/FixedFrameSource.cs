@@ -71,9 +71,9 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
                 {
                     Id = i,
                     // 真上が 0 で時計回り。x が sin、y が cos
-                    X = centerX + (Radius * (float)Math.Sin(rad)),
-                    Y = centerY + (Radius * (float)Math.Cos(rad)),
-                    Dir = deg % 360f,
+                    X = Wire.ToGrid(centerX + (Radius * (float)Math.Sin(rad)), Field.MinX, Field.MaxX),
+                    Y = Wire.ToGrid(centerY + (Radius * (float)Math.Cos(rad)), Field.MinY, Field.MaxY),
+                    Dir = Wire.ToDir(deg),
                     Kind = 0,
                 };
             }

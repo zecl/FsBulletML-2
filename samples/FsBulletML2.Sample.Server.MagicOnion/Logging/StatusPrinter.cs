@@ -24,6 +24,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
         readonly CallCounter counter;
         readonly ConnectionCounter connections;
         readonly AccessLogOptions options;
+        readonly WireMeter meter;
         readonly ILogger logger;
 
         public StatusPrinter(
@@ -31,12 +32,14 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
             CallCounter counter,
             ConnectionCounter connections,
             AccessLogOptions options,
+            WireMeter meter,
             ILoggerFactory loggers)
         {
             this.registry = registry;
             this.counter = counter;
             this.connections = connections;
             this.options = options;
+            this.meter = meter;
             logger = loggers.CreateLogger("stat");
         }
 
@@ -49,6 +52,12 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
 
             using var timer = new PeriodicTimer(options.StatusInterval);
             int lastFrame = 0;
+
+            // **公称の間隔 で割らない。** 1 回 でも遅れると、その遅れたぶんに
+            // 溜まった数を短い時間 で割ることになり、**60 コマ/秒 の輪 から
+            // 63 配/s が出た**（5% の系統誤差）。A/B に使う物差しなので、
+            // 実際に経った時間 で割る
+            var since = System.Diagnostics.Stopwatch.StartNew();
 
             try
             {
@@ -83,20 +92,39 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
                             line.Append(" 撃ち捨て ").Append(room.DroppedShots);
                         }
 
-                        // **弾 1 発 20.0 バイト は実測**（MessagePack で焼いた長さ）。
-                        // ただしこの行 に出るのは概算 —— 実際に流れた量 ではない
-                        double mbps = room.LastBullets * 20.0 * room.Info.Fps * 8 / 1_000_000.0;
-                        line.Append(" 概算 ").Append(mbps.ToString("0.0")).Append("Mbps");
+                        // **物差し が 2 つ ある。** 実測（焼いた長さ）が在るときは
+                        // そちらを出す —— 概算 は「弾 1 発 20.0 バイト」を掛けるだけなので、
+                        // **量子化 で 1 発 の大きさ を変えても 1 ビット も動かない**
+                        if (!meter.Enabled)
+                        {
+                            double mbps = room.LastBullets * 20.0 * room.Info.Fps
+                                          / room.Info.SendEvery * 8 / 1_000_000.0;
+                            line.Append(" 概算 ").Append(mbps.ToString("0.0")).Append("Mbps");
+                        }
+                    }
+
+                    if (meter.Enabled)
+                    {
+                        meter.Drain(out long wireBytes, out long wireFrames);
+                        double seconds = since.Elapsed.TotalSeconds;
+                        since.Restart();
+                        if (wireFrames > 0)
+                        {
+                            line.Append("  |  実測 ");
+                            line.Append((wireBytes * 8 / seconds / 1_000_000.0).ToString("0.00")).Append("Mbps");
+                            line.Append(" / 1 コマ ").Append((wireBytes / wireFrames).ToString()).Append(" B");
+                            line.Append(" / ").Append((wireFrames / seconds).ToString("0")).Append(" 配/s");
+                        }
                     }
 
                     if (calls.Count > 0)
                     {
                         line.Append("  |  呼び");
-                        double seconds = options.StatusInterval.TotalSeconds;
+                        double callSeconds = options.StatusInterval.TotalSeconds;
                         foreach (var call in calls)
                         {
                             line.Append(' ').Append(Short(call.Key));
-                            line.Append(' ').Append((call.Value / seconds).ToString("0")).Append("/s");
+                            line.Append(' ').Append((call.Value / callSeconds).ToString("0")).Append("/s");
                         }
                     }
 

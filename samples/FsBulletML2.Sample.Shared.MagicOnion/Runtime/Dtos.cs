@@ -19,11 +19,23 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
         /// 消えた弾は番号ごと消える（次の並びに出てこない）</summary>
         [Key(0)] public int Id;
 
-        [Key(1)] public float X;
-        [Key(2)] public float Y;
+        /// <summary>
+        /// 盤面 を 0..65535 に割った位置。<b>float ではない。</b>
+        ///
+        /// <b>float32 は MessagePack で 5 バイト固定</b>（0xca ＋ 4）。
+        /// ushort は 3 バイト で乗るので、x / y / 向き の 3 本 で
+        /// **弾 1 発 が 19.9 -> 13.8 バイト**（実測。<c>--measure-wire</c>）。
+        ///
+        /// 刻み は盤面 4.8 x 6.4 に対して 0.0001 未満。
+        /// **描く前 に <see cref="Wire"/> で戻す** —— 戻す式 は
+        /// <see cref="RoomInfo"/> の盤面 から決まるので、client は
+        /// 相変わらず物理量 を持たない。
+        /// </summary>
+        [Key(1)] public ushort X;
+        [Key(2)] public ushort Y;
 
-        /// <summary>向き。度。真上が 0 で時計回り（BulletML の決めごとそのまま）</summary>
-        [Key(3)] public float Dir;
+        /// <summary>向き。<b>1/100 度</b>。真上が 0 で時計回り（BulletML の決めごとそのまま）</summary>
+        [Key(3)] public ushort Dir;
 
         /// <summary>0 = 敵の弾 / 1 = 自機の弾。<b>絵を選ぶためだけ</b></summary>
         [Key(4)] public byte Kind;
@@ -55,6 +67,41 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
 
         /// <summary>このコマで敵に当たった自機弾の数</summary>
         [Key(3)] public ushort EnemyHits { get; set; }
+    }
+
+    /// <summary>
+    /// 配る形 と 描く値 のあいだ の換算。<b>両側 が同じこれを使う。</b>
+    ///
+    /// <b>2 か所 に書かない。</b> 丸め方 が 1 ビット でもずれると、
+    /// 弾が半 ピクセル ずれた場所 に出る —— ビルドは通るし落ちもしないので、
+    /// 目 でしか分からない類 の割れ方 になる。
+    /// </summary>
+    public static class Wire
+    {
+        /// <summary>向き の刻み。<b>1 度 を 100 に割る</b></summary>
+        public const float DirScale = 100f;
+
+        public static ushort ToGrid(float v, float min, float max)
+        {
+            float t = (v - min) / (max - min);
+            if (t <= 0f) { return 0; }
+            if (t >= 1f) { return ushort.MaxValue; }
+            return (ushort)(t * ushort.MaxValue);
+        }
+
+        public static float FromGrid(ushort g, float min, float max)
+            => min + ((max - min) * g / ushort.MaxValue);
+
+        /// <summary>度 を 1/100 度 へ。<b>0..360 に畳んでから</b></summary>
+        public static ushort ToDir(float degrees)
+        {
+            float d = degrees % 360f;
+            if (d < 0f) { d += 360f; }
+            int v = (int)(d * DirScale);
+            return (ushort)(v >= 36000 ? 0 : v);
+        }
+
+        public static float FromDir(ushort d) => d / DirScale;
     }
 
     /// <summary>Y がどちらを向いているか。<b>サーバーが決めて配る</b></summary>
@@ -91,6 +138,16 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
         /// <summary>弾を撃ち始める場所（＝敵の居場所）</summary>
         [Key(7)] public float OriginX { get; set; }
         [Key(8)] public float OriginY { get; set; }
+
+        /// <summary>
+        /// 何コマ に 1 回 配るか。<b>1 なら毎コマ。</b>
+        ///
+        /// <b>これを配らないと、client は間引きと抜けを見分けられない。</b>
+        /// <see cref="FrameDto.Frame"/> はコマ番号（＝時刻）のままなので、
+        /// 2 なら 1, 3, 5… と飛ぶ —— 配らなければ、client は全部 を
+        /// 「落ちた」と数えることになる。
+        /// </summary>
+        [Key(9)] public int SendEvery { get; set; } = 1;
     }
 
     /// <summary>部屋に入るときの注文</summary>

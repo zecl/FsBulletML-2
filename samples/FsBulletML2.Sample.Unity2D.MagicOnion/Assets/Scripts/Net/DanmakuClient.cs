@@ -106,7 +106,7 @@ public sealed class DanmakuClient : MonoBehaviour
         if (frame != null)
         {
             Frame = frame.Frame;
-            BulletEntityFactory.Apply(frame.Bullets);
+            BulletEntityFactory.Apply(frame.Bullets, Room);
         }
 
         ApplyHits(playerHits, enemyHits);

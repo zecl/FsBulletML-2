@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FsBulletML2.Sample.MagicOnion.Shared;
+using FsBulletML2.Sample.Server.MagicOnion.Logging;
 using MagicOnion.Server.Hubs;
 using Microsoft.Extensions.Logging;
 
@@ -23,11 +24,16 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         readonly SemaphoreSlim gate = new SemaphoreSlim(1, 1);
         readonly IFrameSourceFactory factory;
         readonly ILoggerFactory loggers;
+        readonly WireMeter meter;
+        readonly RoomOptions options;
 
-        public RoomRegistry(IFrameSourceFactory factory, ILoggerFactory loggers)
+        public RoomRegistry(
+            IFrameSourceFactory factory, ILoggerFactory loggers, WireMeter meter, RoomOptions options)
         {
             this.factory = factory;
             this.loggers = loggers;
+            this.meter = meter;
+            this.options = options;
         }
 
         /// <summary>
@@ -44,7 +50,8 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
             {
                 if (!rooms.TryGetValue(key, out var room))
                 {
-                    room = new Room(key, factory.Create(request), group, loggers.CreateLogger<Room>());
+                    room = new Room(
+                        key, factory.Create(request), group, loggers.CreateLogger<Room>(), meter, options);
                     rooms.Add(key, room);
                 }
 

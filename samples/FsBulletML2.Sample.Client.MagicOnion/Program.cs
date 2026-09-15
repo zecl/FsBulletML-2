@@ -44,9 +44,13 @@ namespace FsBulletML2.Sample.Client.MagicOnion
                     .ConfigureAwait(false);
 
                 Console.WriteLine(
-                    "部屋 {0} / {1} コマ毎秒 / 空間 {2} / 盤面 x[{3}, {4}] y[{5}, {6}]",
-                    info.Name, info.Fps, info.Space,
+                    "部屋 {0} / 進める {1} コマ毎秒・配る {2} 回毎秒 / 空間 {3} / 盤面 x[{4}, {5}] y[{6}, {7}]",
+                    info.Name, info.Fps, info.Fps / Math.Max(1, info.SendEvery), info.Space,
                     F(info.MinX), F(info.MaxX), F(info.MinY), F(info.MaxY));
+
+                // **飛び の物差し を、配る間隔 に合わせる。** 合わせないと、
+                // 間引いたぶんを全部「落ちた」と数える（コマ番号 は時刻 のまま）
+                receiver.Step = Math.Max(1, info.SendEvery);
 
                 // 自機 を 1 度 置く。**置かないと aim の狙う先が既定のまま**、
                 // かつ**サーバーは被弾 を数えない**（送られていない位置で判定しない）
@@ -143,6 +147,9 @@ namespace FsBulletML2.Sample.Client.MagicOnion
             int want;
             int last = -1;
             int gaps;
+
+            /// <summary>配る間隔。<b>1 なら毎コマ</b></summary>
+            public int Step { get; set; } = 1;
             int playerHits;
             int enemyHits;
 
@@ -152,9 +159,9 @@ namespace FsBulletML2.Sample.Client.MagicOnion
                 {
                     // **番号の飛びを数える。** 落ちたコマは「遅い」ではなく
                     // 「来ていない」ので、遅さとは別に見えないといけない
-                    if (last >= 0 && frame.Frame != last + 1)
+                    if (last >= 0 && frame.Frame != last + Step)
                     {
-                        gaps += frame.Frame - last - 1;
+                        gaps += (frame.Frame - last - Step) / Step;
                     }
 
                     last = frame.Frame;
@@ -242,12 +249,10 @@ namespace FsBulletML2.Sample.Client.MagicOnion
 
                 Console.WriteLine("当たり 敵へ {0} 発 / 自機へ {1} 発", hitEnemy, hitPlayer);
 
-                // **弾 1 発 11 バイト の概算**（ロードマップの但し書きと同じ仮定）。
-                // これは概算であって測定ではない
-                double bytesPerSec = (double)sum / snapshot.Length * 11 * 60;
-                Console.WriteLine(
-                    "概算 {0:0.0} KB/秒 = {1:0.00} Mbps（弾 1 発 11 バイト・60 コマ毎秒 と仮定）",
-                    bytesPerSec / 1024, bytesPerSec * 8 / 1_000_000);
+                // **概算 は出さない。** 弾 1 発 のバイト数 を固定で掛けるやり方は、
+                // **量子化 で 1 発 の大きさ を変えても 1 ビット も動かない** ——
+                // 締めた効果 を測れない物差しを並べると、効いたように読める。
+                // 実測 はサーバー側 の --measure-bytes が焼いた長さ で出す
 
                 if (snapshot.Length < want)
                 {

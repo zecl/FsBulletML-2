@@ -164,12 +164,15 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
             for (int i = 0; i < live.Count; i++)
             {
                 var b = live[i];
+                // **配る形 は整数。** 盤面 を 0..65535 に割る（Wire）——
+                // float32 は MessagePack で 5 バイト固定 なので、
+                // x / y / 向き の 3 本 で 弾 1 発 19.9 -> 13.8 バイト
                 dtos[i] = new BulletDto
                 {
                     Id = b.Id,
-                    X = b.X,
-                    Y = b.Y,
-                    Dir = b.Dir,
+                    X = Wire.ToGrid(b.X, Field.MinX, Field.MaxX),
+                    Y = Wire.ToGrid(b.Y, Field.MinY, Field.MaxY),
+                    Dir = Wire.ToDir(b.Dir),
                     Kind = (byte)(Equals(b.BulletType, BulletType.Player) ? 1 : 0),
                 };
             }

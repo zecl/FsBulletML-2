@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using FsBulletML2.Sample.MagicOnion.Shared;
+using FsBulletML2.Sample.Server.MagicOnion.Logging;
 using MagicOnion.Server.Hubs;
 using Microsoft.Extensions.Logging;
 
@@ -12,6 +13,21 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
     public static class RoomLoop
     {
         public const int Fps = 60;
+    }
+
+    /// <summary>
+    /// 部屋 の回し方。<b>サーバー全体で 1 つ（singleton）。</b>
+    /// </summary>
+    public sealed class RoomOptions
+    {
+        /// <summary>
+        /// 何コマ に 1 回 配るか。<b>進めるのは毎コマ のまま。</b>
+        ///
+        /// <b>進める速さ と 配る速さ を分ける</b>のが E1.6 の手 1 —— 弾の動きは
+        /// 60 コマ/秒 のままで、降ろす回数 だけ減らす。帯域 は割った数 で割れるが、
+        /// **client は受け取った 2 枚 のあいだ を埋める必要が出る**。
+        /// </summary>
+        public int SendEvery { get; set; } = 1;
     }
 
     /// <summary>
@@ -31,6 +47,15 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         readonly IFrameSource source;
         readonly IGroup<IDanmakuHubReceiver> group;
         readonly ILogger logger;
+        readonly WireMeter meter;
+        readonly int sendEvery;
+
+        /// <summary>
+        /// あと何コマ で配るか。<b>剰余 で書かない。</b>
+        /// <c>frame % N == 0</c> は「その数列を必ず全部 通る」前提 で、
+        /// 1 つ でも飛ぶと二度と踏まない（この repo で 1 度 踏んでいる）。
+        /// </summary>
+        int untilSend;
         readonly CancellationTokenSource stopping = new CancellationTokenSource();
         readonly Task loop;
 
@@ -65,12 +90,29 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         int playerHits;
         int enemyHits;
 
-        public Room(string key, IFrameSource source, IGroup<IDanmakuHubReceiver> group, ILogger logger)
+        /// <summary>配らなかったコマ の当たり。<b>次に配るコマ に載せる</b></summary>
+        int pendingPlayerHits;
+        int pendingEnemyHits;
+
+        public Room(
+            string key,
+            IFrameSource source,
+            IGroup<IDanmakuHubReceiver> group,
+            ILogger logger,
+            WireMeter meter,
+            RoomOptions options)
         {
             Key = key;
             this.source = source;
             this.group = group;
             this.logger = logger;
+            this.meter = meter;
+            sendEvery = Math.Max(1, options?.SendEvery ?? 1);
+            untilSend = 1;
+
+            // **配る間隔 を client へ知らせる。** 知らせないと、間引いたぶんを
+            // 全部「落ちた」と数えられる（コマ番号 は時刻 のままなので飛ぶ）
+            source.Info.SendEvery = sendEvery;
             loop = Task.Run(RunAsync);
         }
 
@@ -188,13 +230,32 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
                         Interlocked.Add(ref enemyHits, snapshot.EnemyHits);
                     }
 
-                    group.All.OnFrame(new FrameDto
+                    // **当たりは間引きで消さない。** 配らないコマの当たりを
+                    // 捨てると、その 1 発 が無かったことになる（client 側 で
+                    // 遅れたコマを落とすときと同じ分かれ目）。溜めて次に載せる
+                    pendingPlayerHits += snapshot.PlayerHits;
+                    pendingEnemyHits += snapshot.EnemyHits;
+
+                    if (--untilSend > 0)
+                    {
+                        continue;
+                    }
+
+                    untilSend = sendEvery;
+
+                    var dto = new FrameDto
                     {
                         Frame = n,
                         Bullets = snapshot.Bullets,
-                        PlayerHits = (ushort)snapshot.PlayerHits,
-                        EnemyHits = (ushort)snapshot.EnemyHits,
-                    });
+                        PlayerHits = (ushort)Math.Min(pendingPlayerHits, ushort.MaxValue),
+                        EnemyHits = (ushort)Math.Min(pendingEnemyHits, ushort.MaxValue),
+                    };
+
+                    pendingPlayerHits = 0;
+                    pendingEnemyHits = 0;
+
+                    meter.Add(dto);
+                    group.All.OnFrame(dto);
                 }
             }
             catch (OperationCanceledException)

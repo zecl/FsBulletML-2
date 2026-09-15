@@ -32,6 +32,15 @@ if (args.Contains("--measure"))
     return Measure.Run(measureFrames, seed: 12345, top: 10);
 }
 
+// **立てずに、帯域 を締める 3 つ の手 を並べて測る道**（E1.6）。
+// 同じ走行 の上で焼き直すので、A と B に走行の違い が混ざらない
+if (args.Contains("--measure-wire"))
+{
+    int at = Array.IndexOf(args, "--measure-wire");
+    int wireFrames = at + 1 < args.Length && int.TryParse(args[at + 1], out var wf) ? wf : 600;
+    return MeasureWire.Run(wireFrames, seed: 12345, bulletml: Arg(args, "--bulletml"));
+}
+
 var accessLog = new AccessLogOptions
 {
     AllCalls = args.Contains("--all-calls"),
@@ -68,7 +77,12 @@ builder.Services.AddMagicOnion(options =>
     options.GlobalFilters.Add(new MagicOnionServiceFilterDescriptor(typeof(ServiceAccessLogFilter)));
 });
 
+var roomOptions = new RoomOptions { SendEvery = IntArg(args, "--send-every", 1, 1, 60) };
+var wireMeter = new WireMeter(args.Contains("--measure-bytes"));
+
 builder.Services.AddSingleton(accessLog);
+builder.Services.AddSingleton(roomOptions);
+builder.Services.AddSingleton(wireMeter);
 builder.Services.AddSingleton<CallCounter>();
 builder.Services.AddSingleton<ConnectionCounter>();
 builder.Services.AddHostedService<StatusPrinter>();
@@ -94,7 +108,7 @@ builder.Services.AddSingleton<RoomRegistry>();
 var app = builder.Build();
 app.MapMagicOnionService();
 
-Banner(app.Services.GetRequiredService<IFrameSourceFactory>(), fixedSource, accessLog);
+Banner(app.Services.GetRequiredService<IFrameSourceFactory>(), fixedSource, accessLog, roomOptions, wireMeter);
 
 app.Run();
 return 0;
@@ -103,12 +117,20 @@ return 0;
 /// 立ち上がりの 1 枚。<b>log ではなく素 の出力。</b>
 /// 時刻 も高さ も要らないし、**繋ぐ前 に読むもの**なので log と混ぜない。
 /// </summary>
-static void Banner(IFrameSourceFactory factory, bool fixedSource, AccessLogOptions accessLog)
+static void Banner(
+    IFrameSourceFactory factory, bool fixedSource, AccessLogOptions accessLog,
+    RoomOptions rooms, WireMeter meter)
 {
     Console.WriteLine();
     Console.WriteLine("FsBulletML2 / MagicOnion サーバー");
     Console.WriteLine("  待ち受け  http://0.0.0.0:5170  （h2c。証明書 は要らない）");
-    Console.WriteLine("  コマ      {0} /秒", RoomLoop.Fps);
+    Console.WriteLine(
+        "  コマ      進める {0} /秒 / 配る {1} /秒{2}",
+        RoomLoop.Fps,
+        RoomLoop.Fps / rooms.SendEvery,
+        rooms.SendEvery == 1 ? "" : $"（--send-every {rooms.SendEvery}）");
+    Console.WriteLine(
+        "  帯域      {0}", meter.Enabled ? "焼いた長さ を実測する" : "概算（--measure-bytes で実測）");
     Console.WriteLine(
         "  弾幕      {0}{1}",
         fixedSource ? "エンジンを呼ばない固定の並び" : $"同梱 {factory.List().Length} 本",
@@ -122,8 +144,29 @@ static void Banner(IFrameSourceFactory factory, bool fixedSource, AccessLogOptio
     Console.WriteLine("  呼び      {0}", accessLog.AllCalls ? "全部 1 行 ずつ" : "出入り だけ（高頻度の 2 本 は数えて状況 へ）");
     Console.WriteLine();
     Console.WriteLine("  --fixed  --verbose  --all-calls  --status <秒>  --measure <コマ数>");
+    Console.WriteLine("  --send-every <n>  --measure-bytes  --measure-wire <コマ数> [--bulletml <名前>]");
     Console.WriteLine("  止める    Ctrl+C");
     Console.WriteLine();
+}
+
+/// <summary>数の引数。<b>範囲の外 は既定へ倒す</b>（黙って壊れた値で走らない）</summary>
+/// <summary>名前の次 の字。<b>無ければ null</b></summary>
+static string Arg(string[] args, string name)
+{
+    int at = Array.IndexOf(args, name);
+    return at >= 0 && at + 1 < args.Length ? args[at + 1] : null;
+}
+
+static int IntArg(string[] args, string name, int fallback, int min, int max)
+{
+    int at = Array.IndexOf(args, name);
+    if (at >= 0 && at + 1 < args.Length
+        && int.TryParse(args[at + 1], out var v) && v >= min && v <= max)
+    {
+        return v;
+    }
+
+    return fallback;
 }
 
 static TimeSpan StatusInterval(string[] args)
