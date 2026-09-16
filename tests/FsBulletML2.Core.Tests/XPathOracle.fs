@@ -5,21 +5,10 @@ open System.Globalization
 open System.IO
 open FsBulletML2
 
-/// **旧実装。式の字を毎回 XPath で評価する。**
+/// 旧実装。式の字を毎回 XPath で評価する。
 ///
 /// エンジンはもうここを通らない。残してあるのは `ExprTests` が
 /// 「木（`Expr.NumExpr`）が同じ値を返すか」を突き合わせる相手として要るから。
-/// 消すと、木が正しいことを確かめる基準が無くなる。
-///
-/// **`Core` ではなくここに在る理由。** `System.Xml.XPath` は Fable に無く、
-/// Fable は proj まるごとしか焼けないので、Core に 1 か所 でも在ると
-/// Core ごと焼けなくなる。**相手は試験の側にしか要らない** ——
-/// だから Core から出して、当てる先の隣へ置いた。
-///
-/// この実装には穴が 2 つ ある（どちらも ExprTests が名指しで固定している）。
-///   - $rand / $rank が 1e-4 未満だと ToString が "1E-07" を吐き、
-///     xpathNumber の空白入れがそれを割って XPathException になる
-///   - 読めない式で例外になる（木のほうは NaN）
 [<AutoOpen>]
 module XPathOracle =
 
@@ -40,7 +29,7 @@ module XPathOracle =
     Single.Parse(xpathNumber expression, NumberStyles.Float, CultureInfo.InvariantCulture)
 
   /// 走行の `getValue` と同じ引数で呼べる形。
-  /// **乱数は式の中身によらず 1 回 だけ引く** —— 木の側もそう書いてある。
+  /// 乱数は式の中身によらず 1 回 だけ引く —— 木の側もそう書いてある。
   let getValueByXPath (env: Domain.Env) (s: string) =
     let rand = env.Rand ()
     let rank = env.Rank

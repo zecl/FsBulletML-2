@@ -121,3 +121,7 @@ docs/local/
 
 # BenchmarkDotNet が走らせるたびに repo の根元へ吐くもの
 BenchmarkDotNet.Artifacts/
+
+# Godot 4 のインポート キャッシュ と、mono の中間物。
+# **.godot/mono/temp/bin に dll が出る** —— Unity の Library/ と同じ立場
+.godot/

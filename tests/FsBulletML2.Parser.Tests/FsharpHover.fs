@@ -8,20 +8,13 @@ open FsUnit
 open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
-/// **F# の CE の hover。** `HoverMarkdown`（XML 側）と対。
+/// F# の CE の hover。 `HoverMarkdown`（XML 側）と対。
 ///
 /// --- 何を真とするか
 ///
-/// CE で書いていても読んでいるのは BulletML なので、**出す字は
-/// ほかの 3 表記 と同じ**（DTD 由来の散文）。違うのは
+/// CE で書いていても読んでいるのは BulletML なので、出す字は
+/// ほかの 3 表記 と同じ（DTD 由来の散文）。違うのは
 /// 「カーソルの下の名前が、BulletML の何を作るか」を 1 段 挟むところだけ。
-///
-/// だから当てるのは 3 つ ——
-///
-///     引けること      CE の名前の上で出て、中身が語彙のものと一致する
-///     引かないこと    文字列・コメントの中、CE でない語の上では出ない
-///     覆っていること  同梱カタログの本文に出てくる CE の名前で、
-///                     **1 つ も取りこぼさない**
 [<TestFixture>]
 type FsharpHover() =
 
@@ -37,7 +30,7 @@ type FsharpHover() =
     | Some md -> md
     | None -> failwithf "hover が出なかった: %s" marked
 
-  /// 語彙から引いた散文。**期待値を手で書かない** ——
+  /// 語彙から引いた散文。期待値を手で書かない ——
   /// 書くと `Spec.fs` を直したときにこちらだけ古びる
   let specOf (element: string) =
     (vocab.Elements |> List.find (fun e -> e.Name = element)).Spec
@@ -55,7 +48,7 @@ type FsharpHover() =
     let md = must "let x =\n  untyped \"a\" { top { w@ait \"1\" } }"
     md |> should haveSubstring "wait"
     md |> should haveSubstring (specOf "wait")
-    // **見出しは打った字と、それが作るもの。** 片方 だけだと、
+    // 見出しは打った字と、それが作るもの。 片方 だけだと、
     // `aim` のような名前で「何の話か」が分からない
     md |> should haveSubstring "wait → <wait>"
 
@@ -68,7 +61,7 @@ type FsharpHover() =
 
   [<Test>]
   member _.``属性値を固定する名前は 要素と値の 両方 が出る``() =
-    // **値の散文だけにしない。** それだと「どの要素の話か」「ほかに
+    // 値の散文だけにしない。 それだと「どの要素の話か」「ほかに
     // どんな属性が在るか」が落ちて、名前によって出る量が変わる
     let md = must "let x =\n  untyped \"a\" { top { fire { a@im \"0\" } } }"
     md |> should haveSubstring "aim → <direction>"
@@ -85,15 +78,15 @@ type FsharpHover() =
   [<Test>]
   member _.``同じ綴りで別のものを指す名前は 両方 出る``() =
     // `vertical` は根の型でもあり、accel の中の要素でもある。
-    // **どちらか に決めない** —— 決めるには入れ子の型を追うことになる
+    // どちらか に決めない —— 決めるには入れ子の型を追うことになる
     let md = must "let x =\n  ver@tical \"a\" { top { wait \"1\" } }"
     md |> should haveSubstring (valueSpecOf "bulletml" "type" "vertical")
     md |> should haveSubstring (specOf "vertical")
 
   [<Test>]
   member _.``DTD の行がコードフェンスに入る``() =
-    // markdown は `<` をタグとして食う。**素で渡すと丸ごと消えて、
-    // それでも hover は浮く**ので、目でも「出ていない」に見えない
+    // markdown は `<` をタグとして食う。素で渡すと丸ごと消えて、
+    // それでも hover は浮くので、目でも「出ていない」に見えない
     let md = must "let x =\n  untyped \"a\" { top { w@ait \"1\" } }"
     md |> should haveSubstring "```xml"
     md |> should haveSubstring "<!ELEMENT wait"
@@ -136,13 +129,13 @@ type FsharpHover() =
 
   [<Test>]
   member _.``同梱カタログの CE の名前を 1 つ も取りこぼさない``() =
-    // **点を 1 つ ずつ書かない。** 本物の本文を通して、そこに在る名前の
+    // 点を 1 つ ずつ書かない。 本物の本文を通して、そこに在る名前の
     // ぜんぶ で出ることを見る —— 表に 1 行 足し忘れれば、その名前で赤くなる
     let root = Path.Combine(AppContext.BaseDirectory, "BulletsDsl")
     let sources =
       if not (Directory.Exists root) then [||]
       else Directory.EnumerateFiles(root, "*.fs", SearchOption.AllDirectories) |> Seq.toArray
-    // **0 本 なら下は空回りで緑になる**
+    // 0 本 なら下は空回りで緑になる
     sources.Length |> should greaterThan 0
     let known = vocab.Ce |> List.map (fun c -> c.Name) |> Set.ofList
     let word = Regex(@"[A-Za-z_][A-Za-z0-9_']*")
@@ -152,7 +145,7 @@ type FsharpHover() =
       let text = File.ReadAllText file
       for m in word.Matches text do
         if known.Contains m.Value then
-          // **字を数える側で「本文の外」を落とす。** 文字列の中の
+          // 字を数える側で「本文の外」を落とす。 文字列の中の
           // 同じ綴りは名前ではないので、そこは数えない
           match FsharpScan.wordAt text m.Index with
           | Some w when w = m.Value ->
@@ -161,5 +154,5 @@ type FsharpHover() =
               bad.Add(sprintf "%s: %s" (Path.GetFileName file) w)
           | _ -> ()
     bad |> Seq.distinct |> Seq.toList |> should be Empty
-    // 当たった数そのものも見る。**0 件 で緑にしない**
+    // 当たった数そのものも見る。0 件 で緑にしない
     hit |> should greaterThan 1000

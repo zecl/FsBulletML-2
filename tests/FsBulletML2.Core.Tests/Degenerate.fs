@@ -4,22 +4,8 @@ open NUnit.Framework
 
 /// 中身の無い BulletML を食わせたときにどうなるか。
 ///
-/// **旧 API の `run` の戻り値を測っていた 2 本 は消した。**
+/// 旧 API の `run` の戻り値を測っていた 2 本 は消した。
 /// あれは「`run` が X / Y を差分ではなく絶対値で返す枝に本当に入れるのか」
-/// を見るもので、`BulletRunner.run` ごと廃止で消える。
-/// 新 API の `Frame.Delta` は名前で差分だと言っているので、
-/// 「どちらを返しているか」という問い自体が無い。
-///
-/// 消したのは
-///
-///     Tasks が空のとき、run は差分を返すか絶対値を返すか
-///     Task が None のとき run が何を返すか
-///
-/// 控えも一緒に落とした（`run-returns-delta-or-absolute` /
-/// `run-branch-task-none`）。
-///
-/// 残した 2 本 は台本そのものの縮退（top が無い / action が無い）で、
-/// **新 API でそのまま意味がある**。
 [<TestFixture>]
 type Degenerate() =
 

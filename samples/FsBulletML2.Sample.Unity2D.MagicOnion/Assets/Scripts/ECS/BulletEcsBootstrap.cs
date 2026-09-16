@@ -22,7 +22,7 @@ public class BulletEcsBootstrap : MonoBehaviour
         DontDestroyOnLoad(go);
         go.AddComponent<BulletEcsBootstrap>();
 
-        // **場面 に置かずに建てる。** 写した場面（.unity）を触らずに済ませたい ——
+        // 場面 に置かずに建てる。 写した場面（.unity）を触らずに済ませたい ——
         // YAML を手で足すと、Unity を開くまで壊れたことに気づけない
         if (FindAnyObjectByType<DanmakuClient>() == null)
         {
@@ -46,8 +46,8 @@ public class BulletEcsBootstrap : MonoBehaviour
         BulletEcsRuntime.Player = player;
         BulletEcsRuntime.Enemy = enemy;
 
-        // **当たり判定 の大きさ はここで採らない。** 判定 はサーバーが持つので、
-        // 半径 もサーバーの定数（Field）。**両方 に置くと、片方 だけ動く**
+        // 当たり判定 の大きさ はここで採らない。 判定 はサーバーが持つので、
+        // 半径 もサーバーの定数（Field）。両方 に置くと、片方 だけ動く
         SpriteRenderer enemySr = null;
         SpriteRenderer playerSr = null;
         if (enemy != null && enemy.BulletPrefab != null)

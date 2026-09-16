@@ -1,11 +1,11 @@
 /// host がくれた語彙の JSON を、`SourceLanguage` の型へ読む。
 ///
-/// **ここだけ Fable でしか走らない。** `[<Emit>]` と `?` を使うので、
+/// ここだけ Fable でしか走らない。 `[<Emit>]` と `?` を使うので、
 /// .NET で呼ぶと落ちる。だから器（`FsBulletML2.LanguageService`）には
-/// 置かない —— **器は 2 つ の runtime で走る**ので、片方 でしか
+/// 置かない —— 器は 2 つ の runtime で走るので、片方 でしか
 /// 走らないものが混ざると、そこだけ .NET で当てられなくなる。
 ///
-/// 読む先の型は器に在る。**形の正本はあちら。**
+/// 読む先の型は器に在る。形の正本はあちら。
 module FsBulletML2.Fable.VocabularyJson
 
 open Fable.Core
@@ -18,8 +18,8 @@ let private jsonParse (s: string) : obj = jsNative
 [<Emit("$0[$1]")>]
 let private item (arr: obj) (i: int) : obj = jsNative
 
-/// 無い鍵は `undefined` で返る。**`string` に通すと "undefined" という
-/// 字になる**ので、空に倒す
+/// 無い鍵は `undefined` で返る。`string` に通すと "undefined" という
+/// 字になるので、空に倒す
 let private text (o: obj) : string =
   if isNull o then "" else string o
 
@@ -30,7 +30,7 @@ let private strings (arr: obj) : string list =
     [ for i in 0 .. len - 1 -> string (item arr i) ]
 
 /// host の `Vocabulary()` が返す JSON を読む。
-/// **形が食い違ったら候補が出なくなるだけ**なので、呼ぶ側が空を赤にする
+/// 形が食い違ったら候補が出なくなるだけなので、呼ぶ側が空を赤にする
 let parseVocabulary (json: string) : Vocab =
   let root = jsonParse json
   if isNull root then
@@ -46,7 +46,7 @@ let parseVocabulary (json: string) : Vocab =
     let plen: int = if isNull plcs then 0 else plcs?length
     let frms = root?frames
     let flen: int = if isNull frms then 0 else frms?length
-    // 雛形の骨（v2.6）。**再帰で読む** —— 子の並びは同じ形が入れ子になる
+    // 雛形の骨（v2.6）。再帰で読む —— 子の並びは同じ形が入れ子になる
     let rec readFrame (f: obj) : Frame =
       let attrs = f?attrs
       let alen: int = if isNull attrs then 0 else attrs?length
@@ -57,10 +57,10 @@ let parseVocabulary (json: string) : Vocab =
         Attrs = [ for i in 0 .. alen - 1 -> let a = item attrs i in string a?name, text a?value ]
         Children = [ for i in 0 .. klen - 1 -> readFrame (item kids i) ] }
     { Expressions = strings root?expressions
-      // 根から走る定義の名前の頭。**綴りは Core が持つ**（host が埋める）——
+      // 根から走る定義の名前の頭。綴りは Core が持つ（host が埋める）——
       // 読めなければ空で、そのとき意味の検査は 	op の話を出さない
       TopPrefix = if isNull root?topPrefix then "" else string root?topPrefix
-      // **F# の CE の名前。** 同じ名前が何個 在ってもよい（読む側が全部 拾う）
+      // F# の CE の名前。 同じ名前が何個 在ってもよい（読む側が全部 拾う）
       Ce =
         [ for i in 0 .. clen - 1 ->
             let c = item ces i
@@ -68,7 +68,7 @@ let parseVocabulary (json: string) : Vocab =
               Element = text c?element
               Attr = text c?attr
               Value = text c?value } ]
-      // CE の名前が載せる label。**上と別の表**（あちらは「作る要素」）
+      // CE の名前が載せる label。上と別の表（あちらは「作る要素」）
       CeLabels =
         [ for i in 0 .. llen - 1 ->
             let c = item labels i
@@ -77,14 +77,14 @@ let parseVocabulary (json: string) : Vocab =
               LabelArg = int (unbox<float> c?labelArg)
               Fixed = text c?``fixed``
               Root = unbox<bool> c?root } ]
-      // どこに置けて、何を開くか。**候補がこれで決まる**
+      // どこに置けて、何を開くか。候補がこれで決まる
       CePlaces =
         [ for i in 0 .. plen - 1 ->
             let c = item plcs i
             { Name = string c?name
               In = text c?``in``
               Opens = text c?opens } ]
-      // 雛形（v2.6）。**host が焼いて渡す** —— 骨は要素名の木なので、
+      // 雛形（v2.6）。host が焼いて渡す —— 骨は要素名の木なので、
       // 器に書くと「ブラウザ側に要素名を書かない」線を越える
       Frames =
         [ for i in 0 .. flen - 1 ->

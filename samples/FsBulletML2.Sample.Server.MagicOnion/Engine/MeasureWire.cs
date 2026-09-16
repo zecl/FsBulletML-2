@@ -6,18 +6,11 @@ using MessagePack;
 namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 {
     /// <summary>
-    /// 帯域 を締める 3 つ の手 を、<b>同じ走行の上で</b>並べて測る（E1.6）。
+    /// 帯域 を締める 3 つ の手 を、同じ走行の上で並べて測る（E1.6）。
     ///
-    /// <b>網 を通さない。</b> 通すと弾数 が走行中に増えるので、
-    /// **A と B を同じ点 で比べられない** —— 実際に網 越しで測ったら、
+    /// 網 を通さない。 通すと弾数 が走行中に増えるので、
+    /// A と B を同じ点 で比べられない —— 実際に網 越しで測ったら、
     /// 2 秒 ごとの行 が 623 発 -> 1501 発 と動いていた。
-    /// ここは同じ種・同じ弾幕 を 1 本 の走行で回し、
-    /// **そのコマ列 の上で 3 通り に焼き直す。**
-    ///
-    /// <b>数えるのは MessagePack に焼いた本文 だけ。</b>
-    /// gRPC の枠 と HTTP/2 の頭 は入っていない。3 つ を突き合わせる物差しなので、
-    /// 同じものを同じやり方で数えていれば足りる。
-    /// </summary>
     public static class MeasureWire
     {
         public static int Run(int frames, int seed, string bulletml)
@@ -28,7 +21,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 
             var source = new EngineFrameSource(info, seed);
 
-            // **走行を 1 度 だけ回して、コマ列 を控える。**
+            // 走行を 1 度 だけ回して、コマ列 を控える。
             // 3 通り を別々に走らせると、A/B の差 に走行の違い が混ざる
             var run = new BulletDto[frames][];
             for (int f = 0; f < frames; f++)
@@ -83,9 +76,9 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         const int RoomLoopFps = 60;
 
         /// <summary>
-        /// 量子化 する前 の形。<b>もう配っていない。</b>
+        /// 量子化 する前 の形。もう配っていない。
         ///
-        /// **比べる相手 を残しておく。** 量子化 を入れた後 に素 の形 を消すと、
+        /// 比べる相手 を残しておく。 量子化 を入れた後 に素 の形 を消すと、
         /// 「どれだけ効いたか」をもう一度 測れなくなる ——
         /// 次に刻み を変えたくなったとき、判断の material が無い。
         /// </summary>
@@ -118,11 +111,11 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         /// <summary>
         /// x / y / 向き を整数 に丸めた形。
         ///
-        /// <b>当たる先 は float32 が MessagePack で 5 バイト固定</b>（0xca ＋ 4）
+        /// 当たる先 は float32 が MessagePack で 5 バイト固定（0xca ＋ 4）
         /// なところ。盤面 が 4.8 x 6.4 なら、ushort で 0.0001 刻み まで足りる。
         /// 向き は度 なので 0..36000（1/100 度）に丸める。
         /// </summary>
-        /// <summary>いま配っている形。<b>そのまま焼く</b></summary>
+        /// <summary>いま配っている形。そのまま焼く</summary>
         static long Quantized(BulletDto[][] run, int sendEvery)
         {
             long total = 0;
@@ -138,13 +131,9 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         /// <summary>
         /// 丸めて戻したときに、どれだけずれるかを測る。
         ///
-        /// <b>量子化 で新しく入った危ない面 はここだけ。</b> 丸め方 が
-        /// 片側 にずれていても**ビルドは通るし落ちもしない** ——
+        /// 量子化 で新しく入った危ない面 はここだけ。 丸め方 が
+        /// 片側 にずれていてもビルドは通るし落ちもしない ——
         /// 弾が半 ピクセル ずれた場所 に出るだけなので、目 でしか分からない。
-        /// だから数 で出す。
-        ///
-        /// 盤面 の端 も混ぜる（0 と 65535 に張り付く側 は別の枝 を通る）。
-        /// </summary>
         static void Roundtrip()
         {
             float worstX = 0f, worstY = 0f, worstDir = 0f;
@@ -166,7 +155,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 
                 float deg = 360f * t;
                 float backDeg = Wire.FromDir(Wire.ToDir(deg));
-                // 360 は 0 に畳まれる。**そこを誤差 に数えない**
+                // 360 は 0 に畳まれる。そこを誤差 に数えない
                 float gap = Math.Abs(backDeg - deg);
                 if (gap > 180f) { gap = 360f - gap; }
                 worstDir = Math.Max(worstDir, gap);
@@ -181,11 +170,11 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         }
 
         /// <summary>
-        /// 差分 の上界 を測る。<b>実装する前 に、当たる先 が在るかを見る。</b>
+        /// 差分 の上界 を測る。実装する前 に、当たる先 が在るかを見る。
         ///
         /// 弾幕は毎コマ ほぼ全弾 が動くので、据え置ける弾 は
         /// <c>wait</c> 中 のものだけ —— そこが 1 割 を切るなら、
-        /// **差分 は書かない**（書いても帯域 は動かず、client に状態 が増えるだけ）。
+        /// 差分 は書かない（書いても帯域 は動かず、client に状態 が増えるだけ）。
         /// </summary>
         static void Delta(BulletDto[][] run)
         {
@@ -203,7 +192,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
                         born++;
                     }
                     else if (old.X == b.X && old.Y == b.Y && old.Dir == b.Dir)
-                    // **量子化 した後 の値 で見る。** 前 の値 で見ると、
+                    // 量子化 した後 の値 で見る。 前 の値 で見ると、
                     // 刻み より小さく動いた弾 を「動いた」に数える ——
                     // 実際に配る形 で据え置けるかが知りたいので、こちら
                     {
@@ -231,7 +220,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         }
     }
 
-    /// <summary>量子化 する前 の形。<b>測るためだけ。配っていない</b></summary>
+    /// <summary>量子化 する前 の形。測るためだけ。配っていない</summary>
     [MessagePackObject]
     public struct FloatBullet
     {
@@ -242,7 +231,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         [Key(4)] public byte Kind;
     }
 
-    /// <summary>量子化 する前 の形。<b>測るためだけ。配っていない</b></summary>
+    /// <summary>量子化 する前 の形。測るためだけ。配っていない</summary>
     [MessagePackObject]
     public class FloatFrame
     {

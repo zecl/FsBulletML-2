@@ -136,9 +136,9 @@ module ``XMLファイル:BulletML DTDに基づくパース`` =
           &> (singleParam @"..\..\..\TestData\xml\bulletml\elements\success\bulletml-fire.xml")
           &> (singleParam @"..\..\..\TestData\xml\bulletml\elements\success\bulletml-multi.xml")
     // not support
-
-  // <!ATTLIST bulletml xmlns CDATA #IMPLIED>
-  // <!ATTLIST bulletml type (none|vertical|horizontal) "none">
+    //
+    // <!ATTLIST bulletml xmlns CDATA #IMPLIED>
+    // <!ATTLIST bulletml type (none|vertical|horizontal) "none">
   let BulletmlAttributesCase =
     // support
     testCase (singleParam @"..\..\..\TestData\xml\bulletml\attributes\success\bulletml-xmlns-exist.xml")

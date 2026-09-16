@@ -6,17 +6,11 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 open FsBulletML2.LanguageService.Languages.Fsb
 
-/// **候補と hover、fsb の側。** `XmlCompletion` / `SxmlCompletion` と対。
+/// 候補と hover、fsb の側。 `XmlCompletion` / `SxmlCompletion` と対。
 ///
 /// 語彙は XML / sxml と同じ `Vocabulary`（Core の DTD 由来）をそのまま渡す ——
-/// **表記が変わっても要素と属性は変わらない。** 変わるのは書き方だけで、
+/// 表記が変わっても要素と属性は変わらない。 変わるのは書き方だけで、
 /// それがここで当てているもの。
-///
-/// --- この試験が本当に見ているもの
-///
-/// 候補を作る中身は `Languages/Lookup.fs` に在って**表記を知らない**。
-/// だからここで赤くなるのは `Languages/Fsb.fs` の `shape` か
-/// `FsbScan` のどちらか —— **共通の側が壊れれば XML と sxml も一緒に赤くなる。**
 [<TestFixture>]
 type FsbCompletion() =
 
@@ -28,7 +22,7 @@ type FsbCompletion() =
 
   let labels marked =
     complete marked
-    // **雛形（v2.6）は外す。** ここが数えているのは「その場所に置ける要素」で、
+    // 雛形（v2.6）は外す。 ここが数えているのは「その場所に置ける要素」で、
     // 形の候補はその上に載る別の並び（`Frames.fs` が持ち、`Frames` が当てる）
     |> List.filter (fun c -> not c.IsFrame)
     |> List.map (fun c -> c.Label)
@@ -75,7 +69,7 @@ type FsbCompletion() =
 
   [<Test>]
   member _.``属性は 値の引用符まで入れて カーソルを中へ``() =
-    // **XML と同じ形。** 括弧が無いので手前 を食う必要も無い
+    // XML と同じ形。 括弧が無いので手前 を食う必要も無い
     match complete "bulletml\n    fire |" with
     | [ c ] ->
       c.Insert |> should equal "label=\"$0\""
@@ -101,7 +95,7 @@ type FsbCompletion() =
 
   [<Test>]
   member _.``要素の hover は その表記の書き方で``() =
-    // **札にも括弧にもならない。** fsb では名前をそのまま打つ
+    // 札にも括弧にもならない。 fsb では名前をそのまま打つ
     match hover "bulletml\n    fi|re" with
     | None -> failwith "浮かなかった"
     | Some md ->

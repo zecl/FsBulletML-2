@@ -6,22 +6,14 @@ open FsUnit
 open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.Languages.Fsb
 
-/// **カーソルがどこに居るか**の判定、fsb の側。`XmlContext` / `SxmlContext` と対。
+/// カーソルがどこに居るかの判定、fsb の側。`XmlContext` / `SxmlContext` と対。
 ///
-/// 同じ問いを 3 本 目 の表記で当てる —— **答えの型は同じ**（`Context`）で、
+/// 同じ問いを 3 本 目 の表記で当てる —— 答えの型は同じ（`Context`）で、
 /// 数え方だけが違う。
-///
-/// --- ここだけ他の 2 つ と違う
-///
-/// XML は `<` と `</`、sxml は括弧で入れ子が決まる。**fsb は行頭の空白だけ。**
-/// だから「いま何の中に居るか」は、**自分より上に在る行のうち、
-/// 字下げが自分より浅い最後の行**で決まる。
-///
-/// 打っている途中の fsb は必ず壊れているので、**閉じていない形も見る。**
 [<TestFixture>]
 type FsbContext() =
 
-  /// `|` の位置をカーソルとして読む。**fsb に `|` は出てこない**
+  /// `|` の位置をカーソルとして読む。fsb に `|` は出てこない
   let at (marked: string) =
     let offset = marked.IndexOf '|'
     contextAt (marked.Replace("|", "")) offset
@@ -39,7 +31,7 @@ type FsbContext() =
 
   [<Test>]
   member _.``字下げを戻すと 外へ戻る``() =
-    // **XML の閉じ札に当たるもの。** fsb には無いので、戻ったこと自体が閉じたこと
+    // XML の閉じ札に当たるもの。 fsb には無いので、戻ったこと自体が閉じたこと
     at "bulletml\n    action\n        fire\n    |" |> should equal (InContent(Some "bulletml"))
 
   [<Test>]
@@ -54,7 +46,7 @@ type FsbContext() =
 
   [<Test>]
   member _.``字下げだけの行でも、打った空白の数で決まる``() =
-    // **行に名前がまだ無い。** 空白の数がそのまま字下げ
+    // 行に名前がまだ無い。 空白の数がそのまま字下げ
     at "bulletml\n    action\n        |" |> should equal (InContent(Some "action"))
     at "bulletml\n    action\n    |" |> should equal (InContent(Some "bulletml"))
 
@@ -84,24 +76,24 @@ type FsbContext() =
   [<Test>]
   member _.``属性値の中のコロンに騙されない``() =
     // `xmlns="http://…"` の `:` を本文の区切りと読むと、そこから先が
-    // 丸ごと本文になる。**根の宣言に必ず在る形**なので、外すと全部 ずれる
+    // 丸ごと本文になる。根の宣言に必ず在る形なので、外すと全部 ずれる
     at "bulletml xmlns=\"http://a\" type=\"vertical\"\n    |"
     |> should equal (InContent(Some "bulletml"))
     at "bulletml xmlns=\"http://a\" ty|" |> should equal (InStartTag "bulletml")
 
   [<Test>]
   member _.``閉じ引用符の外は 本文ではない``() =
-    // **本文の範囲を閉じ引用符で切っている**ことを見る。
+    // 本文の範囲を閉じ引用符で切っていることを見る。
     // ここは要素の行の上なので属性の場所として返る —— fsb の属性は本文より
-    // 前に書くので厳密には打てない位置だが、**出るだけで害は無い**
+    // 前に書くので厳密には打てない位置だが、出るだけで害は無い
     at "bulletml\n    wait:\"30\"|" |> should equal (InStartTag "wait")
 
   [<Test>]
   member _.``タブは字下げにならない``() =
-    // **パーサと揃える。** `Offside.fs` の字下げは `pchar ' '` だけ。
-    // しかもタブの行は**エラーにならず黙って捨てられる**
+    // パーサと揃える。 `Offside.fs` の字下げは `pchar ' '` だけ。
+    // しかもタブの行はエラーにならず黙って捨てられる
     // （`Offside.parse` は `eof` を要求していない。`FsbReader` が当てている）——
-    // ここで広く取ると、**捨てられる行に補完だけが出る**
+    // ここで広く取ると、捨てられる行に補完だけが出る
     at "bulletml\n\taction\n\t\t|" |> should equal (InContent None)
 
   [<Test>]

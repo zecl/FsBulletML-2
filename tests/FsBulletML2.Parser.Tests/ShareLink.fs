@@ -4,10 +4,10 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2.LanguageService
 
-/// 共有リンクの、**.NET でも走る側。**
+/// 共有リンクの、.NET でも走る側。
 ///
 /// 圧縮（`CompressionStream`）はブラウザにしか無いので、ここには来ない ——
-/// 当てているのは **base64url と、版・表記の組み立て**。
+/// 当てているのは base64url と、版・表記の組み立て。
 /// そこを器に置いたから .NET で当てられる（置かなければ、`fable/` の中で
 /// ブラウザからしか触れない字になっていた）。
 ///
@@ -16,14 +16,14 @@ open FsBulletML2.LanguageService
 [<TestFixture>]
 type ShareLinkTests() =
 
-  /// 決まった並びのバイト列。**乱数にしない** ——
+  /// 決まった並びのバイト列。乱数にしない ——
   /// 落ちたときに同じものをもう一度 作れないと、原因を追えない
   let bytesOf (n: int) = Array.init n (fun i -> byte ((i * 37 + 11) % 256))
 
   [<Test>]
   member _.``base64url は URL で意味を持つ字を出さない``() =
     // `+` `/` `=` はどれも URL の中で別の意味を持つ。
-    // **`=` は fragment では通るが、貼るときに切られることが在る**
+    // `=` は fragment では通るが、貼るときに切られることが在る
     for n in 0..300 do
       let s = ShareLink.toBase64Url(bytesOf n)
       s |> Seq.exists (fun c -> c = '+' || c = '/' || c = '=') |> should equal false
@@ -46,7 +46,7 @@ type ShareLinkTests() =
   [<Test>]
   member _.``0 バイト はリンクにならない``() =
     // `toBase64Url` が空を返し、`tryParse` はそれを中身が壊れていると読む。
-    // **圧縮を通せば 0 バイト にはならない**（空の本文でも塊の印が出る）が、
+    // 圧縮を通せば 0 バイト にはならない（空の本文でも塊の印が出る）が、
     // ここが黙って通ると「空のリンク」が作れてしまう
     ShareLink.toBase64Url [||] |> should equal ""
     ShareLink.tryFromBase64Url "" |> should equal None
@@ -78,7 +78,7 @@ type ShareLinkTests() =
 
   [<Test>]
   member _.``走らせ方も往復する``() =
-    // **同じ本文でも、難度と種が違えば別の絵**（版 2 で乗せた）——
+    // 同じ本文でも、難度と種が違えば別の絵（版 2 で乗せた）——
     // 端も通す（0 と 100、種の上限）
     for (rank, seed) in [ 0, 1; 100, 999999; 37, 12345 ] do
       match ShareLink.tryParse(ShareLink.build SourceKind.Xml rank seed (bytesOf 8)) with
@@ -89,7 +89,7 @@ type ShareLinkTests() =
 
   [<Test>]
   member _.``難度は範囲で丸める``() =
-    // **`JSInvokable` の先から来る値**なので、UI に無い数も来うる
+    // `JSInvokable` の先から来る値なので、UI に無い数も来うる
     let rankOf (n: int) =
       match ShareLink.tryParse(ShareLink.build SourceKind.Xml n 1 (bytesOf 4)) with
       | Result.Ok link -> link.Rank
@@ -99,14 +99,14 @@ type ShareLinkTests() =
 
   [<Test>]
   member _.``走らせ方が違えばリンクも違う``() =
-    // 上の往復は、**乗せていなくても「同じものが戻った」で緑になる**
+    // 上の往復は、乗せていなくても「同じものが戻った」で緑になる
     let link r s = ShareLink.build SourceKind.Xml r s (bytesOf 8)
     link 50 1 |> should not' (equal (link 60 1))
     link 50 1 |> should not' (equal (link 50 2))
 
   [<Test>]
   member _.``版が頭に出る``() =
-    // **形を変えたときに、古いリンクを黙って誤読しない**ための字
+    // 形を変えたときに、古いリンクを黙って誤読しないための字
     ShareLink.build SourceKind.Xml 50 7 (bytesOf 8)
     |> _.StartsWith(ShareLink.version + ".")
     |> should equal true
@@ -125,7 +125,7 @@ type ShareLinkTests() =
 
   [<Test>]
   member _.``読めないときは理由を返す``() =
-    // **黙って空にしない。** 開いた人には「踏んだのに何も起きない」に見える
+    // 黙って空にしない。 開いた人には「踏んだのに何も起きない」に見える
     let why (fragment: string) =
       match ShareLink.tryParse fragment with
       | Result.Error w -> w

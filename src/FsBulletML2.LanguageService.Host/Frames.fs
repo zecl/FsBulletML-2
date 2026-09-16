@@ -1,38 +1,8 @@
-/// 雛形（v2.6）。**「その場所に置ける要素」ではなく「形」を出す。**
+/// 雛形（v2.6）。「その場所に置ける要素」ではなく「形」を出す。
 ///
-/// 補完は要素名を出すが、「N 方向 に撃つ」「自機狙い」のような**形**は出ない。
-/// 書き始めの人がいちばん止まるところ。
-///
-/// ## 何を入れるかは数で決めた
-///
-/// 同梱 176 本 + 公式 17 本 = 193 本 を数えた（v2.6 の頭）——
-///
-///     repeat の中の fire      574 個。うち **336 個（58.5%）が sequence**
-///     changeSpeed の中身      222 個 とも `speed term`（**100%**）
-///     changeDirection の中身   143 個 とも `direction term`（**100%**）
-///     fire の中身             `direction speed bullet` 518 個 38.6%
-///                            `direction speed bulletRef` 377 個 28.1%
-///
-/// **本の数**（1 本 に何回 出ても 1）——
-///
-///     wait 191 / repeat 191 / sequence 157 / bulletRef 143 / vanish 133 /
-///     changeSpeed 115 / aim 114 / changeDirection 72 / accel 13
-///
-/// **`accel` は入れない**（193 本 中 13 本、6.7%）。
-///
-/// **予測が 1 つ 外れた。** 「`direction` の type は `aim` がいちばん多い
-/// （自機狙いが弾幕の基本）」と凍結したが、回数では 4 番目（12.2%）で、
-/// `absolute` 36.5% / `sequence` 35.7% / `relative` 12.5% の後。
-/// **「N 方向 に撃つ」の主役は `sequence`** で、そこを雛形の 1 番 に置いた。
-///
-/// ## 骨は表記を知らない
-///
-/// 字にするのは `Shape.WriteFrame`。**3 表記 × 1 関数**なので、
-/// 雛形をここに増やしても表記ごとの手は増えない。
-///
-/// **F# の CE には出さない。** あちらは要素名で書かないので
-/// （`aim` と打つと `<direction type="aim">` になる）、骨がそのまま字にならない
-/// —— `Fsharp.fs` を `Shape` に載せないのと同じ理由。
+/// `accel` は入れない。 「N 方向 に撃つ」の主役は `sequence`。
+/// 字にするのは `Shape.WriteFrame`（雛形を増やしても表記ごとの手は増えない）。
+/// F# の CE には出さない（要素名で書かないので、骨がそのまま字にならない）。
 module FsBulletML2.LanguageService.Frames
 
 open FsBulletML2.LanguageService.SourceLanguage

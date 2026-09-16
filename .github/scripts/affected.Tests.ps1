@@ -100,10 +100,11 @@ $allBuilds = @(
 # 「全部」を意味する起点（proj の外・slnx・global.json）を触ったときだけ。
 # StubShapeCheck は弾幕を参照しない道具、LanguageService.Js は Fable に渡す側で
 # .NET の参照を持たない
-# MagicOnion の client 2 本 は **F# を 1 本 も参照しない**（それが門 の主題）。
+# MagicOnion の client 3 本 は **F# を 1 本 も参照しない**（それが門 の主題）。
 # Core を触っても建たず、「全部」を意味する起点のときだけ建つ
 $allBuildsAndTools = $allBuilds + 'FsBulletML2.LanguageService.Js' + 'StubShapeCheck' +
-  'FsBulletML2.Sample.Client.MagicOnion' + 'FsBulletML2.Sample.Unity2D.MagicOnion.Compile'
+  'FsBulletML2.Sample.Client.MagicOnion' + 'FsBulletML2.Sample.Godot.MagicOnion' +
+  'FsBulletML2.Sample.Unity2D.MagicOnion.Compile'
 
 Write-Host '=== 多いほう'
 

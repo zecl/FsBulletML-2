@@ -7,41 +7,10 @@ open FsUnit
 open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
-/// **「無い参照をどう直すか」の目盛り。** 直し方は 2 通り ——
+/// 「無い参照をどう直すか」の目盛り。 直し方は 2 通り ——
 ///
 ///     綴りを直す    近い定義へ名前を書き換える（幅の在る範囲の置き換え）
-///     定義を作る    根の直下 に空の定義を挿す（**幅 0 の範囲**）
-///
-/// **同じ型で足りる。** `Fix` の `Column = EndColumn` が挿し込みの印で、
-/// 口を分けていない。
-///
-/// --- 表記を知らない側に在る
-///
-/// 中身は `Languages/Lookup.fs` の `FixesAt` 1 本。綴りの直しに要るのは
-/// `Tags`（本文に何が在るか）と語彙だけで、**そこは `Languages/*.fs` の
-/// 差分が 0 行。** 挿す場所だけは表記ごと（`Shape.DefinitionAt`）——
-/// 閉じ札の在る XML、閉じ括弧の sxml、行の字下げだけの fsb で、
-/// **「根の直下」の指し方が揃わない。**
-///
-/// --- 波線には紐づけていない
-///
-/// 波線は 1 文字 打った時点で消える（印は文字に追随しないので、そこで下ろすのが
-/// 正しい）。紐づけると**直し方が Apply の直後の窓でしか出ない** ——
-/// だから本文から数え直している。ここもそう当てる（波線を一度も出さない）。
-///
-/// --- 較正（当てた変異と、赤くなった点）
-///
-///   定義を作るほうを出さない        6 点
-///   字下げを測らずに 4 で決め打つ    字下げは本文に合わせる
-///   根が閉じていなくても作る        根が閉じていなければ 作らない
-///   sxml の挿し先を 1 文字 ずらす    当てた本文が字まで合う
-///   fsb の字下げを根に合わせる      同上
-///   行の頭を 1 つ ずらす            12 点 と 突き合わせ
-///
-/// **後ろの 2 つ は、はじめ赤くならなかった。**
-/// 「参照が埋まった」だけを見ていたのが穴 —— `References.missing` は
-/// **入れ子を見ない**ので、根の外へ挿しても・字下げを間違えても 0 件 になる。
-/// 当てた本文そのものを字で見る点を足して、両方 赤くした。
+///     定義を作る    根の直下 に空の定義を挿す（幅 0 の範囲）
 [<TestFixture>]
 type QuickFix() =
 
@@ -54,15 +23,15 @@ type QuickFix() =
   let at (lang: ISourceLanguage) (marked: string) =
     lang.Fixes (marked.Replace("|", "")) (marked.IndexOf '|')
 
-  /// 綴りを直すほうだけ。**幅の在る範囲が置き換えの印**
+  /// 綴りを直すほうだけ。幅の在る範囲が置き換えの印
   let renames lang marked = at lang marked |> List.filter (fun f -> f.EndColumn > f.Column)
 
-  /// 定義を作るほうだけ。**幅 0 が挿し込みの印**
+  /// 定義を作るほうだけ。幅 0 が挿し込みの印
   let creates lang marked = at lang marked |> List.filter (fun f -> f.EndColumn = f.Column)
 
   let titles lang marked = renames lang marked |> List.map (fun f -> f.Title) |> List.sort
 
-  /// 直し方を当てた本文。**挿し込みは行と桁で入る**ので、
+  /// 直し方を当てた本文。挿し込みは行と桁で入るので、
   /// ここで本文へ戻して「読める字になったか」を見る
   let applied (src: string) (f: Fix) =
     let lines = src.Replace("\r\n", "\n").Split('\n')
@@ -93,7 +62,7 @@ type QuickFix() =
 
   [<Test>]
   member _.``2 文字 違えば 近くない``() =
-    // **1 か所 だけ違うものと並べる。** 片方 だけ見ると、
+    // 1 か所 だけ違うものと並べる。 片方 だけ見ると、
     // 「近い」を返しすぎているのか足りないのかが分からない
     Distance.within1 "tip" "top" |> should be True     // 1 か所 の置換
     Distance.within1 "toe" "tip" |> should be False    // 2 か所
@@ -103,7 +72,7 @@ type QuickFix() =
 
   [<Test>]
   member _.``入れ替えは 近くない``() =
-    // `ab` -> `ba` は 2 回 の置換。**1 回 では作れない**
+    // `ab` -> `ba` は 2 回 の置換。1 回 では作れない
     Distance.within1 "ba" "ab" |> should be False
 
   // --- 直し方を出す / 出さない ----------------------------------------------
@@ -116,13 +85,13 @@ type QuickFix() =
   [<Test>]
   member _.``遠い名前には 綴りの直しを出さない``() =
     // 嘘の直し方を出さない。押した人は直ったと思う。
-    // **「定義を作る」は出る** —— あちらは嘘ではない（まだ書いていないだけ）
+    // 「定義を作る」は出る —— あちらは嘘ではない（まだ書いていないだけ）
     renames xml "<bulletml><action label=\"top\"/><actionRef label=\"n|ope\"/></bulletml>"
     |> should be Empty
 
   [<Test>]
   member _.``定義が在るなら 何も出さない``() =
-    // **どちらも出さない。** 参照が欠けていなければ直すものが無い
+    // どちらも出さない。 参照が欠けていなければ直すものが無い
     at xml "<bulletml><action label=\"top\"/><actionRef label=\"t|op\"/></bulletml>"
     |> should be Empty
 
@@ -143,7 +112,7 @@ type QuickFix() =
 
   [<Test>]
   member _.``近い定義が 2 つ 在れば 2 つ 出す``() =
-    // **選ぶのは人。** 片方 を勝手に選ばない
+    // 選ぶのは人。 片方 を勝手に選ばない
     titles xml
       ("<bulletml><action label=\"tap\"/><action label=\"top\"/>"
        + "<actionRef label=\"t|p\"/></bulletml>")
@@ -168,7 +137,7 @@ type QuickFix() =
     match creates xml "<bulletml>\n    <actionRef label=\"t|op\"/>\n</bulletml>" with
     | [ f ] ->
       f.Title |> should equal "top の <action> を作る"
-      // **幅 0。** 置き換えではなく挿し込み
+      // 幅 0。 置き換えではなく挿し込み
       f.Column |> should equal f.EndColumn
       f.Text |> should equal "    <action label=\"top\">\n    </action>\n"
     | other -> failwithf "1 件 のはずが %d 件" other.Length
@@ -181,7 +150,7 @@ type QuickFix() =
     | [ f ] ->
       let after = applied src f
       References.missing XmlScan.tags after |> should be Empty
-      // 当てる前は 1 件。**0 件 と 0 件 を比べていない**
+      // 当てる前は 1 件。0 件 と 0 件 を比べていない
       References.missing XmlScan.tags src |> List.length |> should equal 1
     | other -> failwithf "1 件 のはずが %d 件" other.Length
 
@@ -195,7 +164,7 @@ type QuickFix() =
   [<Test>]
   member _.``根が閉じていなければ 作らない``() =
     // 打っている途中の本文はふつうに閉じていない。
-    // **そこで場所を決め打つと本文の外に出る**
+    // そこで場所を決め打つと本文の外に出る
     creates xml "<bulletml>\n    <actionRef label=\"t|op\"/>\n" |> should be Empty
 
   [<Test>]
@@ -207,11 +176,11 @@ type QuickFix() =
 
   [<Test>]
   member _.``4 表記 とも 当てた本文が字まで合う``() =
-    // **「参照が埋まった」だけでは足りない。** `References.missing` は入れ子を
+    // 「参照が埋まった」だけでは足りない。 `References.missing` は入れ子を
     // 見ないので、根の外へ挿しても・字下げを間違えても 0 件 になる
     // （較正で 2 通り 踏んだ）。当てた本文そのものを見る。
     //
-    // **閉じるものが行頭に在る形を通す。** 1 行 に畳んだ本文だけだと、
+    // 閉じるものが行頭に在る形を通す。 1 行 に畳んだ本文だけだと、
     // 「行の頭に挿す」枝を 1 度 も通らない
     let cases =
       [ xml, "<bulletml>\n    <actionRef label=\"top\"/>\n</bulletml>",
@@ -228,7 +197,7 @@ type QuickFix() =
 
   [<Test>]
   member _.``作った定義を当てた本文が 読める``() =
-    // **数だけ見ていると出ない。** 参照が埋まっても、その字が読めるとは
+    // 数だけ見ていると出ない。 参照が埋まっても、その字が読めるとは
     // 限らない —— F# の CE ではそこで落ちていた（`FsharpUsages`）。
     // ここは残る 3 表記 を同じ形で当てる
     let cases =
@@ -240,7 +209,7 @@ type QuickFix() =
         "bulletml xmlns=\"http://www.asahi-net.or.jp/~cs8k-cyu/bulletml\" type=\"vertical\"\n    action label=\"top\"\n        actionRef label=\"loop\"\n" ]
     for (kind, lang: ISourceLanguage, src) in cases do
       let reader = (SourceReader.tryFind kind).Value
-      // 当てる前は読める。**読めない本文と比べていない**
+      // 当てる前は読める。読めない本文と比べていない
       reader.Apply (fun _ -> ()) src |> should equal None
       match lang.Fixes src (src.IndexOf "\"loop\"" + 2) |> List.filter (fun f -> f.EndColumn = f.Column) with
       | [ f ] ->
@@ -265,7 +234,7 @@ type QuickFix() =
 
   [<Test>]
   member _.``F# の CE でも作る（v1.9）``() =
-    // v1.6 まで空だった。**カーソルが名前の上に無ければ空**なのは同じ
+    // v1.6 まで空だった。カーソルが名前の上に無ければ空なのは同じ
     let src = "let x =\n  untyped \"a\" { top { actionRef \"b\" [] } }"
     fsharp.Fixes src (src.IndexOf "actionRef") |> should be Empty
     fsharp.Fixes src (src.IndexOf "\"b\"" + 1) |> should not' (be Empty)
@@ -297,8 +266,8 @@ type QuickFix() =
 
   [<Test>]
   member _.``参照を 1 文字 落とすと、元の名前が候補に出る``() =
-    // **この版の本題。** 打ち間違いを作って、直し方が出るかを本文で当てる。
-    // 落とす位置は**全部** 試す
+    // この版の本題。 打ち間違いを作って、直し方が出るかを本文で当てる。
+    // 落とす位置は全部 試す
     let mutable measured = 0
     let bad = ResizeArray<string>()
     for file in corpus.Value do
@@ -337,7 +306,7 @@ type QuickFix() =
 
   [<Test>]
   member _.``壊していない本文には 1 つ も出さない``() =
-    // **全部 の label の上で引く。** 読める弾幕に直し方が出たら、それは嘘
+    // 全部 の label の上で引く。 読める弾幕に直し方が出たら、それは嘘
     let noisy =
       corpus.Value
       |> Array.choose (fun file ->

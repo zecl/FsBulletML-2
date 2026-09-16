@@ -6,17 +6,11 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 open FsBulletML2.LanguageService.Languages.Sxml
 
-/// **候補と hover、sxml の側。** `XmlCompletion` / `HoverMarkdown` と対。
+/// 候補と hover、sxml の側。 `XmlCompletion` / `HoverMarkdown` と対。
 ///
 /// 語彙は XML と同じ `Vocabulary`（Core の DTD 由来）をそのまま渡す ——
-/// **表記が変わっても要素と属性は変わらない。** 変わるのは書き方だけで、
+/// 表記が変わっても要素と属性は変わらない。 変わるのは書き方だけで、
 /// それがここで当てているもの。
-///
-/// --- この試験が本当に見ているもの
-///
-/// 候補を作る中身は `Languages/Lookup.fs` に在って**表記を知らない**。
-/// だからここで赤くなるのは `Languages/Sxml.fs` の `shape` か
-/// `SxmlScan` のどちらか —— **共通の側が壊れれば XML の試験も一緒に赤くなる。**
 [<TestFixture>]
 type SxmlCompletion() =
 
@@ -28,7 +22,7 @@ type SxmlCompletion() =
 
   let labels marked =
     complete marked
-    // **雛形（v2.6）は外す。** ここが数えているのは「その場所に置ける要素」で、
+    // 雛形（v2.6）は外す。 ここが数えているのは「その場所に置ける要素」で、
     // 形の候補はその上に載る別の並び（`Frames.fs` が持ち、`Frames` が当てる）
     |> List.filter (fun c -> not c.IsFrame)
     |> List.map (fun c -> c.Label)
@@ -51,12 +45,12 @@ type SxmlCompletion() =
 
   [<Test>]
   member _.``XML と同じ並びが出る``() =
-    // **語彙は表記に依らない。** ここが割れたら、どちらかの表記だけが
+    // 語彙は表記に依らない。 ここが割れたら、どちらかの表記だけが
     // 語彙を持ち始めたということ
     let asXml =
       FsBulletML2.LanguageService.Languages.Xml.XmlLanguage(fun () -> vocab)
         .Candidates("<bulletml>\n\n</bulletml>", 11)
-      // **比べる相手も揃える。** `labels` は雛形を外しているので、
+      // 比べる相手も揃える。 `labels` は雛形を外しているので、
       // ここだけ入れると「表記が割れた」でなく「絞り方が割れた」で赤くなる
       |> List.filter (fun c -> not c.IsFrame)
       |> List.map (fun c -> c.Label)
@@ -80,7 +74,7 @@ type SxmlCompletion() =
 
   [<Test>]
   member _.``属性の置き換えは 開き括弧 を含む``() =
-    // **含めないと `((type "")` になる。** `$rand` の `$` と同じ形
+    // 含めないと `((type "")` になる。 `$rand` の `$` と同じ形
     complete "(bulletml\n(action\n(direction (@ (ty|)) \"1\")\n)\n)"
     |> List.map (fun c -> c.Replace) |> List.distinct
     |> should equal [ 3 ]
@@ -120,7 +114,7 @@ type SxmlCompletion() =
     | Some md ->
       md |> should haveSubstring "(fire)"
       md |> should haveSubstring "弾を 1 つ 撃つ"
-      // **DTD の行は表記に依らない。** 語彙の正本は Core/DTD.fs で、
+      // DTD の行は表記に依らない。 語彙の正本は Core/DTD.fs で、
       // sxml で書いても DTD は DTD のまま
       md |> should haveSubstring "<!ELEMENT fire"
 
@@ -139,7 +133,7 @@ type SxmlCompletion() =
 
   [<Test>]
   member _.``20 要素 の全部 で 空でない hover が出る``() =
-    // **0 件 を緑にしない。** 上の点は 1 つ ずつしか見ていない
+    // 0 件 を緑にしない。 上の点は 1 つ ずつしか見ていない
     let blank =
       [ for e in Vocabulary.elements do
           match lang.HoverAt(sprintf "(%s)" e.Name, 1) with

@@ -38,6 +38,7 @@ param(
   [string]$UnityAssets,
   [string]$SharedProj,
   [string]$SharedPkg,
+  [string]$GodotProj,
   [switch]$Quiet
 )
 
@@ -55,6 +56,13 @@ if (-not $SharedPkg) {
 }
 if (-not $SharedProj) {
   $SharedProj = Join-Path $RepoRoot 'samples\FsBulletML2.Sample.Shared.MagicOnion.Compile\FsBulletML2.Sample.Shared.MagicOnion.Compile.csproj'
+}
+# **client は 3 本 在る。** Unity / console / Godot ——
+# **絵 が出る client を 1 本 しか見ていないと、もう 1 本 に紛れても緑 のまま。**
+# console client は「参照 が 1 本 でも増えれば焼けなくなる」ので build が門 だが、
+# **Godot も Unity と同じ で、dll を消し忘れても絵 は出てしまう**
+if (-not $GodotProj) {
+  $GodotProj = Join-Path $RepoRoot 'samples\FsBulletML2.Sample.Godot.MagicOnion'
 }
 
 $problems = [System.Collections.Generic.List[string]]::new()
@@ -113,11 +121,42 @@ foreach ($root in @($UnityAssets, $SharedPkg)) {
   }
 }
 
+# --- 1.7 Godot の配り物 ------------------------------------------------------
+# **Unity と同じ で、dll を消し忘れても絵 は出てしまう。**
+# Godot は `res://` の下 を丸ごと 配るので、置いてあれば付いていく
+if (-not (Test-Path -LiteralPath $GodotProj)) {
+  $problems.Add("Godot のプロジェクト が無い: $GodotProj（当たる先 が 0 の門 は緑にしない）")
+}
+else {
+  # **`.godot/` は見ない。** あれ はインポート の中間物 で、
+  # `.gitignore` の下 —— 配り物 ではないし、build しないと在りもしない
+  $godotDlls = @(Get-ChildItem -LiteralPath $GodotProj -Recurse -File -Filter *.dll -ErrorAction SilentlyContinue |
+    Where-Object { $_.FullName -notmatch '\\\.godot\\' })
+  foreach ($d in $godotDlls) {
+    if ($d.Name -match $fsharpDll) {
+      $problems.Add("Godot のプロジェクト に F# の dll が居る: " + $d.FullName.Substring($RepoRoot.Length + 1))
+    }
+  }
+
+  if (-not $Quiet) { Write-Host ("Godot の dll {0} 本 を見た" -f $godotDlls.Count) }
+}
+
 # --- 2. ソース --------------------------------------------------------------
-$sources = @(Get-ChildItem -LiteralPath $UnityAssets -Recurse -File -Filter *.cs -ErrorAction SilentlyContinue)
+# **絵 が出る client を 2 本 とも見る。** 片方 だけ だと、もう片方 に
+# F# が戻っても緑 のまま —— 「安全網 が守る対象 を落としたまま緑」の形
+$sources = @()
+foreach ($root in @($UnityAssets, (Join-Path $GodotProj 'Scripts'))) {
+  if (-not (Test-Path -LiteralPath $root)) { continue }
+  $found = @(Get-ChildItem -LiteralPath $root -Recurse -File -Filter *.cs -ErrorAction SilentlyContinue)
+  if ($found.Count -eq 0) {
+    $problems.Add(("{0} の下 に .cs が 1 本 も無い（当たる先 が 0 の門 は緑にしない）" -f $root.Substring([Math]::Min($RepoRoot.Length + 1, $root.Length))))
+  }
+
+  $sources += $found
+}
 
 if ($sources.Count -eq 0) {
-  $problems.Add("Assets の下 に .cs が 1 本 も無い（当たる先 が 0 の門 は緑にしない）")
+  $problems.Add("client の .cs が 1 本 も無い（当たる先 が 0 の門 は緑にしない）")
 }
 
 # 引いたら F# が要るもの。**`FsBulletML2.Sample.` は口 なので外す** ——
@@ -158,25 +197,38 @@ foreach ($f in $sources) {
 
 if (-not $Quiet) { Write-Host ("client の .cs {0} 本 を見た" -f $sources.Count) }
 
-# --- 3. 口（Shared）---------------------------------------------------------
-if (-not (Test-Path -LiteralPath $SharedProj)) {
-  $problems.Add("口 の csproj が無い: $SharedProj（当たる先 が 0 の門 は緑にしない）")
-}
-else {
-  $proj = Get-Content -LiteralPath $SharedProj -Raw
+# --- 3. csproj の参照 --------------------------------------------------------
+# **口 だけ ではない。** 口 が参照すると client に FSharp.Core が戻るが、
+# **client 自身 が参照しても同じこと** —— Godot は素 の .NET なので
+# `ProjectReference` を 1 行 足すだけ で F# が入る（Unity より簡単 に壊れる）
+$csprojs = @(
+  @{ Path = $SharedProj; Label = '口' }
+  @{ Path = (Join-Path $GodotProj 'FsBulletML2.Sample.Godot.MagicOnion.csproj'); Label = 'Godot の client' }
+)
+
+foreach ($entry in $csprojs) {
+  $path = $entry.Path
+  $label = $entry.Label
+
+  if (-not (Test-Path -LiteralPath $path)) {
+    $problems.Add("$label の csproj が無い: $path（当たる先 が 0 の門 は緑にしない）")
+    continue
+  }
+
+  $proj = Get-Content -LiteralPath $path -Raw
   $refs = [regex]::Matches($proj, '<(ProjectReference|PackageReference|Reference)\s+Include="([^"]+)"')
   if ($refs.Count -eq 0) {
-    $problems.Add("口 の csproj から参照を 1 つ も引けなかった（$SharedProj）")
+    $problems.Add("$label の csproj から参照を 1 つ も引けなかった（$path）")
   }
 
   foreach ($m in $refs) {
     $inc = $m.Groups[2].Value
     if ($inc -match 'FSharp\.Core|FsBulletML2\.(Core|Front|Dsl|Parser|Bullets)') {
-      $problems.Add("口 が F# を参照している: $inc（ここが参照すると client に FSharp.Core が戻る）")
+      $problems.Add("$label が F# を参照している: $inc（ここが参照すると client に FSharp.Core が戻る）")
     }
   }
 
-  if (-not $Quiet) { Write-Host ("口 の参照 {0} 本 を見た" -f $refs.Count) }
+  if (-not $Quiet) { Write-Host ("{0} の参照 {1} 本 を見た" -f $label, $refs.Count) }
 }
 
 # --- 判定 --------------------------------------------------------------------
@@ -187,5 +239,7 @@ if ($problems.Count -gt 0) {
 }
 
 if (-not $Quiet) {
-  Write-Host ("client に F# は 0 本（.cs {0} 本 / dll 0 本 / 口 の参照に F# 0 本）" -f $sources.Count)
+  # **数え方 を締め の 1 行 に出す。** 数 だけ 置くと、次 の人 が
+  # 「何 を見た数 なのか」を追えない
+  Write-Host ("client に F# は 0 本（Unity と Godot の .cs {0} 本 / 配り物 の dll に F# 0 本 / csproj {1} 本 の参照 に F# 0 本）" -f $sources.Count, $csprojs.Count)
 }

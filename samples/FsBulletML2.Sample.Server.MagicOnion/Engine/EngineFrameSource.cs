@@ -8,24 +8,24 @@ using BulletType = FsBulletML2.DTD.BulletType;
 namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 {
     /// <summary>
-    /// 弾幕エンジンを 1 部屋 ぶん走らせる。<b>この class だけが F# を呼ぶ。</b>
+    /// 弾幕エンジンを 1 部屋 ぶん走らせる。この class だけが F# を呼ぶ。
     ///
-    /// <b>1 本 の Task からしか呼ばれない</b>のが不変条件（<see cref="Room"/>）。
+    /// 1 本 の Task からしか呼ばれないのが不変条件（<see cref="Room"/>）。
     /// 排他を持たないのはそのため。
     /// </summary>
     public sealed class EngineFrameSource : IFrameSource
     {
         /// <summary>
-        /// 抱える弾の上限。<b>超えたぶんは捨てる。</b>
+        /// 抱える弾の上限。超えたぶんは捨てる。
         ///
-        /// エンジンは撃った弾を値で返しきり、<b>フロントが「撃つのを断る」口 は
-        /// 無い</b>（<c>Frame.Spawned</c> の但し書き）。捨てるのはこちらの都合。
+        /// エンジンは撃った弾を値で返しきり、フロントが「撃つのを断る」口 は
+        /// 無い（<c>Frame.Spawned</c> の但し書き）。捨てるのはこちらの都合。
         /// </summary>
         public const int MaxBullets = 4000;
 
         /// <summary>
-        /// 自機 の弾 が 1 回 の撃ちで出る位置。<b>Unity2D サンプルと同じ。</b>
-        /// 撃つ口 は 1 本 だが、同梱の 2way は**左右 2 発** 出る。
+        /// 自機 の弾 が 1 回 の撃ちで出る位置。Unity2D サンプルと同じ。
+        /// 撃つ口 は 1 本 だが、同梱の 2way は左右 2 発 出る。
         /// </summary>
         static readonly (float Dx, float Dy)[] ShotOffsets =
         {
@@ -37,7 +37,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         readonly BulletmlScript script;
 
         /// <summary>
-        /// 自機 の弾幕。<b>1 本 につき 1 回 だけ読む。</b>
+        /// 自機 の弾幕。1 本 につき 1 回 だけ読む。
         /// 撃つたびに読み直すと、木 を組む段でまた乱数 を引いて並びが変わる
         /// （Unity2D サンプルの <c>Player.Awake</c> も 1 回 だけ読んでいた）。
         /// </summary>
@@ -49,7 +49,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         int nextId;
         ServerBullet root;
 
-        /// <summary>このコマ の当たり。<b>Step の頭 で 0 に戻す</b></summary>
+        /// <summary>このコマ の当たり。Step の頭 で 0 に戻す</summary>
         int playerHits;
         int enemyHits;
 
@@ -57,7 +57,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         {
             env = new RoomEnv(
                 seed,
-                // **ランク 0。** 同梱サンプル（BulletFunctions.GetRank）と同じ
+                // ランク 0。 同梱サンプル（BulletFunctions.GetRank）と同じ
                 rank: 0f,
                 enemyX: Field.OriginX,
                 enemyY: Field.OriginY,
@@ -67,7 +67,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 
             script = Runner.Load(env.LoadRand, env.Rank, info.Bulletml);
 
-            // 自機 の弾。**同梱 の PlayerBullet は Bulletml（DTD の木）を直に持つ**ので
+            // 自機 の弾。同梱 の PlayerBullet は Bulletml（DTD の木）を直に持つので
             // BulletmlInfo を経ずに Runner.Load へ渡す
             shotScripts = new[]
             {
@@ -96,15 +96,9 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         public void SetPlayer(float x, float y) => env.SetPlayer(x, y);
 
         /// <summary>
-        /// 自機 の弾 を撃つ。<b>1 回 の呼びで 2 発。</b>
+        /// 自機 の弾 を撃つ。1 回 の呼びで 2 発。
         ///
-        /// <b>撃たれた弾（<c>NewShot</c>）として始める。</b> 根（<c>NewRoot</c>）
-        /// との違いは <c>Frame.Retired</c> だけだが、自機 の弾は撃ったあと
-        /// 退場してよい側 なので、こちらが正しい。
-        ///
-        /// **上限 に当たっていたら撃たない。** 撃ってから捨てると、
-        /// 弾が 1 コマ だけ出て消える形になる。
-        /// </summary>
+        /// 撃たれた弾（<c>NewShot</c>）として始める。 根（<c>NewRoot</c>）
         public void Shoot(float x, float y)
         {
             for (int i = 0; i < ShotOffsets.Length; i++)
@@ -120,7 +114,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
                     Y = y + ShotOffsets[i].Dy,
                 };
 
-                // **BulletType と IsBullet は SetScript の前 に決まっている。**
+                // BulletType と IsBullet は SetScript の前 に決まっている。
                 // Core へは毎コマ 渡らないので、後 から変えても効かない
                 shot.SetScript(shotScripts[i % shotScripts.Length]);
                 born.Add(shot);
@@ -132,12 +126,12 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
             playerHits = 0;
             enemyHits = 0;
 
-            // **`born` をここで空 にしない。** 撃ち（`Shoot`）はコマの頭 で、
-            // つまり **この関数に入る前** に積まれる。頭 で払うと、
+            // `born` をここで空 にしない。 撃ち（`Shoot`）はコマの頭 で、
+            // つまり この関数に入る前 に積まれる。頭 で払うと、
             // 撃った弾が 1 発 も出ない（実際にそう書いて踏んだ）。
             // 払うのは並びに載せ終えた後。
-
-            // **添字 で回す。** 産まれた弾はこのコマでは回さない
+            //
+            // 添字 で回す。 産まれた弾はこのコマでは回さない
             // （エンジンの決めと同じ。産まれた弾は次のコマから）
             for (int i = 0; i < live.Count; i++)
             {
@@ -153,7 +147,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 
             born.Clear();
 
-            // **撃つ側 が消えたら建て直す。** 建て直さないと、
+            // 撃つ側 が消えたら建て直す。 建て直さないと、
             // 弾が出きったところで部屋 が永久に空 になる
             if (root == null || !root.Used)
             {
@@ -164,7 +158,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
             for (int i = 0; i < live.Count; i++)
             {
                 var b = live[i];
-                // **配る形 は整数。** 盤面 を 0..65535 に割る（Wire）——
+                // 配る形 は整数。 盤面 を 0..65535 に割る（Wire）——
                 // float32 は MessagePack で 5 バイト固定 なので、
                 // x / y / 向き の 3 本 で 弾 1 発 19.9 -> 13.8 バイト
                 dtos[i] = new BulletDto
@@ -186,17 +180,11 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         }
 
         /// <summary>
-        /// 死んだ弾を落とす。<b>撃つ側 は盤面 の外 でも落とさない</b> ——
+        /// 死んだ弾を落とす。撃つ側 は盤面 の外 でも落とさない ——
         /// 落とすと、その場で建て直しが走って弾幕が頭 へ戻る。
-        ///
-        /// <b>当たり判定 をここに相乗りさせてある。</b> 弾を落とす判断は
-        /// 「使い切った / 外へ出た / 当たった」の 3 つ しか無く、どれも
-        /// 同じ 1 本 の走査で決まる。**判定 のためにループを足さない** ——
-        /// 足すと弾数 に比例した走査が 2 本 になる。
-        /// </summary>
         void Sweep()
         {
-            // **自機 を 1 度 も知らされていないなら、被弾 は数えない。**
+            // 自機 を 1 度 も知らされていないなら、被弾 は数えない。
             // 既定の位置で判定すると、誰も居ない場所で弾が消え続ける
             bool judgePlayer = env.PlayerKnown;
             float px = env.PlayerX;
@@ -208,7 +196,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
                 var b = live[i];
                 bool dead = !b.Used || (!b.IsRoot && Field.IsOutside(b.X, b.Y));
 
-                // **撃つ側 は当たらない。** 根 は弾ではなく、弾を出す口
+                // 撃つ側 は当たらない。 根 は弾ではなく、弾を出す口
                 if (!dead && !b.IsRoot)
                 {
                     if (Equals(b.BulletType, BulletType.Player))
@@ -243,7 +231,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
             live.RemoveRange(w, live.Count - w);
         }
 
-        /// <summary>2 点 が重なっているか。<b>平方根 を取らない</b></summary>
+        /// <summary>2 点 が重なっているか。平方根 を取らない</summary>
         static bool Near(float x, float y, float tx, float ty, float reach)
         {
             float dx = x - tx;
@@ -259,9 +247,9 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
                 Y = Field.OriginY,
             };
 
-            // **読み直さない。** Unity2D サンプルの Enemy は台本を読み直して
+            // 読み直さない。 Unity2D サンプルの Enemy は台本を読み直して
             // 建て直すが、読む段でまた乱数 を引くので並びが変わる。
-            // サーバーが権威 を持つので、**台本は 1 本 のまま使い回す**
+            // サーバーが権威 を持つので、台本は 1 本 のまま使い回す
             root.SetScript(script);
             live.Add(root);
         }

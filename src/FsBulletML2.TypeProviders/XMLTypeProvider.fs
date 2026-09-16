@@ -46,7 +46,7 @@ type BulletmlTypeProvider(config: TypeProviderConfig) as this =
           let instanceProp = 
             ProvidedProperty(propertyName = "Value", 
                              propertyType = Impl.bulletmlType, 
-                             // **値を quotation へ直に埋めない。** Bulletml は
+                             // 値を quotation へ直に埋めない。 Bulletml は
                              // FsBulletML2.DTD で型とモジュールが同名なので、値を埋めると
                              // プロパティの型が FsBulletML2.DTD.Bulletml.Bulletml という
                              // 在りもしない名前で焼かれ、使う側が FS1109 で落ちる

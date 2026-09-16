@@ -9,15 +9,10 @@ using BulletType = FsBulletML2.DTD.BulletType;
 /// <summary>
 /// GameObject 側の弾。
 ///
-/// <b>旧 API（Processable.IBulletmlObject）の実装をやめた。</b>
+/// 旧 API（Processable.IBulletmlObject）の実装をやめた。
 /// 旧はエンジンが GetAimDir / GetNewBullet などを呼び返すので 19 メンバ を
 /// 実装させられていた。新 API は値の受け渡しだけなので、残るのは
 /// フロント自身が要るものだけ。
-///
-/// 実際に飛ぶ弾は ECS 側（<see cref="BulletSim"/>）。ここは Enemy が継承して
-/// 自分の動きの弾幕を回すのと、prefab に付いた EnemyBullet / PlayerBullet が
-/// コンパイルできるようにするために残っている。
-/// </summary>
 public abstract class BaseBullet : MonoBehaviour
 {
     [SerializeField]
@@ -25,7 +20,7 @@ public abstract class BaseBullet : MonoBehaviour
     [field: SerializeField]
     public bool Root { get; set; }
     /// <summary>
-    /// この弾から見た世界。<b>弾 1 個 につき 1 個</b>
+    /// この弾から見た世界。弾 1 個 につき 1 個
     /// —— 狙う相手を覚えるのが弾ごとなので使い回せない。
     /// </summary>
     readonly GameObjectEnv front = new GameObjectEnv();
@@ -37,11 +32,11 @@ public abstract class BaseBullet : MonoBehaviour
     IDisposable simSub;
 
     /// <summary>走らせている弾幕。撃たれた弾も親と同じものを使い回す</summary>
-    /// <summary>走らせている弾幕。<b>実行状態の中に居る</b>（<c>BulletRun.Script</c>）。</summary>
+    /// <summary>走らせている弾幕。実行状態の中に居る（<c>BulletRun.Script</c>）。</summary>
     public BulletmlScript Script => Run.HasValue ? Run.Value.Script : null;
 
     /// <summary>
-    /// この弾 1 体 の実行位置。<b>台本が無いあいだは null。</b>
+    /// この弾 1 体 の実行位置。台本が無いあいだは null。
     /// <c>BulletRun</c> は値型なので既定値を作れてしまう。Nullable で
     /// 「まだ持っていない」と区別する。
     /// </summary>
@@ -52,15 +47,15 @@ public abstract class BaseBullet : MonoBehaviour
 
     public float AccelerationX { get; set; }
     public float AccelerationY { get; set; }
-    /// <summary>自分も子を撃ったか。旧 BulletRoot。<b>フロントの印で、エンジンは見ない</b></summary>
+    /// <summary>自分も子を撃ったか。旧 BulletRoot。フロントの印で、エンジンは見ない</summary>
     public bool BulletRoot { get; set; }
 
     /// <summary>
-    /// 敵の弾か自機の弾か。<b>既定値を入れておくこと。</b>
+    /// 敵の弾か自機の弾か。既定値を入れておくこと。
     ///
-    /// F# の判別共用体は参照型なので、既定は <b>0 ではなく null</b>。
+    /// F# の判別共用体は参照型なので、既定は 0 ではなく null。
     /// 入れ忘れたまま Runner.StepWith に渡すと、エンジンが match した
-    /// ところで NullReferenceException になる。<b>コンパイルは通る</b>ので、
+    /// ところで NullReferenceException になる。コンパイルは通るので、
     /// 走らせるまで出ない（実際に踏んだ。BulletSmokeCheck が見つけた）。
     /// </summary>
     public BulletType BulletType { get; set; } = BulletType.Enemy;
@@ -69,7 +64,7 @@ public abstract class BaseBullet : MonoBehaviour
     public bool IsBullet { get; set; }
 
     /// <summary>
-    /// <c>&lt;bulletml type&gt;</c>。<b>BulletType と同じ理由で既定値を入れる。</b>
+    /// <c>&lt;bulletml type&gt;</c>。BulletType と同じ理由で既定値を入れる。
     /// Core の既定（Runner.load）と揃えてある。
     /// </summary>
     public DTD.ShootingDirection ShootingDirection { get; set; } = DTD.ShootingDirection.BulletVertical;
@@ -92,7 +87,7 @@ public abstract class BaseBullet : MonoBehaviour
     /// <summary>
     /// 弾幕を割り当てる。根から始めるときは <paramref name="run"/> を null にする。
     ///
-    /// <b>根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。</b>
+    /// 根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。
     /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
     /// 立てておくこと（同梱の弾はどれもコンストラクタか Awake で立てている）。
     /// </summary>
@@ -106,7 +101,7 @@ public abstract class BaseBullet : MonoBehaviour
 
     /// <summary>
     /// 撃たれた弾を、エンジンから受け取った実行状態で始める。
-    /// <b>弾幕を渡す口が無い</b> —— <c>BulletRun</c> が親のものを持っている。
+    /// 弾幕を渡す口が無い —— <c>BulletRun</c> が親のものを持っている。
     /// </summary>
     public void SetRun(BulletRun run)
     {
@@ -115,7 +110,7 @@ public abstract class BaseBullet : MonoBehaviour
     }
 
     /// <summary>
-    /// 1 コマ進める。<b>座標は差分を足す</b>（Frame.Delta は差分で、絶対値ではない）。
+    /// 1 コマ進める。座標は差分を足す（Frame.Delta は差分で、絶対値ではない）。
     /// </summary>
     protected void RunTask()
     {
@@ -128,13 +123,12 @@ public abstract class BaseBullet : MonoBehaviour
         ShootingDirection = Script.ShootingDirection;
         // 物理量はフロントが持っている。毎コマ入れ直す（旧 stateOfBullet）。
         //
-        // **名前付き引数で書く。** F# 側は `{ rn.Motion with Pos = ... }` と
+        // 名前付き引数で書く。 F# 側は `{ rn.Motion with Pos = ... }` と
         // 欄の名前で書けるが、C# にレコードの with が無いのでコンストラクタを
-        // 並べることになり、**float が 2 本 並ぶ speed / dir が位置ずれしても
-        // 通ってしまう。** 名前を書けば位置ずれはコンパイルで落ちる
-        // （綴り違いで較正済み）。ただし**値そのものを取り違えた場合は
-        // 落ちない** —— `speed: Dir` は名前が正しいので通る。
-        // そこは軌跡でしか見えない
+        // 並べることになり、float が 2 本 並ぶ speed / dir が位置ずれしても
+        // 通ってしまう。 名前を書けば位置ずれはコンパイルで落ちる
+        // （綴り違いで較正済み）。ただし値そのものを取り違えた場合は
+        // 落ちない —— `speed: Dir` は名前が正しいので通る。
         var motion = new FsBulletML2.Motion(
             pos: new FsBulletML2.Domain.Vec2(X, Y),
             speed: Speed,

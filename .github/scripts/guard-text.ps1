@@ -64,7 +64,9 @@ $bad = [System.Collections.Generic.List[string]]::new()
 
 foreach ($f in $Files) {
   if ($BinaryExt -contains [IO.Path]::GetExtension($f).ToLower()) { $skipped++; continue }
-  if (-not (Test-Path -LiteralPath $f)) { continue }
+  # submodule（gitlink）はディレクトリとして在る。ReadAllBytes すると
+  # Windows では Access denied で門そのものが落ちる
+  if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { continue }
   $scanned++
 
   $b = [IO.File]::ReadAllBytes($f)

@@ -1,0 +1,45 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+
+  <!--
+    Godot の client。**F# を 1 本 も参照しない。**
+
+    ## Unity 版 との違いは「引き方」に出る
+
+    Unity は NuGet を引けないので、口 の package の中 に dll を 12 本 焼いて置いてある
+    （`.github/scripts/bake-magiconion-plugins.ps1`）。**Godot は素 の .NET なので
+    PackageReference がそのまま通る** —— 焼く段 が 1 つ 要らない。
+
+    ついでに `YetAnotherHttpHandler` も要らない。あれは Unity の素 の HttpClient が
+    HTTP/2 を喋れないから挟んでいたもので、**.NET の `SocketsHttpHandler` は喋る。**
+    console client と同じ 2 行（`AppContext.SetSwitch` ＋ `GrpcChannel.ForAddress`）で繋がる。
+
+    ## TFM は net8.0
+
+    Godot 4.7.2 の `GodotPlugins.runtimeconfig.json` が `"tfm": "net8.0"`。
+    `rollForward: LatestMajor` なので手元 の .NET 10 で走るが、**こちら を net10.0 に
+    上げる理由 が無い**（GodotSharp.dll 自体 が net8.0）。
+
+    口（Shared）は `net10.0;netstandard2.1` を出しているので、**ここからは
+    netstandard2.1 が選ばれる** —— Unity と同じ側 の dll を読むことになる。
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RootNamespace>FsBulletML2.Sample.Godot.MagicOnion</RootNamespace>
+    <AssemblyName>FsBulletML2.Sample.Godot.MagicOnion</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MagicOnion.Client" Version="7.10.2" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML2.Sample.Shared.MagicOnion.Compile\FsBulletML2.Sample.Shared.MagicOnion.Compile.csproj" />
+  </ItemGroup>
+
+</Project>

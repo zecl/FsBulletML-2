@@ -4,34 +4,17 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2.TypeProviders
 
-/// 型プロバイダが**型プロバイダとして働く**かを見る門。
+/// 型プロバイダが型プロバイダとして働くかを見る門。
 ///
 /// 本体（src/FsBulletML2.TypeProviders）が sln に入っていて確かめられるのは
-/// 「ビルドが通る」ことだけで、**生成した型が使えるかを見ている門は無かった。**
-/// nuspec と nuget/*.package.bat がある配布物なのに。
-///
-/// **いまは緑。** 置いたときは赤で、その赤を消すために SDK を差し替えた。
-/// 経緯は samples/FsBulletML2.Sample.TypeProviders.Debug/README.md。
-///
-/// 赤から緑へ動いた段を、数で控えてある。**次に赤くなったとき、どの段まで
-/// 戻ったかを引き算で言うため。**
+/// 「ビルドが通る」ことだけで、生成した型が使えるかを見ている門は無かった。
 ///
 ///     置いたとき        FS1108 24 件 / FS0039 12 件
 ///     SDK を 8.11.0 へ  FS1108 0 件。かわりに FS3033 が 16 件
-///     probing を直した  0 件。テスト 6 本 緑
 ///
-/// **段が 2 つ あった。** 型が解決できない段（FS1108。同梱 SDK が
-/// .NET Framework 時代のもので、返す型が実行時アセンブリの String を指していた）
-/// を直したら、次に**設計時に依存アセンブリを読めない段**（FS3033。
-/// FParsec.dll が型プロバイダの隣に無く、probing も効いていなかった）が出た。
+/// 段が 2 つ あった。 型が解決できない段（FS1108。同梱 SDK が
 ///
-/// 1 段目 だけ見て「直った」と言える形ではなかった。**門を先に置いて
-/// 数を控えていたから、2 段目 が「新しい壊れ」ではなく「次の段」だと分かった。**
-///
-/// **ファイルを置いていない。** 型プロバイダは拡張子で終わらない文字列を
-/// 「BulletML の本体そのもの」として受けるので、ここでは文字列リテラルを渡す。
-/// TypeProviderConfig.ResolutionFolder の解決を門の対象から外して、
-/// **型が生成されるかどうかだけ**を見るため。ファイル解決は別の門の仕事。
+/// を直したら、次に設計時に依存アセンブリを読めない段（FS3033。
 module Docs =
 
   [<Literal>]
@@ -54,32 +37,12 @@ module Docs =
             direction:"0"
             bullet"""
 
-/// **型プロバイダは 6 本。出す型は 8 通り。全部 ここに載せる。**
+/// 型プロバイダは 6 本。出す型は 8 通り。全部 ここに載せる。
 ///
 ///     BulletML<s>              BulletMLTypeProvider          既定は Style.Xml
 ///     BulletML<s, Style.Sxml>  同上
-///     BulletML<s, Style.Fsb>   同上
-///     Xml.BulletML<s>          BulletMLFromXmlTypeProvider
-///     Sxml.BulletML<s>         BulletMLFromSxmlTypeProvider
-///     Fsb.BulletML<s>          BulletMLFromFsbTypeProvider
-///     XML<s>                   XMLTypeProvider.fs            Value を 1 つ 出す
-///     SXML<s>                  FSBTypeProvider.fs            **中身は fsb**
 ///
-/// 最後の 1 行 は打ち間違いではない。FSBTypeProvider.fs が出す型の名前が SXML で、
-/// 読むのは .fsb（EndsWith ".fsb" / ReadFsbString）。**名前と実装がずれている。**
 /// 直すと使う側が壊れるので、いまは現状のまま門に載せて、ずれを型で固定しておく。
-///
-/// **下の 2 本 は、少し前まで存在しない型だった。** XMLTypeProvider.fs と
-/// FSBTypeProvider.fs はディレクトリに在るのに fsproj の <Compile Include> に
-/// 入っておらず、この門に書いたら「型 'XML' が定義されていません」で落ちた。
-/// ビルドに入れたときに 3 か所 直している ——
-///
-///     読む API が古いまま      FsBulletML2.Xml.Bulletml.readXmlString (xml, None)
-///     読まれない束縛が 1 つ    Bulletml(...) を組んで捨てるだけの bulletml2
-///     HideObjectMethods <-     新 SDK では読み取り専用。引数で渡すほうへ
-///
-/// **コンパイルされないファイルは、周りが動いても古びたまま残る。**
-/// いま門に載っているので、次にずれたらここが赤くなる。
 module Generated =
 
   type ViaStyleXml  = BulletML<Docs.Xml>
@@ -132,7 +95,7 @@ type TypeProviderGate() =
     let g = Generated.ViaXmlSingle()
     g.Value.Name |> should equal (Some "門の弾")
 
-  /// **名前は SXML だが、読むのは fsb。** FSBTypeProvider.fs の実装がそうなっている。
+  /// 名前は SXML だが、読むのは fsb。 FSBTypeProvider.fs の実装がそうなっている。
   /// ここに xml を渡すと落ちるのが正しい振る舞い
   [<Test>]
   member _.``SXML<s>: 名前に反して fsb を読む``() =

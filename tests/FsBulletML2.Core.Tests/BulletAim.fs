@@ -14,23 +14,10 @@ open FsUnit
 /// GetEnemyAimDir() を読んでいた。fire 側の aim（撃った側の位置に依る）と
 /// bullet 側の aim（常に原点）は別の値になる —— 撃った側が原点から
 /// 動いていれば、この 2 つは違う数になる。
-///
-/// 根の top action の直後には必ず長い <wait> を置いてある。根は
-/// IsBullet = false なので Retired にならず、Finished が立つたびに
-/// 走らせる側が木を丸ごと引き直す（設計文書 5.3「走らせ直す」。
-/// 新 API では `Runner.restart`）。<wait> を置かずに <fire> 1 本だけで
-/// action を終わらせると、根は毎フレーム 引き直されて撃ち直してしまい、
-/// 見たい弾（b2 / b3）の番号がずれる。
-///
-/// **NonParallelizable と SetUp は外した。** 旧は `BulletMLManager`
-/// （static mutable）へ自機の位置を置いてから `Trace.run` を呼んでいた。
-/// いまは `TraceRun.std` が同じ 4 値 を引数で渡す —— 触るグローバルが無い。
-/// **`std` の自機は (30, 100)** で、下の `px` / `py` と同じ値。
-/// ここがずれると期待値の式だけが古びるので、名前ではなく値で合わせてある。
 [<TestFixture>]
 type BulletAim() =
 
-  /// TraceRun.std が渡す自機の位置と同じ値。**片方だけ動かすと期待値が割れる**
+  /// TraceRun.std が渡す自機の位置と同じ値。片方だけ動かすと期待値が割れる
   let px, py = 30.0f, 100.0f
 
   let bml body =

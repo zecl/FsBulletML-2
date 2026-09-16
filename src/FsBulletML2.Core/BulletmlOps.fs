@@ -1,6 +1,6 @@
 namespace FsBulletML2
 
-/// BulletML の木の上の操作。**BulletmlRead から切り出したもの。**
+/// BulletML の木の上の操作。BulletmlRead から切り出したもの。
 ///
 /// 3 つ ある。
 ///
@@ -8,7 +8,7 @@ namespace FsBulletML2
 ///     param を差し込む   substCommand / refAction / refFire / refBullet
 ///     輪を 1 段 解く     resolveActionRef / expand* / convertRef*
 ///
-/// **二重木を畳んでも、ここは丸ごと残った。** 木が 1 つ になっても
+/// 二重木を畳んでも、ここは丸ごと残った。 木が 1 つ になっても
 /// 「名前で引く」「実引数を入れる」「輪を 1 段 だけ解く」は要る。
 module internal BulletmlOps =
 
@@ -16,32 +16,29 @@ module internal BulletmlOps =
     | Some (Direction(attrs,s)) -> Direction(attrs, Param.replaceIn prams s) |> Some
     | None -> None
 
-  let internal convertDirection  = fun prams -> function Direction(attrs,s) -> Direction(attrs, Param.replaceIn prams s) 
+  let internal convertDirection  = fun prams -> function Direction(attrs,s) -> Direction(attrs, Param.replaceIn prams s)
 
   let internal convertSpeedOption = fun prams -> function
     | Some (Speed(attrs,s)) -> Speed(attrs, Param.replaceIn prams s) |> Some
     | None -> None
 
-  let internal convertSpeed = fun prams -> function Speed(attrs,s) -> Speed(attrs, Param.replaceIn prams s) 
+  let internal convertSpeed = fun prams -> function Speed(attrs,s) -> Speed(attrs, Param.replaceIn prams s)
   let internal convertTerm = fun prams -> function Term(s) -> Term(Param.replaceIn prams s)
   let internal convertTimes = fun prams -> function | Times(s) -> Times(Param.replaceIn prams s)
-  let internal convertParam = fun prams -> List.map (fun s -> Param.replace s prams) 
+  let internal convertParam = fun prams -> List.map (fun s -> Param.replace s prams)
   let internal convertWait = fun prams -> function | s -> Param.replaceIn prams s
 
-  let internal convertHorizontalOption = fun prams -> function 
+  let internal convertHorizontalOption = fun prams -> function
     | Some(Horizontal(attrs,s)) -> Horizontal(attrs, Param.replaceIn prams s) |> Some
     | None -> None
-  let internal convertVerticalOption = fun prams -> function 
+  let internal convertVerticalOption = fun prams -> function
     | Some(Vertical(attrs,s)) -> Vertical(attrs, Param.replaceIn prams s) |> Some
     | None -> None
 
   /// 木を隅々まで歩いて、名前の付いた要素を集める。
   ///
-  /// 以前は同じ形の走査を getAction / getFire / getBullet で 3 回 書いていた
-  /// （どれも 14 の腕を並べ、拾う 1 腕だけが違った）。位置ごとに型が
-  /// 分かれたので、歩き方を 1 本 にして「拾うもの」だけを差し替える。
-  ///
-  /// 拾う順は変えていない —— 自分を先に入れてから子へ降りる
+  /// 歩き方を 1 本 にして「拾うもの」だけを差し替える。
+  /// 拾う順は変えていない —— 自分を先に入れてから子へ降りる。
   let private collect
       (fromAction: obj -> ActionAttrs * Action list -> 'a list)
       (fromFire: FireAttrs * Direction option * Speed option * BulletElm -> 'a list)
@@ -54,8 +51,7 @@ module internal BulletmlOps =
       | Action.Fire (attrs, d, s, child) ->
         fromFire (attrs, d, s, child) @ bulletElm child
       | Action.Repeat (_, child) -> actionElm child
-      // 要素の子を持たない腕。以前はここに NotCommand と、命令の位置には
-      // 来られない Bulletml / Bullet / BulletRef も並んでいた
+      // 要素の子を持たない腕
       | Action.ActionRef _ | Action.FireRef _
       | Action.ChangeDirection _ | Action.ChangeSpeed _
       | Action.Accel _ | Action.Wait _ | Action.Vanish -> []
@@ -86,8 +82,7 @@ module internal BulletmlOps =
       (fun src (attrs, children) ->
         match attrs.actionLabel with
         | Some _ ->
-            // **ここで新しい ActionElm ができる。** 元は 3 通り（BulletmlElm.Action /
-            // ActionElm.Action / Action.Action）で、どれも collect が分解して渡す
+            // ここで新しい ActionElm ができる（元は 3 通り）
             let e = ActionElm.Action (attrs, children)
             if NodeOrigin.enabled && not (obj.ReferenceEquals(box e, src)) then
               NodeOrigin.pair (box e) src
@@ -99,9 +94,6 @@ module internal BulletmlOps =
   let internal tryFindAction bulletml (targetLabel: ActionLabel) =
     getAction bulletml |> List.tryFind (function
       | ActionElm.Action (attrs, _) ->
-        // 以前は tryFindLabelValue [("label", v)] を通していたが、
-        // 1 要素の連想リストから同じキーを引くだけで、常に Some v を返す
-        // 空回りだった。型が付いたのでそのまま比べる
         (match attrs.actionLabel with Some v -> v = targetLabel | None -> false)
       | ActionElm.ActionRef _ -> false)
 
@@ -138,12 +130,8 @@ module internal BulletmlOps =
         (match attrs.bulletLabel with Some v -> v = targetLabel | None -> false)
       | BulletElm.BulletRef _ -> false)
 
-  /// 実引数を差し込む走査。位置ごとに分ける。
-  ///
-  /// 以前は 1 本の convert が平らな DU を歩き、最後に `| x -> x` で
-  /// 「触らない腕」をまとめて受けていた。その `x` には
-  /// Vanish（触らなくてよい）と Bulletml / 当時あった NotCommand（そもそも
-  /// ここへ来ない）が混ざっていた
+  /// 実引数を差し込む走査。位置ごとに分ける（`| x -> x` で
+  /// 「触らない腕」をまとめて受けない）。
   let rec private substCommandCore prams (c: Action) : Action =
     match c with
     | Action.ChangeDirection (direction, term) ->
@@ -181,9 +169,8 @@ module internal BulletmlOps =
 
   // --- param を差し込んで作った物を、元の物と対にする -------------------------
   //
-  // **覆いで、中身（*Core）は 1 行 も触っていない。**
-  // **同じ物が返ったときは対にしない** —— vanish の腕は引数なしなので
-  // singleton で、作り直しても同じ物が返る（同梱 176 本 で 265 件）。
+  // 覆いで、中身（*Core）は 1 行 も触っていない。
+  // 同じ物が返ったときは対にしない（vanish は singleton）。
 
   and private substCommand prams (c: Action) : Action =
     let r = substCommandCore prams c
@@ -195,16 +182,11 @@ module internal BulletmlOps =
     if NodeOrigin.enabled && not (obj.ReferenceEquals(r, a)) then NodeOrigin.pair (box r) (box a)
     r
 
-  /// 参照先の要素へ実引数を差し込む。**種別ごとに 1 本 ずつ。**
+  /// 参照先の要素へ実引数を差し込む。種別ごとに 1 本 ずつ
+  /// （target と label の種別が揃っていることを型で言うため）。
   ///
-  /// 以前は target を 1 つの平らな型で受け、target と label の種別が
-  /// 揃っていることを型で言えなかった（前の段で RefKey を入れて
-  /// 「揃っている腕だけ」を書ける形にしたが、まだ 1 本 の関数だった）。
-  /// 位置ごとに型が分かれたので、関数そのものが 3 本 に割れて、
-  /// 揃わない呼び方が書けなくなる。
-  ///
-  /// 名前の一致を確かめてから差し込むのは以前と同じ。呼ぶ側は
-  /// tryFind* が返したものを渡すので必ず一致するが、確認は残す
+  /// 名前の一致を確かめてから差し込む。呼ぶ側は `tryFind*` が返したものを
+  /// 渡すので必ず一致するが、確認は残す。
   let internal refAction (target: ActionElm) (label: ActionLabel) prams : ActionElm =
     let prams = prams |> Param.ofList
     match target with
@@ -226,20 +208,15 @@ module internal BulletmlOps =
       substBulletElm prams target
     | _ -> target
 
-  /// 展開中の参照は DTD.RefKey が表す（action:foo と bullet:foo は別物）。
-  /// 以前はここに refKey kind label = kind + ":" + label があり、種別を
-  /// 文字で足していた。型にしたので、足し忘れも綴り違いも起きない
-
   /// 参照を解いて木へ展開する。
   ///
-  /// lastAction は「直近に展開した action の label」。
-  /// action の輪を残してよいのは、その輪が直近に展開した action 自身へ戻るときだけ。
-  /// 別の action を経由する輪は、解いた結果の中に action が挟まるので、
-  /// 走らせる側が 1 段ずつ解くと呼び出しがフレームごとに深くなる。
+  /// `lastAction` は「直近に展開した action の label」。
+  /// action の輪を残してよいのは、その輪が直近に展開した action 自身へ
+  /// 戻るときだけ（別の action を経由する輪は、走らせる側が 1 段ずつ解くと
+  /// 呼び出しがフレームごとに深くなる）。
   ///
-  /// 位置ごとに関数が分かれた。actionRef は「命令の位置」と
-  /// 「repeat / bullet の子の位置」の両方に出るので、解く判断だけを
-  /// resolveActionRef に出して両方から使う
+  /// `actionRef` は「命令の位置」と「repeat / bullet の子の位置」の両方に出るので、
+  /// 解く判断だけをここへ出して両方から使う。
   let rec private resolveActionRef visiting lastAction top (attrs: ActionRefAttrs) prams
       : ActionElm option =
     // None は「輪なので、そのまま残す」
@@ -300,9 +277,8 @@ module internal BulletmlOps =
 
   // --- 参照の解決で作った物を、元の物と対にする -----------------------------
   //
-  // **覆いで、中身（*Core）は 1 行 も触っていない。**
-  // **同じ物が返ったときは対にしない** —— expandCommandCore の `| None -> c`
-  // （輪はそのまま残す）が該当する。
+  // 覆いで、中身（*Core）は 1 行 も触っていない。
+  // 同じ物が返ったときは対にしない（`| None -> c` が該当）。
 
   and private expandCommand visiting lastAction top (c: Action) : Action =
     let r = expandCommandCore visiting lastAction top c
@@ -347,21 +323,18 @@ module internal BulletmlOps =
       Bulletml.Bulletml (attrs, elms |> List.map (expandTopElm Set.empty None top))
 
   /// top* の台本 1 本 を展開する。`Runner.load` が使う
-  /// （旧は落とした `BulletRunner.buildRootTops` の側から呼ばれていた）
   let internal convertRefActionElm (top: Bulletml) (a: ActionElm) : ActionElm =
     expandActionElm Set.empty None top a
 
   /// 輪のために展開を止めた bulletRef を、走らせる側から 1 段だけ解く。
   /// 中にまた同じ参照が残るので、次に撃たれたときに次の 1 段が解かれる。
   ///
-  /// 解く前から自分の key を visiting に入れておくこと。空から始めると
-  /// 解いた中身の同じ参照がもう 1 段 展開され、1 段のつもりが 2 段になる。
-  /// 新経路（Step.Resolvers）は木を組まないのでこちらを直に使う
+  /// 解く前から自分の key を visiting に入れておくこと。 空から始めると
+  /// 解いた中身の同じ参照がもう 1 段 展開され、1 段 のつもりが 2 段 になる。
   let internal expandBulletRefOnce top (label: BulletLabel) prams : BulletElm option =
     match tryFindBullet top label with
     | Some bullet ->
-      // param は文字のまま渡す（Params は string list で、Param.replace も
-      // 文字の置き換えなので、ここで数へ潰すと $rank / $rand が凍る）
+      // param は文字のまま渡す（ここで数へ潰すと $rank / $rand が凍る）
       refBullet bullet label prams
       |> expandBulletElm (Set.singleton (BulletKey label)) None top
       |> Some
@@ -371,7 +344,7 @@ module internal BulletmlOps =
   /// 中にまた同じ参照が残るので、そこへ届いたときに次の 1 段が解かれる。
   ///
   /// bulletRef と違って fire を挟まないので、2 段 解くと走らせる側の
-  /// 呼び出しが 1 フレームごとに深くなり、スタックを使い切る
+  /// 呼び出しが 1 フレームごとに深くなり、スタックを使い切る。
   let internal expandActionRefOnce top (label: ActionLabel) prams : ActionElm option =
     match tryFindAction top label with
     | Some action ->

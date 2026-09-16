@@ -4,9 +4,9 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2.LanguageService
 
-/// **カーソルの下に在るもの**の判定、fsb の側。`XmlToken` / `SxmlToken` と対。
+/// カーソルの下に在るものの判定、fsb の側。`XmlToken` / `SxmlToken` と対。
 ///
-/// hover が引く。指すのは**カーソルの位置に在る 1 文字**で、
+/// hover が引く。指すのはカーソルの位置に在る 1 文字で、
 /// そこが何でもなければ何も浮かない。
 [<TestFixture>]
 type FsbToken() =
@@ -56,7 +56,7 @@ type FsbToken() =
   [<Test>]
   member _.``本文の区切りに 名前を食われない``() =
     // `:` を名前の字として数えると、要素名が `direction:` になって
-    // **語彙に無い名前**になる（hover が静かに出なくなる）
+    // 語彙に無い名前になる（hover が静かに出なくなる）
     at "bulletml\n    dire|ction:\"-20\"" |> should equal (Element "direction")
     FsbScan.tags "bulletml\n    direction:\"-20\"" |> List.map (fun t -> t.TagName)
     |> should equal [ "bulletml"; "direction" ]

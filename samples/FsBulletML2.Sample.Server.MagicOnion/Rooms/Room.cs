@@ -9,39 +9,32 @@ using Microsoft.Extensions.Logging;
 
 namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
 {
-    /// <summary>コマの速さ。<b>部屋ごとではなく、サーバー全体で 1 つ</b></summary>
+    /// <summary>コマの速さ。部屋ごとではなく、サーバー全体で 1 つ</summary>
     public static class RoomLoop
     {
         public const int Fps = 60;
     }
 
     /// <summary>
-    /// 部屋 の回し方。<b>サーバー全体で 1 つ（singleton）。</b>
+    /// 部屋 の回し方。サーバー全体で 1 つ（singleton）。
     /// </summary>
     public sealed class RoomOptions
     {
         /// <summary>
-        /// 何コマ に 1 回 配るか。<b>進めるのは毎コマ のまま。</b>
+        /// 何コマ に 1 回 配るか。進めるのは毎コマ のまま。
         ///
-        /// <b>進める速さ と 配る速さ を分ける</b>のが E1.6 の手 1 —— 弾の動きは
+        /// 進める速さ と 配る速さ を分けるのが E1.6 の手 1 —— 弾の動きは
         /// 60 コマ/秒 のままで、降ろす回数 だけ減らす。帯域 は割った数 で割れるが、
-        /// **client は受け取った 2 枚 のあいだ を埋める必要が出る**。
+        /// client は受け取った 2 枚 のあいだ を埋める必要が出る。
         /// </summary>
         public int SendEvery { get; set; } = 1;
     }
 
     /// <summary>
-    /// 走っている部屋 1 つ。<b>弾幕エンジンを持つのはここだけ。</b>
+    /// 走っている部屋 1 つ。弾幕エンジンを持つのはここだけ。
     ///
-    /// <b>輪 を回すのは Hub ではなく、この側。</b> Hub は接続 1 本 の寿命で
+    /// 輪 を回すのは Hub ではなく、この側。 Hub は接続 1 本 の寿命で
     /// 作り直されるので、そこに輪 を置くと「誰かが切れた瞬間にコマが飛ぶ」。
-    ///
-    /// <b>進めるのは 1 本 の Task だけ。</b> <see cref="IFrameSource"/> の中身は
-    /// 排他を持たない（エンジンの実行状態は素の field）ので、
-    /// ここが唯一の呼び手であることが不変条件。自機の位置だけは
-    /// 別のスレッドから届くので、<see cref="pendingPlayer"/> に置いて
-    /// 輪 の中で読む。
-    /// </summary>
     public sealed class Room : IAsyncDisposable
     {
         readonly IFrameSource source;
@@ -51,7 +44,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         readonly int sendEvery;
 
         /// <summary>
-        /// あと何コマ で配るか。<b>剰余 で書かない。</b>
+        /// あと何コマ で配るか。剰余 で書かない。
         /// <c>frame % N == 0</c> は「その数列を必ず全部 通る」前提 で、
         /// 1 つ でも飛ぶと二度と踏まない（この repo で 1 度 踏んでいる）。
         /// </summary>
@@ -59,23 +52,23 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         readonly CancellationTokenSource stopping = new CancellationTokenSource();
         readonly Task loop;
 
-        /// <summary>いちばん新しい自機の位置。<b>輪 の外から書いて、輪 の中で読む</b></summary>
+        /// <summary>いちばん新しい自機の位置。輪 の外から書いて、輪 の中で読む</summary>
         long pendingPlayer;
         int hasPlayer;
 
         /// <summary>
-        /// 撃った合図。<b>位置 と違って、いちばん新しい 1 つ では足りない。</b>
+        /// 撃った合図。位置 と違って、いちばん新しい 1 つ では足りない。
         ///
         /// 位置は「いまどこか」なので古いものを捨ててよいが、
-        /// 撃つのは**出来事**で、捨てると弾が 1 発 出ない。
+        /// 撃つのは出来事で、捨てると弾が 1 発 出ない。
         /// 1 コマ に 2 つ 以上 届くことが在るので並べて持つ。
         /// </summary>
         readonly ConcurrentQueue<long> pendingShots = new ConcurrentQueue<long>();
 
         /// <summary>
-        /// 溜める上限。<b>超えたら捨てる。</b>
+        /// 溜める上限。超えたら捨てる。
         /// client が壊れて撃ち続けたときに、部屋 が溺れないようにする
-        /// —— **捨てた数は数える**（黙って落とさない）。
+        /// —— 捨てた数は数える（黙って落とさない）。
         /// </summary>
         const int MaxPendingShots = 32;
 
@@ -84,13 +77,13 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         int members;
         int frame;
 
-        /// <summary>いちばん新しいコマの弾数。<b>状況 の行 が読む</b></summary>
+        /// <summary>いちばん新しいコマの弾数。状況 の行 が読む</summary>
         int lastBullets;
 
         int playerHits;
         int enemyHits;
 
-        /// <summary>配らなかったコマ の当たり。<b>次に配るコマ に載せる</b></summary>
+        /// <summary>配らなかったコマ の当たり。次に配るコマ に載せる</summary>
         int pendingPlayerHits;
         int pendingEnemyHits;
 
@@ -110,7 +103,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
             sendEvery = Math.Max(1, options?.SendEvery ?? 1);
             untilSend = 1;
 
-            // **配る間隔 を client へ知らせる。** 知らせないと、間引いたぶんを
+            // 配る間隔 を client へ知らせる。 知らせないと、間引いたぶんを
             // 全部「落ちた」と数えられる（コマ番号 は時刻 のままなので飛ぶ）
             source.Info.SendEvery = sendEvery;
             loop = Task.Run(RunAsync);
@@ -121,7 +114,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         public RoomInfo Info => source.Info;
 
         /// <summary>
-        /// 状況 の行 に出す名前。<b><see cref="Key"/> をそのまま出さない</b> ——
+        /// 状況 の行 に出す名前。<see cref="Key"/> をそのまま出さない ——
         /// 弾幕 を名指ししなければ頭 が空 になって <c>#5</c> としか出ない。
         /// 種 は残す（同じ弾幕 の別の部屋 を見分けるため）。
         /// </summary>
@@ -135,12 +128,12 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
             }
         }
 
-        /// <summary>いま何コマ 目 か。<b>抜けを数える側 が読む</b></summary>
+        /// <summary>いま何コマ 目 か。抜けを数える側 が読む</summary>
         public int Frame => Volatile.Read(ref frame);
 
         public int Members => Volatile.Read(ref members);
 
-        /// <summary>溜めきれずに捨てた撃ちの数。<b>0 でないなら client が撃ちすぎ</b></summary>
+        /// <summary>溜めきれずに捨てた撃ちの数。0 でないなら client が撃ちすぎ</summary>
         public int DroppedShots => Volatile.Read(ref droppedShots);
 
         /// <summary>いちばん新しいコマに載っていた弾の数</summary>
@@ -154,7 +147,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
 
         public void Enter() => Interlocked.Increment(ref members);
 
-        /// <summary>出た人を引く。<b>0 になっても部屋は畳まない</b> ——
+        /// <summary>出た人を引く。0 になっても部屋は畳まない ——
         /// 畳むのは <see cref="RoomRegistry"/> の仕事</summary>
         public int Leave() => Interlocked.Decrement(ref members);
 
@@ -164,7 +157,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
             Volatile.Write(ref hasPlayer, 1);
         }
 
-        /// <summary>撃った合図 を溜める。<b>撃つのは輪 の中</b></summary>
+        /// <summary>撃った合図 を溜める。撃つのは輪 の中</summary>
         public void Shoot(float x, float y)
         {
             if (pendingShots.Count >= MaxPendingShots)
@@ -177,7 +170,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         }
 
         /// <summary>
-        /// float 2 本 を 1 つ の long に詰める。<b>1 回 の書きで済ませるため</b> ——
+        /// float 2 本 を 1 つ の long に詰める。1 回 の書きで済ませるため ——
         /// 2 回 に割ると、x だけ新しい組が輪 に読まれうる。
         /// </summary>
         static long Pack(float x, float y)
@@ -192,7 +185,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
 
         async Task RunAsync()
         {
-            // **PeriodicTimer は遅れを繰り越さない。** 1 コマ が遅れても
+            // PeriodicTimer は遅れを繰り越さない。 1 コマ が遅れても
             // 取り返そうとして詰めて撃たない（詰めると弾幕の見え方が変わる）
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1.0 / RoomLoop.Fps));
 
@@ -206,7 +199,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
                         source.SetPlayer(px, py);
                     }
 
-                    // **撃つのは進める前。** 後 にすると、撃った弾が
+                    // 撃つのは進める前。 後 にすると、撃った弾が
                     // このコマで 1 度 も進まないまま並びに出る（1 コマ 止まって見える）
                     int shots = 0;
                     while (shots < MaxPendingShots && pendingShots.TryDequeue(out var packedShot))
@@ -230,7 +223,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
                         Interlocked.Add(ref enemyHits, snapshot.EnemyHits);
                     }
 
-                    // **当たりは間引きで消さない。** 配らないコマの当たりを
+                    // 当たりは間引きで消さない。 配らないコマの当たりを
                     // 捨てると、その 1 発 が無かったことになる（client 側 で
                     // 遅れたコマを落とすときと同じ分かれ目）。溜めて次に載せる
                     pendingPlayerHits += snapshot.PlayerHits;
@@ -260,14 +253,14 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
             }
             catch (OperationCanceledException)
             {
-                // 畳んだ。**これは失敗ではない**
+                // 畳んだ。これは失敗ではない
             }
-            // **`System.` を省けない。** この repo には `FsBulletML2.Exception` が
+            // `System.` を省けない。 この repo には `FsBulletML2.Exception` が
             // 在り、ここの名前空間が `FsBulletML2.` 始まりなので、
             // 素 の `Exception` はそちらに当たる（CS0155 で落ちる）
             catch (System.Exception ex)
             {
-                // **輪 が落ちたことを黙って飲まない。** 飲むと、client には
+                // 輪 が落ちたことを黙って飲まない。 飲むと、client には
                 // 「繋がっているのにコマが来ない」としか見えない
                 logger.LogError(ex, "部屋 {Key} の輪 が {Frame} コマ 目 で落ちた", Key, Frame);
             }

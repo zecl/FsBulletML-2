@@ -4,7 +4,7 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2.LanguageService
 
-/// **カーソルの下に在るもの**、sxml の側。`XmlToken` と対。hover が引く。
+/// カーソルの下に在るもの、sxml の側。`XmlToken` と対。hover が引く。
 ///
 /// `Context` とは向きが違う —— あちらは「そこで何を打てるか」なので手前だけを
 /// 見て、名前を打っている途中なら本文扱いにする。こちらは「いま何の上に
@@ -44,7 +44,7 @@ type SxmlToken() =
 
   [<Test>]
   member _.``本文の字は 何でもない``() =
-    // 属性値と同じ `"…"` だが、**属性ブロックの外**なので何の上でもない
+    // 属性値と同じ `"…"` だが、属性ブロックの外なので何の上でもない
     at "(bulletml (action (wait \"1|2\")))" |> should equal Nothing
 
   [<Test>]
@@ -53,7 +53,7 @@ type SxmlToken() =
 
   [<Test>]
   member _.``内側の括弧を返す``() =
-    // **入れ子は位置で覆われている。** 覆っているものを先着で採ると
+    // 入れ子は位置で覆われている。 覆っているものを先着で採ると
     // どこに触っても根（bulletml）が当たり、名前の範囲から外れて
     // 「何でもない」になる —— 25 は bullet の名前の中
     SxmlScan.tokenAt "(bulletml (action (fire (bullet))))" 25 |> should equal (Element "bullet")

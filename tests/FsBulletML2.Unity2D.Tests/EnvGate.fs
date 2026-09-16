@@ -8,19 +8,11 @@ open FsBulletML2
 open FsBulletML2.Front
 open FsBulletML2.Unity2D
 
-/// このフロントが `Env` を組むところの門。**MonoGame 側の `EnvGate` と対。**
+/// このフロントが `Env` を組むところの門。MonoGame 側の `EnvGate` と対。
 ///
 /// 何を守るのかは向こうの doc に書いてある。ここに要るのは
-/// **こちらの決めごとが向こうと違うこと**で、
+/// こちらの決めごとが向こうと違うことで、
 ///
-///     Space.YUp        —— Y を反転しない
-///     SpawnOrigin.AtShooter —— 産まれる弾は撃った側と同じ場所
-///     産まれる弾の相手は、撃った側が覚えている相手と同じ
-///
-/// **均すと全弾幕の軌跡が割れる。** 3 つ とも取り違えても型は通るので、
-/// 字で固定する。
-
-/// 位置だけを持つ IDefaultBullet。**`Manager.enemies` へ置くためだけのもの。**
 /// オブジェクト式には member val を書けないので型にしてある
 type private StubBullet(x: float32, y: float32) =
   let mutable pos = Vector3(x, y, 0.0f)
@@ -52,7 +44,7 @@ type private StubBullet(x: float32, y: float32) =
 [<NonParallelizable>]
 type EnvGate() =
 
-  /// 自機 (3, 10)、rand 0.5、rank 0.25。**Unity の単位**なので値が小さい
+  /// 自機 (3, 10)、rand 0.5、rank 0.25。Unity の単位なので値が小さい
   let fixedManager () =
     { new IBulletMLManager with
         member _.GetRandom() = 0.5f
@@ -71,7 +63,7 @@ type EnvGate() =
   member _.SetUp() =
     BulletMLManager.Init(fixedManager ())
     // 敵の一覧はグローバル。前の試験の残りを持ち越さない。
-    // **`Manager.removeAll` では抜けない** —— あれは `Used` を寝かせるだけで、
+    // `Manager.removeAll` では抜けない —— あれは `Used` を寝かせるだけで、
     // 一覧から抜くのは `Manager.free`。そちらは MonoBehaviour へのキャストを
     // 通すので、位置だけのスタブは落ちる。ここは一覧を直に空ける
     Manager.enemies.Clear()
@@ -85,27 +77,27 @@ type EnvGate() =
     let expected = float32 (Math.Atan2(2.0, 8.0))
     (envAt 1.0f 2.0f).Aim.ToPlayer |> should (equalWithin 0.0001) expected
 
-  /// **MonoGame は反転する。** 同じ式に見えて座標系が逆なので、
+  /// MonoGame は反転する。 同じ式に見えて座標系が逆なので、
   /// `Space` を取り違えると全弾幕の軌跡が割れる。ここで符号を固定する
   [<Test>]
   member _.``Y を反転する式とは別の値になる``() =
     let flipped = float32 (Math.Atan2(2.0, -8.0))
     (envAt 1.0f 2.0f).Aim.ToPlayer |> should not' (equalWithin 0.0001 flipped)
 
-  /// **これが本体。** 産まれる弾は撃った側と同じ場所に作るので、
+  /// これが本体。 産まれる弾は撃った側と同じ場所に作るので、
   /// Spawn 側は撃った側と同じ値になる —— `SpawnOrigin` を `AtOrigin` に
   /// 取り違えるとここで割れる
   [<Test>]
   member _.``Spawn 側の aim は撃った側と同じ場所から``() =
     let env = envAt 1.0f 2.0f
     env.Spawn.ToPlayer |> should (equalWithin 0.0001) env.Aim.ToPlayer
-    // **較正。** 原点から引いた値は別 —— 上の一致が
+    // 較正。 原点から引いた値は別 —— 上の一致が
     // 「どちらも 0 だった」ことの結果ではないと分かる
     let atOrigin = float32 (Math.Atan2(3.0, 10.0))
     env.Aim.ToPlayer |> should not' (equalWithin 0.0001 atOrigin)
 
   /// 組み立ての 4 欄 が入れ替わっていないか。
-  /// **自機と敵を別のところに置いて、値が 4 本 とも分かれる形にする**
+  /// 自機と敵を別のところに置いて、値が 4 本 とも分かれる形にする
   [<Test>]
   member _.``Env の 4 本 の aim は、それぞれ別のところから来る``() =
     // 敵を 1 体 置く。置かないと enemy 側 2 本 が どちらも 0 になり、
@@ -119,9 +111,9 @@ type EnvGate() =
     env.Aim.ToPlayer |> should (equalWithin 0.0001) (float32 (Math.Atan2(2.0, 8.0)))
     // 撃った側 (1, 2) から敵 (-4, -6) へ: Atan2(-5, -8)
     env.Aim.ToEnemy |> should (equalWithin 0.0001) (float32 (Math.Atan2(-5.0, -8.0)))
-    // **player 側 と enemy 側 は別。** 同値だと入れ替えを当てられない
+    // player 側 と enemy 側 は別。 同値だと入れ替えを当てられない
     env.Aim.ToPlayer |> should not' (equalWithin 0.0001 env.Aim.ToEnemy)
-    // **Spawn 側 は撃った側と同じ。** こちらは同じであることが決めごと
+    // Spawn 側 は撃った側と同じ。 こちらは同じであることが決めごと
     env.Spawn.ToPlayer |> should (equalWithin 0.0001) env.Aim.ToPlayer
     env.Spawn.ToEnemy |> should (equalWithin 0.0001) env.Aim.ToEnemy
 
@@ -136,7 +128,7 @@ type EnvGate() =
     e.Spawn.ToPlayer |> should equal 0.0f
     e.Spawn.ToEnemy |> should equal 0.0f
 
-  /// 対照 —— **敵が居ないときは enemy 側が 0。**
+  /// 対照 —— 敵が居ないときは enemy 側が 0。
   /// 上の門は敵を置いてから測っている。置き忘れると 0 どうしの一致になり、
   /// 入れ替えを当てられなくなるので、0 になる条件を字で固定しておく
   [<Test>]
@@ -145,12 +137,12 @@ type EnvGate() =
     env.Aim.ToEnemy |> should equal 0.0f
     env.Spawn.ToEnemy |> should equal 0.0f
 
-  /// **産まれる弾の相手は、撃った側が覚えている相手と同じ。**
+  /// 産まれる弾の相手は、撃った側が覚えている相手と同じ。
   /// このフロントは弾を撃った側と同じ場所に作るので、産まれる弾から見た
-  /// 相手も撃った側と同じ。**MonoGame は原点に作るので選び直す** ——
+  /// 相手も撃った側と同じ。MonoGame は原点に作るので選び直す ——
   /// そちらの振る舞いをこちらへ持ってくるとここで割れる。
   ///
-  /// **変異で穴が見つかって足した。** `TrySpawnTargetFrom` を
+  /// 変異で穴が見つかって足した。 `TrySpawnTargetFrom` を
   /// 選び直すほう（`TryNearest`）に差し替えても、通しが緑のまま通った
   [<Test>]
   member _.``産まれる弾の相手は、撃った側が覚えている相手と同じ``() =
@@ -158,23 +150,23 @@ type EnvGate() =
     Manager.addEnemy (StubBullet(5.0f, 8.0f))
     let w = front ()
     let first = envOf w 1.0f 2.0f
-    // より近い E2 を足す。**選び直すなら Spawn 側はこちらを向く**
+    // より近い E2 を足す。選び直すなら Spawn 側はこちらを向く
     Manager.addEnemy (StubBullet(1.5f, 2.5f))
     let second = envOf w 1.0f 2.0f
 
     let toE1 = float32 (Math.Atan2(4.0, 6.0))
     second.Aim.ToEnemy |> should (equalWithin 0.0001) toE1
     second.Aim.ToEnemy |> should (equalWithin 0.0001) first.Aim.ToEnemy
-    // **ここが本体。** 産まれる弾も、覚えている E1 を向く
+    // ここが本体。 産まれる弾も、覚えている E1 を向く
     second.Spawn.ToEnemy |> should (equalWithin 0.0001) toE1
 
-    // **較正。** 新しい世界なら近い E2 を選ぶ —— 上の一致が
+    // 較正。 新しい世界なら近い E2 を選ぶ —— 上の一致が
     // 「そもそも敵を見ていない」ことの結果ではないと分かる
     let fresh = envOf (front ()) 1.0f 2.0f
     fresh.Spawn.ToEnemy |> should (equalWithin 0.0001) (float32 (Math.Atan2(0.5, 0.5)))
     fresh.Spawn.ToEnemy |> should not' (equalWithin 0.0001 toE1)
 
-  /// **選んだ相手を覚えること。** 覚えないと毎コマ 選び直して相手が
+  /// 選んだ相手を覚えること。 覚えないと毎コマ 選び直して相手が
   /// 入れ替わり、軌跡が変わる
   [<Test>]
   member _.``一度 選んだ相手は、より近い敵が現れても入れ替わらない``() =
@@ -184,11 +176,11 @@ type EnvGate() =
     Manager.addEnemy (StubBullet(1.1f, 2.1f))
     let second = (envOf w 1.0f 2.0f).Aim.ToEnemy
     second |> should equal first
-    // **較正。** 新しい世界なら近いほうを選ぶ
+    // 較正。 新しい世界なら近いほうを選ぶ
     let fresh = (envOf (front ()) 1.0f 2.0f).Aim.ToEnemy
     fresh |> should not' (equal first)
 
-  /// **世界は弾 1 個 につき 1 個。** 使い回すと別の弾が選んだ相手を
+  /// 世界は弾 1 個 につき 1 個。 使い回すと別の弾が選んだ相手を
   /// 引き継ぐ。`Forget` で捨てられることを見る
   [<Test>]
   member _.``Forget すると相手を選び直す``() =

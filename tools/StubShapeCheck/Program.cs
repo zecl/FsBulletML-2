@@ -5,24 +5,6 @@
 //     型が値型か参照型か
 //     メンバが field か property か method か
 //     method / ctor の signature（戻り型と引数型）
-//     その面が「どの型に宣言されているか」（継承の段まで）
-//
-// stub にだけ在る面も出す —— 呼び手がそれを使ってしまい、本物で落ちる。
-//
-// ## 走らせ方
-//
-//     dotnet run --project tools/StubShapeCheck -- [repo] [Unity の Managed]
-//
-// **どちらも省ける。** repo は自分の居場所から `FsBulletML2.slnx` を探して上り、
-// Unity は環境変数と Hub の既定の置き場から探す。
-// **機械ごとに違うものを決め打ちしない** —— 書いた人の手元でしか走らなくなる。
-//
-// ## 終わり方
-//
-//     0   食い違い無し
-//     1   食い違い有り
-//     2   測っていない（Unity が見つからない等）。**緑にしない**
-
 using System.Reflection;
 using System.Text.Json;
 
@@ -54,10 +36,10 @@ if (editor is null || !Directory.Exists(editor))
     Console.WriteLine("  UNITY_HUB_EDITOR_PATH（Hub の Editor 置き場）で渡せる");
     return 2;
 }
-// この行は guard-stub-shape.ps1 が読む。**探すところを 2 つ に増やさないため**
+// この行は guard-stub-shape.ps1 が読む。探すところを 2 つ に増やさないため
 Console.WriteLine($"Unity Managed: {editor}");
 
-// repo の目印は slnx。**自分の居場所から上る** —— dotnet run でも、
+// repo の目印は slnx。自分の居場所から上る —— dotnet run でも、
 // 焼いた exe を直に叩いても同じところに着く
 static string FindRepoRoot()
 {

@@ -11,21 +11,20 @@ module internal Util =
   // The mutable ProcessableBulletml tree this used to deep-copy is gone (Task 17);
   // BulletState is an immutable record, so spawned bullets no longer need cloning.
   // TODO: do not bring BinaryFormatter back; add a typed clone if another type needs a deep copy.
-
   open System.Diagnostics
   let dprintfn fmt = Printf.ksprintf Debug.WriteLine fmt
 
 [<RequireQualifiedAccess>]
 module internal TryParse =
-  /// **式を字のまま評価する口はここに無い。**
+  /// 式を字のまま評価する口はここに無い。
   ///
   /// 以前は `xpathNumber`（`System.Xml.XPath.XPathDocument` に "number(...)" を
   /// 評価させる）が居て、`eval` / `tryEval` / `parseEval` がそれを包んでいた。
-  /// **Core が xml に縛られていたのはここを含む 3 か所** —— 落として、
+  /// Core が xml に縛られていたのはここを含む 3 か所 —— 落として、
   /// 式は `Expr.NumExpr` の木を評価する 1 本 に寄せた。
   ///
   /// 旧実装は tests/FsBulletML2.Core.Tests/XPathOracle.fs に在る。
-  /// 木が同じ値を返すかを突き合わせる相手なので、**試験の側にしか要らない。**
+  /// 木が同じ値を返すかを突き合わせる相手なので、試験の側にしか要らない。
   let tryParseWith tryParseFunc =
     tryParseFunc >> function
     | true, v    -> Some v

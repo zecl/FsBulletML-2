@@ -2,7 +2,7 @@ namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open System
 open R3
-// **R3 のあとに開くこと**（`Observable` が両方にある。FrameTicker の但し書き）
+// R3 のあとに開くこと（`Observable` が両方にある。FrameTicker の但し書き）
 open FSharp.Control.R3
 open UnityEngine
 open FsBulletML2
@@ -11,13 +11,13 @@ open FsBulletML2.Unity2D
 type Enemy () =
   inherit BaseBullet ()
 
-  /// いま何番目 の弾幕か。**ここが動くと弾幕が切り替わる** ——
+  /// いま何番目 の弾幕か。ここが動くと弾幕が切り替わる ——
   /// 消す・読み直す・ライフを戻す、は全部 これの購読（`Start`）。
-  /// **F# は let 束縛を val より前に置く**ので、ここに居る
+  /// F# は let 束縛を val より前に置くので、ここに居る
   let bulletIndexRp = new ReactiveProperty<int>(0)
   /// ボスの残り。減ったら爆風、0 以下 で次の弾幕へ
   let lifeRp = new ReactiveProperty<int>(0)
-  /// いまの弾幕の名前。**Informations が読む**
+  /// いまの弾幕の名前。Informations が読む
   let bulletNameRp = new ReactiveProperty<string>("")
 
   // Start で組み直すので Unity に直列化させない。BulletmlInfo は
@@ -28,17 +28,17 @@ type Enemy () =
   [<DefaultValue>]val mutable public bombType : GameObject
   [<System.NonSerialized>]
   [<DefaultValue>]val mutable public BulletmlInfo : BulletmlInfo
-  /// 撃った弾幕の根。**GameObject ではなく Entity になった。**
+  /// 撃った弾幕の根。GameObject ではなく Entity になった。
   /// ひと回りしたかを見るのに持ち回る
   [<System.NonSerialized>]
   [<DefaultValue>]val mutable public RootSim : BulletSim
   [<DefaultValue>]val mutable public MaxLife : int
   [<DefaultValue>]val mutable public isBomb : bool
 
-  /// いまの弾幕の名前。**Informations が読む**
+  /// いまの弾幕の名前。Informations が読む
   member this.BulletName = bulletNameRp.Value
   member this.BulletNameRp = bulletNameRp
-  /// ボスの残り。**Informations が読む**
+  /// ボスの残り。Informations が読む
   member this.Life
     with get () = lifeRp.Value
      and set (v) = lifeRp.Value <- v
@@ -54,7 +54,7 @@ type Enemy () =
     self.IsBullet <- false
     self.BulletType <- BulletType.Enemy
 
-    // **0 なら既定に落とす。** ライフは `ApplyPattern` が `MaxLife` から
+    // 0 なら既定に落とす。 ライフは `ApplyPattern` が `MaxLife` から
     // 入れ直すので、0 のままだと「尽きた」の購読（`Start` の 5 番）が
     // すぐ次の弾幕を呼び、それがまた 0 を入れる —— 止まらなくなる。
     // 旧は当たったときにしか見ていなかったので、この形は出なかった。
@@ -63,10 +63,10 @@ type Enemy () =
 
   /// 弾幕の切り替えと発射を 5 本 の流れに割る。
   ///
-  /// **旧は Update の中に畳んであった** —— 「初回か、ひと回りしたら撃つ」を
+  /// 旧は Update の中に畳んであった —— 「初回か、ひと回りしたら撃つ」を
   /// `Second` という bool で持ち、切り替えは `Next` / `Prev` が手で
   /// 「消す・読み直す・ライフを戻す」を並べていた。
-  /// **切り替えの経路が 2 本 あって、片方だけ直す形になっていた。**
+  /// 切り替えの経路が 2 本 あって、片方だけ直す形になっていた。
   ///
   /// いまは `bulletIndexRp` が動いたことが唯一の合図で、
   /// `Next` も `Prev` も番号を動かすだけ。
@@ -85,12 +85,12 @@ type Enemy () =
     |> Observable.map (fun i -> this.bullets.[i].Name)
     |> subscribeUntilDestroy this (fun name -> bulletNameRp.Value <- name)
 
-    // 3. 撃つ合図は 2 つ。**入れ替えた次のコマ**と、**ひと回りしたコマ**。
+    // 3. 撃つ合図は 2 つ。入れ替えた次のコマと、ひと回りしたコマ。
     //
     //    入れ替えを 1 コマ 遅らせるのは、`ApplyPattern` が同じコマで
     //    弾を消しているため（消した直後に撃つと、消す側と撃つ側の
     //    順番で結果が変わる）。`take 1` した update を `Switch` で
-    //    差し替えるので、**入れ替えが続けて起きても撃つのは 1 回**
+    //    差し替えるので、入れ替えが続けて起きても撃つのは 1 回
     let shootOnPattern =
       indexes
       |> Observable.map (fun _ -> update |> Observable.take 1)
@@ -98,11 +98,11 @@ type Enemy () =
 
     let shootOnFinish = update |> Observable.filter (fun _ -> this.IsFinish ())
 
-    // **`merge` はタプル引数**（`filter` や `take` と違ってパイプに乗らない）
+    // `merge` はタプル引数（`filter` や `take` と違ってパイプに乗らない）
     Observable.merge (shootOnPattern, shootOnFinish)
     |> subscribeUntilDestroy this (fun _ -> this.Shoot ())
 
-    // 4. ライフが 1 減ったら爆風。**戻したとき（MaxLife）には出さない**ので、
+    // 4. ライフが 1 減ったら爆風。戻したとき（MaxLife）には出さないので、
     //    値そのものではなく 1 つ 前との差を見る
     lives
     |> fun o -> o.Pairwise()
@@ -120,15 +120,15 @@ type Enemy () =
     |> Observable.filter (fun _ -> Input.GetKeyDown KeyCode.Return)
     |> subscribeUntilDestroy this (fun _ -> this.Next ())
 
-    // **最初の 1 回 を自分で呼ぶ必要は無い。** ReactiveProperty は
+    // 最初の 1 回 を自分で呼ぶ必要は無い。 ReactiveProperty は
     // 購読した瞬間に現在値を流すので、1 番 と 2 番 はここまでで走っている
     // （`bullets` はこのメソッドの先頭で入れてある）
-
-  /// 自機弾が当たった。**当たり判定は BulletEcsDriver がやる** ——
-  /// ECS の弾は Collider2D を持たないので、OnTriggerEnter2D は届かない。
-  ///
-  /// **爆風も次の弾幕への送りもここには無い。** ライフを削るだけで、
-  /// 出すのも送るのも `Start` の 4 番 と 5 番
+    //
+    // 自機弾が当たった。当たり判定は BulletEcsDriver がやる ——
+    // ECS の弾は Collider2D を持たないので、OnTriggerEnter2D は届かない。
+    //
+    // 爆風も次の弾幕への送りもここには無い。 ライフを削るだけで、
+    // 出すのも送るのも `Start` の 4 番 と 5 番
   member this.HitByPlayerBullet () =
     lifeRp.Value <- lifeRp.Value - 1
 
@@ -136,7 +136,7 @@ type Enemy () =
     // GameObject の弾（もう出ないが、prefab が残っている経路）向け
     this.HitByPlayerBullet()
 
-  /// **もう prefab を実体化しない。** 弾は Entity になった。
+  /// もう prefab を実体化しない。 弾は Entity になった。
   /// GameObject 側の口は残してあるが、呼ばれても何も作らない
   /// （`bulletObject` は弾の見た目の見本として Bootstrap が読む）
   override this.GetBulletPrefubInstance () = null
@@ -159,17 +159,17 @@ type Enemy () =
       let script = FsBulletML2.Runner.load loadRand (loadRank ()) this.BulletmlInfo.Bulletml
       this.RootSim <- BulletEntityFactory.SpawnEnemy(this.transform.position, script, true)
 
-  /// 次の弾幕へ。**番号を動かすだけ** —— 実際の入れ替えは購読（`Start` の 1 番）
+  /// 次の弾幕へ。番号を動かすだけ —— 実際の入れ替えは購読（`Start` の 1 番）
   member this.Next () =
     let n = this.bullets.Length
     bulletIndexRp.Value <- (bulletIndexRp.Value + 1) % n
 
-  /// 前の弾幕へ。**番号を動かすだけ**
+  /// 前の弾幕へ。番号を動かすだけ
   member this.Prev () =
     let n = this.bullets.Length
     bulletIndexRp.Value <- (bulletIndexRp.Value + n - 1) % n
 
-  /// いまの番号の弾幕に入れ替える。**呼ぶのは購読だけ。**
+  /// いまの番号の弾幕に入れ替える。呼ぶのは購読だけ。
   /// 消す・読み直す・ライフを戻す、が 1 か所 に揃っている
   member private this.ApplyPattern () =
     this.DestroyEnemyBullet()

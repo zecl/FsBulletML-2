@@ -2,10 +2,10 @@ using System;
 
 // COMPILE-ONLY stub of Entities Graphics. Not a substitute for the Unity Editor.
 //
-// **アセンブリ名が本物と一致していることが要。** 1 本 に詰めると、焼いた dll が
+// アセンブリ名が本物と一致していることが要。 1 本 に詰めると、焼いた dll が
 // 「この型は UnityEngine に在る」と主張したまま Unity へ渡り、CS7069 で落ちる。
 //
-// **signature も既定値も本物どおりに写すこと。** 省いた引数の値は呼び手の IL に
+// signature も既定値も本物どおりに写すこと。 省いた引数の値は呼び手の IL に
 // 焼き込まれるので、既定値が違うと描き方が変わる。
 //
 // 詳しい但し書きは src/UnityEngine.Stub/UnityEngine.cs の頭。
@@ -29,10 +29,10 @@ namespace Unity.Rendering
     }
 
     /// <summary>
-    /// <b>本物は struct（ISharedComponentData）。</b>class にすると、焼いた dll の
+    /// 本物は struct（ISharedComponentData）。class にすると、焼いた dll の
     /// field signature が参照型になり、Unity で TypeManager が
     /// 「Expected reference type but got type kind 17」で落ちる。
-    /// **値型か参照型かは焼き込まれる。**
+    /// 値型か参照型かは焼き込まれる。
     /// </summary>
     public struct RenderMeshArray
     {

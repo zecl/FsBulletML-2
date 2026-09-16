@@ -8,18 +8,13 @@ open FsBulletML2.LanguageService
 
 /// 読んだ木のノードと札を順番で結ぶ（v3.1 の段 4）。
 ///
-/// **木は字の位置を持たない**ので、「このノードは字のどこか」は順番でしか
+/// 木は字の位置を持たないので、「このノードは字のどこか」は順番でしか
 /// 言えない。v2.9 で測ってある（5b / 5c。3 表記 で 176 / 176、F# の CE は
-/// 結べない）が、**あれは測定であって門ではない** —— 段 4 が乗るので、
-/// ここで固定する。
 ///
 /// --- 何が壊れると赤くなるか
 ///
-///     歩きの腕が減る          札のほうが多くなって並びがずれる
-///     ノードでない名前を拾う  木より札が多くなる
 ///     `names` が腕とずれる    落とす名前が変わって、添字が黙ってずれる
-///
-/// **どれも走行は変わらない。** 光る場所がずれるだけなので、目にも出ない
+/// どれも走行は変わらない。 光る場所がずれるだけなので、目にも出ない
 /// （字は在るし、印も出る。ただ 1 つ 隣を指す）。
 [<TestFixture>]
 type NodeOrderTests() =
@@ -36,7 +31,7 @@ type NodeOrderTests() =
       "sxml", SourceKind.Sxml, SxmlScan.tags
       "fsb", SourceKind.Fsb, FsbScan.tags ]
 
-  /// 開き札だけ、しかも**ノードになる名前だけ**。
+  /// 開き札だけ、しかもノードになる名前だけ。
   /// 落とす側（`times` / `param` など）を数えない —— 名前は `NodeOrder.names`
   static let openNodeTags (tags: TagHit list) =
     let ok = HashSet<string>(NodeOrder.names)
@@ -57,7 +52,7 @@ type NodeOrderTests() =
 
   [<Test>]
   member _.``ノードになる名前は腕から引けている``() =
-    // **0 件 を緑にしない。** reflection が効いていなければ空になる
+    // 0 件 を緑にしない。 reflection が効いていなければ空になる
     NodeOrder.names.Length |> should be (greaterThan 0)
     // 落とす側の名前が混ざっていたら、札を絞りすぎて添字がずれる
     for v in [ "times"; "direction"; "speed"; "horizontal"; "vertical"; "term"; "param" ] do
@@ -93,19 +88,16 @@ type NodeOrderTests() =
 
   [<Test>]
   member _.``並びに 2 度 出るのは vanish と bullet だけ``() =
-    // **添字で引くので、参照が 2 度 出るノードは引けない。**
+    // 添字で引くので、参照が 2 度 出るノードは引けない。
     // 2 通り の理由で起きる ——
     //
     //     vanish   引数なしの腕は singleton。同じ物が何度でも返る
-    //     bullet   **CE の木だけ。** 同梱カタログは空の `bullet` を共有していて、
+    //     bullet   CE の木だけ。 同梱カタログは空の `bullet` を共有していて、
     //              XML へ書いて読み直すと別の物になる
-    //
-    // **どちらも段 3 の再開点には来ない**（`stop` に渡ってくるのは
+    // どちらも段 3 の再開点には来ない（`stop` に渡ってくるのは
     // `action` / `wait` / `repeat` の 3 腕 だけ。段 3 で 989,269 件 数えた）。
-    // だから段 4 の光る先は決まる —— **決まる理由がこの 2 つ に閉じている**
-    // ことを、ここで固定する。
     let ceNames, ceBooks = dupsOf (catalog |> List.map (fun i -> i.Bulletml))
-    // **0 件 を緑にしない。** 重なりが 1 件 も無ければ、この試験は何も見ていない
+    // 0 件 を緑にしない。 重なりが 1 件 も無ければ、この試験は何も見ていない
     ceBooks |> should be (greaterThan 0)
     for kv in ceNames do
       Assert.That([ "vanish"; "bullet" ], Does.Contain kv.Key,
@@ -113,8 +105,8 @@ type NodeOrderTests() =
 
   [<Test>]
   member _.``XML から読み直すと重なるのは vanish だけ``() =
-    // **Playground は 2 通り の木を走らせる** —— プルダウンで選ぶと CE の木、
-    // Apply すると字から読んだ木。**共有の度合いが違う**ので、片方 で測った
+    // Playground は 2 通り の木を走らせる —— プルダウンで選ぶと CE の木、
+    // Apply すると字から読んだ木。共有の度合いが違うので、片方 で測った
     // 「一意だ」をもう片方 へ広げない
     let read =
       catalog

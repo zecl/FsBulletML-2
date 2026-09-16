@@ -7,14 +7,11 @@ using BulletType = FsBulletML2.DTD.BulletType;
 namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 {
     /// <summary>
-    /// サーバー側 の弾 1 発。<b>Unity の <c>BulletSim</c> から、
-    /// 描くことと当たり判定 を抜いたもの。</b>
-    ///
-    /// <b>1/100 と Y の反転 はここに在る。</b> エンジンが返すのは差分で、
+    /// サーバー側 の弾 1 発。Unity の <c>BulletSim</c> から、
+    /// 描くことと当たり判定 を抜いたもの。
+    /// 1/100 と Y の反転 はここに在る。 エンジンが返すのは差分で、
     /// 位置と係数はフロントの持ち物（<c>Driver</c> の但し書き）——
     /// サーバーがフロントの立場に立っているので、ここが持つ。
-    /// client は掛け直さない。
-    /// </summary>
     public sealed class ServerBullet
     {
         readonly RoomEnv env;
@@ -30,7 +27,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 
         public int Id { get; }
 
-        /// <summary>撃つ側（＝敵 の本体）。<b>盤面 の外へ出ても捨てない</b></summary>
+        /// <summary>撃つ側（＝敵 の本体）。盤面 の外へ出ても捨てない</summary>
         public bool IsRoot { get; }
 
         public float X { get; set; }
@@ -45,16 +42,16 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         public bool Used { get; private set; } = true;
 
         /// <summary>
-        /// 敵の弾か自機の弾か。<b>既定値を入れておくこと。</b>
+        /// 敵の弾か自機の弾か。既定値を入れておくこと。
         ///
-        /// F# の判別共用体は参照型なので、入れ忘れた既定は <b>0 ではなく null</b>。
-        /// 型は合うので**コンパイルは通り**、走らせて初めて落ちる。
+        /// F# の判別共用体は参照型なので、入れ忘れた既定は 0 ではなく null。
+        /// 型は合うのでコンパイルは通り、走らせて初めて落ちる。
         /// </summary>
         public BulletType BulletType { get; }
 
         BulletRun? run;
 
-        /// <summary>根から始める。<b>撃たれた弾ではない</b></summary>
+        /// <summary>根から始める。撃たれた弾ではない</summary>
         public void SetScript(BulletmlScript script)
         {
             run = script != null
@@ -71,12 +68,10 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         /// <summary>
         /// 1 コマ 進める。撃たれた弾は <paramref name="spawn"/> へ渡す。
         ///
-        /// <b>走らせ直すかどうかは、ここで決まる。</b> エンジンの但し書きに
+        /// 走らせ直すかどうかは、ここで決まる。 エンジンの但し書きに
         /// 「呼ぶか呼ばないかで乱数の並びが変わる」と在る ——
-        /// <b>サーバーが権威 を持つので、その決めごとをサーバー側 に固定した。</b>
+        /// サーバーが権威 を持つので、その決めごとをサーバー側 に固定した。
         /// 全 top が終わったら最初から走らせ直す（＝弾幕が輪 になる）。
-        /// Unity2D サンプルと同じ決め。
-        /// </summary>
         public void Step(Action<ServerBullet, BulletRun> spawn)
         {
             if (!run.HasValue)
@@ -87,7 +82,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
             var rn = run.Value;
 
             // 物理量はフロントが持っている。毎コマ 入れ直す。
-            // **名前付き引数で書く** —— 位置ずれは落ちるが、値の取り違えは落ちない
+            // 名前付き引数で書く —— 位置ずれは落ちるが、値の取り違えは落ちない
             var motion = new Motion(
                 pos: new Domain.Vec2(X, Y),
                 speed: Speed,

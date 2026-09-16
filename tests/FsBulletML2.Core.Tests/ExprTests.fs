@@ -10,7 +10,7 @@ open FsBulletML2.Eval
 
 /// 式を文字列でなく木で持つ `Expr` が、`getValueByXPath` と同じ値を返すか。
 ///
-/// **これは新しい機能の試験ではなく、置き換えてよいかの門である。**
+/// これは新しい機能の試験ではなく、置き換えてよいかの門である。
 /// 木にするのは走行時間の 27〜61% を占める XPath 評価を外すためだが、
 /// 値が 1 つでも違えば 227 本 の軌跡がずれる。だから
 /// 「速くなったか」ではなく「同じか」だけを見る。
@@ -85,7 +85,7 @@ module internal ExprCorpus =
 
   /// 振る値。
   ///
-  /// **1e-4 未満は入れない。** getValueByXPath はその値の ToString が
+  /// 1e-4 未満は入れない。 getValueByXPath はその値の ToString が
   /// "1E-07" のような指数表記になると XPathException で落ちるので、
   /// 値を突き合わせようがない。その穴は別の試験で名指しにしてある
   let cases =
@@ -105,7 +105,7 @@ module internal ExprCorpus =
     try Value (getValueByXPath env s) with e -> Threw (e.GetType().Name)
 
 
-/// **`NonParallelizable` を外した。** グローバル（`BulletMLManager`）を
+/// `NonParallelizable` を外した。 グローバル（`BulletMLManager`）を
 /// `SetUp` で書き換えていたのが唯一の理由で、その `SetUp` ごと消えた。
 [<TestFixture>]
 type ExprTests() =
@@ -206,11 +206,11 @@ type ExprTests() =
       let head = diffs |> Seq.truncate 40 |> String.concat "\n"
       Assert.Fail(sprintf "%d 通りで値が違います（先頭 40 件）:\n%s" diffs.Count head)
 
-  /// **校正点。** 上の 2 つが緑なのは「木が正しい」からなのか、
+  /// 校正点。 上の 2 つが緑なのは「木が正しい」からなのか、
   /// 「突き合わせが何も見ていない」からなのかを分ける。
   ///
   /// わざと優先順位を間違えた評価器（左から順に計算する）を同じ式に当てて、
-  /// **十分な数が赤くなる**ことを確かめる。ここで赤が出ないなら、
+  /// 十分な数が赤くなることを確かめる。ここで赤が出ないなら、
   /// 実物の式に優先順位が効く形が無いということなので、上の緑は
   /// 優先順位について何も言っていない
   [<Test>]
@@ -248,7 +248,7 @@ type ExprTests() =
     Assert.That(caught, Is.GreaterThan 300,
                 sprintf "壊した評価器が %d 種 でしか赤くなりません。突き合わせが違いを拾えていない疑いがあります" caught)
 
-  /// **見つけた穴 1。** $rand / $rank が 1e-4 未満だと、旧は落ちる。
+  /// 見つけた穴 1。 $rand / $rank が 1e-4 未満だと、旧は落ちる。
   ///
   /// float32 の ToString が "1E-07" のような指数表記を吐き、xpathNumber の
   /// 「+ - * の前後に空白を入れる」置き換えがそれを "1E - 07" に割るため。
@@ -276,7 +276,7 @@ type ExprTests() =
       let got = Expr.evalWithValues 0.5f v (Expr.parse s)
       Assert.That(Single.IsNaN got, Is.False, sprintf "rank=%g で木が NaN になっています" v)
 
-  /// **見つけた穴 2。** 読めない式で旧は例外、木は NaN。
+  /// 見つけた穴 2。 読めない式で旧は例外、木は NaN。
   ///
   /// number(abc) は XPath ではノード集合の検査になって落ちる。
   /// 木は Invalid にして NaN を返す。落とすほうへ寄せると、いま静かに
@@ -348,7 +348,7 @@ type ExprTests() =
   /// 読む費用は 1 回きり。走行中は木を評価するだけ、という形になっているか。
   /// 数そのものは置かない（台で動く）。桁だけ見る。
   ///
-  /// **計測器を挟むと落ちる。** カバレッジ収集の下で 9.1 倍 まで下がって
+  /// 計測器を挟むと落ちる。 カバレッジ収集の下で 9.1 倍 まで下がって
   /// 赤くなった（下限は 10 倍）。両側が同じだけ遅くなるわけではないので、
   /// 区分を付けて外せるようにしてある ——
   /// `dotnet test --filter "TestCategory!=Timing"`

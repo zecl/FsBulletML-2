@@ -45,22 +45,12 @@ module internal CorpusData =
     let root = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "..", ".."))
     p.Substring(root.Length).Replace('\\', '/').TrimStart('/')
 
-  /// StackOverflow で落ちるので避けていた弾幕。**いまは空にしてある。**
+  /// StackOverflow で落ちるので避けていた弾幕。いまは空にしてある。
   ///
   /// 打ち止め（`convertRefBulletml` が展開中の参照を種別つきの集合で持ち、
   /// 再訪したら `BulletmlDTDViolationException`）を入れたので、
-  /// **7 本ともプロセスを落とさずに例外で戻るようになった。**
+  /// 7 本ともプロセスを落とさずに例外で戻るようになった。
   /// 避ける必要が無くなったので空にしてある。控え側は「落ちた」に分類される。
-  ///
-  /// 空にする前に避けていたのはこの 7 本（`bosses.d/` の下）。
-  ///
-  ///   [ESP_RADE]_round_123_boss_izuna_fan / [Original]_cont_circle
-  ///   [Original]_light_lv10 / [Original]_light_lv25 / [Original]_light_max
-  ///   [Original]_water_lv10 / [OtakuTwo]_accel_jump
-  ///
-  /// **また落ちるようになったら、ここに戻して隔離すること。**
-  /// 見つけ方は下の `progressPath` —— 処理する前にファイル名を書くので、
-  /// プロセスが死んでも最後の行が犯人を指す。
   let known再帰 : Set<string> = Set.empty
 
   /// 落ちた場所を突き止めるための足跡。プロセスが死んでも残る
@@ -136,11 +126,9 @@ module internal CorpusData =
 ///   corpus-trace  1 本ずつの弾数・生存数・軌跡の指紋。広く深い
 ///
 /// smoke だけだと、227 本ぜんぶの軌跡が変わっても緑のまま通る。
-/// wait を直したとき、控えが 17 本 動いたのに smoke の 3 つの数は
+///
 /// 1 つも動かなかった。走らせた軌跡を捨てていたので、同じ走行から指紋を残す
 /// ようにした（走行そのものは増えていない）。
-/// **`NonParallelizable` を外した。** グローバル（`BulletMLManager`）を
-/// `SetUp` で書き換えていたのが唯一の理由で、その `SetUp` ごと消えた。
 [<TestFixture>]
 type Corpus() =
 
@@ -211,14 +199,14 @@ type Corpus() =
     |> String.concat "\n"
     |> Golden.check "corpus-trace"
 
-  /// 227 本を走らせる時間の天井。**これは性能の測定ではない。**
+  /// 227 本を走らせる時間の天井。これは性能の測定ではない。
   ///
   /// 壁時計は台と時刻で 15% くらい平気で動くので、締めた値を置くと
   /// 中身が何も変わっていない日に赤くなる。ここで捕まえたいのは
   /// 「桁で遅くなった」——- たとえばうっかり O(n^2) を入れた、という壊れ方だけ。
   ///
   /// 手元の素の値は 8〜16 秒。天井は 120 秒に置いてある（10 倍 弱の余裕）。
-  /// **数字そのものは控えに残さない。**残すと走るたびに動いて門が死ぬ。
+  /// 数字そのものは控えに残さない。残すと走るたびに動いて門が死ぬ。
   /// 実測は下の WriteLine に出るので、遅くなっていく傾向は人が読める。
   [<Test>]
   member _.``227 本の走行が桁で遅くなっていない``() =

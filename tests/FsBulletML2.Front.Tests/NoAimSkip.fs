@@ -6,16 +6,13 @@ open FsBulletML2
 open FsBulletML2.Domain
 open FsBulletML2.Front
 
-/// 台本が無い弾のコマで、**Front がゲームに何も聞かない**こと。
+/// 台本が無い弾のコマで、Front がゲームに何も聞かないこと。
 ///
-/// **変異で穴が見つかって足した。** `Driver` の
+/// 変異で穴が見つかって足した。 `Driver` の
 /// `if run.HasNoScript then noAim front else at ...` を消して
-/// **いつも aim を組む**変異を入れても、598 本 が緑のまま通った ——
-/// **答えが同じだから。** 省いているのは Atan2 4 本 と、ゲームへの
+/// いつも aim を組む変異を入れても、598 本 が緑のまま通った ——
+/// 答えが同じだから。 省いているのは Atan2 4 本 と、ゲームへの
 /// 問い合わせだけで、`Env` の aim 欄はどちらの道でも 0 になる。
-///
-/// 効きは 5way で時間の 24%（`BulletRun.HasNoScript` の但し書き）。
-/// **軌跡に出ない節約は、軌跡の門では守れない。** 数えるしかない。
 [<TestFixture>]
 type NoAimSkip() =
 
@@ -29,7 +26,7 @@ type NoAimSkip() =
   </action>
 </bulletml>"""
 
-  /// 聞かれた回数を数える世界。**値は全部 0** —— ここで見るのは
+  /// 聞かれた回数を数える世界。値は全部 0 —— ここで見るのは
   /// 答えの中身ではなく、聞いたかどうか
   let counting () =
     let mutable asked = 0
@@ -61,7 +58,7 @@ type NoAimSkip() =
     let run = Runner.newRoot BulletType.Enemy script
     run.HasNoScript |> should equal false
     Driver.step w Space.YDown SpawnOrigin.AtOrigin run Motion.zero |> ignore
-    // **これが対照。** 下の 0 件 が「そもそも通っていない」ではないと分かる
+    // これが対照。 下の 0 件 が「そもそも通っていない」ではないと分かる
     asked () |> should be (greaterThan 0)
 
   [<Test>]
@@ -79,7 +76,7 @@ type NoAimSkip() =
     Driver.step w Space.YDown SpawnOrigin.AtOrigin child Motion.zero |> ignore
     asked () |> should equal 0
 
-  /// 走らせ直しは**台本が在っても聞かない。**
+  /// 走らせ直しは台本が在っても聞かない。
   ///
   /// aim が結果に出ないから（`RestartReadsNoAim.fs`）。
   /// 以前はここで `at` を通していて、Atan2 4 本 と問い合わせ 2 回 を

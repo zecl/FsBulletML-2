@@ -8,26 +8,14 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.LanguageService
 
-/// **F# の CE を読む口の目盛り。**
+/// F# の CE を読む口の目盛り。
 ///
 /// --- 何を真とするか
 ///
-/// 弾幕 176 本 は `FsBulletML2.Bullets.Dsl` に**値として在る**（F# コンパイラが
-/// 組んだもの）。同じ本文を `FsharpCe.read` に通して、**同じ値になるかを見る。**
-///
+/// 弾幕 176 本 は `FsBulletML2.Bullets.Dsl` に値として在る（F# コンパイラが
+/// 組んだもの）。同じ本文を `FsharpCe.read` に通して、同じ値になるかを見る。
 /// これは目盛りとしていちばん強い形 —— 期待値を手で書いていないので、
-/// **書き間違えようがない。** ずれたらこちらが間違っている。
-///
-/// --- 二重化していること
-///
-/// `FsharpCe` は CE の意味論を持たない（歩いたあとに `Dsl` を呼ぶ）が、
-/// **「名前 -> どの呼び出しか」の振り分けは持っている。** そこが唯一 の
-/// 二重化で、この試験が当てているのはそこ。
-///
-/// --- 材料
-///
-/// `Bullets.Dsl` の `.fs` を試験の出力へ写している（fsproj の `Content`）。
-/// **写せていなければ 0 本 で緑になる**ので、本数そのものを先に見る。
+/// 書き間違えようがない。 ずれたらこちらが間違っている。
 [<TestFixture>]
 type FsharpCeCorpus() =
 
@@ -55,7 +43,7 @@ type FsharpCeCorpus() =
 
   [<Test>]
   member _.``コーパスの本文が写せている``() =
-    // **0 本 なら下の点は全部「1 本 も回さずに緑」になる**
+    // 0 本 なら下の点は全部「1 本 も回さずに緑」になる
     sources.Value.Count |> should greaterThan 100
 
   [<Test>]
@@ -75,12 +63,12 @@ type FsharpCeCorpus() =
 
   [<Test>]
   member _.``読んだ値が、F# コンパイラの組んだ値と数まで一致する``() =
-    // **名前で引き当てない。** カタログの `Name` は CE の説明文字列で、
-    // **同じ説明の弾幕が 3 組 在る**（`let` の名前は 179 本 すべて一意）。
+    // 名前で引き当てない。 カタログの `Name` は CE の説明文字列で、
+    // 同じ説明の弾幕が 3 組 在る（`let` の名前は 179 本 すべて一意）。
     // 名前を鍵にすると、その 3 組 が取り違わって「値が違う」に見える
     // （最初それで 3 本 外した）。
     //
-    // だから鍵を使わず、**値の多重集合そのもの**を突き合わせる。
+    // だから鍵を使わず、値の多重集合そのものを突き合わせる。
     let parsed =
       [ for KeyValue (_, src) in sources.Value do
           match FsharpCe.read src with
@@ -97,7 +85,7 @@ type FsharpCeCorpus() =
           | true, got -> Some(sprintf "%s: 正本 %d 本 / 読めたのは %d 本" (short value) want got)
           | false, _ -> Some(sprintf "%s: 読んだ側に無い" (short value)))
     bad |> should be Empty
-    // **0 本 を緑にしない。** 上は「読んだ側が空」でも空の一覧を返しうる
+    // 0 本 を緑にしない。 上は「読んだ側が空」でも空の一覧を返しうる
     parsed.Length |> should greaterThanOrEqualTo catalog.Length
 
   // --- 読めない形は、位置つきで断る -----------------------------------------
@@ -113,7 +101,7 @@ type FsharpCeCorpus() =
 
   [<Test>]
   member _.``知らない名前は 位置つきで断る``() =
-    // **黙って落とさない。** コーパスに無い書き方は「読めない」と言う
+    // 黙って落とさない。 コーパスに無い書き方は「読めない」と言う
     match FsharpCe.read "let x =\n  vertical \"a\" {\n    top {\n      nope \"1\"\n    }\n  }\n" with
     | Ok _ -> failwith "読めてしまった"
     | Error (line, col, msg) ->
@@ -132,10 +120,10 @@ type FsharpCeCorpus() =
   [<Test>]
   member _.``CE の口の形``() =
     // v1.6 まで候補も空だった。「置ける場所が入れ子の型で決まるので、字の
-    // 数え方では出せない」と書いてあったが、**入れ子の型は `{ }` の対で出せる**
+    // 数え方では出せない」と書いてあったが、入れ子の型は `{ }` の対で出せる
     // （v1.9。詳しくは `FsharpComplete`）。
     //
-    // **打った瞬間に出す字だけは無いまま** —— XML の `<` や sxml の `(` に
+    // 打った瞬間に出す字だけは無いまま —— XML の `<` や sxml の `(` に
     // 当たるものが CE には無く、名前は語の頭から打つので Monaco が自分で出す
     let lang = Languages.Fsharp.FsharpLanguage(fun () -> vocab) :> SourceLanguage.ISourceLanguage
     lang.Kind |> should equal SourceKind.FSharpDsl
@@ -146,7 +134,7 @@ type FsharpCeCorpus() =
   [<Test>]
   member _.``CE も参照の波線を出す（v1.9）``() =
     // v1.6 まで `Tags` が空で、出るのは Core が落ちた理由（位置なし）だけだった。
-    // **無いのは要素名であって名前ではない** —— いまは位置つきで出る
+    // 無いのは要素名であって名前ではない —— いまは位置つきで出る
     let src =
       "let x =\n  untyped \"a\" {\n    top {\n      actionRef \"nope\" []\n    }\n  }\n"
     SourceReader.fsharp.Tags src |> should not' (be Empty)
@@ -161,7 +149,7 @@ type FsharpCeCorpus() =
 
   [<Test>]
   member _.``読める CE には波線を出さない``() =
-    // 上の点は「1 本 出る」ことしか見ていない。**出しすぎていないこと**を
+    // 上の点は「1 本 出る」ことしか見ていない。出しすぎていないことを
     // 別に置く —— 参照が埋まっている本文で 1 本 でも出たら、それは嘘
     let src =
       "let x =\n  untyped \"a\" {\n    top {\n      actionRef \"loop\" []\n    }\n    defAction \"loop\" { wait \"1\" }\n  }\n"

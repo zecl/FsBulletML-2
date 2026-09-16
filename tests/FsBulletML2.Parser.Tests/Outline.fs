@@ -7,25 +7,13 @@ open FsBulletML2.LanguageService
 
 /// 本文の構造（v2.4）。アウトラインと折りたたみが読む木。
 ///
-/// 深さそのものは `Depth.fs` が見ている。**ここは範囲**（`Line` .. `EndLine`）。
+/// 深さそのものは `Depth.fs` が見ている。ここは範囲（`Line` .. `EndLine`）。
 ///
 /// --- 版の頭で踏んだこと
 ///
-/// 最初の規則は「次に同じか浅い開き札が来るまで。尽きたら本文の終わりまで」で、
-/// **最後の子が親の閉じ札を飲んだ** —— `bullet` を畳むと根の閉じ札が
-/// 一緒に隠れる。
+/// （`guard-fable-parity`）は緑のまま。畳んで初めて見えた。
 ///
-/// **並びは正しく、2 runtime も一致していた**ので、突き合わせの門
-/// （`guard-fable-parity`）は緑のまま。**畳んで初めて見えた。**
-/// ここで当てるのは「両側で同じか」ではなく「合っているか」。
-///
-/// --- 較正（当てた変異と、赤くなった点の数）
-///
-///   浅い閉じ札で止めない            4 点（最後の子が親の閉じ札を飲む）
-///   閉じ札を中身から外す            3 点（根が本文の終わりまで届かない）
-///   中身の最後を 1 つ 行き過ぎる     6 点（兄弟に食い込む）
-///
-/// **どれも `guard-fable-parity` は緑のまま**（焼き直して確かめた。143 件 /
+/// どれも `guard-fable-parity` は緑のまま（焼き直して確かめた。143 件 /
 /// 食い違い 0 件）—— 2 runtime は同じ 1 本 から焼かれるので、両側が同じに壊れる
 [<TestFixture>]
 type Outline() =
@@ -42,7 +30,7 @@ type Outline() =
 
   static let xmlNodes (src: string) = nodesOf XmlScan.tags src
 
-  /// 13 行。**根の閉じ札が、最後の子より後ろの行に在る**形
+  /// 13 行。根の閉じ札が、最後の子より後ろの行に在る形
   static let sample =
     String.concat "\n"
       [ "<?xml version=\"1.0\" ?>"
@@ -63,7 +51,7 @@ type Outline() =
 
   [<Test>]
   member _.``最後の子は親の閉じ札を飲まない``() =
-    // **畳んで見えた形。** `bullet b1` は 12 行 目 で終わり、
+    // 畳んで見えた形。 `bullet b1` は 12 行 目 で終わり、
     // 13 行 目 の閉じ札は根のもの
     let b1 = xmlNodes sample |> List.find (fun x -> x.Detail = "b1")
     (b1.Line, b1.EndLine) |> should equal (10, 12)
@@ -81,7 +69,7 @@ type Outline() =
 
   [<Test>]
   member _.``1 行 の要素は畳む先を持たない``() =
-    // `<speed>2</speed>` は 1 行。**折りたたみはここを出さない**
+    // `<speed>2</speed>` は 1 行。折りたたみはここを出さない
     let speeds = xmlNodes sample |> List.filter (fun x -> x.Name = "speed")
     speeds |> List.length |> should equal 2
     speeds |> List.filter (fun x -> x.EndLine <> x.Line) |> should be Empty
@@ -95,7 +83,7 @@ type Outline() =
 
   [<Test>]
   member _.``終わりは自分の閉じ札の行``() =
-    // **XML は答えを別の道で数えられる** —— 開き札と閉じ札を突き合わせれば
+    // XML は答えを別の道で数えられる —— 開き札と閉じ札を突き合わせれば
     // 範囲は一意に決まる。木の組み方とは別の数え方なので、当てる価値がある。
     // （閉じ札を持たない 3 表記 には、この当て方が無い）
     let broken =
@@ -108,7 +96,7 @@ type Outline() =
              let lineOf (t: TagHit) =
                let struct (l, _) = Scan.lineColumn src t.NameStart
                l
-             // 開き札を積み、閉じ札で降ろす。**自己閉じは自分の行**
+             // 開き札を積み、閉じ札で降ろす。自己閉じは自分の行
              let closedAt = System.Collections.Generic.Dictionary<int, int>()
              let stack = System.Collections.Generic.Stack<TagHit>()
              for t in ts do
@@ -129,7 +117,7 @@ type Outline() =
 
   [<Test>]
   member _.``3 表記 とも、次の兄弟に食い込まない``() =
-    // **閉じ札を持たない 2 表記 に当たる唯一 の点。** 上の点は XML にしか
+    // 閉じ札を持たない 2 表記 に当たる唯一 の点。 上の点は XML にしか
     // 当てられない（閉じ札が要る）ので、こちらが sxml と fsb の受け持ち。
     //
     // 「行を跨いで並んでいる兄弟」だけを見る —— 1 行 に並んでいる形は
@@ -170,7 +158,7 @@ type Outline() =
 
   [<Test>]
   member _.``畳める要素が在る``() =
-    // 上の 3 点 は、**全部 が 1 行 でも緑**になる
+    // 上の 3 点 は、全部 が 1 行 でも緑になる
     let src = writeAs SourceKind.Xml (List.head catalog).Bulletml |> Option.get
     xmlNodes src |> List.filter (fun n -> n.EndLine > n.Line) |> List.length
     |> should greaterThan 0
@@ -186,7 +174,7 @@ type Outline() =
 
   [<Test>]
   member _.``引く属性が無ければ添えない``() =
-    // 語彙が引けていないとき。**属性名を決め打ちで探さない**
+    // 語彙が引けていないとき。属性名を決め打ちで探さない
     Outline.build "" (Scan.lineColumn sample) (XmlScan.tags sample)
     |> List.filter (fun n -> n.Detail <> "")
     |> should be Empty
@@ -212,7 +200,7 @@ type Outline() =
 
   [<Test>]
   member _.``describe は並びを字にする``() =
-    // `guard-fable-parity` が両側で突き合わせる口。**形をここで固定する**
+    // `guard-fable-parity` が両側で突き合わせる口。形をここで固定する
     Outline.describe "<a><b/></a>" |> should equal "a@1-1, b@1-1"
 
   // --- 囲む要素（v2.4.5）------------------------------------------------------
@@ -222,7 +210,6 @@ type Outline() =
   //   `n.Line <= line` を `n.Line < line` に        4 点（節の先頭の行で自分が出ない）
   //   `line <= n.EndLine` を `line < n.EndLine` に  4 点（節の最後の行で自分が出ない）
   //   `sortByDescending` を `sortBy` に             7 点（内と外が逆になる）
-
   [<Test>]
   member _.``囲みは内から外へ``() =
     // 5 行 目 は `<speed>2</speed>`。囲みは speed -> fire -> action -> bulletml
@@ -236,7 +223,7 @@ type Outline() =
 
   [<Test>]
   member _.``節の先頭の行では、その節も囲みに入る``() =
-    // 4 行 目 は `<fire>` の開き札そのもの。**自分が先頭に来る**
+    // 4 行 目 は `<fire>` の開き札そのもの。自分が先頭に来る
     let ns = Outline.enclosing (xmlNodes sample) 4
     ns |> List.map (fun n -> n.Name) |> should equal [ "fire"; "action"; "bulletml" ]
 
@@ -248,12 +235,12 @@ type Outline() =
 
   [<Test>]
   member _.``根の外の行では空``() =
-    // 1 行 目 は宣言。**どの節にも入っていない**
+    // 1 行 目 は宣言。どの節にも入っていない
     Outline.enclosing (xmlNodes sample) 1 |> should be Empty
 
   [<Test>]
   member _.``兄弟は混ざらない``() =
-    // 11 行 目 は `bullet b1` の中。**`action top` の側は出ない**
+    // 11 行 目 は `bullet b1` の中。`action top` の側は出ない
     let ns = Outline.enclosing (xmlNodes sample) 11
     ns |> List.map (fun n -> n.Name) |> should equal [ "speed"; "bullet"; "bulletml" ]
     ns |> List.filter (fun n -> n.Detail = "top") |> should be Empty
@@ -265,7 +252,7 @@ type Outline() =
 
   [<Test>]
   member _.``囲みが無ければ - を出す``() =
-    // **空の字を返さない** —— 突き合わせで「読めなかった」と区別が付かなくなる
+    // 空の字を返さない —— 突き合わせで「読めなかった」と区別が付かなくなる
     Outline.describeEnclosing sample 1 |> should equal "-"
 
   [<Test>]
@@ -277,10 +264,10 @@ type Outline() =
       | Some src ->
         let nodes = xmlNodes src
         let last = nodes |> List.map (fun n -> n.EndLine) |> List.max
-        // **全部 の行を見る**（端も含む）
+        // 全部 の行を見る（端も含む）
         for line in 1 .. last do
           let ds = Outline.enclosing nodes line |> List.map (fun n -> n.Depth)
           ds |> should equal (List.sortDescending ds)
           checkedLines <- checkedLines + 1
-    // **0 行 で緑にしない**
+    // 0 行 で緑にしない
     checkedLines |> should greaterThan 1000

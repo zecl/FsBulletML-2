@@ -5,18 +5,12 @@ using System.Linq;
 namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 {
     /// <summary>
-    /// 同梱弾幕 を 1 本 ずつ走らせて、<b>1 コマ あたりの弾数</b>を数える。
+    /// 同梱弾幕 を 1 本 ずつ走らせて、1 コマ あたりの弾数を数える。
     ///
-    /// <b>網 を通さない。</b> 通すと 176 本 × 実時間 で 15 分 かかるうえ、
+    /// 網 を通さない。 通すと 176 本 × 実時間 で 15 分 かかるうえ、
     /// 測っているものに送信の値段 が混ざる。ここで欲しいのは
     /// 「弾が何発 出るか」だけなので、<see cref="EngineFrameSource"/> を
     /// その場で回す。
-    ///
-    /// <b>これは帯域 の測定ではない。</b> バイト数 は
-    /// 「弾 1 発 ◯ バイト」の仮定を掛けた**概算**で、
-    /// 実測（MessagePack で焼いた長さ）とは別 の数。
-    /// 概算だと分かる形で出すために、単位 を 2 つ 書いている。
-    /// </summary>
     public static class Measure
     {
         public static int Run(int frames, int seed, int top)
@@ -43,7 +37,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
                 rows[i] = (info.Name, sorted[frames - 1], sorted[frames / 2], counts.Average());
             }
 
-            // **山 で並べる。** 帯域 の天井 を決めるのは山 のほう
+            // 山 で並べる。 帯域 の天井 を決めるのは山 のほう
             foreach (var r in rows.OrderByDescending(x => x.Max).Take(top))
             {
                 Console.WriteLine(
@@ -58,7 +52,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
             Console.WriteLine("いちばん多い弾幕の山 {0} 発 / 弾幕ごとの中央値 の中央値 {1} 発",
                 worst, medianOfMedians.ToString(CultureInfo.InvariantCulture));
 
-            // **概算。仮定 を一緒に出す**（これだけ見て帯域 を語らせない）
+            // 概算。仮定 を一緒に出す（これだけ見て帯域 を語らせない）
             foreach (var bytes in new[] { 11, 20 })
             {
                 Console.WriteLine(
@@ -69,7 +63,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
                     medianOfMedians * bytes * 60 / 1024.0);
             }
 
-            // **仮定を実測に置き換える。** 上 は「弾 1 発 ◯ バイト」を掛けただけで、
+            // 仮定を実測に置き換える。 上 は「弾 1 発 ◯ バイト」を掛けただけで、
             // 焼いた長さ ではない。いちばん重い 1 本 を焼き直して数える
             var heaviest = rows.OrderByDescending(x => x.Max).First();
             MeasureBytes(heaviest.Name, frames, seed);
@@ -78,9 +72,9 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         }
 
         /// <summary>
-        /// 1 コマ ぶんを MessagePack で焼いて、<b>長さ を数える。</b>
+        /// 1 コマ ぶんを MessagePack で焼いて、長さ を数える。
         ///
-        /// <b>MagicOnion が実際に流す長さ とは少しずれる</b>（Hub の
+        /// MagicOnion が実際に流す長さ とは少しずれる（Hub の
         /// 呼び出し 1 件 ぶんの包み が外 に付く）。ここで見たいのは
         /// 「弾 1 発 が何バイト で乗るか」なので、包み は勘定に入れない。
         /// </summary>

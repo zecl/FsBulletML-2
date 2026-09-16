@@ -8,14 +8,14 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.LanguageService
 
-/// **参照の欠けを数える側の目盛り、sxml の側。** `ReferenceScan` と対。
+/// 参照の欠けを数える側の目盛り、sxml の側。 `ReferenceScan` と対。
 ///
 /// 数える中身（走る先の対、定義と参照の突き合わせ、並べ方）は
-/// `References` に 1 本 しか無い。**表記ごとなのは字の数え方だけ**で、
+/// `References` に 1 本 しか無い。表記ごとなのは字の数え方だけで、
 /// それを `SxmlScan.tags` として渡している。
 ///
-/// だからここで赤くなるのは `SxmlScan` の側 —— **共通の側が壊れれば
-/// XML の試験も一緒に赤くなる。**
+/// だからここで赤くなるのは `SxmlScan` の側 —— 共通の側が壊れれば
+/// XML の試験も一緒に赤くなる。
 [<TestFixture>]
 type SxmlReferenceScan() =
 
@@ -88,22 +88,22 @@ type SxmlReferenceScan() =
 
   [<Test>]
   member _.``本文の文字列の中は数えない``() =
-    // **属性ブロックの外の `"…"` は本文。** 数えると、式の中に書いた字が
+    // 属性ブロックの外の `"…"` は本文。 数えると、式の中に書いた字が
     // label に見える
     missing "(bulletml (action (@ (label \"top\")) (wait \"(actionRef (@ (label a)))\")))"
     |> should be Empty
 
   [<Test>]
   member _.``名前の無い括弧は数えない``() =
-    // XML 側の「宣言と閉じ札を積まない」に当たる。**名前が空の要素を混ぜない** ——
+    // XML 側の「宣言と閉じ札を積まない」に当たる。名前が空の要素を混ぜない ——
     // 混ぜても候補も hover も変わらないので、当たるのはここだけ
     SxmlScan.tags "(bulletml (action ( )))" |> List.map (fun t -> t.TagName)
     |> should equal [ "bulletml"; "action" ]
 
   [<Test>]
   member _.``閉じ引用符が無いときは、構文の理由だけを出す``() =
-    // **`SxmlScan` は閉じ引用符の無い属性を捨てない**（カーソルの居場所に要る）。
-    // そのぶん値が本文の末尾まで伸びるが、**そこへは届かない** ——
+    // `SxmlScan` は閉じ引用符の無い属性を捨てない（カーソルの居場所に要る）。
+    // そのぶん値が本文の末尾まで伸びるが、そこへは届かない ——
     // 閉じていなければ `Sxml.parse` が位置つきで落ち、`explain` は
     // 位置が在る層をそのまま返して `missing` を呼ばない
     let src = "(bulletml (action (@ (label \"top\")) (actionRef (@ (label \"a"

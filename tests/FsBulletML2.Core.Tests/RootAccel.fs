@@ -11,11 +11,6 @@ open FsBulletML2.Domain
 /// 最初のフレームへ入る。changeDirection / changeSpeed は placeholder が
 /// first = true なので、Init を経ないまま入っても「まだ評価前」と一致するが、
 /// accel だけは「もう評価済み」を意味する逆の初期状態を持つ。
-///
-/// rootProgress が Accel を素通りして Progress.initial（= first = true と
-/// 同じ「まだ評価前」の状態）を返すと、根の accel が実際に評価されて
-/// 本物の加速度になる。旧は 2 フレームで term を使い切って何も足さずに
-/// 終わる no-op だった。
 [<TestFixture>]
 type RootAccel() =
 

@@ -10,14 +10,11 @@ using Microsoft.Extensions.Logging;
 namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
 {
     /// <summary>
-    /// 走っている部屋 の台帳。<b>サーバーに 1 つ（singleton）。</b>
+    /// 走っている部屋 の台帳。サーバーに 1 つ（singleton）。
     ///
-    /// <b>部屋 を 2 つ 同時に走らせられることが、この帯 の山場（E1.4）。</b>
+    /// 部屋 を 2 つ 同時に走らせられることが、この帯 の山場（E1.4）。
     /// 同梱のフロント 4 本 は <c>BulletMLManager</c>（static mutable）から
     /// 乱数・ランク・自機 を引いていて、あれを通すと部屋 が混ざる。
-    /// **ここは 1 度 も通さない** —— エンジンの口（<c>IFrontEnv</c>）は
-    /// 引数で受け取る形なので、部屋ごとに 1 個 持てる。
-    /// </summary>
     public sealed class RoomRegistry : IAsyncDisposable
     {
         readonly Dictionary<string, Room> rooms = new Dictionary<string, Room>(StringComparer.Ordinal);
@@ -39,7 +36,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         /// <summary>
         /// 部屋 に入る。無ければ建てる。
         ///
-        /// <b>建てると同時に走り始める。</b> 「入った人が居るのに止まっている」
+        /// 建てると同時に走り始める。 「入った人が居るのに止まっている」
         /// 状態を作らない —— その状態は client からは配線の故障と見分けが付かない。
         /// </summary>
         public async ValueTask<Room> EnterAsync(
@@ -65,7 +62,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         }
 
         /// <summary>
-        /// 部屋 から出る。<b>最後の 1 人 が出たら畳む。</b>
+        /// 部屋 から出る。最後の 1 人 が出たら畳む。
         ///
         /// 畳まないと、誰も見ていない弾幕を 60 コマ/秒 で回し続ける。
         /// </summary>
@@ -94,7 +91,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         }
 
         /// <summary>
-        /// いま走っている部屋 の写し。<b>状況 の行 が 1 秒 に 1 回 読む。</b>
+        /// いま走っている部屋 の写し。状況 の行 が 1 秒 に 1 回 読む。
         ///
         /// 写しを返すのは、読む側 が台帳 を握ったまま長く回らないため。
         /// </summary>
@@ -136,7 +133,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
 
     /// <summary>
     /// 注文から <see cref="IFrameSource"/> を作るもの。
-    /// <b>差し替える口。</b> E1.0 は固定の並び、E1.1 からエンジン。
+    /// 差し替える口。 E1.0 は固定の並び、E1.1 からエンジン。
     /// </summary>
     public interface IFrameSourceFactory
     {
@@ -146,7 +143,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         string[] List();
     }
 
-    /// <summary>配線を確かめるための工場。<b>エンジンを呼ばない</b></summary>
+    /// <summary>配線を確かめるための工場。エンジンを呼ばない</summary>
     public sealed class FixedFrameSourceFactory : IFrameSourceFactory
     {
         public IFrameSource Create(JoinRequest request) => new FixedFrameSource();

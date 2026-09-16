@@ -3,20 +3,20 @@ namespace FsBulletML2.Parser.Tests
 open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
-/// **試験が言語モジュールへ渡す語彙。1 本。**
+/// 試験が言語モジュールへ渡す語彙。1 本。
 ///
 /// 本番はブラウザが `Vocabulary.toJson()` を受け取って組む（器の `Vocab`）。
 /// 試験は WASM を挟まないので、host の `Vocabulary.elements` から同じ形へ
-/// 落とす —— **その落とし方はどの表記でも同じ**なので、ここに 1 本 置く。
+/// 落とす —— その落とし方はどの表記でも同じなので、ここに 1 本 置く。
 ///
 /// v1.1 まで `XmlCompletion` / `SxmlCompletion` / `FsbCompletion` に
-/// **字まで同じものが 3 つ** 在った（並べてハッシュを取ったら一致した）。
+/// 字まで同じものが 3 つ 在った（並べてハッシュを取ったら一致した）。
 /// 4 つ 目 を足す前に畳んである。
 [<AutoOpen>]
 module VocabForTests =
 
   let vocab: Vocab =
-    { // 雛形（v2.6）。**host の並びをそのまま借りる** ——
+    { // 雛形（v2.6）。host の並びをそのまま借りる ——
       // 試験のために別の表を作ると、そちらだけが古びる
       Frames = Frames.all
       Elements =
@@ -39,12 +39,12 @@ module VocabForTests =
                         Spec = a.Spec
                         ValueSpecs = List.ofArray a.ValueSpecs }) })
       Expressions = List.ofArray Vocabulary.expressions
-      // **F# の CE の名前。** 本番も同じ表（`Spec.ce`）が JSON を通って届く
+      // F# の CE の名前。 本番も同じ表（`Spec.ce`）が JSON を通って届く
       Ce =
         Spec.ce
         |> List.map (fun (name, element, attr, value) ->
              { Name = name; Element = element; Attr = attr; Value = value })
-      // CE の名前が載せる label。**上と別の表**（あちらは「作る要素」）
+      // CE の名前が載せる label。上と別の表（あちらは「作る要素」）
       CeLabels =
         Spec.ceLabels
         |> List.map (fun (name, element, labelArg, fixedName, root) ->
@@ -53,10 +53,10 @@ module VocabForTests =
                LabelArg = labelArg
                Fixed = fixedName
                Root = root })
-      // どこに置けて、何を開くか。**表ではなく `Dsl` から reflection で引く**
+      // どこに置けて、何を開くか。表ではなく `Dsl` から reflection で引く
       CePlaces =
         Vocabulary.cePlaces
         |> Array.toList
         |> List.map (fun (name, place, opens) -> { Name = name; In = place; Opens = opens })
-      // 根から走る定義の名前の頭。**本番と同じ 1 本 を引く**
+      // 根から走る定義の名前の頭。本番と同じ 1 本 を引く
       TopPrefix = Vocabulary.topPrefix }

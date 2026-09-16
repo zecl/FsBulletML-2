@@ -2,30 +2,8 @@ using System;
 
 // COMPILE-ONLY stub of UnityEngine and the Unity packages the samples use.
 //
-// **これは Editor の代わりにはならない。** 型と面の形を写しただけで、
+// これは Editor の代わりにはならない。 型と面の形を写しただけで、
 // エンティティは 1 つ も作られないし、何も描かれない。
-// 「Unity を持っていない機械でも sln がビルドできる」ためだけに在る。
-//
-// **本番の門は `-p:UseRealUnity=true` のビルドと、Unity での実行のほう**
-// （samples/FsBulletML2.Sample.Unity2D.FSharp/Assets/Editor/BulletSmokeCheck.cs）。
-// ここが通ることは、動くことを 1 つ も保証しない。
-//
-// 足す面は「サンプルが実際に呼ぶもの」に限る。広げると本物とずれても
-// 気づけなくなる。
-//
-// ## アセンブリ名は本物と 1 対 1 にすること
-//
-// 以前は ECS も URP も、この `AssemblyName=UnityEngine` の中に同居していた。
-// **stub では通るが、Unity では通らない。** 焼いた dll が
-// 「`Unity.Entities.Entity` は UnityEngine に在る」と主張したまま渡り、
-// Unity の `UnityEngine.dll`（型フォワードだけの facade）には無いので
-// CS7069 で落ちる。`Transform` や `Vector3` はフォワードが在るので通り、
-// **ECS と URP を触った所だけが落ちる**ので、気づくのが遅れた。
-//
-// いまは本物と同じ名前で 1 本 ずつ在る（src/Unity.*.Stub）。
-// 同梱 dll がどこから型を引いているかは
-// .github/scripts/guard-shipped-refs.ps1 が見ている。
-
 namespace UnityEngine
 {
     // COMPILE-ONLY stub. Not a substitute for the Unity Editor.
@@ -117,12 +95,12 @@ namespace UnityEngine
         public static T[] FindObjectsByType<T>(FindObjectsInactive findObjectsInactive) where T : Object => System.Array.Empty<T>();
 
         /// <summary>
-        /// <b>本物はここに「壊されたか」の判定が入っている。</b>
-        /// Unity は壊した Object を <b>null のように振る舞う非 null 参照</b>に
+        /// 本物はここに「壊されたか」の判定が入っている。
+        /// Unity は壊した Object を null のように振る舞う非 null 参照に
         /// するので、素の参照比較では生きていると読んでしまう。
         ///
         /// 偽物は壊す仕組みを持たないので参照比較そのまま。
-        /// <b>ここが通ることは、生存判定が正しいことを 1 つ も保証しない。</b>
+        /// ここが通ることは、生存判定が正しいことを 1 つ も保証しない。
         /// </summary>
         public static bool operator ==(Object a, Object b) => ReferenceEquals(a, b);
         public static bool operator !=(Object a, Object b) => !ReferenceEquals(a, b);
@@ -131,7 +109,7 @@ namespace UnityEngine
 
         /// <summary>
         /// <c>if (self &amp;&amp; ...)</c> と書ける Unity の癖。上の == と同じ理由で、
-        /// <b>偽物では「壊されたか」を見ていない</b>
+        /// 偽物では「壊されたか」を見ていない
         /// </summary>
         public static implicit operator bool(Object exists) => !ReferenceEquals(exists, null);
     }
@@ -142,7 +120,7 @@ namespace UnityEngine
         public GameObject(string name) { this.name = name; }
         public string tag { get; set; }
 
-        // **遅らせて作る。** 即座に作ると Transform -> Component ->
+        // 遅らせて作る。 即座に作ると Transform -> Component ->
         // GameObject -> Transform で無限に降りて StackOverflow になる
         // （Transform は Component の派生）。コンパイルだけなら踏まないので、
         // フロントを実際に回す門を建てるまで誰も気づかなかった
@@ -159,7 +137,7 @@ namespace UnityEngine
 
     public class Component : Object
     {
-        // **遅らせて作る**（GameObject.transform と同じ理由）。
+        // 遅らせて作る（GameObject.transform と同じ理由）。
         // 自分が Transform ならそれ自身を返す —— Unity でもそうなっている
         GameObject _gameObject;
         public GameObject gameObject => _gameObject ??= new GameObject();
@@ -182,10 +160,10 @@ namespace UnityEngine
 
         /// <summary>
         /// この component が壊されたときに取り消される印。
-        /// <b>R3 の購読を切るのに使う</b> —— <c>subscription.RegisterTo(token)</c>。
+        /// R3 の購読を切るのに使う —— <c>subscription.RegisterTo(token)</c>。
         ///
         /// 本物は Unity 2022.2 以降 の MonoBehaviour が持つ。ここが偽物なので
-        /// 決して取り消されないが、<b>コンパイルが通るかを見るのが目的</b>。
+        /// 決して取り消されないが、コンパイルが通るかを見るのが目的。
         /// </summary>
         public System.Threading.CancellationToken destroyCancellationToken { get; }
             = System.Threading.CancellationToken.None;
@@ -281,7 +259,7 @@ namespace UnityEngine
 
     public class Texture : Object { }
 
-    /// <summary>AnimationClip の基底。**このサンプルは 1 度 も使わない** ——
+    /// <summary>AnimationClip の基底。このサンプルは 1 度 も使わない ——
     /// それでも置くのは、`FsBulletML2.Motion` と名前がかぶるから。
     /// 本物に在る型を stub が持たないと、その衝突が Unity でだけ出る（CS0104）</summary>
     public class Motion : Object { }
@@ -352,7 +330,7 @@ namespace UnityEngine
         }
 
         /// <summary>
-        /// <b>本物は struct。</b> 取り出して書き換えても本体に伝わらないので、
+        /// 本物は struct。 取り出して書き換えても本体に伝わらないので、
         /// Unity 側でも同じ書き方で効かないことがある。ここは compile を通すだけ
         /// </summary>
         public struct MainModule
@@ -404,7 +382,7 @@ namespace UnityEngine
     }
 
     /// <summary>
-    /// fps の上限を掛けるとき、targetFrameRate より<b>先に</b>切る必要がある
+    /// fps の上限を掛けるとき、targetFrameRate より先に切る必要がある
     /// —— vSyncCount が 1 以上 だと Unity は targetFrameRate を無視する。
     /// </summary>
     public static class QualitySettings
@@ -416,9 +394,9 @@ namespace UnityEngine
 namespace UnityEngine.Rendering
 {
     // COMPILE-ONLY stub. 透過で描くときに使う面だけ。
-
-    /// <summary>RenderMeshDescription が既定値に使う。**本物と同じ並びにする**
-    /// —— 省いた引数の値は呼び手の IL に焼き込まれる</summary>
+    //
+    // <summary>RenderMeshDescription が既定値に使う。本物と同じ並びにする
+    // —— 省いた引数の値は呼び手の IL に焼き込まれる</summary>
     public enum LightProbeUsage
     {
         Off = 0,
@@ -490,7 +468,7 @@ namespace UnityEngine
     }
 
     /// <summary>Transform.Translate などが取る向きの基準。
-    /// **本物に在って stub に無い型は、名前の衝突を隠す** ——
+    /// 本物に在って stub に無い型は、名前の衝突を隠す ——
     /// FsBulletML2.Front.Space と名前が同じで、Unity でだけ CS0104 になった</summary>
     public enum Space
     {
@@ -527,7 +505,7 @@ namespace UnityEngine
     }
 
     /// <summary>Inspector に出すスライダの範囲。値は使われない</summary>
-    /// <summary>Inspector の欄に出る説明。<b>焼くだけなら何もしない</b></summary>
+    /// <summary>Inspector の欄に出る説明。焼くだけなら何もしない</summary>
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class TooltipAttribute : Attribute
     {
@@ -557,7 +535,7 @@ namespace UnityEngine
     }
 }
 
-// **Unity.Collections のこの 2 型 は、本物では UnityEngine.CoreModule に在る。**
+// Unity.Collections のこの 2 型 は、本物では UnityEngine.CoreModule に在る。
 // パッケージ（com.unity.collections）ではない。名乗りを間違えると、焼いた dll が
 // 「Unity.Collections アセンブリに在る」と主張して Unity で解決できなくなる。
 namespace Unity.Collections

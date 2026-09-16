@@ -12,13 +12,13 @@ type BaseBullet () as this =
   [<DefaultValue>]val mutable pos : Vector2
   [<DefaultValue>]val mutable private self : IBullet
 
-  /// 走らせている実行状態。**弾幕はこの中に居る**（`BulletRun.Script`）
+  /// 走らせている実行状態。弾幕はこの中に居る（`BulletRun.Script`）
   /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish の置き場所
   let mutable run : BulletRun option = None
   /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish の置き場所
   let mutable finished = false
 
-  /// この弾から見た世界。**弾 1 個 につき 1 個。**
+  /// この弾から見た世界。弾 1 個 につき 1 個。
   /// 狙う相手を覚えるのが弾ごとなので使い回せない
   let front = MonoGameEnv () :> IFrontEnv
 
@@ -47,7 +47,7 @@ type BaseBullet () as this =
 
     /// 弾幕を割り当てて根から始める。
     ///
-    /// **根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。**
+    /// 根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。
     /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
     /// 立てておくこと（同梱の弾はどれもコンストラクタで立てている）
     member this.SetScript (s) =
@@ -59,7 +59,7 @@ type BaseBullet () as this =
           else Runner.newRoot self.BulletType sc)
 
     /// 撃たれた弾を、エンジンから受け取った実行状態で始める。
-    /// **弾幕を渡す口が無い** —— `BulletRun` が親のものを持っている
+    /// 弾幕を渡す口が無い —— `BulletRun` が親のものを持っている
     member _.SetRun (r: BulletRun) =
       finished <- false
       run <- Some r
@@ -89,7 +89,7 @@ type BaseBullet () as this =
     match newBullet.BulletType with
     | Player -> Manager.addPlayerBullet(newBullet)
     | Enemy -> Manager.addEnemyBullet(newBullet)
-    // 弾幕は親と同じものを引き継ぐ。**引き継ぎ忘れる書き方がもう無い**
+    // 弾幕は親と同じものを引き継ぐ。引き継ぎ忘れる書き方がもう無い
     // —— BulletRun が弾幕を持っている
     newBullet.SetRun child
     newBullet.X <- motion.Pos.X
@@ -122,7 +122,7 @@ type BaseBullet () as this =
         if f.Retired then this.self.Used <- false
         // 走らせ直しは、位置を更新したあとの自分から組む
         // （旧 BaseBullet が apply のあとで envOfGlobal を呼ぶのと同じ順）。
-        // **呼ぶ / 呼ばないはこのフロントの決めごと** —— Driver は既定を作らない
+        // 呼ぶ / 呼ばないはこのフロントの決めごと —— Driver は既定を作らない
         run <-
           if f.Finished then
             Some (Driver.restart front f.Run)

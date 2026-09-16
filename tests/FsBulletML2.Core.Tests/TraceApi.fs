@@ -8,23 +8,11 @@ open FsBulletML2
 open FsBulletML2.Domain
 
 /// 公開 API（Runner / BulletmlScript / BulletRun / Body / Frame / Env）だけで、
-/// Trace と同じ書式の軌跡を作る。**旧経路と一致するかを見るのがここの仕事。**
+/// Trace と同じ書式の軌跡を作る。旧経路と一致するかを見るのがここの仕事。
 ///
-/// **「internal を使っていない」はここでは強制されない。**
+/// 「internal を使っていない」はここでは強制されない。
 /// このアセンブリは InternalsVisibleTo に入っているので、うっかり
 /// BulletState や Progress を触ってもコンパイラは通してしまう。
-/// 強制が掛かるのはフロント 2 つ（MonoGame / Unity2D。どちらも
-/// InternalsVisibleTo に入っていない）を新 API へ移したときで、
-/// **そちらが「公開が足りているか」の本当の門。**
-/// ここは「足りている公開だけで書いたとき、値が旧と合うか」を見る。
-///
-/// open しているのは FsBulletML2 と FsBulletML2.Domain の 2 つ だけ。
-/// Domain には internal も同居しているが、ここで使うのは Env / Vec2 /
-/// FireContext（どれも公開）。3 つめ を open したくなったら、
-/// 公開の置き場所を見直す印。
-///
-/// 書式は Trace.fs の fmt と並びをそのまま写す。違うと差分が全行に出て
-/// 橋が使えない。
 module TraceApi =
 
   let private fmt (v: float32) =
@@ -49,14 +37,8 @@ module TraceApi =
   /// `run` の、走行の途中で rank や自機の位置を動かせる形。
   ///
   /// 旧の `Trace.runWith` は走行の途中で `BulletMLManager`（グローバル）を
-  /// 差し替えていた。**新 API はフロントが毎コマ `Env` を渡す形なので、
-  /// 値を読む口を関数にするだけで足りる** —— 差し替えるグローバルが要らない。
-  /// `onFrame` はそのコマを回す前に呼ぶ（旧と同じ位置）。
-  ///
-  /// **spawn 側の aim は毎コマ 組み直す。** 対になる
-  /// `FakeBullet.GetSpawnAimDir` は呼ばれるたびに自機の位置を読むので、
-  /// 走行前に 1 回 計算して使い回すと、自機が動く走行で値が割れる。
-  /// `run` が使い回せていたのは px / py が固定だったから。
+  /// 差し替えていた。新 API はフロントが毎コマ `Env` を渡す形なので、
+  /// 値を読む口を関数にするだけで足りる —— 差し替えるグローバルが要らない。
   let runDetailed (rootKind: BulletType) (onFrame: int -> unit)
                   (rand: unit -> float32) (rank: unit -> float32)
                   (px: unit -> float32) (py: unit -> float32)
@@ -98,9 +80,9 @@ module TraceApi =
         let b = all.[j]
         if b.Alive then
           // 物理量はフロントが持っている。毎コマ入れ直す（旧の stateOfBullet）。
-          // **種別はもう渡らない** —— 根は newRoot で、撃たれた弾は親から継ぐ
+          // 種別はもう渡らない —— 根は newRoot で、撃たれた弾は親から継ぐ
           let motion = { b.Run.Motion with Pos = { X = b.X; Y = b.Y } }
-          // **同梱フロントと同じ skip をここでも通す。** 通さないと、この橋は
+          // 同梱フロントと同じ skip をここでも通す。 通さないと、この橋は
           // 本番と違う経路を見ることになり、skip の条件が間違っていても
           // 227 本 が緑のまま通ってしまう（BulletRun.HasNoScript の但し書き）
           let env = if b.Run.HasNoScript then noAimEnv () else envAt b.X b.Y
@@ -142,7 +124,7 @@ module TraceApi =
                     (xml: string) (frames: int) : string =
     runDetailed BulletType.Enemy onFrame rand rank px py xml frames |> fst
 
-  /// 根の種別を変えて回し、**産まれた弾だけ**を産まれた順に出す。
+  /// 根の種別を変えて回し、産まれた弾だけを産まれた順に出す。
   ///
   /// 標準の軌跡には種別の列が無いので別口にしてある。`run` は根を敵で
   /// 組む（`runWithParams` が `BulletType.Enemy` を渡す）ので、
@@ -162,7 +144,7 @@ module TraceApi =
 
   /// 値を動かさない走行。runDetailed の薄い包み。
   ///
-  /// **橋 227 本 と Golden の大半がここを通る。** 包みにしたあとも
+  /// 橋 227 本 と Golden の大半がここを通る。 包みにしたあとも
   /// 出力が 1 バイト も動かないことは、それらが緑であることで押さえている
   let run (rand: unit -> float32) (rank: float32) (px: float32) (py: float32)
           (xml: string) (frames: int) : string =

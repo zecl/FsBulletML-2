@@ -4,33 +4,18 @@ open System
 // `Attribute` が `System.Attribute` に負ける。理由は `XmlScan.fs` の同じ行
 open FsBulletML2.LanguageService
 
-/// **S 式の字を数える 1 本。** XML 側と同じ型を返す。
+/// S 式の字を数える 1 本。 XML 側と同じ型を返す。
 ///
 /// 数える形はこれだけ ——
 ///
 ///     (name (@ (attr "値") ...) "本文" 子...)
-///
-/// **XML より楽。** 閉じ札も自己閉じも無く、コメントも宣言も CDATA も無い
-/// （sxml のパーサがどれも読まない）。括弧と引用符だけ数えれば足りる。
-///
-/// **パーサは使わない。** 理由は XML 側と同じ —— 打っている途中の本文は
-/// 必ず壊れている。`Sxml.parse`（FParsec）は落ちた位置を返してくれるので
-/// 読む段ではそちらを使うが、補完と hover は壊れた本文でも止まらない側が要る。
-///
-/// **`internal` にしない。** 門（`guard-fable-parity.ps1`）が .NET と node の
-/// 両方 から呼んで答えを突き合わせる
 module SxmlScan =
 
-  /// 括弧 1 組。**`TagHit` に、括弧の中の区切りを足したもの。**
+  /// 括弧 1 組。`TagHit` に、括弧の中の区切りを足したもの。
   ///
   /// 参照を数える側は `TagHit` だけで足りる（表記を知らない）。
   /// カーソルの居場所を出すには「属性ブロックの中に居るか」が要るので、
   /// そこだけこちらが持つ。
-  ///
-  /// **module の中に置いてある。** 名前空間の側へ出すと、この 1 本 が
-  /// 「型 + module」の 2 つ になって Fable の export 名に接頭辞が付く
-  /// （XML 側は 1 つ なので付かない）—— 突き合わせの表が指す名前が、
-  /// **中身と関係ないところで表記ごとに割れる**
   type Form =
     { Hit: TagHit
       /// `(@` の `(` の位置。属性ブロックが無ければ -1
@@ -38,18 +23,11 @@ module SxmlScan =
       /// 属性ブロックを閉じる `)` の位置。閉じていなければ本文の末尾。無ければ -1
       AttrsStop: int }
 
-  /// 括弧を頭から全部 拾う。**木は組まない**が、`Start` / `Stop` が
+  /// 括弧を頭から全部 拾う。木は組まないが、`Start` / `Stop` が
   /// 子を丸ごと覆うので、入れ子は位置から読める（いちばん内側 = 前順で最後）。
   ///
-  /// **閉じ引用符が無い属性も捨てない。** XML 側は捨てているが、あちらは
+  /// 閉じ引用符が無い属性も捨てない。 XML 側は捨てているが、あちらは
   /// カーソルの居場所を別の走査（`inTag`）で出しているので困らない。
-  /// こちらは 1 本 で出すので、捨てると `(type "` まで打った時点で
-  /// **属性値の候補が静かに出なくなる。**
-  ///
-  /// 捨てないぶん、閉じていない値は「本文の末尾まで」になる。参照を数える側が
-  /// それを拾うことは無い —— 閉じ引用符が無ければ `Sxml.parse` が**位置つきで**
-  /// 落ち、`References.explain` は位置が在る層をそのまま返して `missing` を
-  /// 呼ばないため（`Parser.Tests/SxmlReferenceScan.fs` が当てている）。
   let forms (src: string) : Form list =
     let out = ResizeArray<Form>()
     let mutable i = 0
@@ -119,7 +97,7 @@ module SxmlScan =
 
     /// 括弧 1 組。`i` は `(` の上。読み終えると `)` の次（無ければ末尾）。
     ///
-    /// **入れ子の深さは再帰の段そのもの**（v2.4）—— sxml は包含で
+    /// 入れ子の深さは再帰の段そのもの（v2.4）—— sxml は包含で
     /// 木になる（測った。176 / 176 本）ので、ここで数えれば足りる
     let rec readForm (depth: int) =
       let start = i
@@ -144,19 +122,19 @@ module SxmlScan =
           else readForm (depth + 1)
         elif src.[i] = '"' then readString () |> ignore
         else advance ()
-      // **名前が空なら足さない。** `(` を打った直後がこれ。
+      // 名前が空なら足さない。 `(` を打った直後がこれ。
       // XML 側も `<` だけの札を足していない —— そこで揃う。
       //
-      // **効くのは参照を数える側（`tags`）。** カーソルの居場所のほうは
+      // 効くのは参照を数える側（`tags`）。 カーソルの居場所のほうは
       // 足しても変わらない（名前が空なら `cursor <= NameStop` の枝を通って
-      // 外側を返す）—— **足さない理由を「候補が消えるから」と書いていたが、
-      // 変異を当てたら緑のままだった。** 当たるのは `tags` の並びのほう
+      // 外側を返す）—— 足さない理由を「候補が消えるから」と書いていたが、
+      // 変異を当てたら緑のままだった。 当たるのは `tags` の並びのほう
       if nameStop > nameFrom then
         out.Add
           { Hit =
               { TagName = src.Substring(nameFrom, nameStop - nameFrom)
                 Attrs = attrs
-                // 括弧 1 組 が開きも閉じも兼ねる。**どちらも常に false**
+                // 括弧 1 組 が開きも閉じも兼ねる。どちらも常に false
                 Closing = false
                 SelfClosing = false
                 Start = start
@@ -169,11 +147,11 @@ module SxmlScan =
 
     while i < src.Length do
       if src.[i] = '(' then readForm 0 else advance ()
-    // **前順に並べ直す。** 上は子を読み終えてから自分を足すので後順になる
+    // 前順に並べ直す。 上は子を読み終えてから自分を足すので後順になる
     // —— 「いちばん内側 = 最後」で引く側が、そのままだと逆を引く
     out |> Seq.sortBy (fun f -> f.Hit.Start) |> List.ofSeq
 
-  /// 参照を数える側が読む形。**表記を知らない側へ渡すのはこちら。**
+  /// 参照を数える側が読む形。表記を知らない側へ渡すのはこちら。
   let tags (src: string) : TagHit list = forms src |> List.map (fun f -> f.Hit)
 
   /// カーソルを覆う括弧のうち、いちばん内側。前順なので最後
@@ -182,7 +160,7 @@ module SxmlScan =
 
   /// カーソルの居場所を出す。
   ///
-  /// **名前を打っている途中は本文扱い**（`(act|`）。XML 側の `<act|` と同じ ——
+  /// 名前を打っている途中は本文扱い（`(act|`）。XML 側の `<act|` と同じ ——
   /// そこで出したいのは要素の候補で、`(` の直後もそれに含まれる。
   let contextAt (src: string) (offset: int) : Context =
     let cursor = max 0 (min offset src.Length)
@@ -192,7 +170,7 @@ module SxmlScan =
     | Some f ->
       let h = f.Hit
       if cursor <= h.NameStop then
-        // 名前を打っている途中。候補を出す先は**外側**の中身
+        // 名前を打っている途中。候補を出す先は外側の中身
         InContent(
           innermost all (fun g -> g.Start < h.Start && h.Stop <= g.Stop)
           |> Option.map (fun g -> g.Hit.TagName))
@@ -202,9 +180,9 @@ module SxmlScan =
         | None -> InStartTag h.TagName
       else InContent(Some h.TagName)
 
-  /// カーソルの**下**に在るものを出す。hover が引く。
+  /// カーソルの下に在るものを出す。hover が引く。
   ///
-  /// 指すのは**カーソルの位置に在る 1 文字**。だから
+  /// 指すのはカーソルの位置に在る 1 文字。だから
   ///
   ///   `(` の上 / `)` の上 / 引用符そのものの上   何でもない
   ///   要素名の最初の字と最後の字               その要素
@@ -226,18 +204,18 @@ module SxmlScan =
             | Some a -> AttrValue(h.TagName, a.AttrName, a.Value)
             | None -> Nothing
 
-  /// この 1 本 が出す答えを、全部 1 行 の字にする。**門のための口。**
+  /// この 1 本 が出す答えを、全部 1 行 の字にする。門のための口。
   /// 字にするところは `Scan.describe`（XML 側と共通）
   let describe (src: string) (cursor: int) : string =
     Scan.describe (tags src) (contextAt src cursor) (tokenAt src cursor)
                   (Scan.nameLenBefore src cursor) (Scan.exprLenBefore src cursor)
 
-  /// 式が書ける要素の中身（v4.1）。**括弧の中の引用符。**
+  /// 式が書ける要素の中身（v4.1）。括弧の中の引用符。
   ///
   ///     (wait "30-$rank*8")
   ///     (direction (@ (type "absolute")) "180+$rand*30")
   ///
-  /// **括弧の深さを数える。** 属性は `(@ (type "absolute"))` の中に在るので、
+  /// 括弧の深さを数える。 属性は `(@ (type "absolute"))` の中に在るので、
   /// 深さ 0 の引用符だけを拾えば、属性値と取り違えない
   let texts (src: string) (names: string list) : TextHit list =
     tags src

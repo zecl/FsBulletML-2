@@ -5,24 +5,12 @@ open UnityEngine
 open UnityEngine.Rendering
 open UnityEngine.Rendering.Universal
 
-/// **URP に移したあと、GameObject の見た目が出るようにする安全網。**
+/// URP に移したあと、GameObject の見た目が出るようにする安全網。
 ///
 /// このサンプルは長く Built-in パイプラインで作られていて、シーンの
 /// マテリアルもカメラも Built-in の前提のまま。URP へ切り替えると
-/// **自機も敵も背景も描かれない**（実際に真っ暗になった）。
 ///
-/// 直しどころは 4 つ。どれも「資産を書き換えず、走るときに直す」形にしてある
-/// —— シーンや prefab を書き換えると、差分が大きくなるうえ元へ戻しにくい。
-///
-///   カメラ      URP は UniversalAdditionalCameraData を要求する。
-///               複数 カメラは Base + Overlay の積み重ねにする
-///   平行光源    無ければ足す（URP の Lit が真っ黒になるのを防ぐ）
-///   マテリアル  Built-in のシェーダを URP の Unlit へ差し替える
-///   sprite      SpriteRenderer のテクスチャを property block で束ね直す
-///
-/// **同梱の C# サンプル（UrpPlayModeCompat.cs）の写し。**
-/// あちらが先に URP へ移っていて、同じ問題を同じ形で解いている。
-/// **片方だけ直すと、2 つ のサンプルで見た目が違う**ことになる。
+/// 片方だけ直すと、2 つ のサンプルで見た目が違うことになる。
 [<AbstractClass; Sealed>]
 type UrpPlayModeCompat private () =
 
@@ -39,7 +27,7 @@ type UrpPlayModeCompat private () =
     | null -> UrpPlayModeCompat.FindUrpUnlit ()
     | s -> s
 
-  /// そのシェーダが既に URP のものか。**差し替えを 2 度 やらないため**
+  /// そのシェーダが既に URP のものか。差し替えを 2 度 やらないため
   static member IsUrpShader (shader: Shader) =
     if isNull (box shader) then false
     else
@@ -82,7 +70,7 @@ type UrpPlayModeCompat private () =
     mat.enableInstancing <- true
 
   /// カメラを URP が描ける形にする。
-  /// **1 台目 を Base、残りを Overlay として積む** —— URP は Base が無いと
+  /// 1 台目 を Base、残りを Overlay として積む —— URP は Base が無いと
   /// 何も描かない
   static member private EnsureCameras () =
     let cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include)
@@ -146,7 +134,7 @@ type UrpPlayModeCompat private () =
 
   /// Built-in のシェーダを使っている材質を URP の Unlit へ差し替える。
   ///
-  /// **共有材質ではなく instance を書き換える**（`r.materials`）——
+  /// 共有材質ではなく instance を書き換える（`r.materials`）——
   /// 共有を触ると資産そのものが変わってしまう
   static member private UpgradeSceneRenderers () =
     let unlit = UrpPlayModeCompat.FindUrpUnlit ()
@@ -182,7 +170,7 @@ type UrpPlayModeCompat private () =
             if not (isNull instances) then r.materials <- instances
 
   /// SpriteRenderer のテクスチャを property block で束ね直す。
-  /// **URP の sprite 経路はこれが無いと白（またはピンク）になる**
+  /// URP の sprite 経路はこれが無いと白（またはピンク）になる
   static member BindSprite (sr: SpriteRenderer) =
     if not (isNull (box sr)) && not (isNull (box sr.sprite)) then
       let tex = sr.sprite.texture
@@ -199,7 +187,7 @@ type UrpPlayModeCompat private () =
     let sprites = UnityEngine.Object.FindObjectsByType<SpriteRenderer>(FindObjectsInactive.Include)
     for sr in sprites do UrpPlayModeCompat.BindSprite sr
 
-  /// **Play の頭で 1 回 だけ。** 2 度 呼んでも 2 度目 は何もしない
+  /// Play の頭で 1 回 だけ。 2 度 呼んでも 2 度目 は何もしない
   static member Apply () =
     if not applied then
       applied <- true

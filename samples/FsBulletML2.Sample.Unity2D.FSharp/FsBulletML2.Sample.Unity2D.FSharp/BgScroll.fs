@@ -8,7 +8,7 @@ type BgScroll () =
 
   /// 背景を毎コマ 少しずつ流す。
   ///
-  /// **Renderer は 1 回 だけ引く。** 旧は毎コマ `GetComponent` を呼んでいた ——
+  /// Renderer は 1 回 だけ引く。 旧は毎コマ `GetComponent` を呼んでいた ——
   /// あれは型で component を走査するので、毎コマ 払う理由が無い
   member this.Start () =
     let r = this.GetComponent<Renderer>()

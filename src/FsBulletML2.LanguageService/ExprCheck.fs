@@ -1,36 +1,9 @@
-/// **式が読めるか**を字から見る（v4.1）。**値は出さない。**
+/// 式が読めるかを字から見る（v4.1）。値は出さない。
 ///
-/// ## なぜ器に 2 本 目 の読み手が要るのか
-///
-/// `FsBulletML2.LanguageService` は `ProjectReference` を 1 本 も持たない ——
-/// 語彙すら渡されたデータで受け取る。**`Core/Expr.fs` はブラウザ側から見えない。**
-/// 打鍵ごとに式を見るなら、ここに読み手が要る。
-///
-/// **値は出さない。** 評価器を 2 本 持つと**同じ式が 2 通り の値**になり、
-/// しかも「どちらも単独では正しく見える」。ここが答えるのは 2 つ だけ ——
-///
-///     読めるか
-///     読めないなら、**どこまで読めたか**
-///
-/// ## 突き合わせは門でやる
-///
-/// 文法は `Core/Expr.fs` の `parseExpr` を写したもの。**写しである以上、
-/// 片方 だけ直した形が黙って残る** —— `ExprParity` が
-/// コーパス 427 件 と 同梱 4,582 件 の全件 で答えを突き合わせる。
-///
-/// ## 文法（XPath 1.0 の数値式）
-///
-///     expr    := term (('+' | '-') term)*
-///     term    := unary (('*' | '/' | '%') unary)*
-///     unary   := '-' unary | primary
-///     primary := number | '$rand' | '$rank' | '$' digits* | '(' expr ')'
-///
-/// **単項プラスは無い**（XPath 1.0 に無く、旧は number() が NaN を返す）。
-/// **指数表記も無い**（`1E-07` は読めない側）。
-///
-/// ## `Fable.Core` に依存しない
-///
-/// host（.NET）と ブラウザ側（Fable が焼いた JS）の**両方 で走る**（`Semantics` と同じ）。
+/// 評価器を 2 本 持つと同じ式が 2 通り の値になり、どちらも単独では正しく見える。
+/// 文法は Core の写し。片方 だけ直した形が残るのは ExprParity が見る。
+/// 単項プラスは無い。指数表記も無い。
+/// Fable.Core に依存しない（host と ブラウザ側 の両方 で走る）。
 module FsBulletML2.LanguageService.ExprCheck
 
 open System
@@ -39,14 +12,14 @@ let private isDigit (c: char) = c >= '0' && c <= '9'
 
 /// `s` の `i` から `w` が始まっているか。
 ///
-/// **`String.CompareOrdinal` の 5 引数 版を使わない。** Core の `Expr.fs` は
-/// そちらで書いてあるが、**Fable が焼いた JS では当たらなかった** ——
+/// `String.CompareOrdinal` の 5 引数 版を使わない。 Core の `Expr.fs` は
+/// そちらで書いてあるが、Fable が焼いた JS では当たらなかった ——
 /// `guard-fable-parity` が拾った（.NET は `30-$rank*8` を読め、node は読めなかった）。
-/// F# の側は通り、build も門も出ず、**焼いた JS だけが違う**形
+/// F# の側は通り、build も門も出ず、焼いた JS だけが違う形
 let private startsAt (s: string) (i: int) (w: string) =
   i + w.Length <= s.Length && s.Substring(i, w.Length) = w
 
-/// `$rand` / `$rank` / `$` + 数字。**順が要る** ——
+/// `$rand` / `$rank` / `$` + 数字。順が要る ——
 /// `Replace` は部分一致なので、`$random` は `$rand` が先に当たる（Core も同じ順）
 let private tryVar (s: string) (i: int) =
   if startsAt s i "$rand" then Some (i + 5)
@@ -57,7 +30,7 @@ let private tryVar (s: string) (i: int) =
     Some j
   else None
 
-/// 数値リテラル。`digits ('.' digits?)?` か `'.' digits`。**指数表記は受けない**
+/// 数値リテラル。`digits ('.' digits?)?` か `'.' digits`。指数表記は受けない
 let private tryNumber (s: string) (i: int) =
   let start = i
   let mutable j = i
@@ -126,7 +99,7 @@ and private parsePrimary (s: string) (i: int) : int option =
     | Some r -> Some r
     | None -> tryNumber s i
 
-/// 読めるか。**`Core/Expr.parse` が `Invalid` を返さないのと同じ条件。**
+/// 読めるか。`Core/Expr.parse` が `Invalid` を返さないのと同じ条件。
 let readable (s: string) : bool =
   if isNull s then false
   else
@@ -134,12 +107,12 @@ let readable (s: string) : bool =
     | Some pos -> skipWs s pos = s.Length
     | None -> false
 
-/// **ただの数か**（v4.4）。`30` / `1.5` / `-3` / `.5` は真。
+/// ただの数か（v4.4）。`30` / `1.5` / `-3` / `.5` は真。
 ///
-/// **値を横に出す意味が無い側。** `<wait>30</wait>` の横に `= 30` を出しても
-/// 字が増えるだけ —— 出すのは**畳んで初めて数になる式**だけ。
+/// 値を横に出す意味が無い側。 `<wait>30</wait>` の横に `= 30` を出しても
+/// 字が増えるだけ —— 出すのは畳んで初めて数になる式だけ。
 ///
-/// **`readable` と同じ読み手を通す。** 別に数え直すと、
+/// `readable` と同じ読み手を通す。 別に数え直すと、
 /// 「読めないのに ただの数 と言う」形が作れてしまう
 let plainNumber (s: string) : bool =
   if isNull s then false
@@ -151,12 +124,12 @@ let plainNumber (s: string) : bool =
     | Some pos -> skipWs s pos = s.Length
     | None -> false
 
-/// **どこまで読めたか**（0 起点 の文字数）。読めるなら文字数そのもの。
+/// どこまで読めたか（0 起点 の文字数）。読めるなら文字数そのもの。
 ///
 /// 波線をここから引く —— 要素まるごとに引くと、
-/// **`180+$rand*30` の 12 文字 が全部 赤くなって、どこが悪いか分からない。**
+/// `180+$rand*30` の 12 文字 が全部 赤くなって、どこが悪いか分からない。
 ///
-/// **`None` は「頭から読めない」**（`abc` など）—— そのときは 0 を返す
+/// `None` は「頭から読めない」（`abc` など）—— そのときは 0 を返す
 let readTo (s: string) : int =
   if isNull s then 0
   else

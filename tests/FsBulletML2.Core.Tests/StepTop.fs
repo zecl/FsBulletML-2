@@ -89,10 +89,6 @@ type StepTop() =
   /// そのまま積み直しても、1 回しか呼ばないテストにはその違いが出ない
   /// （書き戻し先を誰も読み返さないため）。前のコマの `r.State` を
   /// 実際に次の `Step.step` へ渡して、初めて書き戻しの有無が見える。
-  ///
-  /// wait "1" は 1 コマ目で Stopped、2 コマ目で Ended になる（stepWait 参照）。
-  /// Progress が持ち越らなければ、2 コマ目も PWait(false, 0.0) から
-  /// 振り出しに戻り、いつまでも Ended にならない
   [<Test>]
   member _.``Progress は次のコマへ持ち越される: wait は 2 コマ目で終わる``() =
     let t = top [ Action.Wait (numExpr "1") ]
@@ -104,13 +100,7 @@ type StepTop() =
   /// FireContext（SrcSpeed の積み上がりと SpeedInit の掛け金）も同じ
   /// Tops のスロットへ持ち越る。1 発め（bullet 側の絶対値 5 を、掛け金が
   /// まだ立っていないので latch として採用）と 2 発め（fire 側の
-  /// sequence "3"）の間に wait を 1 つ挟み、2 発めが実際に「次のコマ」
-  /// で走るようにしてある。
   ///
-  /// Progress が持ち越らなければ wait が毎回振り出しに戻り、2 発めへは
-  /// 一度も届かず 1 発めが毎コマ撃ち直される（撃たれた弾の速さは
-  /// bullet 側の絶対値 5 のまま）。FireContext が持ち越らなければ
-  /// 2 発めは届いても SrcSpeed の基準が 0 に戻っていて 0 + 3 = 3 になる。
   /// どちらか片方でも欠けると 8 にはならない
   [<Test>]
   member _.``FireContext は次のコマへ持ち越される: 2 発めの sequence は 1 発めの速さに積む``() =
@@ -155,15 +145,7 @@ type StepTop() =
   /// 落とした `BulletRunner.run` は「生きている top が 1 本 も無いコマ」で
   /// aim 4 本 を組まずに 0 で済ませていた（`BulletRunner.envWithoutAim`）。
   /// いまは同じ役を `BulletRun.HasNoScript` が担う。その前提 ——
-  /// Step.step が env を触るのは top を回すループの中だけで、ループの外
-  /// （差分の計算・FireContext の積み直し・Finished の判定）は env を
-  /// 見ない —— をここで門にする。
   ///
-  /// 見るのは「aim を変えても結果が 1 ビットも動かないこと」。step が
-  /// ループの外で env を読むようになったら、毒入りの env の側だけ答えが
-  /// ずれて赤くなる。
-  ///
-  /// 較正: step の差分に env.Aim.ToPlayer を足す変異を入れるとこの門は赤くなり、
   /// 同じファイルの他の門は緑のままだった（top が生きているコマを見ている
   /// ので、そちらは両方の env で同じだけずれる）。
   [<Test>]

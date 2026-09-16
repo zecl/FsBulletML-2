@@ -7,29 +7,14 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.LanguageService
 
-/// **sxml を読む口の目盛り。**
+/// sxml を読む口の目盛り。
 ///
 /// --- なぜ 2 本 目 を書いているのか
 ///
-/// `Parser` には `tryReadSxmlString` が既に在る。**それでも `Diagnosis` は
-/// 使っていない** —— あちらは
-///
+/// `Parser` には `tryReadSxmlString` が既に在る。それでも `Diagnosis` は
+/// 使っていない —— あちらは
 ///     | Failure (_,_,_) -> None
-///
-/// で、**FParsec が持っている行と桁を捨てている。** 波線を引くにはそれが要る。
-/// だから `Sxml.parse` を直に呼ぶ筋をもう 1 本 書いた。
-///
-/// **口が在ることと、その口が要るものを返すことは別。**
-///
-/// --- 2 本 書いた以上は突き合わせる
-///
-/// 読める / 読めないの判定が `tryReadSxmlString` とずれたら、それは
-/// こちらの写し間違い。コーパス全部 で 1 本 ずつ当てる。
-///
-/// --- xml とも突き合わせる
-///
-/// コーパスは同じ名前で xml と sxml が対になっている。**同じ弾幕なので
-/// 判定も同じはず** —— 割れたら、どちらかの表記だけが読めなくなっている。
+/// で、FParsec が持っている行と桁を捨てている。 波線を引くにはそれが要る。
 [<TestFixture>]
 type SxmlReader() =
 
@@ -41,7 +26,7 @@ type SxmlReader() =
 
   let sxmlCorpus = lazy corpus "sxml"
 
-  /// **載せるところは通さない。** ここで見ているのは「読めるか」だけで、
+  /// 載せるところは通さない。 ここで見ているのは「読めるか」だけで、
   /// 走らせて落ちる層（輪、`top` が無い）は別の試験が見ている
   let reads (src: string) = (SourceReader.sxml.Apply ignore src).IsNone
 
@@ -65,7 +50,7 @@ type SxmlReader() =
 
   [<Test>]
   member _.``読めるものと読めないものが 両方 在る``() =
-    // **上の点は「全部 読めない」でも緑。** 並びの中身そのものを見る
+    // 上の点は「全部 読めない」でも緑。 並びの中身そのものを見る
     let ok = sxmlCorpus.Value |> Array.filter (fun f -> reads (File.ReadAllText f))
     ok.Length |> should greaterThan 0
     ok.Length |> should lessThan sxmlCorpus.Value.Length
@@ -95,7 +80,7 @@ type SxmlReader() =
 
   [<Test>]
   member _.``構文が壊れていれば 位置が出る``() =
-    // **これがこの版の本題。** `tryReadSxmlString` を通すとここが 0 になる
+    // これがこの版の本題。 `tryReadSxmlString` を通すとここが 0 になる
     let cases =
       [ "(bulletml (action (fire", 1
         "(bulletml\n(action\n(fire \"\n)\n)", 3 ]
@@ -118,7 +103,7 @@ type SxmlReader() =
 
   [<Test>]
   member _.``空の本文でも 位置が 1 以上``() =
-    // **0 のまま渡すと Monaco の範囲が壊れる。** 位置なし（Line = 0）とも混ざる
+    // 0 のまま渡すと Monaco の範囲が壊れる。 位置なし（Line = 0）とも混ざる
     match SourceReader.sxml.Apply ignore "" with
     | None -> failwith "空が読めてしまった"
     | Some f ->
@@ -127,7 +112,7 @@ type SxmlReader() =
 
   [<Test>]
   member _.``BulletML でない S 式は 位置なし``() =
-    // S 式としては読めるが BulletML ではない。**位置は無い** ——
+    // S 式としては読めるが BulletML ではない。位置は無い ——
     // 字は全部 読めているので、どこが悪いとは言えない
     match SourceReader.sxml.Apply ignore "(nope (inner \"1\"))" with
     | None -> failwith "読めてしまった"
@@ -137,7 +122,7 @@ type SxmlReader() =
 
   [<Test>]
   member _.``表記が全部 読める``() =
-    // **並びは `SourceKind.all` と同じ順。** 揃えておかないと、
+    // 並びは `SourceKind.all` と同じ順。 揃えておかないと、
     // 「どちらの並びを見た数か」で数え方が割れる
     SourceReader.all |> List.map (fun r -> r.Kind.Id)
     |> should equal (SourceKind.all |> List.map (fun k -> k.Id))
@@ -148,16 +133,16 @@ type SxmlReader() =
 
   [<Test>]
   member _.``知らない字は 断る``() =
-    // v1.1 で全部 揃ったが、**2 つ の並びを 1 本 にはしない** ——
+    // v1.1 で全部 揃ったが、2 つ の並びを 1 本 にはしない ——
     // 次の表記を足すとき、また割れる（読めない状態を必ず通る）。
     // 人へ見せる口は `ApplySource` の側（`未対応: …`）に残してある
     (SourceKind.tryParse "nope").IsNone |> should be True
 
   [<Test>]
   member _.``拡張子は 表記ごとに違い、id から導けない``() =
-    // **`"." + Id` で作れる形に見える。** 3 つ までは合うが F# の CE だけ
+    // `"." + Id` で作れる形に見える。 3 つ までは合うが F# の CE だけ
     // ずれる（id は `fsharp`、拡張子は `.fsx`）—— 導く形にすると
-    // **そこだけ静かに嘘になる**。ブラウザ側の Open が名前で表記を決めるので、
+    // そこだけ静かに嘘になる。ブラウザ側の Open が名前で表記を決めるので、
     // 嘘だと「開いたのに読めない」になる
     SourceKind.all |> List.map (fun k -> k.FileExtension)
     |> should equal [ ".xml"; ".sxml"; ".fsb"; ".fsx" ]
@@ -167,8 +152,8 @@ type SxmlReader() =
 
   [<Test>]
   member _.``表記ごとに 字の数え方が違う``() =
-    // 同じ本文を両方 に通す。**同じ答えが返ったら、どちらかが effectively
-    // 使われていない**（表を引き違えている）
+    // 同じ本文を両方 に通す。同じ答えが返ったら、どちらかが effectively
+    // 使われていない（表を引き違えている）
     let src = "(bulletml (action (@ (label \"top\"))))"
     (SourceReader.sxml.Tags src |> List.map (fun t -> t.TagName))
     |> should equal [ "bulletml"; "action" ]

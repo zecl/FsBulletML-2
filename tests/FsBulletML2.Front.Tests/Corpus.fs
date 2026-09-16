@@ -2,7 +2,7 @@ namespace FsBulletML2.Front.Tests
 
 open System.IO
 
-/// 弾幕のコーパス。**Core.Tests の同名モジュールの写し。**
+/// 弾幕のコーパス。Core.Tests の同名モジュールの写し。
 ///
 /// あちらは internal で、Core.Tests は `InternalsVisibleTo` に入っている。
 /// こちらから参照すると「公開だけで書けているか」を測るという

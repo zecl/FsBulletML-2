@@ -4,21 +4,14 @@ using R3;
 using R3.Triggers;
 
 /// <summary>
-/// 撃つ側。<b>もう何も撃たない。</b>
+/// 撃つ側。もう何も撃たない。
 ///
 /// 元（<c>FsBulletML2.Sample.Unity2D.CSharp</c>）では、この面 が
 /// 同梱の 176 本 を <c>All.bullets</c> から読んで、<c>Runner.Load</c> で
 /// 台本 に起こし、<c>BulletEntityFactory.SpawnEnemy</c> で撃っていた。
-///
-/// <b>いまやるのは「どれを走らせるか」を頼むことだけ。</b>
-/// 弾幕の一覧 も、走らせることも、サーバーが持っている。
-///
-/// <b>元 が継いでいた <c>BaseBullet</c> は落とした。</b> あれは
-/// GameObject 側 の弾の親 で、中身は丸ごとエンジンだった。
-/// </summary>
 public class Enemy : MonoBehaviour
 {
-    // **名前を変えない。** prefab の YAML は field の名前で値を引く
+    // 名前を変えない。 prefab の YAML は field の名前で値を引く
     // （宣言している型 ではない）ので、名前さえ同じなら親 から移しても繋がる
     [SerializeField]
     protected GameObject bulletObject;
@@ -43,9 +36,7 @@ public class Enemy : MonoBehaviour
         set => LifeRp.Value = value;
     }
 
-    static string[] Names => DanmakuClient.Instance != null
-        ? DanmakuClient.Instance.Names
-        : Array.Empty<string>();
+    static string[] Names => DanmakuState.Names.Value;
 
     void Start()
     {
@@ -73,12 +64,18 @@ public class Enemy : MonoBehaviour
             .Where(_ => Input.GetKeyDown(KeyCode.Return))
             .Subscribe(_ => Next());
 
-        // **繋がるのを待つ。** 一覧 はサーバーから来るので、
-        // 立ち上がった時点ではまだ 0 本。名前が出るのは繋がってから
-        update
-            .Where(_ => BulletNameRp.Value.Length == 0 && Names.Length > 0)
+        // 繋がるのを待つ。 一覧 はサーバーから来るので、
+        // 立ち上がった時点ではまだ 0 本。
+        //
+        // 毎コマ「まだか」を見ない。 元 は
+        // `update.Where(_ => ... Names.Length > 0).Take(1)` で、
+        // 建つ順 が外から見えないのが理由 だった。
+        // いまは置き場（DanmakuState）が建つ順 に依らないので、購読するだけ
+        DanmakuState.Names
+            .Where(names => names.Length > 0)
             .Take(1)
-            .Subscribe(_ => ApplyPattern());
+            .Subscribe(_ => ApplyPattern())
+            .AddTo(this);
 
         this.OnTriggerEnter2DAsObservable()
             .Subscribe(_ => HitByPlayerBullet())
@@ -113,7 +110,7 @@ public class Enemy : MonoBehaviour
     }
 
     /// <summary>
-    /// 走らせる弾幕を頼む。<b>番号 で頼む。</b>
+    /// 走らせる弾幕を頼む。番号 で頼む。
     /// 一覧 の順 はサーバーが返したものなので、番号 が そのまま通じる
     /// （名前は日本語の説明文 なので、そのまま送ると往復 に乗る字が増える）。
     /// </summary>
@@ -129,10 +126,7 @@ public class Enemy : MonoBehaviour
         BulletNameRp.Value = names[i];
         LifeRp.Value = MaxLife;
 
-        if (DanmakuClient.Instance != null)
-        {
-            DanmakuClient.Instance.Switch(i.ToString());
-        }
+        DanmakuClient.Instance?.Switch(i.ToString());
     }
 
     void OnDestroy()

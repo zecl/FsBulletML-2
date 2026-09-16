@@ -1,96 +1,30 @@
-/// **意味の層。読めて・組めても、走らないものが在る。**
-///
-/// v2.2 までの `Diagnosis` は 4 層 とも構文と構造だった ——
-///
-///     構文              XmlException / FParsec        行・桁 あり
-///     BulletML でない   tryRead… が None              位置なし
-///     木は組めない      BulletmlDTDViolationException 位置なし
-///     式                BulletmlDTDViolationException 位置なし
-///
-/// どれも通るのに走らない弾幕が在る。`top` で始まる定義が 1 つ も無い本は、
-/// **読めて・組めて・黙って何も起きない**（走らせる側が `StartsWith` で
-/// 選ぶだけで、誰も警告しない）。
-///
-/// ## 字から数える。**木にしない。**
-///
-/// 材料は `TagHit` だけ —— つまり `Refs.missing` と同じ形で、
-/// **WASM への往復が要らない。** だから打鍵ごとに数え直せる
-/// （v1.8 で未決にした「打鍵ごとの波線」がここで実現する）。
-///
-/// 版の頭で測った値段は、いちばん長い本（29,190 字）で **0.488 ms / 回**。
-/// 既存の `Refs.missing` が 0.291 ms なので、同じ桁。
-///
-/// ## 出さないと決めたもの
-///
-/// 候補は 4 つ 在って、同梱 176 本 に当てたらこうなった ——
-///
-///     top が無い            当たり 0 / 176 本   偽陽性なし
-///     呼ばれない定義         当たり 6 / 176 本   **正しい弾幕でも光る**
-///     参照の循環            当たり 2 / 176 本   **正しい弾幕に在る**
-///     repeat の times が 0   当たり 0 / 176 本   当てる先が無い
-///
-/// **参照の循環は出さない。** 当たった 2 件 は同梱、つまり正しく動く弾幕で、
-/// BulletML では `actionRef` の輪は正常（無限に繰り返す弾幕がそう書く）。
-/// Core が「1 段 だけ解く」入口を持っているのは、まさにそれを前提にしている。
-///
-/// **`repeat` の times は出せない。** `TagHit` は要素の中身（#PCDATA）を
-/// 持たないので、字からは値が取れない。当たりも 0 なので、
-/// 取れる形にする理由が測れていない。
-///
-/// **呼ばれない定義は強さを下げる。** 6 件 とも正しい弾幕に在る ——
-/// 走りには影響しないので、これは警告ではなく知らせ。
-///
-/// ## 文面を持たない
-///
-/// `Refs.Missing` と同じ理由。持たせると、波線と直し方で文面が割れて、
-/// **どちらも単独では正しく見える。** 文面は呼ぶ側が組む。
-///
-/// ## `Fable.Core` に依存しない
-///
-/// host（.NET）と ブラウザ側（Fable が焼いた JS）の**両方 で走る。**
+/// 意味の層。読めて・組めても、走らないものが在る。
+/// 字から数える。木にしない。文面を持たない。Fable.Core に依存しない。
 module FsBulletML2.LanguageService.Semantics
 
-/// 見つけたものの種類。**強さはここで決めない** ——
+/// 見つけたものの種類。強さはここで決めない ——
 /// 見せ方は呼ぶ側（Monaco の severity は Monaco 固有の数）
 type FindingKind =
-  /// 根から走る定義が 1 つ も無い。**走らない**
+  /// 根から走る定義が 1 つ も無い。走らない
   | NoEntryPoint
   /// どこからも参照されない定義。走りには影響しない
   | UnusedDefinition
-  /// 定義に無い名前を指している参照。
+  /// 定義に無い名前を指している参照。Apply は通る（解けない `Ref` は
+  /// 黙って無視されるだけで Core は落ちない）。
   ///
-  /// **Apply は通る。** 実測 —— 参照が解けないと、その `Ref` は黙って
-  /// 無視されるだけで、Core は落ちない（`expandActionRefOnce` は
-  /// 1 段 だけ解いて、解けなければそのまま）。
-  /// つまりこれも「読めて・組めて・書いたものが出ない」側。
-  ///
-  /// 数え方は `Refs.missing` の 1 本。**ここでは持たない** ——
+  /// 数え方は `Refs.missing` の 1 本。ここでは持たない ——
   /// 波線と Quick Fix が同じ数え方を見る
   | MissingRef
-  /// 読めない式（v4.1）。**壊れ方が 2 通り あるので、腕が値を持つ。**
+  /// 読めない式（v4.1）。壊れ方が 2 通り あるので、腕が値を持つ。
   ///
   ///     Stops = true    走らない。Apply が落ちる（`#loop-error` に出る）
-  ///     Stops = false   **走る。値が NaN になるだけ**
+  ///     Stops = false   走る。値が NaN になるだけ
   ///
-  /// 割れ目は Core の畳みに在る —— **`$` を含まない式だけ**が読み込みの段で
-  /// 畳まれ、そこで落ちる。`$` を含む式はそこを通らず、走行中に NaN になる。
-  ///
-  /// **落とす口 は v5.5 で替わった**（旧の評価器の XPathException ->
-  /// `Expr.NumExpr.isReadable`）が、**どちらが落ちるかの線は同じ** ——
-  /// 畳む式だけ。`Core` から `System.Xml` を外したときに引き直してある。
-  ///
-  /// 版の頭で測った —— `<wait>1+*$rank</wait>` は **60 コマ で 61 発** 撃つ
-  /// （間 が空かない）。**読めて・組めて・走って・書いたつもりの間 が空かない。**
+  /// 割れ目は Core の畳みに在る —— `$` を含まない式だけが読み込みの段で
+  /// 畳まれ、そこで落ちる
   | BadExpr of stops: bool
-  /// 同じ名前の定義が 2 つ 以上 在る（v4.6）。**出すのは 2 つ 目 から。**
-  ///
-  /// **走るのは先に書いたほう**（実機で数えた。同じ `label` の `action` を
-  /// 2 つ 置いて、先の 1 発 だけが出た）—— 後のほうは**黙って負ける。**
-  ///
-  /// **読めて・組めて、書いたものが出ない**側なので `MissingRef` と同じ強さ。
-  ///
-  /// 同梱 176 本 に **0 件**（版の頭で数えた）—— 偽陽性が無いので出せる
-  /// （v2.3 の `NoEntryPoint` と同じ形）
+  /// 同じ名前の定義が 2 つ 以上 在る（v4.6）。出すのは 2 つ 目 から ——
+  /// 走るのは先に書いたほうなので、光らせるのは負けるほう
   | DuplicateDefinition
 
 /// 意味の層の指摘 1 つ。
@@ -99,10 +33,10 @@ type Finding =
     /// 見つかった名前。`NoEntryPoint` では空
     Name: string
     /// その定義の要素名（`action` など）。`NoEntryPoint` では空。
-    /// **器がこの字を作らない** —— `TagHit.TagName` をそのまま渡す
+    /// 器がこの字を作らない —— `TagHit.TagName` をそのまま渡す
     Element: string
     /// 1 起点（Monaco の行桁と同じ）。
-    /// **`NoEntryPoint` は本文の頭を指す** —— 「どこにも無い」の位置は
+    /// `NoEntryPoint` は本文の頭を指す —— 「どこにも無い」の位置は
     /// 本文全体で、1 か所 を指せない
     Line: int
     Column: int
@@ -112,30 +46,25 @@ type Finding =
 let private labelOf (attrName: string) (t: TagHit) =
   t.Attrs |> List.tryFind (fun a -> a.AttrName = attrName)
 
-/// 意味の層を全部。**本文に出てくる順**で返す。
+/// 意味の層を全部。本文に出てくる順で返す。
 ///
 /// 受け取るのは
 ///
 ///     pairs       `Refs.pairs` の返り（参照する要素, される要素, 属性名）
-///     topPrefix   根から走る定義の名前の頭。**空なら `NoEntryPoint` を出さない**
+///     topPrefix   根から走る定義の名前の頭。空なら `NoEntryPoint` を出さない
 ///     tags        表記ごとの 1 本（`XxxScan.tags`）の返り
 ///
-/// **要素名も `top` の綴りも、この 1 本 は持たない。** どちらも
+/// 要素名も `top` の綴りも、この 1 本 は持たない。 どちらも
 /// 受け取るものの中に在る —— 書き写すと、Core を変えたときに黙って割れる。
 ///
-/// ### `NoEntryPoint` は要素を絞らない
-///
-/// 走らせる側が見るのは `action` だけだが、**器に要素名を書けない**ので、
-/// 「`topPrefix` で始まる名前がどの定義にも 1 つ も無い」で見る。
-/// **緩い側に振ってある** —— `bullet label="top…"` しか無い本は
-/// 見逃すが、正しい本を光らせることは無い。
-/// 同梱 176 本 では当たりも偽陽性も 0 で、そこは測れていない。
+/// `NoEntryPoint` は緩い側に振ってある（`top` 始まり の定義 が要素を問わず
+/// 1 つ も無いときだけ 出す。見逃すことは在るが、正しい本を光らせない）
 let findings
   (pairs: (string * string * string) list)
   (topPrefix: string)
   (tags: TagHit list)
   : Finding list =
-  // **開始札だけ見る。** 閉じ札は XML だけが返すもので、属性を持たない
+  // 開始札だけ見る。 閉じ札は XML だけが返すもので、属性を持たない
   let opens = tags |> List.filter (fun t -> not t.Closing)
   let defNames = pairs |> List.map (fun (_, defName, _) -> defName) |> List.distinct
 
@@ -148,19 +77,15 @@ let findings
   let allDefs =
     [ for (_, defName, attrName) in pairs do yield! namedOf defName attrName ]
 
-  // **この守りは冗長で、外しても答えが変わらない。** `StartsWith ""` は
-  // 常に true なので、`topPrefix` が空なら全部 が入口に数えられ、
-  // 下の `noEntry` は結局 何も出さない —— 較正で外してみて、
-  // **1 点 も赤くならないことを確かめてある。**
-  //
-  // それでも残すのは、**意図が字に出るのはここだけ**だから。
+  // この守りは冗長で、外しても 1 点 も赤くならない（較正済み）。
+  // それでも残すのは、意図が字に出るのはここだけだから ——
   // `StartsWith` を `=` に替えたら、空のときに全部 が非入口になって
   // 「走らない」と言い出す。そのときこの行が効く
   let entryPoints =
     if topPrefix = "" then []
     else allDefs |> List.filter (fun (_, a) -> a.Value.StartsWith topPrefix)
 
-  // **1 つ も無いときだけ、1 本 だけ出す。** 定義ごとには出せない ——
+  // 1 つ も無いときだけ、1 本 だけ出す。 定義ごとには出せない ——
   // 「どこにも無い」の位置は本文全体で、1 か所 を指せない
   let noEntry =
     if topPrefix <> "" && List.isEmpty entryPoints && not (List.isEmpty defNames) then
@@ -180,7 +105,7 @@ let findings
           |> List.choose (labelOf attrName)
           |> List.map (fun a -> a.Value)
         for (_, a) in namedOf defName attrName do
-          // **根から走るものは「呼ばれない」ではない。** そこは入口
+          // 根から走るものは「呼ばれない」ではない。 そこは入口
           if not (topPrefix <> "" && a.Value.StartsWith topPrefix)
              && not (List.contains a.Value used) then
             yield
@@ -191,11 +116,8 @@ let findings
                 Column = a.Column
                 EndColumn = a.EndColumn } ]
 
-  // 同じ名前の定義（v4.6）。**2 つ 目 から出す** ——
-  // 走るのは先に書いたほうなので、**光らせるのは負けるほう。**
-  //
-  // **対ごとに数える。** `action` の `top` と `bullet` の `top` は別の名前空間
-  // （`Refs.pairs` が要素ごとに対を作るのと同じ理由）
+  // 同じ名前の定義（v4.6）。対ごとに数える ——
+  // `action` の `top` と `bullet` の `top` は別の名前空間
   let duplicates =
     [ for (_, defName, attrName) in pairs do
         let seen = System.Collections.Generic.HashSet<string>()
@@ -209,7 +131,7 @@ let findings
                 Column = a.Column
                 EndColumn = a.EndColumn } ]
 
-  // 定義に無い参照。**数え方は `Refs.missing` の 1 本** ——
+  // 定義に無い参照。数え方は `Refs.missing` の 1 本 ——
   // 波線と Quick Fix が同じものを見る（別に数えると、
   // 「波線は出るのに直し方が出ない」が作れてしまう）
   let missing =
@@ -222,28 +144,21 @@ let findings
           Column = m.Hit.Column
           EndColumn = m.Hit.EndColumn })
 
-  // **並べ直す。** 上は対ごとに走るので、対の順に並んでいる ——
+  // 並べ直す。 上は対ごとに走るので、対の順に並んでいる ——
   // 人へ見せる側は本文の順で読む（`Refs.missing` と同じ理由）。
   // `noEntry` だけは本文全体の話なので、位置に関わらず先頭
   noEntry @ (unused @ missing @ duplicates |> List.sortBy (fun f -> f.Line, f.Column))
 
-/// 読めない式（v4.1）。**`findings` と別の 1 本。**
+/// 読めない式（v4.1）。`findings` と別の 1 本（材料が違う ——
+/// あちらは `TagHit`、こちらは `TextHit`。押し込むと
+/// 「出さない」と「取れない」が混ざる）。
 ///
-/// 材料が違う —— あちらは `TagHit`（札の中身）、こちらは `TextHit`
-/// （札のあいだ の字）。**同じ関数に押し込むと、`TextHit` を持たない
-/// 表記のために空を渡すことになり、「出さない」と「取れない」が混ざる。**
+/// 位置は「読めたところの続き」から、その字の終わりまで
+/// （要素まるごとに引くと `180+$rand*30` が全部 赤くなって、どこが悪いか読めない）。
 ///
-/// **強さは 2 段。** `$` を含まない式は読み込みの段で畳まれるので落ち、
-/// 含む式は走行中に NaN になる（版の頭で測った。`BadExpr` の但し書き）。
-///
-/// **位置は「読めたところの続き」から、その字の終わりまで。**
-/// 要素まるごとに引くと `180+$rand*30` が全部 赤くなって、
-/// **どこが悪いか読めない。**
-///
-/// **行をまたがない。** 式が改行を含んでいたら、読めなくなった位置の行だけ
-/// を指す —— またいで桁を出すと、2 行 目 の桁が 1 行 目 の続きになる
+/// 行をまたがない —— またいで桁を出すと、2 行 目 の桁が 1 行 目 の続きになる
 let exprFindings (source: string) (texts: TextHit list) : Finding list =
-  // **内包表記の中で `while` を回さない**（v4.9）——
+  // 内包表記の中で `while` を回さない（v4.9）——
   // Fable は内包の中の `while` を enumerator の鎖に焼く（`Scan.fs` に書いた）
   let out = ResizeArray<Finding>()
   for h in texts do
@@ -267,15 +182,11 @@ let exprFindings (source: string) (texts: TextHit list) : Finding list =
 
 /// 2 つ の runtime で同じ答えが返ることを見る口（`guard-fable-parity`）。
 ///
-/// **数えるところは `findings` 1 本。** node 側 と .NET 側 で別々に
-/// 組むと、組み方のほうが食い違って「中身は同じなのに赤」になる。
+/// 数えるところは `findings` 1 本（別々に組むと、組み方のほうが食い違って
+/// 「中身は同じなのに赤」になる）。
 ///
-/// 渡された字を本文として読ませる。対と `topPrefix` は**この関数が決める**
-/// —— 表に並べると、そちらが 2 つ 目 の表になる。
-///
-/// **ここだけ表記を名指しする**（`XmlScan`）。門は字を 1 本 渡して
-/// 答えを比べるので、どの表記で数えるかを引数にすると
-/// **表のほうが 2 runtime で割れうる**ものになる
+/// 対と `topPrefix` はこの関数が決める。ここだけ表記を名指しする
+/// （引数にすると表のほうが 2 runtime で割れうるものになる）
 let describe (source: string) : string =
   let tags = XmlScan.tags
   let pairs = [ "aRef", "a", "label"; "bRef", "b", "label" ]
@@ -308,16 +219,12 @@ let describe (source: string) : string =
   add "top="
   render (findings pairs "top" hits)
   add " none="
-  // **`topPrefix` が空のときは `entry` を出さない。** そこも突き合わせる
+  // `topPrefix` が空のときは `entry` を出さない。 そこも突き合わせる
   render (findings pairs "" hits)
   add " nopairs="
   render (findings [] "top" hits)
-  // 式（v4.1）。**同じ字を、札のあいだ から数え直す**
-  //
-  // **要素名の表を書かない。** 本番は語彙の `Text`（`#PCDATA` を取るか）から
-  // 引くが、この口は語彙を受け取らない —— **本文に出てくる名前を全部 渡す。**
-  // 突き合わせに要るのは「2 つ の runtime が同じ答えを出すこと」で、
-  // どの要素を見るかは両方 同じなら何でもよい
+  // 式（v4.1）。要素名の表を書かない —— 本文に出てくる名前を全部 渡す
+  // （突き合わせに要るのは「2 つ の runtime が同じ答えを出すこと」だけ）
   add " expr="
   let allNames = hits |> List.map (fun t -> t.TagName) |> List.distinct
   render (exprFindings source (XmlScan.texts source allNames))

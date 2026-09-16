@@ -124,7 +124,7 @@ public partial class BulletSimulationSystem : SystemBase
     /// 1 コマ進める。撃たれた弾は <see cref="BulletEntityFactory.SpawnChild"/> で
     /// 実体にする。
     ///
-    /// <b>旧 API は「撃つのを断る」口を持っていた</b>（GetNewBullet が null を
+    /// 旧 API は「撃つのを断る」口を持っていた（GetNewBullet が null を
     /// 返すと fire の累積を巻き戻す）。新 API はエンジンが撃った弾を値で返しきる
     /// ので、捨てるかどうかはこちらの都合で決める（Frame.Spawned の但し書き）。
     /// </summary>

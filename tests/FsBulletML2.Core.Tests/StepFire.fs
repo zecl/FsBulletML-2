@@ -94,10 +94,6 @@ type StepFire() =
   /// GetAimDir() を読んでいたが、stepFire の時点では撃たれた弾の
   /// 実オブジェクトがまだ存在しない（Spawn は値で、実体は旧なら
   /// `BulletRunner.applySpawn` が newBullet として後で作っていた。
-  /// いまはフロントが `Frame.Spawned` を受け取って自分で作る）。
-  /// ここでは env.Spawn.ToPlayer（産まれる弾の位置から見た向き）が使われ、
-  /// 撃った側の env.Aim.ToPlayer は使われないことを見る。
-  /// 実際に走らせたときの最終値は BulletAim.fs が Trace 経由で確かめる
   [<Test>]
   member _.``bullet 側の aim は、産まれる弾の位置から見た向きで解決する``() =
     let script =
@@ -204,12 +200,6 @@ type StepFire() =
     // 辿って先に引く。ここを Progress.initial で
     // 組むと、この分の乱数消費が丸ごと消えて、fire の直後から乱数列が
     // ずれてしまう。
-    //
-    // bullet の中身は Action [ Wait (numExpr "3"); ChangeDirection(絶対 90, term "2");
-    // ChangeSpeed(絶対 5, term "4") ] の 1 本。fire 側／bullet 側の
-    // direction・speed はどちらも省いて getValue を呼ばせない。
-    // 期待は Wait の term (1) + ChangeDirection の term (1) +
-    // ChangeSpeed の term (1) = 3 回
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let bulletBody =
@@ -248,10 +238,6 @@ type StepFire() =
     // SrcSpeed に採用して latch を立てる。fire 側の speed "2" は
     // getValue すら呼ばれない（bullet 側が勝つ、の 1 段深いところにある
     // 旧の fireCommand の癖）
-    //
-    // 2 発め: latch が立っているので、今度は fire 側の speed "0"（sequence）
-    // を実際に読み、SrcSpeed(5) + 0 = 5。bullet 側に speed が無いので、
-    // 撃たれた弾の速さは SrcSpeed(5) をそのまま引き継ぐ
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let script1 =
@@ -286,11 +272,6 @@ type StepFire() =
     // 3 発め: <fire><speed type="absolute">3</speed><bullet><speed type="absolute">20</speed></bullet></fire>
     // latch は既に立っているので、bullet 側に speed があっても
     // （bSpd.IsSome）採用条件（not latch && bSpd.IsSome）は成立しない。
-    // 撃たれた弾自身の速さは bullet 側の 20（bullet が勝つのはここでは
-    // latch と無関係）。撃つ側の SrcSpeed は今度は fire 側の "3" を実際に
-    // 読んで 3 になる——latch を見ずに「bullet 側があれば常に採用」して
-    // しまう写し間違いだと、ここで SrcSpeed が 20 になり、しかも fire 側の
-    // "3" の getValue が呼ばれず draws が 1 つ少なくなる
     let script3 =
       Action.Fire ({ fireLabel = None },
                         None,

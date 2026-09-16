@@ -5,14 +5,9 @@ open NUnit.Framework
 /// $rand と $rank。値そのものは走らせる側が `Env` に載せて渡すので、
 /// ここで見るのは「その値が式のどこに、どう入るか」。
 ///
-/// **NonParallelizable は外した。** 旧は `BulletMLManager`（static mutable）を
+/// NonParallelizable は外した。 旧は `BulletMLManager`（static mutable）を
 /// SetUp で差し替えていたので逐次でしか走らせられなかったが、いまは
 /// `TraceRun.withRandRank` が引数で受け取る。触るグローバルが 1 つ も無い。
-///
-/// 旧は $rand を含む BulletML だけ `convertBulletmlTask` が `Original` を
-/// 持たせ、`Init()` のたびに作り直していた（`existRandomParam`）。
-/// その迂回路は消えていて、いまは `getValue` が読む位置まで文字のまま届く。
-/// 経路が変わっても控えが 1 バイト も動かないことが、ここの見どころ。
 [<TestFixture>]
 type RandRank() =
 

@@ -45,10 +45,10 @@ public static class BulletEntityFactory
     }
 
     /// <summary>
-    /// 番号 から実体 を引く表。<b>コマをまたいで同じ弾を同じ実体 に当てる。</b>
+    /// 番号 から実体 を引く表。コマをまたいで同じ弾を同じ実体 に当てる。
     ///
     /// 表 を持たずに毎コマ 作り直すこともできる（並びが丸ごと来るので）が、
-    /// **そうすると弾が毎コマ 生まれ直して、補間 も当たり判定 の連続性 も無くなる。**
+    /// そうすると弾が毎コマ 生まれ直して、補間 も当たり判定 の連続性 も無くなる。
     /// </summary>
     static readonly Dictionary<int, Entity> _byId = new Dictionary<int, Entity>();
 
@@ -58,15 +58,9 @@ public static class BulletEntityFactory
     /// <summary>
     /// サーバーから届いた 1 コマ を、いまの実体 に当てる。
     ///
-    /// <b>並びに出てこなかった弾は消す。</b> サーバーは「いま在る弾 全部」を
-    /// 毎回 送ってくるので、居なくなったことは**出てこないことでしか分からない**
+    /// 並びに出てこなかった弾は消す。 サーバーは「いま在る弾 全部」を
+    /// 毎回 送ってくるので、居なくなったことは出てこないことでしか分からない
     /// （消えた合図 は送られてこない）。
-    /// </summary>
-    /// <param name="room">
-    /// 盤面。<b>配ってくる位置 は 0..65535 の目盛り</b>なので、
-    /// ここで描く値 へ戻す。**戻す式 はサーバーが配った盤面 から決まる** ——
-    /// client が数 を持つわけではない（<c>Wire</c> は口 の package に在る）。
-    /// </param>
     public static void Apply(BulletDto[] bullets, RoomInfo room)
     {
         var world = World.DefaultGameObjectInjectionWorld;
@@ -187,9 +181,9 @@ public static class BulletEntityFactory
     }
 
     /// <summary>
-    /// 実体 を消す。<b>番号 の表 からも引く。</b>
+    /// 実体 を消す。番号 の表 からも引く。
     /// 引き忘れると、同じ番号 の弾が次に来たときに「もう居る」と読んで
-    /// **絵 が二度と出ない**（実体 は消えているのに表 には残っている）。
+    /// 絵 が二度と出ない（実体 は消えているのに表 には残っている）。
     /// </summary>
     public static void Destroy(Entity entity)
     {

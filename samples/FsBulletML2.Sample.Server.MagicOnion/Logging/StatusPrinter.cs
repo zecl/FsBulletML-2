@@ -11,13 +11,9 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
     /// <summary>
     /// いま何が起きているかを 1 秒 に 1 行 出す。
     ///
-    /// <b>配れているかは、ここでしか見えない。</b> 降りるほう（<c>OnFrame</c>）は
+    /// 配れているかは、ここでしか見えない。 降りるほう（<c>OnFrame</c>）は
     /// filter を通らないので、アクセスログ には 1 行 も出ない ——
     /// 「繋がっているのに絵 が動かない」を割るのはこの行 の <c>コマ</c> の伸び。
-    ///
-    /// <b>静かなときは黙る。</b> 誰も居ないのに毎秒 1 行 出すと、
-    /// 出入り の行 がすぐ画面の外 へ流れる。
-    /// </summary>
     public sealed class StatusPrinter : BackgroundService
     {
         readonly RoomRegistry registry;
@@ -53,9 +49,9 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
             using var timer = new PeriodicTimer(options.StatusInterval);
             int lastFrame = 0;
 
-            // **公称の間隔 で割らない。** 1 回 でも遅れると、その遅れたぶんに
-            // 溜まった数を短い時間 で割ることになり、**60 コマ/秒 の輪 から
-            // 63 配/s が出た**（5% の系統誤差）。A/B に使う物差しなので、
+            // 公称の間隔 で割らない。 1 回 でも遅れると、その遅れたぶんに
+            // 溜まった数を短い時間 で割ることになり、60 コマ/秒 の輪 から
+            // 63 配/s が出た（5% の系統誤差）。A/B に使う物差しなので、
             // 実際に経った時間 で割る
             var since = System.Diagnostics.Stopwatch.StartNew();
 
@@ -66,7 +62,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
                     var rooms = await registry.SnapshotAsync().ConfigureAwait(false);
                     var calls = counter.Drain();
 
-                    // **誰も居ないなら黙る**（出入り の行 を流さない）
+                    // 誰も居ないなら黙る（出入り の行 を流さない）
                     if (rooms.Length == 0 && calls.Count == 0 && connections.Live == 0)
                     {
                         lastFrame = 0;
@@ -92,9 +88,9 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
                             line.Append(" 撃ち捨て ").Append(room.DroppedShots);
                         }
 
-                        // **物差し が 2 つ ある。** 実測（焼いた長さ）が在るときは
+                        // 物差し が 2 つ ある。 実測（焼いた長さ）が在るときは
                         // そちらを出す —— 概算 は「弾 1 発 20.0 バイト」を掛けるだけなので、
-                        // **量子化 で 1 発 の大きさ を変えても 1 ビット も動かない**
+                        // 量子化 で 1 発 の大きさ を変えても 1 ビット も動かない
                         if (!meter.Enabled)
                         {
                             double mbps = room.LastBullets * 20.0 * room.Info.Fps
@@ -128,7 +124,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
                         }
                     }
 
-                    // **コマ が伸びていないことを黙って見逃さない。**
+                    // コマ が伸びていないことを黙って見逃さない。
                     // 人 が居るのに止まっているなら、輪 が落ちている
                     if (rooms.Length > 0 && frames == lastFrame)
                     {
@@ -141,7 +137,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
             }
             catch (OperationCanceledException)
             {
-                // 畳んだ。**これは失敗ではない**
+                // 畳んだ。これは失敗ではない
             }
         }
 

@@ -4,7 +4,7 @@ open NUnit.Framework
 
 /// 走らせる側の振る舞いを軌跡で固める。
 ///
-/// **公開 API で走らせる。** グローバル可変（BulletMLManager）に触らないので
+/// 公開 API で走らせる。 グローバル可変（BulletMLManager）に触らないので
 /// 並列にできる。乱数・rank・自機の位置は run に畳んである
 [<TestFixture>]
 type Behavior() =

@@ -9,21 +9,11 @@ type ObjectData () =
   [<DefaultValue>]val mutable public cacheSize : int
   [<DefaultValue>]val mutable private objects : GameObject[]
 
-  /// この prefab が弾か。**弾を ECS へ移したので、先に作らない。**
+  /// この prefab が弾か。弾を ECS へ移したので、先に作らない。
   ///
   /// シーンには弾のプールが 3,000 個 単位 で設定されたまま残っていて、
   /// そのままだと `g_bullet_s0` から数千 個 の GameObject が起動時にできる
-  /// —— **1 つ も使われない**（弾は Entity になった）。
-  ///
-  /// **爆風（Bomb）も入れない。** ここに残っていると、起動時に cacheSize ぶん
-  /// `bomb0` `bomb1` ... の GameObject ができて、**1 つ も使われない** ——
-  /// `Bomb` は ParticleSystem 1 個 の `Emit` に書き換えたので、
-  /// プールから取らなくなった。
-  ///
-  /// **対になる書き換えとセットでしか外せない。** 前に判定だけ写して、
-  /// 敵に弾が当たった瞬間に落ちたことがある（プールが空なのに取りに行った）。
-  /// C# サンプルは書き換えのほうが先に済んでいたので、あちらでは
-  /// この 3 つ とも除かれている。
+  /// —— 1 つ も使われない（弾は Entity になった）。
   member this.IsBulletPrefab () =
     if isNull (box this.prefab) then true
     else
@@ -32,7 +22,7 @@ type ObjectData () =
 
   member this.Initialize () =
     if this.IsBulletPrefab () then
-      // **数を 0 にしておく。** 残すと GetNextObjectInCache が空の配列を
+      // 数を 0 にしておく。 残すと GetNextObjectInCache が空の配列を
       // 探して落ちる
       this.objects <- Array.empty
       this.cacheSize <- 0
@@ -46,11 +36,11 @@ type ObjectData () =
       this.objects.[i].SetActive(false)
       this.objects.[i].name <- this.objects.[i].name.Replace("(Clone)", "") + i.ToString()
 
-  /// 空いているものを 1 つ 返す。**無ければ None。**
+  /// 空いているものを 1 つ 返す。無ければ None。
   ///
-  /// 元は `Array.find` で、**空きが無いと KeyNotFoundException で落ちていた**
+  /// 元は `Array.find` で、空きが無いと KeyNotFoundException で落ちていた
   /// （プールを 0 にしたとき、敵に弾が当たった瞬間に踏んだ）。
-  /// 使い切ったときも同じ形で落ちるので、**呼ぶ側が選べるように option で返す**。
+  /// 使い切ったときも同じ形で落ちるので、呼ぶ側が選べるように option で返す。
   member this.TryGetNextObjectInCache () =
     if this.cacheSize <= 0 then None
     else this.objects |> Array.tryFind (fun x -> x.activeSelf |> not)
@@ -72,7 +62,7 @@ type InstanceManager () =
 
   static member InstantiatePrefab(prefab:GameObject, position:Vector3, rotation:Quaternion) =
     let cache = InstanceManager.self.caches |> Seq.tryFind (fun x -> x.prefab.tag = prefab.tag)
-    // プールが無いときも、**空きが無いときも**、その場で作る。
+    // プールが無いときも、空きが無いときも、その場で作る。
     // 落ちるより作るほうがまし —— 使い切ったのは呼ぶ側の都合で、
     // ここで例外にしても誰も回復できない
     let fresh () = UnityEngine.Object.Instantiate<GameObject>(prefab, position, rotation)

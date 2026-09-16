@@ -4,10 +4,10 @@ using R3;
 using R3.Triggers;
 
 /// <summary>
-/// 自機。<b>動くだけ。</b>
+/// 自機。動くだけ。
 ///
 /// 元 では Awake で <c>BulletMLManager.Init</c> を呼び、自機 の弾 3 本 を
-/// <c>Runner.Load</c> で読んで Z で撃っていた。<b>いま Z が頼むのはサーバー。</b>
+/// <c>Runner.Load</c> で読んで Z で撃っていた。いま Z が頼むのはサーバー。
 /// 位置は <c>DanmakuClient</c> がサーバーへ送り、<c>aim</c> がそれを読む。
 /// </summary>
 public class Player : MonoBehaviour
@@ -72,9 +72,9 @@ public class Player : MonoBehaviour
             .Where(v => v.x != 0f || v.y != 0f)
             .Subscribe(v => ApplyMove(v.x, v.y));
 
-        // **撃つのを頼むだけ。** 弾を作るのはサーバー。
+        // 撃つのを頼むだけ。 弾を作るのはサーバー。
         // 押しっぱなしで毎コマ 送る（元 と同じ間合い）——
-        // 溜まりすぎたぶんはサーバーが捨てて、**捨てた数を数えている**
+        // 溜まりすぎたぶんはサーバーが捨てて、捨てた数を数えている
         update
             .Where(_ => Input.GetKey(KeyCode.Z))
             .Subscribe(_ =>

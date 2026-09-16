@@ -1,4 +1,4 @@
-// **このファイルは生成物。手で直すと次の焼き直しで消える。**
+// このファイルは生成物。手で直すと次の焼き直しで消える。
 //
 // 焼き直し:
 //     dotnet build src/FsBulletML2.Bullets.Dsl -c Release
@@ -10,9 +10,9 @@ open FsBulletML2
 [<RequireQualifiedAccess>]
 module All =
 
-  /// 同梱の弾幕 176 個。**PlayerBullet の 3 本 は Bulletml を直に持つので入らない**
+  /// 同梱の弾幕 176 個。PlayerBullet の 3 本 は Bulletml を直に持つので入らない
   ///
-  /// **公式配布のサンプルは入らない**（下の official）—— 出自が違う集合を
+  /// 公式配布のサンプルは入らない（下の official）—— 出自が違う集合を
   /// 混ぜると、この数に紐づいた測定が何の集合の話か分からなくなる
   let bullets : BulletmlInfo list =
     [ EnemyBullet.Sdmkun.Bulletsmorph.aba_2
@@ -193,7 +193,7 @@ module All =
       EnemyBullet.Sdmkun.Xsoldier.b8_boss_main
     ]
 
-  /// BulletML 公式配布（bulletml0_21）のサンプル 17 個。**同梱とは別の集合**
+  /// BulletML 公式配布（bulletml0_21）のサンプル 17 個。同梱とは別の集合
   ///
   /// v2.4.1 で足した。template.xml は入っていない（雛形なので）
   let official : BulletmlInfo list =

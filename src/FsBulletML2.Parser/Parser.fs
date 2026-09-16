@@ -99,7 +99,7 @@ module Bulletml =
     static member TryReadFsb (fsbFile : string) : Bulletml option = tryReadFsb fsbFile
 
     // 走らせる木と同じ型になったので、foldConstants が返すのは
-    // **定数を畳んだ Bulletml**。書くのは BulletmlXml（DTD.fs）。
+    // 定数を畳んだ Bulletml。書くのは BulletmlXml（DTD.fs）。
     // ここを member のままにできないのは、名前が同じで自分を呼ぶため
     member this.ToXmlString() =
       this |> BulletmlRead.foldConstants

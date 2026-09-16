@@ -7,21 +7,12 @@ open FsUnit
 open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
-/// **同じ名前がどこに書いてあるか（rename の材料）の目盛り。**
+/// 同じ名前がどこに書いてあるか（rename の材料）の目盛り。
 ///
 /// --- 表記を知らない側に在る
 ///
 /// 中身は `Languages/Lookup.fs` の `UsagesAt` 1 本 で、要るのは
 /// `TokenAt`（いま何の上に居るか）と `Tags`（本文に何が在るか）だけ。
-/// **どちらも表記ごとの 1 本 を指しているだけ。**
-///
-/// だからここは 4 表記 を同じ形で当てる —— **共通の側が壊れれば全部 赤くなる。**
-///
-/// --- いちばん強い点は「3 表記 で数が一致する」
-///
-/// コーパスは同じ弾幕が xml / sxml / fsb で対になっている。**同じ弾幕なら
-/// 書いてある場所の数も同じはず** —— 位置は表記ごとに違うが、数は違わない。
-/// v1.2 の頭で probe に当てたものを、そのまま門にしてある。
 [<TestFixture>]
 type Usages() =
 
@@ -43,7 +34,7 @@ type Usages() =
     then Directory.EnumerateFiles(root, "*." + ext, SearchOption.AllDirectories) |> Seq.toArray
     else [||]
 
-  /// その本文の中の label 値を全部 なめて、**引けた数の並び**を作る。
+  /// その本文の中の label 値を全部 なめて、引けた数の並びを作る。
   /// 位置は表記ごとに違うので、比べられるのはこちら
   let profile (lang: ISourceLanguage) (tags: string -> TagHit list) (src: string) =
     tags src
@@ -57,7 +48,7 @@ type Usages() =
 
   [<Test>]
   member _.``定義の上でも 参照の上でも 同じ並び``() =
-    // **片方 だけだと「参照からしか直せない」ことになる**
+    // 片方 だけだと「参照からしか直せない」ことになる
     let src = "<bulletml><action label=\"a\"/><actionRef label=\"a\"/></bulletml>"
     let fromDef = xml.Usages src (src.IndexOf "action label=\"a\"" + 14)
     let fromRef = xml.Usages src (src.IndexOf "actionRef label=\"a\"" + 17)
@@ -77,7 +68,7 @@ type Usages() =
 
   [<Test>]
   member _.``参照が無い定義でも 自分 1 つ は返る``() =
-    // `label="top"` を直したいことは在る。**0 件 にすると rename が始まらない**
+    // `label="top"` を直したいことは在る。0 件 にすると rename が始まらない
     at xml "<bulletml><action label=\"t|op\"/></bulletml>" |> List.length |> should equal 1
 
   [<Test>]
@@ -104,7 +95,7 @@ type Usages() =
 
   [<Test>]
   member _.``label でない属性値では 引かない``() =
-    // `type="aim"` は参照ではない。**対に載っていない属性は素通り**
+    // `type="aim"` は参照ではない。対に載っていない属性は素通り
     at xml "<bulletml><direction type=\"a|im\">0</direction></bulletml>" |> should be Empty
 
   // --- 表記ごと -------------------------------------------------------------
@@ -121,7 +112,7 @@ type Usages() =
 
   [<Test>]
   member _.``F# の CE でも引く（名前は文字列の中）``() =
-    // v1.9 で引けるようになった。**CE の名前そのものの上では引かない** ——
+    // v1.9 で引けるようになった。CE の名前そのものの上では引かない ——
     // 名前は文字列の中に在る（詳しくは `FsharpUsages`）
     let src = "let x =\n  untyped \"a\" { top { actionRef \"b\" [] } }"
     fsharp.Usages src (src.IndexOf "actionRef") |> should be Empty
@@ -129,8 +120,8 @@ type Usages() =
 
   [<Test>]
   member _.``表記ごとに 字の数え方が違う``() =
-    // 同じ本文を 3 つ に通す。**同じ答えが返ったら、どれかが effectively
-    // 使われていない**（`Shape.Tags` を引き違えている）
+    // 同じ本文を 3 つ に通す。同じ答えが返ったら、どれかが effectively
+    // 使われていない（`Shape.Tags` を引き違えている）
     let src = "bulletml\n    action label=\"a\"\n    actionRef label=\"a\"\n"
     let cursor = src.IndexOf "actionRef label=\"a\"" + 17
     fsb.Usages src cursor |> List.length |> should equal 2
@@ -141,18 +132,18 @@ type Usages() =
 
   [<Test>]
   member _.``定義側と参照側を 1 欄 で分ける``() =
-    // 定義へ移動（F12）はこの欄だけで決まる。**口を足していない**
+    // 定義へ移動（F12）はこの欄だけで決まる。口を足していない
     let src = "<bulletml><action label=\"a\"/><actionRef label=\"a\"/></bulletml>"
     let found = xml.Usages src (src.IndexOf "actionRef label=\"a\"" + 17)
     found |> List.filter (fun u -> u.IsDefinition) |> List.length |> should equal 1
     found |> List.filter (fun u -> not u.IsDefinition) |> List.length |> should equal 1
-    // 定義のほうが手前に在る。**並びは本文の順**
+    // 定義のほうが手前に在る。並びは本文の順
     (List.head found).IsDefinition |> should equal true
 
   [<Test>]
   member _.``定義が無ければ どれも定義ではない``() =
     // 参照だけ在る本文はふつうに書ける（そこは波線と Quick Fix の担当）。
-    // **飛び先が無いことを、空で言う**
+    // 飛び先が無いことを、空で言う
     let src = "<bulletml><actionRef label=\"a\"/></bulletml>"
     let found = xml.Usages src (src.IndexOf "label=\"a\"" + 7)
     found |> List.length |> should equal 1
@@ -160,7 +151,7 @@ type Usages() =
 
   [<Test>]
   member _.``定義が 2 つ 在ることも在る``() =
-    // 同じ label の定義を 2 つ 書ける。**1 つ に決まると思ってはいけない**
+    // 同じ label の定義を 2 つ 書ける。1 つ に決まると思ってはいけない
     let src =
       "<bulletml><action label=\"a\"/><action label=\"a\"/><actionRef label=\"a\"/></bulletml>"
     xml.Usages src (src.IndexOf "actionRef label=\"a\"" + 17)
@@ -170,7 +161,7 @@ type Usages() =
 
   [<Test>]
   member _.``4 表記 とも 同じ分け方``() =
-    // 分けているのは表記を知らない側の 1 本。**表記ごとに割れていない**
+    // 分けているのは表記を知らない側の 1 本。表記ごとに割れていない
     at sxml "(bulletml (action (@ (label \"a\"))) (actionRef (@ (label \"|a\"))))"
     |> List.map (fun u -> u.IsDefinition)
     |> should equal [ true; false ]
@@ -180,7 +171,7 @@ type Usages() =
 
   [<Test>]
   member _.``定義側と参照側の要素名は重ならない``() =
-    // **これが崩れると 1 欄 では足りない** —— 札の名前だけでは
+    // これが崩れると 1 欄 では足りない —— 札の名前だけでは
     // どちら側か言えなくなるので、口を足すことになる
     let pairs =
       Refs.pairs (vocab.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
@@ -194,9 +185,9 @@ type Usages() =
 
   [<Test>]
   member _.``走る先の対が host の波線と一致する``() =
-    // **`Refs.pairs` に 1 本 しか無い**ことを、2 つ の入口から確かめる。
+    // `Refs.pairs` に 1 本 しか無いことを、2 つ の入口から確かめる。
     // 割れると「波線は出るのに rename は当たらない」になり、
-    // **どちらも単独では正しく見える**
+    // どちらも単独では正しく見える
     let fromVocab =
       Refs.pairs (vocab.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
     fromVocab |> should equal (List.ofArray References.pairs)

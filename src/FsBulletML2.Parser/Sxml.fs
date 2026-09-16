@@ -27,9 +27,9 @@ module Sxml =
     let pLabel = manyChars asciiLetter 
     let pVal = 
       skipSpaces1 >>. chr '"' >>. 
-      // **`[` と `]` を通す（v1.4）。** 同梱カタログの 3 本 が
+      // `[` と `]` を通す（v1.4）。 同梱カタログの 3 本 が
       // `bulletmls/[Progear]_round_4_boss_fast_rocket.xml:_:downAccel` のような
-      // ラベルを持っていて、通さないと**その 3 本 は sxml で書けない**。
+      // ラベルを持っていて、通さないとその 3 本 は sxml で書けない。
       // 引用符で閉じた中なので、通しても曖昧にならない
       (manyChars (asciiLetter <|> digit <|> noneOf "\"'|*`^><}{" <|> anyOf "()$+-*/.%:.~_" ))  
       .>> (skipSpaces1 >>. chr '"')
@@ -68,11 +68,11 @@ module Sxml =
 
   // --- 書く ----------------------------------------------------------------
   //
-  // **読む口と同じファイルに置く。** 通せる字を決めているのは上の `pAttr` /
+  // 読む口と同じファイルに置く。 通せる字を決めているのは上の `pAttr` /
   // `pBody` で、書く側が別の proj に居ると、文法を直したときに置いていかれる
-  // —— しかも読めるものは読めるままなので、**片方 だけ直したことに気づかない。**
-
-  /// 属性値に通せない字。**上の `pVal` と対。** 片方 を直したらこちらも直す
+  // —— しかも読めるものは読めるままなので、片方 だけ直したことに気づかない。
+  //
+  // 属性値に通せない字。上の `pVal` と対。 片方 を直したらこちらも直す
   let private illegalInAttr = "\"'|`^><}{"
 
   /// 本文に通せない字。`pBody` は引用符以外 を通す
@@ -82,10 +82,10 @@ module Sxml =
   ///
   ///     (name (@ (attr "値") …) "本文" 子…)
   ///
-  /// **属性ブロックは、最初の属性が来たときに開いて、本文か子か閉じで閉じる。**
+  /// 属性ブロックは、最初の属性が来たときに開いて、本文か子か閉じで閉じる。
   /// 開いたまま子を書くと、子が属性の中に入る。
   ///
-  /// **通せない字が来たら、そのまま書かずに覚えておく** —— 黙って落とすと
+  /// 通せない字が来たら、そのまま書かずに覚えておく —— 黙って落とすと
   /// 読み直したときに値が変わり、往復の門をすり抜ける
   type private SxmlSink() =
     let sb = StringBuilder()
@@ -131,13 +131,13 @@ module Sxml =
 
   /// 弾幕を S 式 の字にする。
   ///
-  /// **書けないものは `Error`。** 黙って落とすと、読み直したときに値が変わる
+  /// 書けないものは `Error`。 黙って落とすと、読み直したときに値が変わる
   [<CompiledName "Write">]
   let write (bulletml: Bulletml) : Result<string, string> =
     let sink = SxmlSink()
     BulletmlWriter.writeTo sink bulletml
     match sink.Problems with
-    // **`Ok` / `Error` は FParsec の `ReplyStatus` とぶつかる**（このファイルは
+    // `Ok` / `Error` は FParsec の `ReplyStatus` とぶつかる（このファイルは
     // `FParsec.Primitives` を開いている）。型名で修飾する
     | [] -> Result.Ok(sink.Text + "\n")
     | problems -> Result.Error(String.concat "\n" problems)

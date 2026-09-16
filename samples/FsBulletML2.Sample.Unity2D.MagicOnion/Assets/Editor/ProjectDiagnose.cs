@@ -4,18 +4,11 @@ using UnityEngine;
 using UnityEditor.SceneManagement;
 
 /// <summary>
-/// <b>Unity が何を見えていて、何が見えていないかを出す。</b>
+/// Unity が何を見えていて、何が見えていないかを出す。
 ///
 /// 「Project ウィンドウにシーンが出てこない」を追うための口。ファイルは
 /// 在るのに Unity が見ていない、という状態は外から区別できないので、
-/// <b>AssetDatabase に訊く</b>。
-///
-/// 走らせ方:
-/// <code>
-/// Unity.exe -batchmode -quit -nographics -projectPath &lt;proj&gt; -logFile &lt;log&gt; ^
-///           -executeMethod ProjectDiagnose.Run
-/// </code>
-/// </summary>
+/// AssetDatabase に訊く。
 public static class ProjectDiagnose
 {
     public static void Run()
@@ -30,7 +23,7 @@ public static class ProjectDiagnose
             Debug.Log("[Diagnose]   " + g + "  " + AssetDatabase.GUIDToAssetPath(g));
         }
 
-        // 2. 名指しで引けるか。**FindAssets が 0 でも、パス指定で引けることがある**
+        // 2. 名指しで引けるか。FindAssets が 0 でも、パス指定で引けることがある
         const string ScenePath = "Assets/Senes/FsBulletML2.Sample.Unity2D.unity";
         var asset = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath);
         Debug.Log("[Diagnose] LoadAssetAtPath(" + ScenePath + ") = "
@@ -53,7 +46,7 @@ public static class ProjectDiagnose
             Debug.Log("[Diagnose]   Senes: " + p);
         }
 
-        // 5. 実際に開けるか。**「見えている」と「開ける」は別**
+        // 5. 実際に開けるか。「見えている」と「開ける」は別
         try
         {
             var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);

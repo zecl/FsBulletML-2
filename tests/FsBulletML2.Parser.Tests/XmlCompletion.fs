@@ -7,11 +7,11 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 open FsBulletML2.LanguageService.Languages.Xml
 
-/// **候補づくりを機械で回す。** ブラウザでも当てられるが、そこは CI では
+/// 候補づくりを機械で回す。 ブラウザでも当てられるが、そこは CI では
 /// 動かない（背面タブは rAF も layout も止まる）ので、ここが唯一の道。
 ///
 /// 語彙は `Vocabulary`（Core の DTD 由来）をそのまま渡す。JSON は経由しない ——
-/// **通しているのは「語彙 -> 候補」の道だけ。** JSON の往復は別で、
+/// 通しているのは「語彙 -> 候補」の道だけ。 JSON の往復は別で、
 /// 形が食い違えば候補が 0 になり起動時に赤が出る。
 [<TestFixture>]
 type XmlCompletion() =
@@ -24,7 +24,7 @@ type XmlCompletion() =
 
   let labels marked =
     complete marked
-    // **雛形（v2.6）は外す。** ここが数えているのは「その場所に置ける要素」で、
+    // 雛形（v2.6）は外す。 ここが数えているのは「その場所に置ける要素」で、
     // 形の候補はその上に載る別の並び（`Frames.fs` が持ち、`Frames` が当てる）
     |> List.filter (fun c -> not c.IsFrame)
     |> List.map (fun c -> c.Label)
@@ -42,7 +42,7 @@ type XmlCompletion() =
 
   [<Test>]
   member _.``打っている名前のぶんを置き換える``() =
-    // **Monaco の語の定義に頼らない。** ここが 0 のままだと、
+    // Monaco の語の定義に頼らない。 ここが 0 のままだと、
     // 打った字の後ろに候補が継ぎ足される（`<fifire>`）
     complete "<bulletml>\n<action>\n<fi@" |> List.map (fun c -> c.Replace) |> List.distinct
     |> should equal [ 2 ]
@@ -90,7 +90,7 @@ type XmlCompletion() =
 
   [<Test>]
   member _.``式の候補は Parser が読める字である``() =
-    // **綴りは DU から引けない**（読む側が文字で持っている）ので、
+    // 綴りは DU から引けない（読む側が文字で持っている）ので、
     // 表と Parser がずれていないかをここで当てる
     for token in Vocabulary.expressions do
       let e = Expr.NumExpr.ofString token

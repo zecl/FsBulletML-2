@@ -7,15 +7,15 @@ open FsBulletML2.Domain
 
 /// ゲームの側だけが知っていることを、エンジンの手前で聞く口。
 ///
-/// **敵の一覧は要求しない。** 同梱の狙い方 7 通り のうち一覧を持つのは
+/// 敵の一覧は要求しない。 同梱の狙い方 7 通り のうち一覧を持つのは
 /// 3 つ だけで、ECS 2 つ とベンチと門の控えは「敵 1 体」か「固定の 1 点」
 /// しか持たない。一覧を要求すると、その 4 つ が 1 要素 の一覧を毎コマ
 /// 用意することになる。
 ///
-/// 一覧を持つフロントは `NearestEnemy` を使って答えればよい。**任意。**
+/// 一覧を持つフロントは `NearestEnemy` を使って答えればよい。任意。
 type IFrontEnv =
 
-  /// 乱数。**1 個 だけ作って使い回すこと。**
+  /// 乱数。1 個 だけ作って使い回すこと。
   /// 毎コマ 関数値を作ると弾数 × コマ数 だけヒープを踏む（実測 48 B / 回）。
   /// C# からは `FuncConvert.FromFunc` を 1 度 だけ通して static に持つ
   abstract Rand : (unit -> float32)
@@ -27,38 +27,25 @@ type IFrontEnv =
 
   /// この弾が狙う相手の位置。居なければ false（そのとき向きは 0）。
   ///
-  /// **一度 選んだ相手は覚えること。** 毎コマ 選び直すと相手が入れ替わって
+  /// 一度 選んだ相手は覚えること。 毎コマ 選び直すと相手が入れ替わって
   /// 軌跡が変わる。この不変条件は口ではなく実装の側が持つ（`NearestEnemy`）。
   ///
-  /// **`voption` でも `Vec2` でもなく out 2 本。** 値を包むと 24 B / 回、
+  /// `voption` でも `Vec2` でもなく out 2 本。 値を包むと 24 B / 回、
   /// `Vec2` を口ごしに返すと 1.3 ns / 回 の差が出る
   abstract TryTargetFrom : x: float32 * y: float32 * ex: outref<float32> * ey: outref<float32> -> bool
 
-  /// **これから産まれる弾**が狙う相手の位置。居なければ false。
+  /// これから産まれる弾が狙う相手の位置。居なければ false。
   ///
-  /// **`TryTargetFrom` と分けてある。同梱の 2 つ で振る舞いが違う。**
+  /// `TryTargetFrom` と分けてある。同梱の 2 つ で振る舞いが違う。
   /// MonoGame は産まれる位置からその場で選び直し（産まれたばかりの弾は
   /// まだ相手を覚えていない）、Unity2D は撃った側が覚えている相手を
   /// そのまま使う。1 本 にまとめると、どちらかの軌跡が動く
   abstract TrySpawnTargetFrom : x: float32 * y: float32 * ex: outref<float32> * ey: outref<float32> -> bool
 
-/// 一覧を持つフロント向けの部品。**任意。**
+/// 一覧を持つフロント向けの部品。任意。
 ///
 /// 「いちばん近いのを選んで覚える」の不変条件はここが持つ。
 /// 弾 1 個 につき 1 個 作る（覚える相手が弾ごとに違うため）。
-///
-/// **`IReadOnlyList` であって `seq` ではない。** `seq` を毎コマ 列挙すると
-/// 列挙子が出る（実測 40 B / 回）。`IReadOnlyList` と添字は 0 B。
-/// この線は但し書きではなく門で見ている（`PublicSurface`）。
-///
-/// **`PosOf` でなく `ex` / `ey` の 2 本。** `Vec2` を口ごしに返すほうが
-/// 1.3 ns / 回 遅い。5way 1 走行 では 0.04% 相当なので速さでは決まらないが、
-/// 遅いほうを選ぶ理由も無い。
-///
-/// **一覧そのものでなく、一覧を返すものを受ける。** Unity の GameObject 側は
-/// `FindGameObjectsWithTag` を「相手が要るとき」に初めて引く。作るときに
-/// 引いてしまうと、弾を作った時点の一覧で固まる。
-/// 引く回数は覚えたあと 0 回 なので、この 1 段 は測った経路に載らない。
 [<Sealed>]
 type NearestEnemy<'E>(enemies: Func<IReadOnlyList<'E>>,
                       ex: Func<'E, float32>,
@@ -70,8 +57,8 @@ type NearestEnemy<'E>(enemies: Func<IReadOnlyList<'E>>,
   let mutable target : 'E = Unchecked.defaultof<'E>
   let mutable hasTarget = false
 
-  /// 距離の測り方。**同梱 2 つ の `Vector2.Distance` / `Vector3.Distance` と
-  /// 同じ順で同じ答えを出すために、float32 で 2 乗 して double で sqrt する。**
+  /// 距離の測り方。同梱 2 つ の `Vector2.Distance` / `Vector3.Distance` と
+  /// 同じ順で同じ答えを出すために、float32 で 2 乗 して double で sqrt する。
   /// 2 乗 のまま比べても選ぶ相手はふつう同じだが、丸めで並ぶ組が出たときに
   /// 選び方が変わる
   static member private Dist (dx: float32) (dy: float32) =
@@ -82,7 +69,7 @@ type NearestEnemy<'E>(enemies: Func<IReadOnlyList<'E>>,
     target <- Unchecked.defaultof<'E>
     hasTarget <- false
 
-  /// `(x, y)` からいちばん近い相手を **1 度 だけ** 選び、以後はそれを返す
+  /// `(x, y)` からいちばん近い相手を 1 度 だけ 選び、以後はそれを返す
   member _.TryFrom (x: float32, y: float32, outX: outref<float32>, outY: outref<float32>) : bool =
     if not hasTarget then
       let list = enemies.Invoke ()
@@ -101,7 +88,7 @@ type NearestEnemy<'E>(enemies: Func<IReadOnlyList<'E>>,
     else
       false
 
-  /// **覚えずに**、その場でいちばん近い相手を選ぶ
+  /// 覚えずに、その場でいちばん近い相手を選ぶ
   member _.TryNearest (x: float32, y: float32, outX: outref<float32>, outY: outref<float32>) : bool =
     let list = enemies.Invoke ()
     let mutable best = Single.MaxValue
@@ -121,7 +108,7 @@ type NearestEnemy<'E>(enemies: Func<IReadOnlyList<'E>>,
     else
       false
 
-/// このコマの `Env` を組む。**aim を入れる場所はここだけ。**
+/// このコマの `Env` を組む。aim を入れる場所はここだけ。
 ///
 /// 以前は同梱の 4 つ のフロントがそれぞれ同じ形を写していた。写しは
 /// 「片方だけ直す」ができるので、`Aim` と `Spawn` の食い違いが門に出ない。
@@ -130,7 +117,7 @@ module FrontEnv =
   /// aim を読まないと分かっているコマの `Env`。aim 4 本 を 0 に。
   ///
   /// 使ってよい条件は `BulletRun.HasNoScript` の但し書き。
-  /// **`at` と欄が 1 つ でもずれたら、片方だけ直したということ**
+  /// `at` と欄が 1 つ でもずれたら、片方だけ直したということ
   [<CompiledName "NoAim">]
   let noAim (front: IFrontEnv) : Env =
     { Rand = front.Rand
@@ -140,8 +127,8 @@ module FrontEnv =
 
   /// いまの位置から組む。
   ///
-  /// **組む位置が変わると aim がずれる**ので、呼ぶ側は step の直前
-  /// （差分を足す前）に組むこと。走らせ直しの前は、差分を足した**あと**に組む
+  /// 組む位置が変わると aim がずれるので、呼ぶ側は step の直前
+  /// （差分を足す前）に組むこと。走らせ直しの前は、差分を足したあとに組む
   /// （旧 `BaseBullet` が apply のあとで `envOfGlobal` を呼ぶのと同じ順）。
   [<CompiledName "At">]
   let at (front: IFrontEnv) (space: Space) (origin: SpawnOrigin) (x: float32) (y: float32) : Env =
@@ -163,7 +150,7 @@ module FrontEnv =
 
   /// 台本が無い弾は aim を読まないので、そのときは `noAim`。
   ///
-  /// **この枝を既定にしてある。** 同梱のフロントは全部 これを通していたが、
+  /// この枝を既定にしてある。 同梱のフロントは全部 これを通していたが、
   /// 通し忘れても答えは同じで速さだけ落ちる（5way で 24%）ので、
   /// 忘れたことが門に出ない
   [<CompiledName "ForRun">]

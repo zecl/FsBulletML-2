@@ -145,13 +145,6 @@ type StepCommands() =
     // 省略された軸は None のまま届き、Step.accel が "0" として扱うので、
     // catch-all の計算が働く：(0 - currentAccel) / term。
     // これは現状維持ではなく減衰である。
-    // 初回フレームで dx = (0 - 10) / 5 = -2 を計算。以降キャッシュを再利用する。
-    // 初期 Accel.X = 10.0f、accel absolute なし (省略)、term 5
-    // 1 回め: dx = -2、Accel.X = 10 - 2 = 8
-    // 2 回め: dx = -2、Accel.X = 8 - 2 = 6
-    // 3 回め: dx = -2、Accel.X = 6 - 2 = 4
-    // 4 回め: dx = -2、Accel.X = 4 - 2 = 2
-    // 5 回め: dx = -2、Accel.X = 2 - 2 = 0
     let script =
       Action.Accel (None,
                          None,
@@ -303,7 +296,6 @@ type StepCommands() =
   // ------------------------------------------------------------------
   // action の走査。旧の actionCommand を写す
   // ------------------------------------------------------------------
-
   [<Test>]
   member _.``action は、Stopped で走査を止める``() =
     // wait 2 の後ろに vanish。1 回めは wait で止まるので vanish は出ない
@@ -374,7 +366,6 @@ type StepCommands() =
   // PNoop になる（自分は状態を持たないため）。輪を解いた並びは、actionRef
   // 自身ではなく親の action の PAction.loop が持つ
   // ------------------------------------------------------------------
-
   [<Test>]
   member _.``actionRef は 1 段だけ解いて、残りの兄弟を繋いで loop にする``() =
     // wait 0（即終わる） の後ろに actionRef、そのまた後ろに vanish。
@@ -470,7 +461,6 @@ type StepCommands() =
   // ------------------------------------------------------------------
   // command の振り分け
   // ------------------------------------------------------------------
-
   [<Test>]
   member _.``command は、Action を action へ振り分ける``() =
     let script = Action.Action ({ actionLabel = Some (ActionLabel "top") }, [ Action.Vanish ])
@@ -516,18 +506,12 @@ type StepCommands() =
   // 走査の中で changeDirection / changeSpeed を使う穴。isDone が countdown の
   // リセット（repeat の次周のための term の戻し）に惑わされないことを見る
   // ------------------------------------------------------------------
-
   [<Test>]
   member _.``action の中の changeDirection は、term が尽きたら再適用しない``() =
     // absolute 90 度、term 2。後ろに wait 5 を置いて、changeDirection が終わった
     // 後も走査が長く続くようにする（wait 5 は 6 フレーム目まで Stopped で
     // 引っ張り続ける）。changeDirection は 2 フレームで終わるはずで、
     // 3 フレーム目以降は再実行されず delta も足され直さないはず。
-    //
-    // changeDirection は終わるフレームで term を getValue initTerm へ戻す
-    // （repeat の次周のため）。この戻した正の値を isDone が「まだ途中」と
-    // 読み違えると、3 フレーム目以降も delta を足し続けてしまう
-    // （壊れていれば 6 回ぶん = 3π/2、正しければ 2 回ぶん = π/2）
     let changeDir =
       Action.ChangeDirection (Direction (Some { directionType = DirectionType.Absolute }, numExpr "90"), Term (numExpr "2"))
     let script =
@@ -572,7 +556,6 @@ type StepCommands() =
   // ------------------------------------------------------------------
   // repeat。旧の repeatCommand を写す
   // ------------------------------------------------------------------
-
   [<Test>]
   member _.``repeat 3 は、子を 3 回 走らせる``() =
     let body = ActionElm.Action ({ actionLabel = None }, [ Action.Vanish ])
@@ -653,12 +636,6 @@ type StepCommands() =
     // 旧は times を呼ぶたびに引き直し、周ざかりでは changeDirection 自身の
     // 終わり分岐（term を戻す）に加えて running |> Seq.iter Init がもう一度
     // term を引き直す（その値は次の周の first で上書きされて捨てられる）。
-    // Progress.initial は乱数を引かないので、ここを肩代わりしないと
-    // 乱数列が旧より 1 回ぶん前へずれる。
-    //   1 回め  times(1) + changeDirection 開始(2)                     = 3   Continue
-    //   2 回め  times(1) + 終わり(1) + 周ざかりの捨て引き(1)
-    //           + 次の周の開始(2)                                      = 5   Continue（累計 8）
-    //   3 回め  times(1) + 終わり(1)                                   = 2   Ended（累計 10）
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let body =
@@ -684,41 +661,12 @@ type StepCommands() =
   // ------------------------------------------------------------------
   // fix round 1: repeat の周ざかいの reset に見つかった 3 つの不具合
   // ------------------------------------------------------------------
-
   [<Test>]
   member _.``周ざかいの reset は wait を含めて 1 つの並びを順に引き、その値がそのまま次の周の wait に入る``() =
     // changeDirection（term 1 で固定、単発で終わる）の後ろに wait "$rand"。
     // 旧の running |> Seq.iter Init は、この並びを順番に 1 回で辿って
     // 引く（changeDirection は捨てる引き、wait は使う引き）。
-    // wait の引きだけ次の実際の開始まで遅延させると、同じ乱数列でも
-    // wait が引く物理位置がずれ、2 周目の wait の初期値が変わる。
-    // 定数式では見えないので、毎回ちがう値を返す Rand で可視化する。
     //
-    // Ended か Stopped かという終わり方だけを見る門は、たまたま終わり方が
-    // 一致してしまう入れ替わり（並びの順を守らずに wait を先に引く、等）を
-    // 通してしまう。ここでは周ざかいで wait に入った値そのものを
-    // Progress から読み戻して確かめる（下の壊し方の項を参照）。
-    //
-    // vals の各要素が何に対応するか（1 始まりの呼び出し回数）。
-    // "1" や "90" には $rand が無いので、その回に何を返しても結果は
-    // 変わらない（フィラー）
-    //   1 回め  times（"2"。フィラー）
-    //   2 回め  1 周めの changeDirection の term（"1"。フィラー）
-    //   3 回め  1 周めの changeDirection の向き（"90"。フィラー）
-    //   4 回め  1 周めの changeDirection の終わり分岐の term 引き直し
-    //           （"1"。フィラー）
-    //   5 回め  1 周めの wait の開始値（"$rand"）。1 未満にして、1 回の
-    //           decrement でその周のうちに Ended まで進める
-    //   6 回め  周ざかいの reset で、並びの先頭（changeDirection）の
-    //           term を引き直すぶん（"1"。フィラー。値は使われず捨てる）
-    //   7 回め  周ざかいの reset で、並びの 2 番め（wait）に実際に入る値
-    //           （"$rand"）。ここが本題。1 未満にして、2 周めの wait も
-    //           その周のうちに Ended まで進める。壊れた版（wait の引きを
-    //           遅延させる版）はこの回を引かず、この値は他の回へずれる
-    //   8 回め  2 周めの changeDirection の term（"1"。フィラー）
-    //   9 回め  2 周めの changeDirection の向き（"90"。フィラー）
-    //   10 回め 2 周めの changeDirection の終わり分岐の term 引き直し
-    //           （"1"。フィラー）
     // フィラーは 0.5 で揃え、本題の 2 か所（5 回め・7 回め）だけ変えて
     // 目立たせてある
     let vals = [| 0.5f; 0.5f; 0.5f; 0.5f; 0.5f; 0.5f; 0.3f; 0.5f; 0.5f; 1.5f |]
@@ -747,7 +695,6 @@ type StepCommands() =
   // fix round 3: 値を読み戻す門が wait しか見ていなかった。changeSpeed
   // （と changeDirection）の捨て引きも同じ並びの中にあることを確かめる
   // ------------------------------------------------------------------
-
   [<Test>]
   member _.``周ざかいの reset は changeSpeed の捨て引きも並びの位置どおりに消費する``() =
     // changeDirection、changeSpeed、wait を 1 つの body に並べる。
@@ -756,46 +703,6 @@ type StepCommands() =
     // 引き直されて上書きされるため）。なので、どちらかの捨て引きが
     // 丸ごと無くなっても、changeDirection / changeSpeed 自身の Progress
     // の形（started = false, done_ = false）は変わらない。
-    // 気づける先は、並びの後ろに置いた wait が実際に引く物理位置だけ
-    // ——2 つぶんの捨て引きのどちらかが無くなれば、wait の引きが
-    // 1 つぶん手前へずれる。ここではその wait の値を Progress から
-    // 読み戻して確かめる（changeDirection / changeSpeed 側は形だけ見る。
-    // 数値までは見分けが付かない理由は下の壊し方の項に書いた）。
-    //
-    // vals の各要素が何に対応するか（1 始まりの呼び出し回数）。
-    // "1" / "90" / "5" には $rand が無いので、その回に何を返しても
-    // 結果は変わらない（フィラー）
-    //   1 回め  times（"2"。フィラー）
-    //   2 回め  1 周めの changeDirection の term（"1"。フィラー）
-    //   3 回め  1 周めの changeDirection の向き（"90"。フィラー）
-    //   4 回め  1 周めの changeDirection の終わり分岐の term 引き直し
-    //           （"1"。フィラー）
-    //   5 回め  1 周めの changeSpeed の term（"1"。フィラー）
-    //   6 回め  1 周めの changeSpeed の速さ（"5"。フィラー）
-    //   7 回め  1 周めの changeSpeed の終わり分岐の term 引き直し
-    //           （"1"。フィラー）
-    //   8 回め  1 周めの wait の開始値（"$rand"）。1 未満にして、1 回の
-    //           decrement でその周のうちに Ended まで進める
-    //   9 回め  周ざかいの reset で、並びの 1 番め（changeDirection）の
-    //           term を引き直すぶん（"1"。フィラー。値は捨てる）
-    //   10 回め 周ざかいの reset で、並びの 2 番め（changeSpeed）の
-    //           term を引き直すぶん（"1"。フィラー。値は捨てる）。
-    //           changeSpeed の捨て引きが丸ごと消えると、次の 11 回めの
-    //           はずの wait の値がここへ繰り上がる —— この回だけ、
-    //           フィラーでも壊れ方が見える値（1.3）にしてある
-    //   11 回め 周ざかいの reset で、並びの 3 番め（wait）に実際に入る値
-    //           （"$rand"）。ここが本題（1.7）
-    //   12 回め 2 周めの changeDirection の term（"1"。フィラー）
-    //   13 回め 2 周めの changeDirection の向き（"90"。フィラー）
-    //   14 回め 2 周めの changeDirection の終わり分岐の term 引き直し
-    //           （"1"。フィラー）
-    //   15 回め 2 周めの changeSpeed の term（"1"。フィラー）
-    //   16 回め 2 周めの changeSpeed の速さ（"5"。フィラー）
-    //   17 回め 2 周めの changeSpeed の終わり分岐の term 引き直し
-    //           （"1"。フィラー）
-    // 2 周めの wait は 11 回めの値をそのまま使う（started = true なので
-    // 引き直さない）。11 回め (1.7) を 1 回 decrement して 0.7、
-    // 0.7 >= 0 なのでこの周のうちには終わらず Stopped で止まる
     let vals =
       [| 0.5f; 0.5f; 0.5f; 0.5f; 0.5f; 0.5f; 0.5f; 0.4f
          0.5f; 1.3f; 1.7f
@@ -816,9 +723,6 @@ type StepCommands() =
     // 無いと、この値は 10 回め相当（1.3）が繰り上がって入り、
     // decrement 後は 0.3 になる —— 終わり方はどちらも Stopped のままなので、
     // 値を読まない門ではこの入れ替わりに気づけない（壊し方の項を参照）。
-    // changeDirection / changeSpeed 側は started / done_ の形だけ見る。
-    // term / delta は自分の Progress に残らない（次の周の開始で上書きされる）
-    // ので、そこに捨て引きの有無の証拠は残らない
     match p' with
     | PRepeat (1, false,
                PAction (false, None,
@@ -835,18 +739,6 @@ type StepCommands() =
     // Bullet(...,actions) -> actions |> Seq.iter Init でその action を
     // 辿るので、撃たれるかどうかに関わらず repeat の周ざかりのたびに
     // この wait の term を引く。
-    //
-    // stepFire が command に繋がった今は、実際に撃つときの引き
-    // （stepFire 自身が resetChild で撃たれた弾の Tops を組むぶん）も乗る。
-    // times "2"、body は fire の後ろに vanish の 1 本だけなので、
-    // 1 回の呼び出しの中で 2 周とも終わりまで進む：
-    //   times                                          1 回
-    //   1 周め: fire が実際に撃つ（wait の term）          1 回
-    //   周ざかりの reset（撃ったかどうかに関わらず引く）    1 回
-    //   2 周め: fire が実際に撃つ（wait の term）          1 回
-    // 計 4 回。撃つたびの引きと周ざかりの引きは別の場所（前者は stepFire、
-    // 後者は resetChild）が別の理由で行っており、どちらも旧の Init 呼び出しに
-    // 対応するので、両方が乗って良い（二重に引いているわけではない）
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let bullet =
@@ -893,19 +785,13 @@ type StepCommands() =
   // fix round 2, residual 2: repeat の子が Action でない形。
   //
   // DTD は repeat (times, (action | actionRef)) で actionRef も許す。
-  // パーサ（BulletmlRead.convertRefBulletmlIn）は actionRef を
-  // 1 段展開して実体の Action へ差し替えるが、自己参照（輪）だけは
+  //
   // 展開せずに残す。repeat の直下が展開されずに actionRef のまま残るのは、
-  // その actionRef が自分を直接包む action への自己参照であるとき
-  // （例: action "top" の中に、times が届く repeat が直接 actionRef "top"
-  // を子に持つ）。旧の repeatCommand はこの形に実際に到達し、
-  // while の中の `match actionElm with Action(pa,tasks) -> ... | _ ->
-  // failwith "repeatCommand: repeat の子が action ではない"` で落ちる。
+  //
   // 黙らせて何もしないと、equivalence の橋が「片方だけ例外」を割れとして
   // 拾ったときに、原因が見えている場所（ここ）でなく橋の側から
   // 逆側を辿ることになる
   // ------------------------------------------------------------------
-
   [<Test>]
   member _.``repeat の子が Action でないと、旧と同じ例外で落ちる``() =
     // 自己参照で展開されずに残った actionRef を、repeat の直下にそのまま置く
@@ -920,10 +806,6 @@ type StepCommands() =
   /// （bullet の中の自己参照）。その台本を Step.step が回すと actionElm の
   /// actionRef の腕へ入る。同梱の 227 本 では踏まないので、ここで直に押さえる。
   ///
-  /// 台本まるごとを渡していた頃は action が children = [] で走り、
-  /// Ended と PAction (true, None, []) を返していた。ほどいて渡す形に
-  /// 変えたあとも同じ値を返すことを固定する。**Ended だけを見ては足りない**
-  /// —— PNoop を返す実装でも Ended になるが、PNoop は isDone が false なので
   /// 呼ぶ側の「終わったか」の判定が変わる
   [<Test>]
   member _.``解けなかった actionRef を台本として回すと、子が空の action として終わる``() =
@@ -949,7 +831,6 @@ type StepCommands() =
   // ------------------------------------------------------------------
   // final review 1: 大きな times が simForTests { } の while を通ってクラッシュする
   // ------------------------------------------------------------------
-
   [<Test>]
   member _.``repeat の times が 9999 でも、末尾再帰でない再帰を積まずに走り切る``() =
     // 旧 BulletRunner.repeatCommand の while は 1 周が定数のスタックで
@@ -958,13 +839,6 @@ type StepCommands() =
     // ブロックの中に書かれていると、コンパイラが builder.While へ
     // 書き換えてしまう。SimBuilder.While は
     //   guard() が真なら Sim.bind (fun () -> While(guard,body)) (body())
-    // で、1 周につき Sim.bind を 1 段 積む再帰（末尾再帰ではない）。
-    // times が万のオーダーだとここで StackOverflow する
-    // （$"[G_DARIUS]_homing_laser.xml" のような実物にも times=9999 が
-    // あるが、corpus は全部 body に wait を持つので 1 コマに 1 周しか
-    // 進まず、この不具合を誰も踏んでいなかった）。
-    //
-    // wait を置かず、1 回の呼び出しで times ぶん全部を回し切らせる
     let bullet = BulletElm.Bullet ({ bulletLabel = None }, None, None, [])
     let fire = Action.Fire ({ fireLabel = None }, None, None, bullet)
     let body = ActionElm.Action ({ actionLabel = None }, [ fire ])

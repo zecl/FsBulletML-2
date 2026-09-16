@@ -7,25 +7,14 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.LanguageService
 
-/// **fsb を読む口の目盛り。** `SxmlReader` と対。
+/// fsb を読む口の目盛り。 `SxmlReader` と対。
 ///
 /// --- なぜ 2 本 目 を書いているのか
 ///
-/// `Parser` には `tryReadFsbString` が既に在る。**それでも `Diagnosis` は
-/// 使っていない** —— あちらは
-///
+/// `Parser` には `tryReadFsbString` が既に在る。それでも `Diagnosis` は
+/// 使っていない —— あちらは
 ///     | Failure (_,_,_) -> None
-///
-/// で、**FParsec が持っている行と桁を捨てている。** 波線を引くにはそれが要る。
-/// だから `Offside.parse` を直に呼ぶ筋をもう 1 本 書いた
-/// （sxml とまったく同じ形だった。v1.1 の頭で測った）。
-///
-/// **口が在ることと、その口が要るものを返すことは別。**
-///
-/// --- 2 本 書いた以上は突き合わせる
-///
-/// 読める / 読めないの判定が `tryReadFsbString` とずれたら、それは
-/// こちらの写し間違い。コーパス全部 で 1 本 ずつ当てる。
+/// で、FParsec が持っている行と桁を捨てている。 波線を引くにはそれが要る。
 [<TestFixture>]
 type FsbReader() =
 
@@ -37,7 +26,7 @@ type FsbReader() =
 
   let fsbCorpus = lazy corpus "fsb"
 
-  /// **載せるところは通さない。** ここで見ているのは「読めるか」だけ
+  /// 載せるところは通さない。 ここで見ているのは「読めるか」だけ
   let reads (src: string) = (SourceReader.fsb.Apply ignore src).IsNone
 
   [<Test>]
@@ -60,7 +49,7 @@ type FsbReader() =
 
   [<Test>]
   member _.``読めるものと読めないものが 両方 在る``() =
-    // **上の点は「全部 読めない」でも緑。** 並びの中身そのものを見る
+    // 上の点は「全部 読めない」でも緑。 並びの中身そのものを見る
     let ok = fsbCorpus.Value |> Array.filter (fun f -> reads (File.ReadAllText f))
     ok.Length |> should greaterThan 0
     ok.Length |> should lessThan fsbCorpus.Value.Length
@@ -90,7 +79,7 @@ type FsbReader() =
 
   [<Test>]
   member _.``構文が壊れていれば 位置が出る``() =
-    // **これがこの版の本題。** `tryReadFsbString` を通すとここが 0 になる
+    // これがこの版の本題。 `tryReadFsbString` を通すとここが 0 になる
     let cases =
       [ "bulletml\n    action label=top", 2
         "bulletml\n    action\n        fire\n            direction:\"", 4 ]
@@ -114,7 +103,7 @@ type FsbReader() =
 
   [<Test>]
   member _.``空の本文でも 位置が 1 以上``() =
-    // **0 のまま渡すと Monaco の範囲が壊れる。** 位置なし（Line = 0）とも混ざる
+    // 0 のまま渡すと Monaco の範囲が壊れる。 位置なし（Line = 0）とも混ざる
     match SourceReader.fsb.Apply ignore "" with
     | None -> failwith "空が読めてしまった"
     | Some f ->
@@ -130,15 +119,15 @@ type FsbReader() =
 
   [<Test>]
   member _.``読める形が 途中で終わっていても通る``() =
-    // **`Offside.parse` は `eof` を要求していない。** 根の要素を読み終えた
-    // ところで止まり、**残りを黙って捨てる。**
+    // `Offside.parse` は `eof` を要求していない。 根の要素を読み終えた
+    // ところで止まり、残りを黙って捨てる。
     //
     // タブで字下げした行がその形 —— エラーにならず、子が 1 つ も付かない。
-    // **補完の側（`FsbScan`）がタブを字下げに数えないのは、これに揃えたから**
+    // 補完の側（`FsbScan`）がタブを字下げに数えないのは、これに揃えたから
     // （`FsbContext` の「タブは字下げにならない」）。
     //
     // ここを直すのは Parser の仕事で、この版の範囲ではない。
-    // **黙って捨てていることを、字で残しておく**
+    // 黙って捨てていることを、字で残しておく
     let mutable loaded = None
     SourceReader.fsb.Apply (fun b -> loaded <- Some b) "bulletml\n\taction label=\"top\""
     |> should equal None
@@ -150,8 +139,8 @@ type FsbReader() =
 
   [<Test>]
   member _.``表記ごとに 字の数え方が違う``() =
-    // 同じ本文を 3 つ に通す。**同じ答えが返ったら、どれかが effectively
-    // 使われていない**（表を引き違えている）
+    // 同じ本文を 3 つ に通す。同じ答えが返ったら、どれかが effectively
+    // 使われていない（表を引き違えている）
     let src = "bulletml\n    action label=\"top\""
     (SourceReader.fsb.Tags src |> List.map (fun t -> t.TagName))
     |> should equal [ "bulletml"; "action" ]

@@ -6,40 +6,12 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
-/// **F# の CE で、その場所に置ける名前を出せるか。**
+/// F# の CE で、その場所に置ける名前を出せるか。
 ///
 /// v1.6 まで空だった。理由は「置ける場所が入れ子の型で決まるので、字の
-/// 数え方では出せない」と書いてあったが、**入れ子の型は `{ }` の対で出せる。**
-/// 版の頭で数えたら、`{` の手前 に名前が無いものは同梱 3259 個 中 0 個 だった
-/// （入れ子はいちばん深いもので 12 段）。**FCS は要らない。**
+/// 数え方では出せない」と書いてあったが、入れ子の型は `{ }` の対で出せる。
 ///
-/// --- 置ける先は要素ではない
-///
-/// `repeat` の中に置けるものは `action` の中と**同じ**（どちらも
-/// `ActionBuilder`）。要素（`<repeat>` と `<action>`）で分けると、
-/// `repeat` の中で候補が 1 つ も出なくなる ——
-/// **同じ入れ物を、要素が違うという理由で 2 つ に割ってしまう形。**
-///
-/// --- 表を書いていない
-///
-/// `Vocabulary.cePlaces` は `Dsl` から reflection で引く。
 /// 手で書くと 107 行 になり、DSL が動くと黙って古びる。
-///
-/// **reflection だけでは足りないところが 1 つ あった** —— `ActionBuilder` と
-/// `BulletmlBuilder` の `[<CustomOperation>]` は **0 個**（あの 2 つ の中身は
-/// module の公開 `let`）。だから両方 を舐めている。
-///
-/// --- いちばん強い点は「コーパスを覆う」
-///
-/// 同梱 176 本 を CE で焼いて、**本文に実際に書いてある名前が、その場所の
-/// 候補に必ず入っていること**を数える（9720 件）。
-///
-/// --- 較正（当てた変異と、赤くなった点）
-///
-///   `repeat` を要素で引く          コーパスを覆う / repeat の中
-///   builder の CustomOperation だけ  コーパスを覆う / action の中
-///   根の builder を落とす           いちばん外
-///   カーソルの下の語を数える        打っている途中の名前を入れ物にしない
 [<TestFixture>]
 type FsharpComplete() =
 
@@ -86,7 +58,7 @@ type FsharpComplete() =
 
   [<Test>]
   member _.``repeat の中は action の中と同じ``() =
-    // **要素で引くとここが 0 個 になる。** `<repeat>` の子は
+    // 要素で引くとここが 0 個 になる。 `<repeat>` の子は
     // `(times, (action | actionRef))` で、`wait` は入っていない
     let inTop = at "let x =\n  untyped \"n\" {\n    top {\n      |\n    }\n  }\n"
     let inRepeat = at "let x =\n  untyped \"n\" {\n    top {\n      repeat \"4\" {\n        |\n      }\n    }\n  }\n"
@@ -121,8 +93,8 @@ type FsharpComplete() =
 
   [<Test>]
   member _.``打っている途中の名前を 入れ物にしない``() =
-    // `w` まで打ったところ。**その `w` を「いま開いている入れ物」に
-    // してはいけない** —— 数えると候補が消える
+    // `w` まで打ったところ。その `w` を「いま開いている入れ物」に
+    // してはいけない —— 数えると候補が消える
     let found = at "let x =\n  untyped \"n\" {\n    top {\n      w|\n    }\n  }\n"
     found |> should contain "wait"
 
@@ -137,7 +109,7 @@ type FsharpComplete() =
 
   [<Test>]
   member _.``同じ綴りが 2 つ の意味を持つ``() =
-    // **`vertical` は根の builder でもあり、`accel` の中の操作でもある。**
+    // `vertical` は根の builder でもあり、`accel` の中の操作でもある。
     // `{ }` の手前 に在るのだから開く側を採る —— 採らないと、
     // `vertical "名" { }` で書かれた弾幕の中で候補が 1 つ も出ない
     // （コーパスの点で踏んだ）
@@ -151,7 +123,7 @@ type FsharpComplete() =
 
   [<Test>]
   member _.``知らない入れ物では 出さない``() =
-    // `{ }` は F# のあちこちに在る。**CE でない `{` の中で候補を出さない**
+    // `{ }` は F# のあちこちに在る。CE でない `{` の中で候補を出さない
     at "let x = seq {\n  |\n}\n" |> should be Empty
 
   [<Test>]
@@ -164,7 +136,7 @@ type FsharpComplete() =
 
   [<Test>]
   member _.``本文に書いてある名前は 必ず候補に在る``() =
-    // **同梱 176 本 を焼いて、名前 1 つ ずつ その場所の候補を引く。**
+    // 同梱 176 本 を焼いて、名前 1 つ ずつ その場所の候補を引く。
     // 書いてあるのに出ないものが 1 つ でも在れば、その入れ物で人は打てない
     let isIdent (c: char) =
       (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c = '_' || c = '\''
@@ -185,7 +157,7 @@ type FsharpComplete() =
             while e + 1 < src.Length && isIdent src.[e + 1] do
               e <- e + 1
             let w = src.Substring(s, e - s + 1)
-            // **文字列とコメントの中は数えない。** 弾幕の名前に `aim` や
+            // 文字列とコメントの中は数えない。 弾幕の名前に `aim` や
             // `accel` が入っていることは在る —— `wordAt` は器の 1 本 で、
             // 文字列の中では `None` を返す
             let outside = FsharpScan.wordAt src s = Some w

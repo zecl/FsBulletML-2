@@ -144,9 +144,9 @@ module ``XML, SXML, FSBファイルパース結果比較`` =
           &> (singleParam @"..\..\..\TestData\{0}\bulletml\elements\success\bulletml-fire.{0}")
           &> (singleParam @"..\..\..\TestData\{0}\bulletml\elements\success\bulletml-multi.{0}")
     // not support
-
-  // <!ATTLIST bulletml xmlns CDATA #IMPLIED>
-  // <!ATTLIST bulletml type (none|vertical|horizontal) "none">
+    //
+    // <!ATTLIST bulletml xmlns CDATA #IMPLIED>
+    // <!ATTLIST bulletml type (none|vertical|horizontal) "none">
   let BulletmlAttributesCase =
     // support
     testCase (singleParam @"..\..\..\TestData\{0}\bulletml\attributes\success\bulletml-xmlns-exist.{0}")

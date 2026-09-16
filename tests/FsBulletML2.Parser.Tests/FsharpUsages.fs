@@ -7,35 +7,12 @@ open FsBulletML2.Bullets.Dsl
 open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
-/// **F# の CE でも、名前がどこに書いてあるかを引けるか。**
+/// F# の CE でも、名前がどこに書いてあるかを引けるか。
 ///
 /// v1.6 まで、この表記だけ `Usages` も `Fixes` も空だった。
-/// 理由は「CE には要素名が無いから」と書いてあったが、**無いのは要素名で
-/// あって名前ではない** —— `defAction "x"` の `x` は `<action label="x">` の
+/// 理由は「CE には要素名が無いから」と書いてあったが、無いのは要素名で
+/// あって名前ではない —— `defAction "x"` の `x` は `<action label="x">` の
 /// `x` そのもので、数え方が違うだけだった。
-///
-/// --- 中身はほかの 3 表記 と同じ 1 本
-///
-/// `Lookup.usages` と `Lookup.fixes`。この表記が渡すのは
-///
-///     Tags        `FsharpScan.tags`（CE の名前 + 名前を載せる引数）
-///     TokenAt     名前の中に居るか（**`wordAt` では出せない** ——
-///                 あちらは CE の名前を返すもので、名前は文字列の中）
-///     作る場所     根のブロックの閉じ
-///     見出し       根の直下 に書く CE の名前
-///
-/// --- いちばん強い点は「XML と数が一致する」
-///
-/// 同梱 176 本 を CE と XML の両方 で書いて、定義と参照の数を突き合わせる。
-/// **位置は表記ごとに違うが、数は違わない** —— v1.2 で 3 表記 に当てたのと
-/// 同じ測り方を、4 つ 目 に当てる。
-///
-/// --- 較正（当てた変異と、赤くなった点）
-///
-///   表から `repeatRef` を抜く          数が一致する
-///   `repeatRef` の番号を 0 にする       名前は 2 番目 の文字列 ほか
-///   `top` の固定名を変える              引数を取らない名前
-///   文字列の中も名前として数える        文字列の中の似た字は拾わない
 [<TestFixture>]
 type FsharpUsages() =
 
@@ -104,7 +81,7 @@ type FsharpUsages() =
 
   [<Test>]
   member _.``引数を取らない名前``() =
-    // `top` は `<action label="top">`。**引数が無いので名前そのものを指す**
+    // `top` は `<action label="top">`。引数が無いので名前そのものを指す
     let src = "let x =\n  untyped \"n\" {\n    t|op { wait \"1\" }\n  }\n"
     match at src with
     | [ u ] ->
@@ -115,7 +92,7 @@ type FsharpUsages() =
   [<Test>]
   member _.``名前は 2 番目 の文字列のことも在る``() =
     // `repeatRef "8" "loop" []` —— 手前 に回数が在る。
-    // **0 番目 を取ると回数を名前だと思う**
+    // 0 番目 を取ると回数を名前だと思う
     let src = "let x =\n  untyped \"n\" {\n    top { repeatRef \"8\" \"loop\" [] }\n    defAction \"loop\" { wait \"1\" }\n  }\n"
     let found = fsharp.Usages src (src.IndexOf "\"loop\"" + 2)
     found.Length |> should equal 2
@@ -133,7 +110,7 @@ type FsharpUsages() =
 
   [<Test>]
   member _.``無い参照の上で 近い定義を出す``() =
-    // **`top` も定義。** 引数を取らないだけで、`<action label="top">` を
+    // `top` も定義。 引数を取らないだけで、`<action label="top">` を
     // 決めている —— `lop` からは `top`（1 置換）も `loop`（1 挿入）も近い
     let src = "let x =\n  untyped \"n\" {\n    top { actionRef \"lop\" [] }\n    defAction \"loop\" { wait \"1\" }\n  }\n"
     fsharp.Fixes src (src.IndexOf "\"lop\"" + 2)
@@ -147,9 +124,9 @@ type FsharpUsages() =
     let src = "let x =\n  untyped \"n\" {\n    top { actionRef \"loop\" [] }\n  }\n"
     match fsharp.Fixes src (src.IndexOf "\"loop\"" + 2) |> List.filter (fun f -> f.EndColumn = f.Column) with
     | [ f ] ->
-      // 見出しは**その表記で打つ字**。要素名ではない
+      // 見出しはその表記で打つ字。要素名ではない
       f.Title |> should equal "loop の defAction を作る"
-      // **中身を空にできない。** F# の CE は `{ }` の中に何か要る
+      // 中身を空にできない。 F# の CE は `{ }` の中に何か要る
       f.Text |> should equal "    defAction \"loop\" {\n        ()\n    }\n"
     | other -> failwithf "1 件 のはずが %d 件" other.Length
 
@@ -170,7 +147,7 @@ type FsharpUsages() =
 
   [<Test>]
   member _.``作った定義を当てた本文が 読める``() =
-    // **数だけ見ていると出ない。** 参照が埋まっても、その字が読めるとは
+    // 数だけ見ていると出ない。 参照が埋まっても、その字が読めるとは
     // 限らない —— CE は `{ }` の中に何か要るので、空の定義は読めない
     // （ブラウザで Apply して初めて出た）
     let src = "let x =\n  vertical \"n\" {\n    top {\n      actionRef \"loop\" []\n    }\n  }\n"
@@ -182,7 +159,7 @@ type FsharpUsages() =
       let after = System.String.Join("\n", lines)
       let reader = (SourceReader.tryFind SourceKind.FSharpDsl).Value
       let mutable got = false
-      // 当てる前は読める（**読めない本文と比べていない**）
+      // 当てる前は読める（読めない本文と比べていない）
       reader.Apply (fun _ -> ()) src |> should equal None
       match reader.Apply (fun _ -> got <- true) after with
       | Some failure -> failwithf "当てた本文が読めない: %s" failure.Message
@@ -200,7 +177,7 @@ type FsharpUsages() =
 
   [<Test>]
   member _.``同梱 176 本 で CE と XML の数が一致する``() =
-    // **位置は表記ごとに違うが、数は違わない。**
+    // 位置は表記ごとに違うが、数は違わない。
     // v1.2 で 3 表記 に当てたのと同じ測り方を、4 つ 目 に当てる
     let mutable compared = 0
     let mutable withTargets = 0
@@ -209,7 +186,7 @@ type FsharpUsages() =
       match write SourceKind.FSharpDsl info.Bulletml, write SourceKind.Xml info.Bulletml with
       | Result.Ok ce, Result.Ok x ->
         compared <- compared + 1
-        // その本文の中の名前を全部 なめて、**引けた数の並び**を作る
+        // その本文の中の名前を全部 なめて、引けた数の並びを作る
         let profile (lang: ISourceLanguage) (tags: string -> TagHit list) (src: string) =
           tags src
           |> List.filter (fun t -> not t.Closing)
@@ -217,7 +194,7 @@ type FsharpUsages() =
           |> List.map (fun a -> (lang.Usages src a.ValueStart).Length)
           |> List.filter (fun n -> n > 0)
           |> List.sort
-        // 名前を載せる属性は**語彙から引く**（字を書かない）
+        // 名前を載せる属性は語彙から引く（字を書かない）
         let attr =
           Refs.pairs (vocab.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
           |> List.head

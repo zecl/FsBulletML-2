@@ -5,37 +5,12 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.LanguageService
 
-/// **参照が渡す引数の形**（v4.5）。
+/// 参照が渡す引数の形（v4.5）。
 ///
 /// --- 食い違いは正しい弾幕にも在る
 ///
 /// 版の頭で数えた ——
 ///
-///     定義              767 個 / うち引数を使う 241 個（31.4%）
-///     取る数            中央 0 / 9 割 2 / 最大 7
-///     `◯◯Ref`         1,611 件 / うち param を渡す 744 件
-///     **食い違い          9 件**（同梱＝正しく動く弾幕の中に）
-///
-/// **だから波線にしない。** v2.3 が引いた線（正しい弾幕にも在るものは
-/// 出さない）に掛かる —— 出すのは**形**であって、正しさの判定ではない。
-///
-/// これは v4.6 の「`actionRef` の param の数が違う」の答えでもある。
-///
-/// --- `$n` は個数ではなく最大値
-///
-/// `$1` を使わず `$2` だけ使う定義は **2 つ 要る** —— `<param>` は並びで渡すので。
-///
-/// --- 較正（1 か所 ずつ当てて、赤くなった点を数えた）
-///
-///   `if v > best` を `best <- v` に（最後を取る）      赤 1
-///   `$` のあとの数字の判定を落とす                      **赤 0（下）**
-///   `active` を いつも -1 に                           赤 1
-///
-/// **1 つ 目 は、はじめ 0 点 だった。** `$1` -> `$2` の並びでは
-/// 「最大」と「最後」が同じ答えになる —— `$3` -> `$1` の本文を足して赤に。
-///
-/// **2 つ 目 は冗長な守り。** 外しても答えが変わらない
-/// （`$` のあとが数字でなければ内側の while が回らない）——
 /// `Refs.maxParamIn` の但し書きに、残す理由ごと書いた。
 [<TestFixture>]
 type Signature() =
@@ -83,7 +58,7 @@ type Signature() =
     let ar = Refs.arity pairs src (XmlScan.tags src)
     (ar |> List.find (fun a -> a.Name = "shot")).Takes |> should equal 2
     (ar |> List.find (fun a -> a.Name = "nopar")).Takes |> should equal 0
-    // **`top` の中身には `$n` が無い**（参照の中の `param` は 10 と 20）
+    // `top` の中身には `$n` が無い（参照の中の `param` は 10 と 20）
     (ar |> List.find (fun a -> a.Name = "top")).Takes |> should equal 0
 
   [<Test>]
@@ -97,7 +72,7 @@ type Signature() =
 </bulletml>"""
     (Refs.arity pairs only (XmlScan.tags only) |> List.head).Takes |> should equal 0
 
-  /// **最大であって、最後ではない。** 大きいほうが先に出てくる本文で当てる ——
+  /// 最大であって、最後ではない。 大きいほうが先に出てくる本文で当てる ——
   /// 「最後を取る」に変えても、`$1` -> `$2` の並びでは同じ答えになる
   /// （較正で 0 点 だったので足した）
   [<Test>]
@@ -128,7 +103,7 @@ type Signature() =
 
   [<Test>]
   member _.``参照の外なら出ない``() =
-    // **空を返さない。** 空でも枠が浮く
+    // 空を返さない。 空でも枠が浮く
     lang.Signature src (at "<action label=\"nopar\"") |> should equal None
 
   [<Test>]
@@ -148,13 +123,13 @@ type Signature() =
 
   [<Test>]
   member _.``足りなければそう言う``() =
-    // **改行ごと消さない。** この file の改行は CRLF なので `\n` では当たらず、
+    // 改行ごと消さない。 この file の改行は CRLF なので `\n` では当たらず、
     // 「消したつもりで消えていない」形になる（1 度 踏んだ）
     let few = src.Replace("<param>20</param>", "")
     match lang.Signature few (few.IndexOf "<param>10") with
     | Some s ->
         s.Detail |> should equal "2 つ 使っているが、1 つ しか渡していない"
-        // **見出しは定義の側に合わせる** —— 足りないことが形で見える
+        // 見出しは定義の側に合わせる —— 足りないことが形で見える
         s.Label |> should equal "shot($1, $2)"
     | None -> failwith "出ない"
 
@@ -162,7 +137,7 @@ type Signature() =
 
   [<Test>]
   member _.``同梱で引数を使う定義が在る``() =
-    // **0 件 だと、上の点が全部「当てる先が無くて緑」になる**
+    // 0 件 だと、上の点が全部「当てる先が無くて緑」になる
     corpus
     |> List.sumBy (fun (_, t) ->
          Refs.arity pairs t (XmlScan.tags t) |> List.filter (fun a -> a.Takes > 0) |> List.length)
@@ -170,7 +145,7 @@ type Signature() =
 
   [<Test>]
   member _.``同梱に食い違いが在る``() =
-    // **在ることを門が数える。** 0 件 になったら「波線にしない」の根拠が消える
+    // 在ることを門が数える。 0 件 になったら「波線にしない」の根拠が消える
     // —— そのときは判断を見直すべきなので、ここが赤くなるのが正しい
     let mutable bad = 0
     for (_, text) in corpus do

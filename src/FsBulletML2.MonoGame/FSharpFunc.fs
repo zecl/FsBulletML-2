@@ -3,14 +3,14 @@
 open System
 open System.Runtime.CompilerServices
 
-/// C# と F# の関数を行き来させる変換。**呼ばれているぶんだけ置いてある。**
+/// C# と F# の関数を行き来させる変換。呼ばれているぶんだけ置いてある。
 ///
 /// 以前は `Action` / `Func` / `FSharpFunc` の 3 モジュール に 0 から 16 引数
 /// までを並べ、Unity2D 側にも namespace 1 行 しか違わない写しが在った。
 /// 5 引数 から上は `NET40` という定数で囲ってあり、`net10.0` を建てるのに
 /// その名前を明示的に立てて有効にしていた。
 ///
-/// **F# から呼ぶときは `CompiledName` ではなく元の名前**（`toFSharpFunc2`）
+/// F# から呼ぶときは `CompiledName` ではなく元の名前（`toFSharpFunc2`）
 /// になる。C# 側の名前だけで数えると、生きているものを死んでいると読む。
 [<Extension; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Action =
@@ -27,7 +27,7 @@ module Action =
 module FSharpFunc =
 
   /// `BaseBullet.Update` が、自分の `RunTask` を呼ぶのに使う。
-  /// **`RunTask` は C# から呼べるように `Action` を取る**ので、
+  /// `RunTask` は C# から呼べるように `Action` を取るので、
   /// F# の中では包んですぐ戻すことになる
   [<Extension; CompiledName "ToAction">]
   let ToAction2 (f: 'T1 -> 'T2 -> unit) = Action<'T1, 'T2>(f)

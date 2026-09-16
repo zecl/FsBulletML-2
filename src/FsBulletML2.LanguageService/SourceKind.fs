@@ -1,4 +1,4 @@
-// **`namespace` の手前 に `///` は置けない**（FS3520 が出る）。
+// `namespace` の手前 に `///` は置けない（FS3520 が出る）。
 // 型の doc は型に付けてある
 namespace FsBulletML2.LanguageService
 
@@ -7,26 +7,11 @@ open System.Text
 
 /// どの表記で書かれているか。
 ///
-/// **同じ字が 2 か所 に書いてあった。** ブラウザ側（Fable）が
-/// `SourceKind.Xml.Id` で `"xml"` を作り、host 側（`Main.fs`）が
-/// `match kind with | "xml" ->` で受けていた。**片方 だけ変えても
-/// build も試験も落ちない** —— 走らせて「未対応: xml」が出て初めて分かる。
+/// 同じ字が 2 か所 に書いてあった —— 片方 だけ変えても build も試験も落ちない。
+/// ここに 1 本 置いて、両方 が引く。
 ///
-/// ここに 1 本 置いて、両方 が引く形にした。
-///
-/// ## 読める表記の並びとは、別に持つ
-///
-/// v1.1 で全部 読めるようになったが、**ここは読める / 読めないを持たない。**
-/// 持つと「どの表記か」と「いま読めるか」が同じ型に乗り、**次の表記を足した
-/// 瞬間にまた割れる**（読めない状態を通る）。読めるものの並びは
-/// `SourceReader.all`（host 側）と `Playground.fs` の `languages`。
-///
-/// ## `Fable.Core` に依存しない
-///
-/// このソースは host（.NET）と ブラウザ側（Fable が焼いた JS）の
-/// **両方 で compile される**。依存を入れると host 側が壊れる。
-/// 答えが 2 つ の runtime で一致することは `guard-fable-parity.ps1` が
-/// 走行で見ている（`describe` がその口）。
+/// 読める / 読めないは持たない。 持つと次の表記を足した瞬間にまた割れる。
+/// `Fable.Core` に依存しない（host と ブラウザ側 の両方 で compile される）。
 type SourceKind =
   /// BulletML の XML
   | Xml
@@ -37,7 +22,7 @@ type SourceKind =
   /// F# の computation expression
   | FSharpDsl
 
-  /// 表記を指す字。**host と ブラウザ側 が渡し合う鍵**で、
+  /// 表記を指す字。host と ブラウザ側 が渡し合う鍵で、
   /// `ApplySource` の第 1 引数 がこれ
   member this.Id =
     match this with
@@ -46,8 +31,8 @@ type SourceKind =
     | Fsb -> "fsb"
     | FSharpDsl -> "fsharp"
 
-  /// 開いたファイルの拡張子。**`Id` から作らない** —— 3 つ までは同じ字だが
-  /// F# の CE は `.fsx` で、**そこだけ静かにずれる**（`Id` は `"fsharp"`）。
+  /// 開いたファイルの拡張子。`Id` から作らない —— 3 つ までは同じ字だが
+  /// F# の CE は `.fsx` で、そこだけ静かにずれる（`Id` は `"fsharp"`）。
   /// 導ける形に見えるものほど、外れたときに誰も見ない
   member this.FileExtension =
     match this with
@@ -59,17 +44,17 @@ type SourceKind =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module SourceKind =
 
-  /// 並び。**候補を出す側も、知らない字を断る側も、ここを引く**
+  /// 並び。候補を出す側も、知らない字を断る側も、ここを引く
   let all = [ Xml; Sxml; Fsb; FSharpDsl ]
 
-  /// 字から戻す。**大小を区別する** —— `Id` が作る字は小文字だけなので、
+  /// 字から戻す。大小を区別する —— `Id` が作る字は小文字だけなので、
   /// `"XML"` を通すと「作った側が知らない字が通る」ことになる
   let tryParse (id: string) : SourceKind option =
     if isNull id then None
     else all |> List.tryFind (fun k -> String.Equals(k.Id, id, StringComparison.Ordinal))
 
   /// 2 つ の runtime で同じ答えが返ることを見る口。
-  /// **組み立てはここ 1 か所。** node 側 と .NET 側 で別々に組むと、
+  /// 組み立てはここ 1 か所。 node 側 と .NET 側 で別々に組むと、
   /// 組み方のほうが食い違って「中身は同じなのに赤」になる
   let describe (id: string) : string =
     let sb = StringBuilder()
@@ -79,7 +64,7 @@ module SourceKind =
     match tryParse id with
     | None -> add "-"
     | Some k ->
-      // 腕の名。**`Id` とは別の道**で、Fable の union の toString を通る
+      // 腕の名。`Id` とは別の道で、Fable の union の toString を通る
       add (string k)
       add "/"
       add k.Id

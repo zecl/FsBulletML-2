@@ -7,11 +7,11 @@ open UnityEngine
 open FsBulletML2
 open FsBulletML2.Unity2D
 
-/// 撃たれた弾の実体。**`GetBulletPrefubInstance` を差し替えるためだけの派生。**
+/// 撃たれた弾の実体。`GetBulletPrefubInstance` を差し替えるためだけの派生。
 ///
 /// サンプルはここで prefab を実体化するが、この門は Unity を起こさないので
-/// `Transform` の stub を 1 個 作るだけ。**産まれた弾は静的な籠へ入れて、
-/// 回す側が拾う**（Unity では prefab の Awake が Manager へ入れる）。
+/// `Transform` の stub を 1 個 作るだけ。産まれた弾は静的な籠へ入れて、
+/// 回す側が拾う（Unity では prefab の Awake が Manager へ入れる）。
 type TestBullet(t: Transform) =
   inherit DefaultBullet(t)
 
@@ -26,17 +26,11 @@ type TestBullet(t: Transform) =
     TestBullet.Born.Add b
     b
 
-/// **このフロントを実際に回して、軌跡を凍らせる門。**
+/// このフロントを実際に回して、軌跡を凍らせる門。
 ///
-/// MonoGame 側の同名の門と対。**こちらでしか通らないもの**は
+/// MonoGame 側の同名の門と対。こちらでしか通らないものは
 ///
 ///     座標の係数と符号（1/100 で縮め、Y は反転する）
-///     Space.YUp と SpawnOrigin.AtShooter
-///     産まれる弾の相手が、撃った側が覚えている相手と同じであること
-///     Init が走らせ直しを呼ぶこと（MonoGame の Init は呼ばない）
-///
-/// **同梱の 2 つ を均してはいけない**のが計画の決めごとで、
-/// 均っていないことをここで凍らせる。
 [<TestFixture>]
 [<NonParallelizable>]
 type FrontRun() =
@@ -68,7 +62,7 @@ type FrontRun() =
   </action>
 </bulletml>"""
 
-  /// 自機 (0.3, 1.0)、rand 0.5、rank 0.25。**Unity の単位**なので値が小さい
+  /// 自機 (0.3, 1.0)、rand 0.5、rank 0.25。Unity の単位なので値が小さい
   let fixedManager () =
     { new IBulletMLManager with
         member _.GetRandom() = 0.5f
@@ -91,19 +85,19 @@ type FrontRun() =
 
   /// 根の敵を 1 体 置いて 12 コマ 回す。
   ///
-  /// **Unity は MonoBehaviour.Update が駆動する**ので、Manager に
+  /// Unity は MonoBehaviour.Update が駆動するので、Manager に
   /// まとめて回す口が無い。ここは生きている弾を自分で回して、
   /// 使い終わったものを落とす（サンプルの `Update` と同じ形）。
   let run () =
     let script = Runner.load loadRand (loadRank ()) (readXmlString Xml)
     TestBullet.Born.Clear()
 
-    // 狙う相手。**置かないと敵向きの aim が 0 になり、覚える枝が通らない**
+    // 狙う相手。置かないと敵向きの aim が 0 になり、覚える枝が通らない
     let enemy = TestBullet(at 1.0f 2.0f) :> IDefaultBullet
     Manager.addEnemy enemy
 
     let root = TestBullet(at 2.4f -1.0f) :> IDefaultBullet
-    // **立場を先に立ててから SetScript**（Front の SetScript の但し書き）
+    // 立場を先に立ててから SetScript（Front の SetScript の但し書き）
     root.BulletType <- BulletType.Enemy
     root.Init ()
     root.IsBullet <- false
@@ -132,7 +126,7 @@ type FrontRun() =
   [<SetUp>]
   member _.SetUp() =
     BulletMLManager.Init(fixedManager ())
-    // **`Manager.removeAll` では一覧から抜けない**（EnvGate の SetUp と同じ理由）。
+    // `Manager.removeAll` では一覧から抜けない（EnvGate の SetUp と同じ理由）。
     // 抜かないと試験ごとに敵が積み上がり、走らせる順で軌跡が変わる
     Manager.enemies.Clear()
     Manager.rootBullets.Clear()
@@ -154,7 +148,7 @@ type FrontRun() =
         | None -> sprintf "行数が違います。控え %d 行 / いま %d 行" e.Length a.Length
       Assert.Fail(sprintf "軌跡が控えと違います。\n%s\n\n--- いま ---\n%s" where actual)
 
-  /// **当てる先が在るか。** 撃っていない・動いていない走行を凍らせても
+  /// 当てる先が在るか。 撃っていない・動いていない走行を凍らせても
   /// 何も守らない
   [<Test>]
   member _.``12 コマ のあいだに、撃って・動いて・消して・走らせ直している``() =
@@ -164,22 +158,22 @@ type FrontRun() =
     // 撃った弾が居る（根 1 体 だけの行ではない）
     trace |> should haveSubstring "b1 "
 
-    // **走らせ直しが通った。** repeat は 2 周 なので、撃った回数が 3 回 以上 なら
+    // 走らせ直しが通った。 repeat は 2 周 なので、撃った回数が 3 回 以上 なら
     // top が終わって引き直されている
     let births =
       System.Text.RegularExpressions.Regex.Matches(
         trace, System.Text.RegularExpressions.Regex.Escape(FrontRunGolden.Birth)).Count
     births |> should be (greaterThan 2)
 
-    // **消えて落ちた。** 撃った回数より、いちばん多いコマの弾の数が少ない。
-    // **数が減るコマでは見られない** —— 消えるのと次を撃つのが同じコマなので
+    // 消えて落ちた。 撃った回数より、いちばん多いコマの弾の数が少ない。
+    // 数が減るコマでは見られない —— 消えるのと次を撃つのが同じコマなので
     // 数が凹まない
     let counts =
       lines |> Array.map (fun l ->
         System.Text.RegularExpressions.Regex.Matches(l, @"\bb\d+ x=").Count)
     (Array.max counts) |> should be (lessThan (births + 1))
 
-  /// **MonoGame と係数が違う。** こちらは 1/100 で縮め、Y は反転する。
+  /// MonoGame と係数が違う。 こちらは 1/100 で縮め、Y は反転する。
   /// 均すと全弾幕の軌跡が割れるので、ここで固定する
   [<Test>]
   member _.``座標は 1 / 100 で縮み、Y は反転する``() =
@@ -198,6 +192,6 @@ type FrontRun() =
     let x0, y0 = child.X, child.Y
     child.Update ()
     let dx, dy = child.X - x0, child.Y - y0
-    // 速さ 2 が 1/100 で縮む。**1 コマ の移動は 0.02 のあたり**
+    // 速さ 2 が 1/100 で縮む。1 コマ の移動は 0.02 のあたり
     (sqrt (dx * dx + dy * dy)) |> should be (lessThan 0.05f)
     (sqrt (dx * dx + dy * dy)) |> should be (greaterThan 0.005f)

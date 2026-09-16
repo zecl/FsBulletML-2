@@ -9,7 +9,7 @@ open FsBulletML2
 open FsBulletML2.Domain
 open FsBulletML2.Front
 
-/// 走らせている 1 弾。**型の入れ子は書けないので namespace の高さに置く**
+/// 走らせている 1 弾。型の入れ子は書けないので namespace の高さに置く
 [<Struct>]
 type private Live =
   { mutable Run : BulletRun
@@ -18,14 +18,14 @@ type private Live =
     mutable Alive : bool
     Id : int }
 
-/// **Front を通した走行と、Core を直に叩いた走行が同じ軌跡を出すこと。**
+/// Front を通した走行と、Core を直に叩いた走行が同じ軌跡を出すこと。
 ///
 /// Front が吸ったのは「同梱の 4 つ が同じ形で写していたもの」で、
-/// 吸った時点で写しは消える。**消したものと同じ答えを出しているかは、
-/// ここでしか見られない** —— 227 本 の突き合わせは Core の中を見ていて、
+/// 吸った時点で写しは消える。消したものと同じ答えを出しているかは、
+/// ここでしか見られない —— 227 本 の突き合わせは Core の中を見ていて、
 /// Front はその外に居る。
 ///
-/// **2 本 走らせるので、乱数を二重に消費しない形にしてある。**
+/// 2 本 走らせるので、乱数を二重に消費しない形にしてある。
 /// 同じ列を独立に 2 本 用意して、それぞれに 1 本ずつ渡す。
 [<TestFixture>]
 type DriverEquiv() =
@@ -59,7 +59,7 @@ type DriverEquiv() =
         member _.TryTargetFrom(x, y, tx, ty) = near.TryFrom(x, y, &tx, &ty)
         member _.TrySpawnTargetFrom(x, y, tx, ty) = near.TryNearest(x, y, &tx, &ty) }
 
-  /// 直叩きの側が持つ、覚える相手。**Front を使わずに同じ不変条件を書く**
+  /// 直叩きの側が持つ、覚える相手。Front を使わずに同じ不変条件を書く
   let directTarget () =
     let mutable target = ValueNone
     fun (x: float32) (y: float32) ->
@@ -97,7 +97,7 @@ type DriverEquiv() =
     let dy = if flip then -dy else dy
     float32 (Math.Atan2(float (tx - fx), float dy))
 
-  /// 直叩きの Env。**Front が吸う前に同梱のフロントが書いていた形**
+  /// 直叩きの Env。Front が吸う前に同梱のフロントが書いていた形
   let directEnv (rand: unit -> float32) (target: float32 -> float32 -> ValueOption<struct (float32 * float32)>)
                 (flip: bool) (spawnAtOrigin: bool) (x: float32) (y: float32) : Env =
     let sx, sy = if spawnAtOrigin then 0.0f, 0.0f else x, y
@@ -148,7 +148,7 @@ type DriverEquiv() =
             worlds.Add(front rand)
     sb.ToString()
 
-  /// Core を直に叩いた走行。**Front を 1 行 も通らない**
+  /// Core を直に叩いた走行。Front を 1 行 も通らない
   let runDirect (flip: bool) (spawnAtOrigin: bool) (rand: unit -> float32)
                 (xml: string) (frames: int) : string =
     let script = Runner.load rand 0.5f (Bulletml.readXmlString xml)
@@ -212,7 +212,7 @@ type DriverEquiv() =
       // 読む段で落ちる弾幕（DTD 違反）はここでも比べられない。
       // 数を下で押さえるので、握って進む
       | _ -> ()
-    // **当てる先が本当に在るかを数で押さえる。**
+    // 当てる先が本当に在るかを数で押さえる。
     // 全部 例外に吸われて「0 本 比べて緑」になっても気づけない
     compared |> should be (greaterThan 200)
     if not (List.isEmpty diverged) then
@@ -228,7 +228,7 @@ type DriverEquiv() =
   member _.``Unity2D の並び: Front 経由と直叩きが同じ軌跡``() =
     compareAll Space.YUp SpawnOrigin.AtShooter false false
 
-  /// **較正。** 上の 2 本 が「何を入れても通る」門になっていないことを見る。
+  /// 較正。 上の 2 本 が「何を入れても通る」門になっていないことを見る。
   /// 座標系を取り違えた組み合わせでは割れるはず
   [<Test>]
   member _.``較正: 座標系を取り違えると割れる``() =
@@ -249,6 +249,6 @@ type DriverEquiv() =
       | _ -> ()
     compared |> should be (greaterThan 200)
     // 全部 割れる必要は無い（aim を一度も読まない弾幕が在る）が、
-    // **1 本 も割れないなら門が効いていない**
+    // 1 本 も割れないなら門が効いていない
     diverged |> should be (greaterThan 50)
     TestContext.WriteLine(sprintf "%d 本 中 %d 本 で割れた" compared diverged)

@@ -6,30 +6,16 @@ using FsBulletML2;
 using FsBulletML2.Sample.Unity2D.FSharp;
 
 /// <summary>
-/// <b>敵が実際に弾を撃つところまでを、Play せずに見る。</b>
+/// 敵が実際に弾を撃つところまでを、Play せずに見る。
 ///
 /// 走らせ方:
-/// <code>
-/// Unity.exe -batchmode -quit -nographics -projectPath &lt;proj&gt; -logFile &lt;log&gt; ^
-///           -executeMethod EnemyShootCheck.Run
-/// </code>
 ///
-/// <b>R3WiringCheck では出ない穴を見る。</b> あちらは発火源から購読へ 1 個 届くかを
-/// 見るだけで、<b>Enemy がその流れに繋がっているかを 1 つ も見ていない</b>。
 /// <c>Start</c> で購読を張り忘れても、条件を書き違えても、あちらは緑のまま。
-///
-/// <b>BulletSmokeCheck とも別。</b> あちらは <c>BulletSim</c> を直に組んで
-/// エンジンだけを回すので、MonoBehaviour 側の配線を通らない。
-///
-/// ここが見るのは「Awake → Start → コマを回す → 敵の弾が増えている」の一続き。
-/// 弾幕の切り替えも撃つ合図も R3 の流れに載っているので、
-/// <b>そのどれかが切れれば弾数が 0 のまま</b>になる。
-/// </summary>
 public static class EnemyShootCheck
 {
     /// <summary>
     /// 弾幕を読むのに要る口。BulletSmokeCheck と同じ形で、
-    /// <b>乱数を固定する</b>（撃った本数を比べるわけではないが、走行を揃える）。
+    /// 乱数を固定する（撃った本数を比べるわけではないが、走行を揃える）。
     /// </summary>
     class FixedManager : IBulletMLManager
     {
@@ -61,7 +47,7 @@ public static class EnemyShootCheck
             BulletEntityFactory.Configure(null, null);
             BulletEntityFactory.DestroyAllEnemy();
 
-            // 弾幕を読む口。**Enemy.Start より先**（読む段の Env が引く）
+            // 弾幕を読む口。Enemy.Start より先（読む段の Env が引く）
             BulletMLManager.Init(new FixedManager());
 
             tickerGo = new GameObject("FrameTicker");
@@ -74,7 +60,7 @@ public static class EnemyShootCheck
 
             var before = BulletEntityFactory.EnemyCount;
 
-            // **撃つ合図は「弾幕を入れ替えた次のコマ」。** 1 回 で足りるが、
+            // 撃つ合図は「弾幕を入れ替えた次のコマ」。 1 回 で足りるが、
             // 数コマ 回して確かめる（1 回 目 で出なければ配線が切れている）
             for (var i = 0; i < 5; i++)
             {
@@ -84,7 +70,7 @@ public static class EnemyShootCheck
             var after = BulletEntityFactory.EnemyCount;
             Debug.Log("[EnemyShootCheck] 敵の弾: " + before + " -> " + after);
 
-            // **0 件 を緑にしない。** 撃っていないなら、Start の購読か
+            // 0 件 を緑にしない。 撃っていないなら、Start の購読か
             // 撃つ合図の条件が切れている
             if (after <= before)
             {
@@ -93,7 +79,7 @@ public static class EnemyShootCheck
                 failures++;
             }
 
-            // 弾幕の名前が入っているか。**番号の購読（Start の 2 番）が見る唯一の出口**
+            // 弾幕の名前が入っているか。番号の購読（Start の 2 番）が見る唯一の出口
             if (string.IsNullOrEmpty(enemy.BulletName))
             {
                 Debug.LogError("[EnemyShootCheck] 弾幕の名前が空。番号の購読が届いていない");
@@ -104,7 +90,7 @@ public static class EnemyShootCheck
                 Debug.Log("[EnemyShootCheck] 弾幕の名前: " + enemy.BulletName);
             }
 
-            // 番号を動かすと名前が変わるか。**Next は番号を動かすだけ**という
+            // 番号を動かすと名前が変わるか。Next は番号を動かすだけという
             // 作りなので、ここが変わらなければ購読が切れている
             var firstName = enemy.BulletName;
             enemy.Next();
@@ -119,7 +105,7 @@ public static class EnemyShootCheck
                 Debug.Log("[EnemyShootCheck] Next で名前が変わった: " + firstName + " -> " + enemy.BulletName);
             }
 
-            // ライフが入り直しているか。**ApplyPattern が MaxLife から入れる**
+            // ライフが入り直しているか。ApplyPattern が MaxLife から入れる
             if (enemy.Life <= 0)
             {
                 Debug.LogError("[EnemyShootCheck] ライフが " + enemy.Life + "。"

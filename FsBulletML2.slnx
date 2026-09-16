@@ -18,6 +18,7 @@
     <Project Path="samples/FsBulletML2.Sample.Shared.MagicOnion.Compile/FsBulletML2.Sample.Shared.MagicOnion.Compile.csproj" />
     <Project Path="samples/FsBulletML2.Sample.Server.MagicOnion/FsBulletML2.Sample.Server.MagicOnion.csproj" />
     <Project Path="samples/FsBulletML2.Sample.Client.MagicOnion/FsBulletML2.Sample.Client.MagicOnion.csproj" />
+    <Project Path="samples/FsBulletML2.Sample.Godot.MagicOnion/FsBulletML2.Sample.Godot.MagicOnion.csproj" />
     <Project Path="samples/FsBulletML2.Sample.Unity2D.MagicOnion.Compile/FsBulletML2.Sample.Unity2D.MagicOnion.Compile.csproj" />
   </Folder>
   <Folder Name="/src/">

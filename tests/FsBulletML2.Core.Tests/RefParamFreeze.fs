@@ -7,22 +7,6 @@ open NUnit.Framework
 /// 直す前は、`BulletRunner.convertBulletmlTask` が
 /// `BulletmlRead.existRandomParam` を見て、$rand を含む ref がひとつでもあれば
 /// `BulletmlTask.Original` に生の XML を持たせ、`Init()` が毎周 作り直していた。
-/// 探していたのは `$rand` の 5 文字だけで、`$rank` は見ていなかった。
-///
-/// そのあと 11 で直した。param を文字のまま子へ渡すようにしたので、
-/// $rand を助けるためのこの迂回路は要らなくなり、`existRandomParam` は消してある。
-/// この doc は「何が在ってどう壊れていたか」の記録。控えは直したあとの姿。
-///
-/// **旧 API だけの 2 本 は消した。** どちらも `BulletmlTask.Original` を
-/// 毎周 作り直していた不具合の見張りで、**新 API に Original が無いので
-/// その不具合の形が作れない**（param は文字のまま子へ渡り、`getValue` が
-/// 読む位置まで生き残る）。
-///
-///     param の中身と Original の関係
-///     Original を書き換えて Init すると、次に走るのは書き換えた方
-///
-/// 控えも一緒に落とした（`freeze-original-flag`）。
-/// 「param が凍らない」ことそのものは、残した 8 本 が軌跡で見ている。
 [<TestFixture>]
 type RefParamFreeze() =
 
@@ -86,7 +70,7 @@ type RefParamFreeze() =
   /// フレーム 4 で値を切り替える。前後で 2 発ずつ撃つ長さにしてある。
   ///
   /// 旧は MutableManager（グローバル）を走行の途中で差し替えていた。
-  /// **新 API はフロントが毎コマ Env を渡すので、ふつうの mutable でよい**
+  /// 新 API はフロントが毎コマ Env を渡すので、ふつうの mutable でよい
   /// —— 差し替えるグローバルが要らない。移植が正しいことは、
   /// 下の Golden が 1 バイト も動かないことで押さえている。
   let runSwitching (xml: string) (rand: unit -> float32) (rank: unit -> float32)
@@ -154,7 +138,7 @@ type RefParamFreeze() =
   /// 11 を直す代償を測る。
   ///
   /// mapEval を外して param を文字のまま渡すと、$rand / $rank は getValue まで
-  /// 生き残る。そのかわり **$1 を何度も使う action では、使うたびに転がる**。
+  /// 生き残る。そのかわり $1 を何度も使う action では、使うたびに転がる。
   /// 揃った扇がばらけるかどうかが、直すか決める材料になる。
   ///
   /// ここは 1 つの action の中で同じ $1 を 3 回 使い、3 発の向きが揃うかを見る
@@ -172,7 +156,7 @@ type RefParamFreeze() =
 </action>"""
     // 毎フレーム rand を動かす。param が数へ潰されていれば 3 発とも同じ向き、
     // 文字のまま渡っていれば 3 発ともばらける。
-    // **木を組む段は 0.5**（旧はループの前に FixedManager(0.5f, ...) が
+    // 木を組む段は 0.5（旧はループの前に FixedManager(0.5f, ...) が
     // 入っていた）。hook はコマの頭で呼ばれるので、f0 からは 0.1 x n
     let mutable n = 0
     let mutable rand = 0.5f

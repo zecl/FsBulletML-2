@@ -5,25 +5,11 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.LanguageService
 
-/// **定義の行の上に参照の数**（v4.3）。
+/// 定義の行の上に参照の数（v4.3）。
 ///
 /// --- 「0 か所 から参照」の 97% は嘘になる
 ///
 /// 同梱 176 本 の定義 767 個 を数えたら、参照が 0 の定義は 215 件。
-/// **そのうち 209 件 は根から走る定義**（`top…`）で、
-/// **誰にも参照されないのが正しい。**
-///
-/// 残り **6 件** は `Semantics.UnusedDefinition`（v2.3 の青い波線）が
-/// 指しているのと**同じ 6 件** —— 別々 に数えて同じ答えが出た。
-///
-/// --- 較正（1 か所 ずつ当てて、赤くなった点を数えた）
-///
-///   `used |> List.filter (= 名前)` の `filter` を消す   赤 4
-///   `isEntry` を `false` に                            赤 3
-///   `Clickable = true` を `false` に                    赤 1
-///
-/// **1 つ 目 が 4 点 に当たるのは、数が全部 の名前の合計になるから** ——
-/// 0 が 1 つ も出なくなり、「呼ばれない定義」も「根から走る」も消える。
 [<TestFixture>]
 type Lenses() =
 
@@ -58,9 +44,8 @@ type Lenses() =
   //
   // v4.7 まで CE だけ空だった。理由は「`Refs.uses` が数えるのは参照側の
   // 要素名で、CE では `actionRef` と打たない」と書いてあったが、
-  // **打たないのは字**で、`FsharpScan.tags` が返す `TagName` は
+  // 打たないのは字で、`FsharpScan.tags` が返す `TagName` は
   // 語彙が引いた要素名そのもの。
-
   static let ce : SourceLanguage.ISourceLanguage =
     Languages.Fsharp.FsharpLanguage(fun () -> vocab) :> SourceLanguage.ISourceLanguage
 
@@ -81,7 +66,7 @@ type Lenses() =
 
   [<Test>]
   member _.``対が引けている``() =
-    // **0 件 だと、下の点が全部「当てる先が無くて緑」になる**
+    // 0 件 だと、下の点が全部「当てる先が無くて緑」になる
     pairs |> should not' (be Empty)
 
   [<Test>]
@@ -101,7 +86,7 @@ type Lenses() =
     match lang.Lenses src |> List.tryFind (fun l -> l.Name = "top") with
     | Some l ->
         l.Title |> should equal "根から走る"
-        // **開く先が無いので押せない**
+        // 開く先が無いので押せない
         l.Clickable |> should equal false
     | None -> failwith "top が無い"
 
@@ -121,7 +106,7 @@ type Lenses() =
     |> List.forall (fun (a, b) -> a <= b)
     |> should equal true
 
-  /// **v2.3 の青い波線と同じものを指す。** 材料は同じ（`Refs`）だが
+  /// v2.3 の青い波線と同じものを指す。 材料は同じ（`Refs`）だが
   /// 数え方が別（`pairs` と `uses`）—— 別々 に数えて同じ答えが出ることを見る
   [<Test>]
   member _.``呼ばれない定義は、青い波線と同じ集合``() =
@@ -135,7 +120,7 @@ type Lenses() =
           for f in lang.Findings text do
             if f.Kind = Semantics.UnusedDefinition then yield name, f.Name ]
       |> List.sort
-    // **当てる先が在ることを、門が自分で数える**
+    // 当てる先が在ることを、門が自分で数える
     byLens |> should not' (be Empty)
     byLens |> should equal byFindings
 
@@ -153,17 +138,16 @@ type Lenses() =
     entry |> should be (greaterThan 100)
     dead |> should be (lessThan 20)
     used |> should be (greaterThan 100)
-    // **根から走るほうが、本当に呼ばれていないものより桁で多い**
+    // 根から走るほうが、本当に呼ばれていないものより桁で多い
     entry |> should be (greaterThan (dead * 10))
 
   // --- v4.8: CE の点 ---------------------------------------------------------
   //
   // 較正（当てた変異と、赤くなった点）
   //
-  //   CE の `Lenses` を `[]` に戻す          赤 4（**全部 CE の点。XML は緑のまま**）
+  //   CE の `Lenses` を `[]` に戻す          赤 4（全部 CE の点。XML は緑のまま）
   //   `Lookup.lenses` の札を `[]` に          赤 9（4 表記 に 1 本 で効いている印）
   //   `isEntry` を `false` に                赤 4（CE の点も 1 つ 混じる）
-
   [<Test>]
   member _.``CE でも定義の行に出る``() =
     ce.Lenses ceSrc |> List.length |> should equal 3
@@ -182,12 +166,12 @@ type Lenses() =
     titles |> should contain ("top", "根から走る")
     titles |> should contain ("tsukawanai", "どこからも参照されていない")
 
-  /// **いちばん強い点。** 同梱 176 本 を CE と XML の両方 で書いて、
-  /// **名前と見出しの並びが一致する**ことを見る ——
+  /// いちばん強い点。 同梱 176 本 を CE と XML の両方 で書いて、
+  /// 名前と見出しの並びが一致することを見る ——
   /// 位置は表記ごとに違うが、数も文面も違わない。
   ///
   /// v4.8 の測定（`Refs.uses` を CE の札に当てて 176 / 176 揃う）を、
-  /// **本番の口（`ISourceLanguage.Lenses`）の上で数え直したもの。**
+  /// 本番の口（`ISourceLanguage.Lenses`）の上で数え直したもの。
   [<Test>]
   member _.``同梱 全部 で、CE と XML の Lens が一致する``() =
     let write (kind: SourceKind) (b: Bulletml) =
@@ -204,6 +188,6 @@ type Lenses() =
           l.Lenses src |> List.map (fun n -> n.Name, n.Title) |> List.sort
         if profile ce c <> profile lang x then bad.Add info.Name
       | _ -> ()
-    // **当てる先が在ることを、門が自分で数える**
+    // 当てる先が在ることを、門が自分で数える
     compared |> should be (greaterThan 100)
     bad |> List.ofSeq |> should be Empty

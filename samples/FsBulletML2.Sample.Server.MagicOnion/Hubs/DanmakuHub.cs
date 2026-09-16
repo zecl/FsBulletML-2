@@ -8,10 +8,10 @@ using Microsoft.Extensions.Logging;
 namespace FsBulletML2.Sample.Server.MagicOnion.Hubs
 {
     /// <summary>
-    /// 口 の実装。<b>ここは配線しか持たない</b> ——
+    /// 口 の実装。ここは配線しか持たない ——
     /// 弾幕は <see cref="Room"/> が、部屋 の出入りは <see cref="RoomRegistry"/> が持つ。
     ///
-    /// <b>Hub は接続 1 本 につき 1 個 作られて、切れたら捨てられる。</b>
+    /// Hub は接続 1 本 につき 1 個 作られて、切れたら捨てられる。
     /// 状態を置くと、再接続で消える。置いてよいのは
     /// 「この接続がどの部屋 に居るか」だけ。
     /// </summary>
@@ -32,7 +32,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Hubs
         }
 
         /// <summary>
-        /// 繋がった。<b>ここを出すのが、いちばん手前 の切り分け</b> ——
+        /// 繋がった。ここを出すのが、いちばん手前 の切り分け ——
         /// この行 が出ないなら、届いていないのは口 ではなく網 か港。
         /// </summary>
         protected override ValueTask OnConnecting()
@@ -46,7 +46,11 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Hubs
         {
             request ??= new JoinRequest();
 
-            // **部屋 の名前は「弾幕 と 種」で決まる。** 同じ組なら同じ部屋 に入る
+            // 入る前 に出る。 出さないと、前 の部屋 に入りっぱなし が残り、
+            // client が連打 したときに替えられなくなる
+            await LeaveAsync();
+
+            // 部屋 の名前は「弾幕 と 種」で決まる。 同じ組なら同じ部屋 に入る
             // ＝ 同じ並びを見る（観戦）。違う種 なら別の部屋 になる
             key = $"{request.Bulletml}#{request.Seed}";
 
@@ -86,7 +90,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Hubs
         }
 
         /// <summary>
-        /// <b>切れたときも部屋 から引く。</b> 引かないと、落ちた client のぶんだけ
+        /// 切れたときも部屋 から引く。 引かないと、落ちた client のぶんだけ
         /// 人数 が減らず、誰も見ていない部屋 が回り続ける。
         /// </summary>
         protected override async ValueTask OnDisconnected()

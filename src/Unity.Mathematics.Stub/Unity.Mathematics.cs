@@ -2,7 +2,7 @@ using System;
 
 // COMPILE-ONLY stub of Unity.Mathematics. Not a substitute for the Unity Editor.
 //
-// **アセンブリ名が本物と一致していることが要。** 1 本 に詰めると、焼いた dll が
+// アセンブリ名が本物と一致していることが要。 1 本 に詰めると、焼いた dll が
 // 「この型は UnityEngine に在る」と主張したまま Unity へ渡り、CS7069 で落ちる。
 // 詳しい但し書きは src/UnityEngine.Stub/UnityEngine.cs の頭。
 namespace Unity.Mathematics

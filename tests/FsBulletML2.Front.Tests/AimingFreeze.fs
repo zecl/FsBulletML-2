@@ -6,11 +6,11 @@ open FsUnit
 open FsBulletML2.Front
 
 /// `Aiming.toward` が、同梱の 2 つ のフロントが持っていた式と
-/// **float32 のビットまで**同じ答えを返すこと。
+/// float32 のビットまで同じ答えを返すこと。
 ///
 /// この 2 本 は「座標系が違うから Core へ畳めない」と書かれていた。
 /// 並べたら 1 つ の式の 1 パラメータ違いだったので畳んだ。
-/// **その根拠をここで凍らせる** —— 畳んだ側を直したら、こちらが赤くなる。
+/// その根拠をここで凍らせる —— 畳んだ側を直したら、こちらが赤くなる。
 [<TestFixture>]
 type AimingFreeze() =
 
@@ -70,7 +70,7 @@ type AimingFreeze() =
     if mismatch <> 0 then
       Assert.Fail(sprintf "%d 組 ずれた。最初: %s" mismatch firstBad)
 
-  /// **較正。** 上の 2 本 が「どんな式でも通る」門になっていないことを見る。
+  /// 較正。 上の 2 本 が「どんな式でも通る」門になっていないことを見る。
   /// 2 つ の座標系は実際に違う答えを出すので、取り違えたら落ちるはず
   [<Test>]
   member _.``較正: YDown と YUp は同じ答えではない``() =
@@ -83,6 +83,6 @@ type AimingFreeze() =
                <> bits (Aiming.toward Space.YUp fx fy tx ty) then
               differ <- differ + 1
     // Y が同じ点（fy = ty）では両方 0 を挟むので一致しうる。
-    // **大半でずれることだけを見る**
+    // 大半でずれることだけを見る
     differ |> should be (greaterThan 10000)
     TestContext.WriteLine(sprintf "14,641 組 中 %d 組 でずれた" differ)

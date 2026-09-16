@@ -17,13 +17,13 @@ type DefaultBullet (transform:Transform) as this =
 
   let self () = this :> IDefaultBullet
 
-  /// この弾から見た世界。**弾 1 個 につき 1 個。**
+  /// この弾から見た世界。弾 1 個 につき 1 個。
   /// 狙う相手を覚えるのが弾ごとなので使い回せない
   let front = Unity2DEnv () :> IFrontEnv
 
   /// 撃たれた弾の実体を作る。旧 GetNewBullet が呼んでいたもの。
   ///
-  /// **既定は null を返す**（サンプルの未実装）。旧はエンジンがここを
+  /// 既定は null を返す（サンプルの未実装）。旧はエンジンがここを
   /// 呼び返して、null なら「撃たなかったこと」にして fire の累積
   /// （SrcSpeed / SpeedInit）を巻き戻していた。新 API は撃つ弾を値で
   /// 返しきるので、その巻き戻しは無い —— null のときは実体を作らずに
@@ -59,7 +59,7 @@ type DefaultBullet (transform:Transform) as this =
 
     /// 弾幕を割り当てて根から始める。
     ///
-    /// **根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。**
+    /// 根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。
     /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
     /// 立てておくこと（同梱の弾はどれも Awake で立てている）
     member _.SetScript (s) =
@@ -71,7 +71,7 @@ type DefaultBullet (transform:Transform) as this =
           else Runner.newRoot me.BulletType sc)
 
     /// 撃たれた弾を、エンジンから受け取った実行状態で始める。
-    /// **弾幕を渡す口が無い** —— `BulletRun` が親のものを持っている
+    /// 弾幕を渡す口が無い —— `BulletRun` が親のものを持っている
     member _.SetRun (r: BulletRun) =
       finished <- false
       run <- Some r
@@ -109,14 +109,9 @@ type DefaultBullet (transform:Transform) as this =
 
   /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ
   ///
-  /// **実体が作れなければ、ここで捨てる。エンジンには何も返さない。**
+  /// 実体が作れなければ、ここで捨てる。エンジンには何も返さない。
   /// エンジンの側では撃った扱いのままで、fire の sequence の累積も進んでいる
   /// （Frame.Spawned に入った時点で確定している）。
-  ///
-  /// 旧 API はここで累積を巻き戻していたが、**参照実装 2 本 のどちらにも無い
-  /// 振る舞い**だったので新 API へは持ってきていない
-  /// （根拠は Core の Api.fs、Frame.Spawned の但し書き）。
-  /// 弾プールの尽きは、こちら側の都合として こちら側で終わらせる。
   member private this.Spawn (child: BulletRun) =
     let newBullet = this.GetBulletPrefubInstance ()
     if newBullet :> obj <> null then
@@ -124,7 +119,7 @@ type DefaultBullet (transform:Transform) as this =
       newBullet.Init ()
       newBullet.IsBullet <- true
       newBullet.BulletType <- (self ()).BulletType
-      // 弾幕は親と同じものを引き継ぐ。**引き継ぎ忘れる書き方がもう無い**
+      // 弾幕は親と同じものを引き継ぐ。引き継ぎ忘れる書き方がもう無い
       // —— BulletRun が弾幕を持っている
       newBullet.SetRun child
       newBullet.X <- motion.Pos.X

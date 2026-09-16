@@ -3,8 +3,8 @@
 open System
 open System.Runtime.CompilerServices
 
-/// C# と F# の関数を行き来させる変換。**呼ばれているぶんだけ置いてある。**
-/// MonoGame 側の同名と対だが、**同じ本数ではない** ——
+/// C# と F# の関数を行き来させる変換。呼ばれているぶんだけ置いてある。
+/// MonoGame 側の同名と対だが、同じ本数ではない ——
 /// 0 引数 版はあちらの C# サンプルだけが使う。
 [<Extension; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Action =

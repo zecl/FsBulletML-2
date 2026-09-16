@@ -9,8 +9,8 @@ open FsBulletML2.Front
 
 /// `FsBulletML2.Front` の公開面に `seq<_>`（`IEnumerable<_>`）が出ないこと。
 ///
-/// **但し書きではなく門にしてある。** 「`seq` を毎コマ 列挙すると列挙子が
-/// 40 B / 回 出る」は測ってあるが、但し書きは**次に口を足す人には届かない**。
+/// 但し書きではなく門にしてある。 「`seq` を毎コマ 列挙すると列挙子が
+/// 40 B / 回 出る」は測ってあるが、但し書きは次に口を足す人には届かない。
 [<TestFixture>]
 type PublicSurface() =
 
@@ -43,7 +43,7 @@ type PublicSurface() =
   [<Test>]
   member _.``公開面に seq が出ていない``() =
     let types = asm.GetTypes() |> Array.filter (fun t -> t.IsPublic || t.IsNestedPublic)
-    // **当てる先が在るかを先に見る。** 型が 0 本 なら 0 件 は緑ではない
+    // 当てる先が在るかを先に見る。 型が 0 本 なら 0 件 は緑ではない
     types.Length |> should be (greaterThan 2)
     let bad = types |> Array.collect (offenders >> Array.ofList) |> List.ofArray
     if not (List.isEmpty bad) then
@@ -51,7 +51,7 @@ type PublicSurface() =
                     (List.length bad) (String.Join("\n  ", bad)))
     TestContext.WriteLine(sprintf "見た公開型 %d 本" types.Length)
 
-  /// **較正。** 上の門が「何を見ても 0 件」になっていないことを見る。
+  /// 較正。 上の門が「何を見ても 0 件」になっていないことを見る。
   /// `seq` を持つ型に同じ判定を当てたら、当たるはず
   [<Test>]
   member _.``較正: seq を持つ型なら当たる``() =
@@ -59,7 +59,7 @@ type PublicSurface() =
     bad |> List.length |> should be (greaterThan 0)
     TestContext.WriteLine(sprintf "餌で当たった: %s" (String.Join(", ", bad)))
 
-/// 較正用の餌。**`FsBulletML2.Front` の外に置く** —— 中に置くと本番の門が
+/// 較正用の餌。`FsBulletML2.Front` の外に置く —— 中に置くと本番の門が
 /// これを拾って、いつでも赤くなる
 and [<Sealed>] SeqBait() =
   member _.Enemies : seq<int> = Seq.empty

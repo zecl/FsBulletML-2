@@ -8,37 +8,20 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.LanguageService
 
-/// **参照の欠けを、本文の字から全部 数える側の目盛り。**
+/// 参照の欠けを、本文の字から全部 数える側の目盛り。
 ///
 /// Core は最初の 1 件 で `raise` して止まり、位置も持たない。だから
 /// 「無い label」を全部 波線にするには本文の側から数えるしかなく、
-/// **Core の判定をもう 1 本 書いている**ことになる。
-///
-/// **`missing` は Core より広い。** Core は `top` から到達した要素しか
-/// 展開しないので、誰も参照していない枝の中の壊れた参照を素通りする
-/// （コーパスの `readTest.xml` が実際にそう ——
-/// `<bulletml>` 直下の `<fire label="topFire">` が `top` から辿れない）。
-/// **だから「Core が落ちる ⇔ ここが挙げる」ではない。**
-///
-/// 割れる向きを、本番の道（`References.explain`）で塞ぐ。
-///
-///   嘘の波線  Apply が通る弾幕に 1 本 でも引いたら嘘
-///             -> コーパス全部 を `explain` に通して 0 本
-///   見落とし  Core が落ちる名前を挙げない
-///             -> 参照を 1 つ ずつ壊して、Core が落ちた回だけ突き合わせる
-///
-/// 走る先（`actionRef` -> `action` など）も表を持たず語彙から導いている。
-/// **導けなければ 1 件 も挙げない**ので、0 件 が緑にならないよう
-/// 対の数そのものを見る点を先に置く。
+/// Core の判定をもう 1 本 書いていることになる。
 [<TestFixture>]
 type ReferenceScan() =
 
-  /// `References` が見ているのと同じ形。**閉じ札は落とす** ——
+  /// `References` が見ているのと同じ形。閉じ札は落とす ——
   /// `XmlScan.tags` は閉じ札も返すが、それを使うのはカーソルの居場所を
   /// 出す側で、参照の欠けを数える側は開始札しか見ない
   let openTags (src: string) = XmlScan.tags src |> List.filter (fun t -> not t.Closing)
 
-  /// **字を数える 1 本 を渡す（v0.9）。** `References` は表記を知らなくなった ——
+  /// 字を数える 1 本 を渡す（v0.9）。 `References` は表記を知らなくなった ——
   /// ここが渡しているのは XML の側で、sxml は `SxmlReferenceScan.fs`
   let missing = References.missing XmlScan.tags
 
@@ -78,7 +61,7 @@ type ReferenceScan() =
 
   [<Test>]
   member _.``無い参照を 2 つ とも挙げる``() =
-    // **これが本題。** Core はここで 1 件 目 しか言わない
+    // これが本題。 Core はここで 1 件 目 しか言わない
     let found =
       missing "<bulletml><action label=\"top\"><actionRef label=\"a\"/><actionRef label=\"b\"/></action></bulletml>"
     found.Length |> should equal 2
@@ -124,7 +107,7 @@ type ReferenceScan() =
 
   [<Test>]
   member _.``コメントの中は数えない``() =
-    // **コメントの中に `>` を先に置く。** 置かないと、コメント専用の飛ばしを
+    // コメントの中に `>` を先に置く。 置かないと、コメント専用の飛ばしを
     // 外しても `<!` の枝が `>` まで食って同じ結果になり、変異が当たらない
     missing "<bulletml><action label=\"top\"><!-- x > <actionRef label=\"a\"/> --><wait>1</wait></action></bulletml>"
     |> should be Empty
@@ -154,7 +137,7 @@ type ReferenceScan() =
 
   [<Test>]
   member _.``閉じ引用符が無い属性は捨てる``() =
-    // **位置が本文とずれるものを挙げない。** 読めていないまま挙げると嘘の波線
+    // 位置が本文とずれるものを挙げない。 読めていないまま挙げると嘘の波線
     missing "<bulletml><action label=\"top\"><actionRef label=\"a/></action></bulletml>"
     |> should be Empty
 
@@ -167,7 +150,7 @@ type ReferenceScan() =
 
   [<Test>]
   member _.``Apply が通る弾幕には 1 本 も引かない``() =
-    // **本番の道で見る。** `missing` 単独だと、到達しない枝の壊れた参照を
+    // 本番の道で見る。 `missing` 単独だと、到達しない枝の壊れた参照を
     // 挙げてしまう（Core より広い）。`explain` は Core が通れば呼ばない
     let noisy =
       corpus.Value
@@ -183,7 +166,7 @@ type ReferenceScan() =
   [<Test>]
   member _.``構文が壊れているときは、構文の理由だけを出す``() =
     // 本文が読めていないので、字から数えた位置は当てにならない。
-    // **参照の欠けが本文に在っても、そちらへ乗り換えない**
+    // 参照の欠けが本文に在っても、そちらへ乗り換えない
     let xml = "<bulletml><action label=\"top\"><actionRef label=\"nope\"/><fire>"
     (missing xml).Length |> should equal 1   // 単独なら挙げる
     match explain xml with
@@ -194,20 +177,20 @@ type ReferenceScan() =
 
   [<Test>]
   member _.``到達しない枝の壊れた参照は、Apply が通るので波線にならない``() =
-    // **Core と食い違う唯一 の向きを、字で固定する。** ここが赤くなったら
+    // Core と食い違う唯一 の向きを、字で固定する。 ここが赤くなったら
     // Core の展開が変わったということ（到達を見るようになった、など）
     let xml =
       "<bulletml><action label=\"top\"><wait>1</wait></action>"
       + "<fire label=\"orphan\"><bulletRef label=\"nope\"/></fire></bulletml>"
     coreFails xml |> should be False
-    // `missing` 単独では挙げる。**広いこと自体は間違いではない**
+    // `missing` 単独では挙げる。広いこと自体は間違いではない
     (missing xml).Length |> should equal 1
     // 本番の道では出ない
     explain xml |> should be Empty
 
   [<Test>]
   member _.``参照を 1 つ 壊すと、Core が落ちて、同じ名前を挙げる``() =
-    // 見落とし。**Core が真**で、こちらは位置を足すだけ
+    // 見落とし。Core が真で、こちらは位置を足すだけ
     let mutable measured = 0
     let mutable skipped = 0
     let bad = ResizeArray<string>()
@@ -220,7 +203,7 @@ type ReferenceScan() =
             + "__nope__"
             + xml.Substring(m.Groups.[3].Index + m.Groups.[3].Length)
           // 壊しても Core が通るのは、そこが到達しない枝だったとき。
-          // **測定材料にならないので飛ばす**（飛ばした数は下で見る）
+          // 測定材料にならないので飛ばす（飛ばした数は下で見る）
           if not (coreFails broken) then skipped <- skipped + 1
           else
             measured <- measured + 1

@@ -2,21 +2,11 @@ namespace FsBulletML2.Bullets.Dsl.EnemyBullet
 open FsBulletML2
 open FsBulletML2.Dsl
 
-/// **BulletML 公式配布（bulletml0_21）のサンプル。**
+/// BulletML 公式配布（bulletml0_21）のサンプル。
 ///
-/// `All.bullets`（同梱 176 本）には**混ぜない** —— あちらは
+/// `All.bullets`（同梱 176 本）には混ぜない —— あちらは
 /// 白い弾幕くん由来の集合で、そこに測った数（$rank を使う 173 本 /
 /// 狙いを使う 103 本 / 横画面 9 本 …）が全部 紐づいている。
-/// 出自の違うものを混ぜると、その数が何の集合の話か分からなくなる。
-///
-/// **`All.official` から引く。** v2.4.1 で「公式と突き合わせる」ために足した。
-///
-/// 同じ遊びの名前が `EnemyBullet.Sdmkun` にも在るが、**中身は別物**
-/// （あちらは改変版。例: GDarius は repeat が 20 と 12、公式は 8 と 9999）。
-///
-/// **手で書き写していない。** XML を読んで `SourceWriter` の F# CE で起こした。
-/// `template.xml` は入れていない（action も bullet も無い雛形で、
-/// 入れると意味の検査に当たる唯一 の本になる）。
 [<RequireQualifiedAccess>]
 module Official =
 

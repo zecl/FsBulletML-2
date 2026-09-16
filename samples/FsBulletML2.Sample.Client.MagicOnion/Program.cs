@@ -9,14 +9,10 @@ using MagicOnion.Client;
 namespace FsBulletML2.Sample.Client.MagicOnion
 {
     /// <summary>
-    /// 数えるだけの client。<b>絵 は出さない。</b>
+    /// 数えるだけの client。絵 は出さない。
     ///
-    /// <b>これが在る理由は 2 つ。</b>
+    /// これが在る理由は 2 つ。
     /// 1 つ 目 は、Unity を立てずに配線を確かめられること。
-    /// 2 つ 目 は、<b>この repo で「F# を 1 本 も参照しない client」が
-    /// 実際に焼けることを、門 が数えられる形で置いておく</b>こと ——
-    /// Unity 側 は dll を消し忘れても絵 が出てしまうので、目では出ない。
-    /// </summary>
     static class Program
     {
         static async Task<int> Main(string[] args)
@@ -27,7 +23,7 @@ namespace FsBulletML2.Sample.Client.MagicOnion
             int frames = int.TryParse(Arg(args, "--frames"), out var f) ? f : 180;
             bool shoot = Array.IndexOf(args, "--shoot") >= 0;
 
-            // **h2c（暗号化しない HTTP/2）を通す。** 既定では http:// の
+            // h2c（暗号化しない HTTP/2）を通す。 既定では http:// の
             // HTTP/2 が閉じていて、繋ぎに行った瞬間に落ちる
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
@@ -48,16 +44,16 @@ namespace FsBulletML2.Sample.Client.MagicOnion
                     info.Name, info.Fps, info.Fps / Math.Max(1, info.SendEvery), info.Space,
                     F(info.MinX), F(info.MaxX), F(info.MinY), F(info.MaxY));
 
-                // **飛び の物差し を、配る間隔 に合わせる。** 合わせないと、
+                // 飛び の物差し を、配る間隔 に合わせる。 合わせないと、
                 // 間引いたぶんを全部「落ちた」と数える（コマ番号 は時刻 のまま）
                 receiver.Step = Math.Max(1, info.SendEvery);
 
-                // 自機 を 1 度 置く。**置かないと aim の狙う先が既定のまま**、
-                // かつ**サーバーは被弾 を数えない**（送られていない位置で判定しない）
+                // 自機 を 1 度 置く。置かないと aim の狙う先が既定のまま、
+                // かつサーバーは被弾 を数えない（送られていない位置で判定しない）
                 float px = info.OriginX;
                 float py = info.MinY + 0.5f;
 
-                // **--player で置き場を動かせる。** 当たり判定 が効いているかは、
+                // --player で置き場を動かせる。 当たり判定 が効いているかは、
                 // 弾の出どころ へ置いて数が増えることで見る
                 var placed = Arg(args, "--player");
                 if (placed != null)
@@ -75,7 +71,7 @@ namespace FsBulletML2.Sample.Client.MagicOnion
                 Console.WriteLine("自機 ({0}, {1})", F(px), F(py));
                 await hub.SetPlayerAsync(px, py).ConfigureAwait(false);
 
-                // **撃ちながら数える。** 自機 の弾もサーバーが作るので、
+                // 撃ちながら数える。 自機 の弾もサーバーが作るので、
                 // 弾数 が増えることがそのまま「撃てた」の印 になる
                 using var shooting = shoot ? StartShooting(hub, px, py) : null;
 
@@ -91,7 +87,7 @@ namespace FsBulletML2.Sample.Client.MagicOnion
         }
 
         /// <summary>
-        /// 60 回/秒 で撃ち続ける。<b>Unity の Z 押しっぱなしと同じ間合い。</b>
+        /// 60 回/秒 で撃ち続ける。Unity の Z 押しっぱなしと同じ間合い。
         /// 待たないで投げる —— 待つと撃つ間隔 が往復 の遅れになる。
         /// </summary>
         static IDisposable StartShooting(IDanmakuHub hub, float x, float y)
@@ -132,7 +128,7 @@ namespace FsBulletML2.Sample.Client.MagicOnion
         /// <summary>
         /// 降ってきたコマを数える。
         ///
-        /// <b>「何コマ 来たか」だけでは足りない。</b> 番号の飛びと、
+        /// 「何コマ 来たか」だけでは足りない。 番号の飛びと、
         /// 弾数 の山 と中央値 まで出す —— 帯域 を概算するとき
         /// （ロードマップ E1.x の測ること 2）に要るのが後者だから。
         /// </summary>
@@ -148,7 +144,7 @@ namespace FsBulletML2.Sample.Client.MagicOnion
             int last = -1;
             int gaps;
 
-            /// <summary>配る間隔。<b>1 なら毎コマ</b></summary>
+            /// <summary>配る間隔。1 なら毎コマ</summary>
             public int Step { get; set; } = 1;
             int playerHits;
             int enemyHits;
@@ -157,7 +153,7 @@ namespace FsBulletML2.Sample.Client.MagicOnion
             {
                 lock (gate)
                 {
-                    // **番号の飛びを数える。** 落ちたコマは「遅い」ではなく
+                    // 番号の飛びを数える。 落ちたコマは「遅い」ではなく
                     // 「来ていない」ので、遅さとは別に見えないといけない
                     if (last >= 0 && frame.Frame != last + Step)
                     {
@@ -167,7 +163,7 @@ namespace FsBulletML2.Sample.Client.MagicOnion
                     last = frame.Frame;
                     counts.Add(frame.Bullets?.Length ?? 0);
 
-                    // **当たりはサーバーが数えて降ろす。** client は判定を持たない
+                    // 当たりはサーバーが数えて降ろす。 client は判定を持たない
                     playerHits += frame.PlayerHits;
                     enemyHits += frame.EnemyHits;
 
@@ -207,7 +203,7 @@ namespace FsBulletML2.Sample.Client.MagicOnion
                 }
             }
 
-            /// <summary>数を出す。<b>足りなければ 1 を返す</b>（門 が読む）</summary>
+            /// <summary>数を出す。足りなければ 1 を返す（門 が読む）</summary>
             public int Report(int want)
             {
                 int[] snapshot;
@@ -249,11 +245,10 @@ namespace FsBulletML2.Sample.Client.MagicOnion
 
                 Console.WriteLine("当たり 敵へ {0} 発 / 自機へ {1} 発", hitEnemy, hitPlayer);
 
-                // **概算 は出さない。** 弾 1 発 のバイト数 を固定で掛けるやり方は、
-                // **量子化 で 1 発 の大きさ を変えても 1 ビット も動かない** ——
+                // 概算 は出さない。 弾 1 発 のバイト数 を固定で掛けるやり方は、
+                // 量子化 で 1 発 の大きさ を変えても 1 ビット も動かない ——
                 // 締めた効果 を測れない物差しを並べると、効いたように読める。
                 // 実測 はサーバー側 の --measure-bytes が焼いた長さ で出す
-
                 if (snapshot.Length < want)
                 {
                     Console.Error.WriteLine("{0} コマ 欲しかったが {1} コマ", want, snapshot.Length);

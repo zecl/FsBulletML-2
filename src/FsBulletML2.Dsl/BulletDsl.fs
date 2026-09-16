@@ -4,14 +4,6 @@
 /// 出る値は公開 DU（`Bulletml` / `Action` / `BulletElm`）で、エンジンは触らない。
 ///
 /// ビルダは DTD の内容モデルで分かれている。
-/// action は命令の列、fire / accel は袋、bullet は袋に action を足す。
-/// 1 個の CE にすると fire の中に wait が書けて、DTD より緩くなる。
-///
-/// **`namespace FsBulletML2` に置いてある。** 元は `FsBulletML2.Bullets`
-/// （書かれた弾幕と同じアセンブリ）に居たが、**書く道具と、書かれたもの**は
-/// 別なので分けた。この namespace を選んだのは呼び方を変えないため ——
-/// 弾幕の各ファイルはどれも `open FsBulletML2` しているので、
-/// `Dsl.fire` の書き味が分ける前と同じになる。
 module Dsl =
 
   let private expr s = numExpr s
@@ -37,14 +29,7 @@ module Dsl =
 
   // changeDirection / changeSpeed の中の direction / speed も、
   // fire の `dir` / `speed` と同じ規則にする ——
-  // **type を書かないのが短い名前**で、型ごとに接尾辞。
-  //
-  // **DTD の既定（direction は aim、speed は absolute）とは別物。**
-  // 属性を書かないことを attrs = None で持つので、`changeSpeed "0" "1"` と
-  // `changeSpeedAbs "0" "1"` は違う値になる —— XML へ書き戻したときに
-  // type 属性が出るかどうかが変わる。
-
-  /// type を書かない changeDirection
+  // type を書かないのが短い名前で、型ごとに接尾辞。
   let changeDirection s term =
     Action.ChangeDirection (Direction (None, expr s), Term (expr term))
 
@@ -77,10 +62,9 @@ module Dsl =
   //
   // `action { wait "1"; vanish }` の型は Action list。
   // finish を差し替えると、同じ書き方で Repeat / 根の Action / 入れ子 Action になる。
-
   type ActionBuilder<'T>(finish: Action list -> 'T) =
     member _.Yield(x: Action) : Action list = [x]
-    /// 中身が空の action。**DTD の action は `(...)*` で 0 個 も許す。**
+    /// 中身が空の action。DTD の action は `(...)*` で 0 個 も許す。
     /// `action { () }` と書く（F# は完全に空の CE を書けない）
     member _.Yield(_: unit) : Action list = []
     member _.YieldFrom(xs: Action list) = xs
@@ -99,8 +83,8 @@ module Dsl =
 
   // DTD の repeat は `(times, (action | actionRef))`。子は 3 通り 書ける ——
   // label の無い action、label のある action、actionRef。
-
-  /// `repeat "4" { wait "1"; fire { plain } }`
+  //
+  // `repeat "4" { wait "1"; fire { plain } }`
   let repeat times =
     ActionBuilder (fun xs -> Action.Repeat (Times (expr times), wrapAction None xs))
 
@@ -108,7 +92,7 @@ module Dsl =
   let repeatAs times name =
     ActionBuilder (fun xs -> Action.Repeat (Times (expr times), wrapAction (Some name) xs))
 
-  /// 子が actionRef の形。**CE ではなく関数**（中に積むものが無い）
+  /// 子が actionRef の形。CE ではなく関数（中に積むものが無い）
   let repeatRef times label (ps: string list) =
     Action.Repeat (Times (expr times), ActionElm.ActionRef ({ actionRefLabel = ActionLabel label }, ps))
 
@@ -119,7 +103,7 @@ module Dsl =
   let defAction name =
     ActionBuilder (fun xs -> BulletmlElm.Action ({ actionLabel = Some (ActionLabel name) }, xs))
 
-  /// 根の action に label を書かない形。**DTD では label は #IMPLIED**
+  /// 根の action に label を書かない形。DTD では label は #IMPLIED
   /// （エンジンからは名前で引けなくなるので、実際に使うことは少ない）
   let defActionAnon =
     ActionBuilder (fun xs -> BulletmlElm.Action ({ actionLabel = None }, xs))
@@ -241,7 +225,6 @@ module Dsl =
   // `bullet "label" { ... }`。中の action は `doActs (body { ... })`。
   // Yield と CustomOperation を混ぜると F# が CE の翻訳を別物にするので、
   // 子は custom op に閉じる。
-
   type BulletSpec =
     { Label: BulletLabel option
       Dir: Direction option
@@ -267,7 +250,7 @@ module Dsl =
     member _.Relative(s: BulletSpec, e) = { s with Dir = dir DirectionType.Relative e }
     [<CustomOperation("sequence")>]
     member _.Sequence(s: BulletSpec, e) = { s with Dir = dir DirectionType.Sequence e }
-    /// type 省略。**fire の `dir` と同じ**（型を書くなら aim / absolute /
+    /// type 省略。fire の `dir` と同じ（型を書くなら aim / absolute /
     /// relative / sequence を使う）
     [<CustomOperation("dir")>]
     member _.Dir(s: BulletSpec, e) = { s with Dir = Some (Direction (None, expr e)) }
@@ -300,11 +283,10 @@ module Dsl =
   //
   // xmlns / description は引数。CE の中は BulletmlElm を積むだけ。
   // 根で wait を Yield しようとすると型が合わない。
-
   type BulletmlBuilder(typ: ShootingDirection option, name: string option, xmlns: string option, desc: string option) =
     member _.Yield(e: BulletmlElm) : BulletmlElm list = [e]
-    /// 中身が空の bulletml。**DTD の bulletml は `(bullet|fire|action)*` で
-    /// 0 個 も許す。** `vertical "x" { () }` と書く
+    /// 中身が空の bulletml。DTD の bulletml は `(bullet|fire|action)*` で
+    /// 0 個 も許す。`vertical "x" { () }` と書く
     member _.Yield(_: unit) : BulletmlElm list = []
     member _.YieldFrom(xs: BulletmlElm list) = xs
     member _.Zero() : BulletmlElm list = []
@@ -318,11 +300,11 @@ module Dsl =
           bulletmlDescription = desc },
         elms)
 
-  /// 属性を直に渡す一般形。**短い入口で足りない組み合わせはこれで書く。**
+  /// 属性を直に渡す一般形。短い入口で足りない組み合わせはこれで書く。
   ///
   /// DTD の bulletml は xmlns も type も #IMPLIED で、name はこのエンジンが
   /// 足した属性（description も）。どれも省けるので組み合わせは 4 x 2 x 2 x 2。
-  /// **全部 に名前は付けない** —— よく使う形だけ下に短い入口を置いて、
+  /// 全部 に名前は付けない —— よく使う形だけ下に短い入口を置いて、
   /// 残りはここを通す。
   let bulletmlOf typ name xmlns desc = BulletmlBuilder(typ, name, xmlns, desc)
 
@@ -330,7 +312,7 @@ module Dsl =
   let horizontal name = BulletmlBuilder(Some ShootingDirection.BulletHorizontal, Some name, None, None)
   let none name = BulletmlBuilder(Some ShootingDirection.BulletNone, Some name, None, None)
 
-  /// type 属性を書かない bulletml。**DTD の既定は none だが、値としては別物**
+  /// type 属性を書かない bulletml。DTD の既定は none だが、値としては別物
   /// （書かないことを None で持つので、往復で type 属性が出なくなる）
   let untyped name = BulletmlBuilder(None, Some name, None, None)
 
@@ -345,12 +327,12 @@ module Dsl =
 
   let untypedXmlns xmlns name = BulletmlBuilder(None, Some name, Some xmlns, None)
 
-  /// 名前を書かない根。**本家の弾幕はこちらが普通** ——
+  /// 名前を書かない根。本家の弾幕はこちらが普通 ——
   /// `name` はこのエンジンが足した属性で、同梱の TestData 173 本 は
-  /// **1 本 も持っていない**（v1.4 で数えた）。
+  /// 1 本 も持っていない（v1.4 で数えた）。
   ///
-  /// 上の短い入口が名前を要るので、**名前を省いた弾幕は `bulletmlOf` でしか
-  /// 書けなかった** —— あちらは option を直に渡す一般形で、CE の字としては
+  /// 上の短い入口が名前を要るので、名前を省いた弾幕は `bulletmlOf` でしか
+  /// 書けなかった —— あちらは option を直に渡す一般形で、CE の字としては
   /// 人が読む物ではない。よく使う形なので短い入口を置く。
   let verticalAnon = BulletmlBuilder(Some ShootingDirection.BulletVertical, None, None, None)
   let horizontalAnon = BulletmlBuilder(Some ShootingDirection.BulletHorizontal, None, None, None)
@@ -443,11 +425,11 @@ module Dsl =
           }
       }
 
-    /// **type 属性を書かない側**の見本。`fullSyntax` が書いていない腕を通す。
+    /// type 属性を書かない側の見本。`fullSyntax` が書いていない腕を通す。
     ///
     /// DTD では direction / speed / horizontal / vertical のどれも type を
     /// 省ける。省いた形は既定値（direction は aim、speed 系は absolute）と
-    /// **同じ意味だが別の値** —— 書き戻したときに type 属性が出ない。
+    /// 同じ意味だが別の値 —— 書き戻したときに type 属性が出ない。
     let omittedTypes =
       untyped "type を書かない形" {
           defActionAnon {
@@ -470,7 +452,7 @@ module Dsl =
           }
       }
 
-    /// 属性の組み合わせ側。**短い入口で足りないものは一般形で書く。**
+    /// 属性の組み合わせ側。短い入口で足りないものは一般形で書く。
     let attributeShapes =
       [ untypedXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "type なし + xmlns" {
             top { vanish }
@@ -489,16 +471,11 @@ module Dsl =
             top { vanish }
         } ]
 
-    /// direction / speed / horizontal / vertical の **型を全通り**書く見本。
+    /// direction / speed / horizontal / vertical の 型を全通り書く見本。
     ///
     /// DTD ではこの 4 つ がどれも type を省ける。省いた形は既定値
-    /// （direction は aim、他は absolute）と同じ意味だが **別の値** ——
+    /// （direction は aim、他は absolute）と同じ意味だが 別の値 ——
     /// 書き戻したときに type 属性が出ない。だから省略も 1 通り として数える。
-    ///
-    ///   direction   省略 / aim / absolute / relative / sequence   5 通り
-    ///   speed       省略 / absolute / relative / sequence         4 通り
-    ///   horizontal  省略 / absolute / relative / sequence         4 通り
-    ///   vertical    省略 / absolute / relative / sequence         4 通り
     let allTypeVariants =
       vertical "型の全通り" {
           top {
@@ -542,11 +519,11 @@ module Dsl =
           }
       }
 
-    /// 中身が空の形。**DTD はどれも 0 個 を許す** ——
+    /// 中身が空の形。DTD はどれも 0 個 を許す ——
     /// bulletml の `(bullet|fire|action)*`、action の `(...)*`、
     /// bullet の `(action|actionRef)*`、accel の `horizontal? vertical?`。
     ///
-    /// **F# は完全に空の CE を書けない**ので `{ () }` と置く。
+    /// F# は完全に空の CE を書けないので `{ () }` と置く。
     /// 実用の弾幕には出ないが、DTD が許す以上 CE でも書けなければならない。
     let emptyShapes =
       [ vertical "中身が空" { () }
@@ -565,7 +542,7 @@ module Dsl =
             }
         } ]
 
-    /// fire の子と bullet の中身。**`fullSyntax` が通っていない腕**を埋める
+    /// fire の子と bullet の中身。`fullSyntax` が通っていない腕を埋める
     let bulletShapes =
       vertical "bullet の形" {
           top {

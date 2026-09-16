@@ -17,13 +17,13 @@ module Impl =
   let asm = Assembly.GetExecutingAssembly()
   let ns = typeof<Style>.Namespace
 
-  /// 生成する型のプロパティの型。**ここで 1 回 だけ解いて配る。**
+  /// 生成する型のプロパティの型。ここで 1 回 だけ解いて配る。
   ///
   /// FsBulletML2.DTD には同名の型とモジュールが居て（DU の Bulletml と、
   /// readXmlString などを持つ Bulletml モジュール）、書く場所によって
   /// typeof<Bulletml> がモジュールのほうへ解ける。そうなると生成した型の
   /// プロパティ型が FsBulletML2.DTD.Bulletml.Bulletml という在りもしない名前で
-  /// 焼かれ、**使う側**が FS1109 で落ちる（型プロバイダ自身のビルドは通るので、
+  /// 焼かれ、使う側が FS1109 で落ちる（型プロバイダ自身のビルドは通るので、
   /// 門を通すまで気づけない）。
   let bulletmlType = typeof<Bulletml>
   let createProvidedTypeDefinition ns =
@@ -88,18 +88,3 @@ module Impl =
   // ifdef that nothing defines any more - a latent, always-broken build target under this
   // project's later configurations). There is no packages.config in this repo; dependencies are
   // resolved through ProjectReference/PackageReference instead.
-  //
-  // What used to follow this paragraph claimed the build "already copies FsBulletML2.Core.dll,
-  // FsBulletML2.Parser.dll and FParsec.dll next to FsBulletML2.TypeProviders.dll", and concluded
-  // that registering a probing folder was redundant. **Both halves were wrong.** A library
-  // project does not copy NuGet assemblies to its output by default, so FParsec.dll was never
-  // there; and a type provider runs inside the compiler at design time, where nothing consults
-  // this assembly's deps.json. Once the SDK swap made provided types resolve at all, every one
-  // of them failed with "Could not load file or assembly 'FParsec'".
-  //
-  // The fix is in two places, and neither half works alone:
-  //   FsBulletML2.TypeProviders.fsproj   CopyLocalLockFileAssemblies puts FParsec.dll there
-  //   TypeProviderForNamespaces(...)     addDefaultProbingLocation makes the provider look there
-  //
-  // The claim was plausible, sat in a comment nothing executes, and stayed wrong until the
-  // surrounding code was made to work well enough to reach it.

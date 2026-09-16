@@ -8,41 +8,23 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 open FsBulletML2.LanguageService.Languages
 
-/// 雛形（v2.6）。**骨は 1 つ、字にする手は表記ごと。**
+/// 雛形（v2.6）。骨は 1 つ、字にする手は表記ごと。
 ///
 /// `Shape.WriteFrame` は `SourceWriter` と別に「骨から字を作る」ので、
-/// **同じことを言う手が 2 か所 に在る**。片方 だけ直すのを止めるのがここ。
+/// 同じことを言う手が 2 か所 に在る。片方 だけ直すのを止めるのがここ。
 ///
-/// 当てるのは 3 つ ——
-///
-///     1  書いた字が、その表記のパーサで読める
-///     2  3 表記 が**同じ木**になる（表記の差ではなく骨の差だけが残る）
-///     3  書き直すと、`SourceWriter` が焼いた字と一致する
-///
-/// **2 がいちばん効く。** 1 だけだと、片方 の表記で属性を落としても
+/// 2 がいちばん効く。 1 だけだと、片方 の表記で属性を落としても
 /// 「読めた」で通る。3 は `WriteFrame` と `SourceWriter` を直に突き合わせる。
-///
-/// --- 較正（当てた変異と、赤くなった点の数）
-///
-///   xml の属性を落とす      3 点
-///   sxml の属性を落とす     3 点
-///   xml の字下げを 2 にする  1 点
-///   fsb の字下げを 2 にする  1 点
-///   JSON の鍵を変える     1 点
-///
-/// **字下げの変異は 1 点 しか赤くならない。** 木を見る 2 つ は字下げでは
-/// 割れず（fsb は字下げが構造なので割れる）、当たるのは字を突き合わせる側だけ。
-/// **点が少ないのは弱いのではなく、当たる先が 1 つ しか無いということ。**
 [<TestFixture>]
 type Frames() =
 
-  /// snippet の穴を既定値に潰す。**`${1:8}` -> `8`**
+  /// snippet の穴を既定値に潰す。`${1:8}` -> `8`
   ///
   /// 穴をそのまま読ませない —— `$1` は BulletML の式（param の参照）として
-  /// **正しく読めてしまう**ので、潰さないと「読めた」が嘘になる
+  /// 正しく読めてしまうので、潰さないと「読めた」が嘘になる
   static let fill (s: string) = Regex.Replace(s, @"\$\{\d+:([^}]*)\}", "$1")
 
-  /// 雛形を、その表記で読める形に包む。**包むのも `WriteFrame`** ——
+  /// 雛形を、その表記で読める形に包む。包むのも `WriteFrame` ——
   /// 包み方を表記ごとに書くと、そこがまた 2 か所 目 になる
   static let wrap (snippet: FrameSnippet) =
     let inner =
@@ -74,7 +56,7 @@ type Frames() =
 
   [<Test>]
   member _.``雛形が 1 つ も無ければ、この門は何も見ていない``() =
-    // **0 件 は違反 0 件 と同じ顔をする**
+    // 0 件 は違反 0 件 と同じ顔をする
     Frames.all |> List.length |> should greaterThan 3
 
   [<Test>]
@@ -112,7 +94,7 @@ type Frames() =
 
   [<Test>]
   member _.``WriteFrame の字は、SourceWriter が焼いた字と一致する``() =
-    // **2 か所 を直に突き合わせる。** 読んで木にしてから焼き直せば、
+    // 2 か所 を直に突き合わせる。 読んで木にしてから焼き直せば、
     // `SourceWriter` の側の字になる —— そこと `WriteFrame` の字が同じなら、
     // 骨から字を作る手が 2 つ とも同じことを言っている
     for snippet in Frames.all do
@@ -134,7 +116,7 @@ type Frames() =
 
   [<Test>]
   member _.``穴は既定値を持っている``() =
-    // 穴を Tab で埋めずに走らせても壊れないこと。**`$1` は param の参照**
+    // 穴を Tab で埋めずに走らせても壊れないこと。`$1` は param の参照
     // として読めてしまうので、既定値の無い穴を作らない
     let rec holes (f: Frame) =
       let here =
@@ -150,7 +132,7 @@ type Frames() =
 
   [<Test>]
   member _.``host が焼いた JSON に雛形が載っている``() =
-    // **器は JSON でしか受け取らない。** ここが落ちると、試験は緑のまま
+    // 器は JSON でしか受け取らない。 ここが落ちると、試験は緑のまま
     // ブラウザにだけ雛形が届かない（`VocabForTests` は `Frames.all` を
     // 直に渡すので、JSON の往復を 1 度 も通らない）
     let json = FsBulletML2.LanguageService.Vocabulary.toJson ()
@@ -159,7 +141,7 @@ type Frames() =
     doc.RootElement.TryGetProperty("frames", &frames) |> should equal true
     let arr = frames.EnumerateArray() |> Seq.toList
     arr |> List.length |> should equal (List.length Frames.all)
-    // 骨が空でないこと。**数だけ合っていても中身が空なら届いていない**
+    // 骨が空でないこと。数だけ合っていても中身が空なら届いていない
     for f in arr do
       f.GetProperty("label").GetString() |> should not' (equal "")
       f.GetProperty("frame").GetProperty("element").GetString() |> should not' (equal "")

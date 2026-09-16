@@ -2,10 +2,10 @@ using System;
 
 // COMPILE-ONLY stub of Unity.Entities. Not a substitute for the Unity Editor.
 //
-// **アセンブリ名が本物と一致していることが要。** 1 本 に詰めると、焼いた dll が
+// アセンブリ名が本物と一致していることが要。 1 本 に詰めると、焼いた dll が
 // 「この型は UnityEngine に在る」と主張したまま Unity へ渡り、CS7069 で落ちる。
 //
-// **signature も本物どおりに写すこと。** 引数の型・数・既定値は呼び手の IL に
+// signature も本物どおりに写すこと。 引数の型・数・既定値は呼び手の IL に
 // そのまま焼き込まれる。ここで楽な形（`Type[]` を取るなど）を足すと、
 // stub では通り、Unity で MissingMethodException になる。
 //
@@ -32,7 +32,7 @@ namespace Unity.Entities
         public static ComponentType ReadWrite(Type type) => new ComponentType();
         public static ComponentType ReadOnly(Type type) => new ComponentType();
 
-        /// <summary>本物にも在る。**C# の呼び手が `typeof(X)` を渡せるのはこれのおかげ**
+        /// <summary>本物にも在る。C# の呼び手が `typeof(X)` を渡せるのはこれのおかげ
         /// —— 無いと `Type[]` を取る口を stub に足したくなる（本物には無い）</summary>
         public static implicit operator ComponentType(Type type) => new ComponentType();
     }
@@ -48,7 +48,7 @@ namespace Unity.Entities
     }
 
     /// <summary>
-    /// <b>本物は SystemBase の基底。</b>EntityManager も OnCreate も
+    /// 本物は SystemBase の基底。EntityManager も OnCreate も
     /// GetEntityQuery もこちらに在る。1 つ に潰すと、呼び手が
     /// <c>SystemBase::get_EntityManager</c> を吐いて本物に無い口を指す
     /// （override も宣言型が合わず、別のメソッドになる）。
@@ -62,7 +62,7 @@ namespace Unity.Entities
     }
 
     /// <summary>
-    /// ECS の System。**C# サンプルだけが使う** —— F# サンプルは
+    /// ECS の System。C# サンプルだけが使う —— F# サンプルは
     /// `SystemBase` を避けて `FrameTicker` から回している
     /// （理由は samples/FsBulletML2.Sample.Unity2D.FSharp の BulletEcsDriver.fs）。
     /// </summary>
@@ -106,8 +106,8 @@ namespace Unity.Entities
     }
 
     /// <summary>
-    /// component の型を覚えているところ。**dll で配ると自動登録が掛からない**ので、
-    /// **足す面は本物の public だけ** —— GetOrCreateTypeIndex は本物では
+    /// component の型を覚えているところ。dll で配ると自動登録が掛からないので、
+    /// 足す面は本物の public だけ —— GetOrCreateTypeIndex は本物では
     /// internal なので置かない。stub にだけ在る面は、呼び手がそれを使ってしまう。
     /// </summary>
     public static class TypeManager
@@ -115,7 +115,7 @@ namespace Unity.Entities
         public static void Initialize() { }
     }
 
-    /// <summary>World の役割。**既定値まで本物と同じにする** ——
+    /// <summary>World の役割。既定値まで本物と同じにする ——
     /// 省いた引数の値は呼び手の IL に焼き込まれる（本物の既定は 9）</summary>
     [Flags]
     public enum WorldFlags

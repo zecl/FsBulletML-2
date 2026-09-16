@@ -6,10 +6,10 @@ using System.Threading;
 namespace FsBulletML2.Sample.Server.MagicOnion.Logging
 {
     /// <summary>
-    /// 口 が何回 呼ばれたかを数える。<b>サーバーに 1 つ（singleton）。</b>
+    /// 口 が何回 呼ばれたかを数える。サーバーに 1 つ（singleton）。
     ///
-    /// <b>なぜ 1 行 ずつ出さないか。</b> <c>SetPlayerAsync</c> は毎コマ、
-    /// <c>ShootAsync</c> は押しっぱなしで毎コマ 来る。**2 本 で 120 行/秒。**
+    /// なぜ 1 行 ずつ出さないか。 <c>SetPlayerAsync</c> は毎コマ、
+    /// <c>ShootAsync</c> は押しっぱなしで毎コマ 来る。2 本 で 120 行/秒。
     /// 1 行 ずつ出すと、見たい「入った・出た・落ちた」が流れて消える。
     /// だから高頻度の口 は数えて、状況 の行 に <c>毎秒 何回</c> で混ぜる。
     /// </summary>
@@ -21,7 +21,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
         public void Hit(string method)
             => Interlocked.Increment(ref counts.GetOrAdd(method, _ => new Box()).Value);
 
-        /// <summary>数を取り出して 0 に戻す。<b>読むのは状況 の行 だけ</b></summary>
+        /// <summary>数を取り出して 0 に戻す。読むのは状況 の行 だけ</summary>
         public List<KeyValuePair<string, int>> Drain()
         {
             var drained = new List<KeyValuePair<string, int>>(counts.Count);
@@ -45,7 +45,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
     }
 
     /// <summary>
-    /// いま何本 繋がっているか。<b>部屋 に入っていない接続も数える</b> ——
+    /// いま何本 繋がっているか。部屋 に入っていない接続も数える ——
     /// 繋がったのに入ってこない形（口 の食い違い）は、
     /// ここと部屋 の人数 が食い違うことで見える。
     /// </summary>
@@ -72,15 +72,15 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
     public sealed class AccessLogOptions
     {
         /// <summary>
-        /// 高頻度の口 も 1 行 ずつ出す。<b>既定は false。</b>
+        /// 高頻度の口 も 1 行 ずつ出す。既定は false。
         /// <c>--all-calls</c> で true になる
         /// </summary>
         public bool AllCalls { get; set; }
 
-        /// <summary>状況 の行 の間隔。<b>0 なら出さない</b></summary>
+        /// <summary>状況 の行 の間隔。0 なら出さない</summary>
         public TimeSpan StatusInterval { get; set; } = TimeSpan.FromSeconds(1);
 
-        /// <summary>数えるだけにする口。<b>1 行 ずつ出すと流れて消えるもの</b></summary>
+        /// <summary>数えるだけにする口。1 行 ずつ出すと流れて消えるもの</summary>
         public static bool IsNoisy(string method)
             => method == "SetPlayerAsync" || method == "ShootAsync";
     }

@@ -11,7 +11,7 @@ open FsBulletML2
 
 /// 弾の Entity を作る・消す。
 ///
-/// **描画は Entities Graphics。** 弾ごとに mesh と material を持たせず、
+/// 描画は Entities Graphics。 弾ごとに mesh と material を持たせず、
 /// `RenderMeshArray` に 2 組（敵・自機）だけ入れて index で指す。
 /// これで同じ material の弾がインスタンシングでまとめて描かれる。
 [<AbstractClass; Sealed>]
@@ -70,7 +70,7 @@ type BulletEntityFactory private () =
     mat.renderQueue <- int RenderQueue.Transparent
     mat.enableInstancing <- true
 
-  /// sprite から material を作る。**シェーダは URP を順に探す** ——
+  /// sprite から material を作る。シェーダは URP を順に探す ——
   /// 見つからないと弾がピンクになるので、代わりを何段か置いてある
   static member private MaterialOfSprite (sr: SpriteRenderer) (name: string) =
     let texture =
@@ -92,7 +92,7 @@ type BulletEntityFactory private () =
     BulletEntityFactory.ConfigureTransparent mat
     mat
 
-  /// 弾の見た目を組む。**Play の頭で 1 回 だけ。**
+  /// 弾の見た目を組む。Play の頭で 1 回 だけ。
   /// 呼ばずに Spawn すると描画コンポーネントが付かず、弾が見えない
   static member Configure (enemySprite: SpriteRenderer, playerSprite: SpriteRenderer) =
     let enemyMesh = BulletEntityFactory.MeshOfSprite (if isNull (box enemySprite) then null else enemySprite.sprite) "g_bullet_s_ecs"
@@ -154,7 +154,7 @@ type BulletEntityFactory private () =
       if ready then
         let idx = if kind = BulletKind.Player then 1 else 0
         // AddComponents は description を inref で取る。
-        // **F# は let mutable の束縛でないと & を渡せない**
+        // F# は let mutable の束縛でないと & を渡せない
         let mutable desc = renderDesc
         RenderMeshUtility.AddComponents(
           entity, em, &desc, renderMeshArray,
@@ -178,15 +178,15 @@ type BulletEntityFactory private () =
 
   /// 撃たれた弾を実体にする。旧 GetBulletPrefubInstance ＋ Spawn の合わせ。
   ///
-  /// **弾幕は親と同じものを引き継ぐ。** 引き継がないと、弾の中に残った
+  /// 弾幕は親と同じものを引き継ぐ。 引き継がないと、弾の中に残った
   /// bulletRef / actionRef を誰も解けない。実行位置はエンジンが
   /// `Frame.Spawned` で渡してきたものをそのまま使う。
   ///
-  /// **産まれる位置は撃った側と同じ。** EcsFront.origin が AtShooter で、Spawn に Aim と
-  /// 同じ値を入れているのはこのため。**片方だけ直すと軌跡が割れる。**
+  /// 産まれる位置は撃った側と同じ。 EcsFront.origin が AtShooter で、Spawn に Aim と
+  /// 同じ値を入れているのはこのため。片方だけ直すと軌跡が割れる。
   static member SpawnChild (parent: BulletSim, child: BulletRun) =
     let sim = BulletEntityFactory.Spawn(parent.Kind, parent.X, parent.Y, false)
-    // 弾幕は親と同じものを引き継ぐ。**引き継ぎ忘れる書き方がもう無い**
+    // 弾幕は親と同じものを引き継ぐ。引き継ぎ忘れる書き方がもう無い
     sim.SetRun child
     let motion = child.Motion
     sim.X <- motion.Pos.X

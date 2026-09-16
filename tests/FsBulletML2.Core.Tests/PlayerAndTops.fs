@@ -10,8 +10,8 @@ open FsBulletML2
 ///
 ///   label が "top" で始まる action が複数あるとき（convertBulletmlTask の taskActions）
 ///     StartsWith("top") で拾うので top / top1 / top2 が全部 task になる
-// NonParallelizable は外した。**global（BulletMLManager）を触らなくなった**
-// ので、逐次でなければならない理由が無い
+/// NonParallelizable は外した。global（BulletMLManager）を触らなくなった
+/// ので、逐次でなければならない理由が無い
 [<TestFixture>]
 type PlayerAndTops() =
 
@@ -34,7 +34,7 @@ type PlayerAndTops() =
     |> Array.map (fun l -> l.Trim())
     |> String.concat "\n"
 
-  /// 根の弾を Player にして回す。**Trace.run / TraceApi.run は根を敵で組む**
+  /// 根の弾を Player にして回す。Trace.run / TraceApi.run は根を敵で組む
   /// （Api.load の RootState が BulletType.Enemy 固定）ので、ここだけ別口。
   ///
   /// 旧は IBulletmlObject を自前で組んでゲームループを回していた。

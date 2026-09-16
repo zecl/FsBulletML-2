@@ -7,38 +7,15 @@ open FSharp.Compiler.Text
 open FsBulletML2
 open FsBulletML2.Dsl
 
-/// **F# の CE を読む。** `FSharp.Compiler.Service` で parse して、
+/// F# の CE を読む。 `FSharp.Compiler.Service` で parse して、
 /// 出てきた木を歩いて `Bulletml` を組む。
 ///
 /// --- なぜ parse だけなのか
 ///
-/// 型検査まで通すには参照アセンブリをブラウザへ配ることになり、
-/// 6 MB では済まない。**parse だけなら FCS の 1 本 で足りる**
-/// （v1.0 の頭で測った —— 弾幕 1 本 で 11〜199 ms、
-/// ファイル丸ごと 2703 行 で 149〜324 ms）。
-///
-/// --- 意味論を書き直さない
-///
-/// **歩いたあとに呼ぶのは `FsBulletML2.Dsl` そのもの。**
-/// builder は `Zero` / 各 `CustomOperation` / `Run` がどれも public なので、
-/// 木の形から同じ呼び出しを組み立てれば、**正本は `BulletDsl.fs` 1 本 のまま。**
-///
-/// ここに在るのは「名前 -> どの呼び出しか」の振り分けだけで、
-/// **その振り分けが合っているかはコーパス 176 本 で突き合わせる**
-/// （`Parser.Tests/FsharpCeCorpus.fs`）。
-///
-/// --- 歩く相手は狭い
-///
-/// コーパス 36 ファイル を parse して出てきた `SynExpr` の腕は 11 種類 だけ ——
-/// `App` / `Ident` / `Const` / `Sequential` / `ComputationExpr` /
-/// `ArrayOrList` / `ArrayOrListComputed` / `Paren` / `LongIdent` / `Do` / `Typed`。
-/// **`Lambda` も `Match` も `IfThenElse` も `For` も `LetOrUse` も 0 だった。**
-///
-/// だが**それはコーパスの狭さであって、F# の狭さではない** —— 人が書けば出る。
 /// 知らない形は「読めない」と位置つきで言う（黙って落とさない）。
 module FsharpCe =
 
-  /// 読めなかった場所と理由。**位置は 1 起点**（`Failure` と同じ）
+  /// 読めなかった場所と理由。位置は 1 起点（`Failure` と同じ）
   exception private CannotRead of line: int * col: int * message: string
 
   let private fail (r: range) (message: string) =
@@ -46,7 +23,7 @@ module FsharpCe =
 
   // --- 木をほどく ------------------------------------------------------------
 
-  /// `f a b c` を `(f, [a; b; c])` に。**括弧は透かす**
+  /// `f a b c` を `(f, [a; b; c])` に。括弧は透かす
   let rec private flatten (e: SynExpr) (acc: SynExpr list) =
     match e with
     | SynExpr.App (funcExpr = f; argExpr = a) -> flatten f (a :: acc)
@@ -68,7 +45,7 @@ module FsharpCe =
     | SynExpr.Do (expr = inner) -> statements inner
     | SynExpr.Paren (expr = inner) -> statements inner
     | SynExpr.Typed (expr = inner) -> statements inner
-    // `()` は空の本体（`body { () }`）。**文を 0 個 として扱う**
+    // `()` は空の本体（`body { () }`）。文を 0 個 として扱う
     | SynExpr.Const (SynConst.Unit, _) -> []
     | other -> [ other ]
 
@@ -122,10 +99,10 @@ module FsharpCe =
     b.Run s
 
   // --- bullet --------------------------------------------------------------
-
-  /// `bullet "x" { ... }` / `bulletAnon { ... }` / `defBullet "x" { ... }`
-  /// **型変数を明示する。** `let rec ... and` の束は、書かないと最初の
-  /// 使い方で固まって、2 つ 目 の当て方で型が合わなくなる
+  //
+  // `bullet "x" { ... }` / `bulletAnon { ... }` / `defBullet "x" { ... }`
+  // 型変数を明示する。 `let rec ... and` の束は、書かないと最初の
+  // 使い方で固まって、2 つ 目 の当て方で型が合わなくなる
   let rec private readBulletSpec<'T> (b: BulletBuilder<'T>) (body: SynExpr) : 'T =
     let mutable s = b.Zero()
     for st in statements body do
@@ -307,7 +284,7 @@ module FsharpCe =
     | Some "horizontalXmlns", [ xmlns; name; blk ] -> build (Dsl.horizontalXmlns (str xmlns) (str name)) blk
     | Some "noneXmlns", [ xmlns; name; blk ] -> build (Dsl.noneXmlns (str xmlns) (str name)) blk
     | Some "untypedXmlns", [ xmlns; name; blk ] -> build (Dsl.untypedXmlns (str xmlns) (str name)) blk
-    // **名前を書かない根**（v1.4）。本家の弾幕はこちらが普通
+    // 名前を書かない根（v1.4）。本家の弾幕はこちらが普通
     | Some "verticalAnon", [ blk ] -> build Dsl.verticalAnon blk
     | Some "horizontalAnon", [ blk ] -> build Dsl.horizontalAnon blk
     | Some "noneAnon", [ blk ] -> build Dsl.noneAnon blk
@@ -321,7 +298,7 @@ module FsharpCe =
 
   /// `createBulletmlInfo <| ...` の左辺を剥がす。無くても通す。
   ///
-  /// **`<|` の名前は `op_PipeLeft`**（`op_LessBar` ではない。最初そう書いて
+  /// `<|` の名前は `op_PipeLeft`（`op_LessBar` ではない。最初そう書いて
   /// コーパス 176 本 が全部 「弾幕の根に書けない」で落ちた）
   let rec private stripInfo (e: SynExpr) =
     match e with
@@ -338,18 +315,12 @@ module FsharpCe =
 
   let private checker = lazy FSharpChecker.Create()
 
-  /// **ブラウザ（wasm）では待てない。**
+  /// ブラウザ（wasm）では待てない。
   ///
   /// FCS の `ParseFile` は `Async` を返すが、`Async.RunSynchronously` で
-  /// 待つと**ブラウザで固まる** —— スレッドが 1 本 しか無いので、
-  /// 続きを流す相手がそのスレッドで塞がれている。
+  /// 待つとブラウザで固まる —— スレッドが 1 本 しか無いので、
   ///
-  /// **build も、.NET の試験も、これでは落ちない。** 押した瞬間に
-  /// 画面ごと止まって初めて分かる（v1.0 でブラウザに載せて踏んだ）。
-  ///
-  /// parse は CPU だけの仕事で実際には切り替わらないので、続きを直に
-  /// 受け取って**その場で終わったかを見る。** 終わっていなければ
-  /// 「終わらなかった」と言う —— **黙って待たない。**
+  /// 「終わらなかった」と言う —— 黙って待たない。
   let private runHere (computation: Async<'T>) : Result<'T, string> =
     let mutable result = None
     Async.StartWithContinuations(
@@ -361,7 +332,7 @@ module FsharpCe =
     | Some outcome -> outcome
     | None -> Error "parse がその場で終わらなかった（ブラウザでは待てない）"
 
-  /// 本文の中の最初の弾幕を読む。**`let` の並びから 1 本 目 を採る。**
+  /// 本文の中の最初の弾幕を読む。`let` の並びから 1 本 目 を採る。
   ///
   /// 返りは `Ok` か、位置つきの `Error`（行・桁 は 1 起点）
   let read (source: string) : Result<Bulletml, int * int * string> =
@@ -403,20 +374,13 @@ module FsharpCe =
 
   // --- 書く ------------------------------------------------------------------
   //
-  // **`read` の隣に置く。** 名前の対応（`Bulletml` の形 <-> DSL の名前）は
+  // `read` の隣に置く。 名前の対応（`Bulletml` の形 <-> DSL の名前）は
   // ここ 1 か所 にしか無い —— 離すと、片方 だけ直したときに
   // 「読めるのに書けない」（逆も）になり、どちらも単独では正しく見える。
-  //
-  // **`read` は同じ形に複数 の名前を許す**（`top` と `defAction "top"` など）。
-  // 書く側は 1 つ 選ぶ —— 選び方が合っているかは、書いて読み直して
-  // 値が一致するかで見る（`Parser.Tests` の往復）。
-
-  /// F# の字にするときの逃がし。**改行も逃がす** ——
-  /// 式の中に改行が入っている弾幕が同梱に 1 本 在る
   let private quote (s: string) =
-    // **改行を `\n` に揃える。** XML も sxml も fsb も、読む側が `\r\n` を
+    // 改行を `\n` に揃える。 XML も sxml も fsb も、読む側が `\r\n` を
     // `\n` に正規化する（`System.Xml` も FParsec もそうする）。CE だけ `\r` を
-    // 保つと、**表記を変えたときにその 1 本 だけ値が動く** ——
+    // 保つと、表記を変えたときにその 1 本 だけ値が動く ——
     // 同梱カタログに 1 本 在って、それで気づいた
     let s = s.Replace("\r\n", "\n").Replace("\r", "\n")
     let b = StringBuilder()
@@ -436,7 +400,7 @@ module FsharpCe =
 
   /// 弾幕を F# の CE の字にする。
   ///
-  /// **書けないものは `Error`。** `description` を CE で書く口が `Dsl` に無い
+  /// 書けないものは `Error`。 `description` を CE で書く口が `Dsl` に無い
   /// （同梱カタログには 1 件 も無いが、XML から持ってくれば在りうる）
   let write (bulletml: Bulletml) : Result<string, string> =
     let sb = StringBuilder()
@@ -446,21 +410,21 @@ module FsharpCe =
 
     let exprText (e: Expr.NumExpr) = Expr.NumExpr.text e
 
-    /// **空の `{ }` は書けない。** F# は `x { }` の中身を CE として読まない
+    /// 空の `{ }` は書けない。 F# は `x { }` の中身を CE として読まない
     /// （記録式に見える）ので、`read` の `block` が `None` になって
     /// 「`{ }` が要る」で落ちる。
     ///
     /// 中身が空なら `()` を 1 つ 置く —— `statements` が `Const Unit` を
     /// 空の並びとして読むので、値は変わらない。
     ///
-    /// **入れ子でも効く** —— 内側が空でも `()` を書いた時点で字が増えるので、
+    /// 入れ子でも効く —— 内側が空でも `()` を書いた時点で字が増えるので、
     /// 外側は「空ではない」と見る。
     let bodyOrUnit (depth: int) (write: unit -> unit) =
       let before = sb.Length
       write ()
       if sb.Length = before then line depth "()"
 
-    /// direction は type ごとに名前が違う。**型を書かない形が `dir`**
+    /// direction は type ごとに名前が違う。型を書かない形が `dir`
     let dirCall (Direction (attrs, e)) =
       let name =
         match attrs with
@@ -484,7 +448,7 @@ module FsharpCe =
           | SpeedType.Sequence -> "speedSeq"
       name + " " + quote (exprText e)
 
-    /// `plain` は「何も書いていない弾」。**そこだけ名前が 1 語**
+    /// `plain` は「何も書いていない弾」。そこだけ名前が 1 語
     let isPlain (b: BulletElm) =
       match b with
       | BulletElm.Bullet (attrs, None, None, []) -> attrs.bulletLabel.IsNone
@@ -633,7 +597,7 @@ module FsharpCe =
         | Some ShootingDirection.BulletHorizontal -> "horizontal"
         | Some ShootingDirection.BulletNone -> "none"
         | None -> "untyped"
-      // **名前は省ける。** 本家の弾幕は `name` を持たないのが普通で、
+      // 名前は省ける。 本家の弾幕は `name` を持たないのが普通で、
       // そちらは `…Anon` の入口を通る（v1.4 で `Dsl` に足した）
       let head =
         match attrs.bulletmlXmlns, attrs.bulletmlName with

@@ -4,19 +4,11 @@ open UnityEngine
 
 /// 爆発の見た目。
 ///
-/// **GameObject を作らない。** 旧はここで `InstanceManager.InstantiatePrefab`
+/// GameObject を作らない。 旧はここで `InstanceManager.InstantiatePrefab`
 /// を呼んでプールから取っていた。そのプールは起動時に `cacheSize` ぶんの
-/// `bomb0` `bomb1` ... を作るので、**1 発 も撃たないうちから場に並ぶ。**
+/// `bomb0` `bomb1` ... を作るので、1 発 も撃たないうちから場に並ぶ。
 /// `Bomb` をこの形にして初めて、プールから外せる
 /// （`ObjectData.IsBulletPrefab` の但し書き）。
-/// **C# のサンプルは書き換えが先に済んでいた**ので、あちらでは起きていない。
-///
-/// いま起こすのは `ParticleSystem` 1 個 だけ。あとはそこから粒子を出す。
-///
-/// **音は prefab の AudioSource で鳴らす。** このサンプルには
-/// `AudioManager` が無いので、C# 側のように別口では鳴らせない。
-/// 入れ物は 1 個 しか無いから、連打すると前の音が切れる ——
-/// C# と同じ間隔（0.12 秒）で間引く。
 [<AbstractClass; Sealed>]
 type Bomb private () =
 
@@ -26,7 +18,7 @@ type Bomb private () =
   /// 音を鳴らす間隔。これより短い連打は鳴らさない
   static let seCooldown = 0.12f
 
-  /// 起こした入れ物。**シーンをまたいで 1 個。**
+  /// 起こした入れ物。シーンをまたいで 1 個。
   static let mutable ps : ParticleSystem = null
   static let mutable sound : AudioSource = null
   static let mutable lastSe = -999.0f
@@ -43,14 +35,14 @@ type Bomb private () =
       let sorting = go.GetComponent<ParticleSortingLayer>()
       if not (isNull (box sorting)) then sorting.enabled <- false
 
-      // **音は残す。** ただし起きた瞬間に鳴らないよう playOnAwake は切る
+      // 音は残す。 ただし起きた瞬間に鳴らないよう playOnAwake は切る
       sound <- go.GetComponent<AudioSource>()
       if not (isNull (box sound)) then
         sound.playOnAwake <- false
 
       ps <- go.GetComponent<ParticleSystem>()
       if not (isNull (box ps)) then
-        // **World にする。** 入れ物は動かないので、Local だと粒が原点から出る
+        // World にする。 入れ物は動かないので、Local だと粒が原点から出る
         let mutable main = ps.main
         main.playOnAwake <- false
         main.loop <- false

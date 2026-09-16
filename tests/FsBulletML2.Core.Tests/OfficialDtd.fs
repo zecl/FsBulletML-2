@@ -8,56 +8,10 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2
 
-/// **公式 DTD と `Core/DTD.fs` を突き合わせる。**（v2.4.1）
+/// 公式 DTD と `Core/DTD.fs` を突き合わせる。（v2.4.1）
 ///
 /// `DTD.fs` は doc コメントに `<!ELEMENT ...>` / `<!ATTLIST ...>` を写し、
 /// 既定値は `[<BulletmlDefault>]` で持っている。
-///
-/// --- なぜ門にできるようになったか
-///
-/// **写した相手が repo に無かった。** vendor してあるのは
-/// `license/bulletml/relax/bulletml.rlx` だけで、**RELAX は既定値を持たない**
-/// （取れる値の並びしか書いていない）。`DTD.fs` 自身がそう断っていた ——
-/// 「"aim" などはそこから来たものではなく、別に書かれた書き起こし」。
-///
-/// 公式配布（bulletml0_21）に DTD が在ったので
-/// `license/bulletml/relax/bulletml.dtd` へ置いた。**相手が入った。**
-///
-/// --- 見るもの
-///
-///     1  写した DTD 行 が、公式の行 と 1 文字 ずつ同じか（32 行）
-///     2  取れる値（`type` を持つ 4 要素）
-///     3  既定値（`[<BulletmlDefault>]` の腕 と ATTLIST の "..."）
-///
-/// --- 承知の違いは表で持つ
-///
-/// `bulletml/@type` は DTD の既定が "none"、こちらの札は "vertical"。
-/// **札の意味が違う** —— こちらの `[<BulletmlDefault>]` は
-/// 「**省いたときに走る値**」で（`Parser.Tests/AttributeDefaults.fs` が
-/// 走りで固定している）、DTD の「読んだときに補われる値」ではない。
-///
-/// 公式 Demo も `equals("vertical")` / `equals("horizontal")` しか見ず、
-/// **none でも属性なしでも向きを変えない**（初期値のまま）ので効果は同じ。
-///
-/// **但し書きを doc にだけ書くと、門を回す人に届かない。**
-/// だから下の `known` に理由ごと置いて、**数に出す。**
-///
-/// --- 0 件 を緑にしない
-///
-/// DTD が読めない / 行が 1 行 も取れない / 当てる属性が 0 件 は落とす。
-/// 材料が消えたときに「食い違い 0 件」と同じ顔になるのを防ぐ。
-///
-/// --- 較正（当てた変異と、赤くなった点）
-///
-///   写した行を 1 行 消す（vanish）    1 点  写した DTD 行 が公式と…
-///   写した行の "aim" を "aim2" に      1 点  同上
-///   speed の札を Relative へ移す       1 点  既定値が公式と一致する…
-///   vendor した DTD を空にする         3 点  材料が読めている / 写した行 /
-///                                           承知の違いは、まだ違いのまま
-///
-/// **4 通り とも、素はその前後 とも緑。**
-/// 空にした変異で 3 点 落ちるのは狙いどおり ——
-/// **材料が消えたときに「食い違い 0 件」の顔をさせない。**
 [<TestFixture>]
 type OfficialDtd() =
 
@@ -65,7 +19,7 @@ type OfficialDtd() =
   static let dtdPath = Path.Combine(repoRoot, "license", "bulletml", "relax", "bulletml.dtd")
   static let oursPath = Path.Combine(repoRoot, "src", "FsBulletML2.Core", "DTD.fs")
 
-  /// **承知の違い。** 数に出すが、赤にしない
+  /// 承知の違い。 数に出すが、赤にしない
   static let known : Map<string * string, string> =
     Map.ofList
       [ ("bulletml", "type"),
@@ -73,7 +27,7 @@ type OfficialDtd() =
         + "公式 Demo も none では向きを変えない（初期値のまま）ので効果は同じ。"
         + "Parser.Tests/AttributeDefaults.fs が走りで固定している" ]
 
-  /// 空白の詰め方だけ揃える。**字は変えない**
+  /// 空白の詰め方だけ揃える。字は変えない
   static let norm (s: string) = Regex.Replace(s.Trim(), @"\s+", " ")
 
   static let isDtdLine (s: string) = s.StartsWith "<!ELEMENT" || s.StartsWith "<!ATTLIST"
@@ -117,7 +71,7 @@ type OfficialDtd() =
       unwrap (t.GetGenericArguments().[0])
     else t
 
-  /// **名前で型を探さない。** 綴りを組み立てて探すと `bulletml/@type` だけ
+  /// 名前で型を探さない。 綴りを組み立てて探すと `bulletml/@type` だけ
   /// 見つからない（あちらは `ShootingDirection` で規則から外れている）——
   /// 「型が無い」と「名前が違う」が同じ顔になる。属性の欄から辿る
   static let duCasesOf (elem: string) (attr: string) =
@@ -153,7 +107,7 @@ type OfficialDtd() =
 
   [<Test>]
   member _.``材料が読めている``() =
-    // **0 件 を緑にしない。** 下の点は、行が 1 行 も取れなくても通る
+    // 0 件 を緑にしない。 下の点は、行が 1 行 も取れなくても通る
     officialLines.Length |> should greaterThan 0
     ourLines.Length |> should greaterThan 0
     attlists.Length |> should greaterThan 0
@@ -203,7 +157,7 @@ type OfficialDtd() =
 
   [<Test>]
   member _.``承知の違いは、まだ違いのまま``() =
-    // **表が古びたら落ちる。** 直したのに表に残っていると、
+    // 表が古びたら落ちる。 直したのに表に残っていると、
     // 次に本当に割れたときへ気づけなくなる
     let stale =
       known

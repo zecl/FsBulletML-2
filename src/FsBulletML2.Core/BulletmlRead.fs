@@ -5,74 +5,8 @@ open System.Globalization
 // 取られる。DU のほうを指すよう明示で開き直す
 open FsBulletML2.DTD
 
-/// **XML を読んで木にし、定数を畳むところまで。**
-/// 木の上の操作は BulletmlOps.fs へ切り出した。
-///
-/// 区切りは関数名で書いてある。**行番号を書くとこのコメント自身でずれる。**
-///
-///     役目                     先頭 〜 末尾の関数
-///     ----------------------- --------------------------------------------
-///     1. XML を読んで木にする   existsAttribute 〜 tryBulletmlFromXmlNode
-///     2. 定数を畳む             foldConstants' 〜 foldConstantsForTest
-///     （BulletmlOps.fs）木の上の操作 convertDirectionOption 〜 expandActionRefOnce
-///
-/// ## 二重木は畳んだ
-///
-/// 公開の Bulletml ファミリと走らせる Rec* は、**腕の名前も引数の型も
-/// 一致していた**（違うのは並び順と属性だけ）。DTD.fs で Rec* を公開型の
-/// 別名にしたので、いまは同じ型。
-///
-/// **役目 2 は「写す」仕事を失い、定数を畳むだけになった。** 型が同じなので
-/// convertCommand 系の腕どうしの写しは恒等に近い —— ただし畳み（rep* 群）は
-/// 木を歩かないとかけられないので、**走査そのものは残る。**
-///
-/// 見積もりの履歴。**「畳むと消える」と書いてあった 3 つ は、2 つ が
-/// 畳むより先に死んでいて、残る 1 つ は畳んでも消えなかった。**
-///
-///     Rec* → 公開へ戻す   45 行  畳む前に死んでいた（呼び出しゼロ）
-///     平ら ⇔ 位置の糊     62 行  畳む前に死んでいた（呼び出しゼロ）
-///     公開 → Rec の写し  125 行  畳んでも走査は残る（畳みがぶら下がる）
-///
-/// **畳む前に呼び出しを数えること。そして「消える」と「短くなる」は別。**
-///
-/// ## ロード時と実行時の境界
-///
-/// ここが計画書の言う「先に固定する」もの。**いまは既に分かれている。**
-///
-///     ロード時（Runner.load で 1 回）
-///       XML → 木 → 定数を畳む（foldConstants）
-///       Resolvers を組む（expandBulletRefOnce / expandActionRefOnce を
-///       部分適用しただけの、まだ何も解いていない関数 2 本）
-///
-///     実行時（Step.action / Step.fire が踏むたび）
-///       Resolvers を呼んで**輪を 1 段 だけ**解く
-///
-/// **1 段 なのは輪があるから。** 自己参照する actionRef は解いた先にまた
-/// 同じ actionRef が現れるので、ロード時に解き切ろうとすると止まらない。
-/// Step.action の走査がそこで Stop する形と対になっている。
-///
-/// **畳んでもこの境界は動かない。** 動かすなら別の話（そちらのほうが
-/// 指紋を動かす）。
-///
-/// ## 「読めなかった」は値ではなく戻り値の型で言う
-///
-/// かつて公開の Bulletml には NotCommand という腕があり、**読めなかったを
-/// 値で返していた**。tryBulletmlFromXmlNode は例外だけを option に畳んで
-/// いたので、読めなかったときも None ではなく Some NotCommand が返り、
-/// 「成功したが中身が無い」と見分けが付かなかった。
-///
-/// いまはこう:
-///
-///     (|Command|)                  命令でない節（direction / speed / …）は None
-///                                  —— これは**捨てる印**で、エラーではない
-///     convertBulletmlFromXmlNode   読めなければ BulletmlDTDViolationException
-///     tryBulletmlFromXmlNode       読めなければ None
-///
-/// **1 つ 上の階（readXmlString / readSxmlString / readFsb …）が、もう
-/// この形で書かれていた** —— read は失敗で上げ、tryRead は None を返す。
-/// 型が意図を宣言していたので、それに揃えただけ。
-///
-/// 押さえは tests/FsBulletML2.Core.Tests/PublicParseBoundary.fs。
+/// XML を読んで木にし、定数を畳むところまで。
+/// 木の上の操作は BulletmlOps.fs。読めなかったは戻り値の型で言う。
 module BulletmlRead =
   let internal existsAttribute attrs f = attrs |> List.exists (fun (label, v) -> if f label v then true else false)
   let internal tryFindPCData children =  children |> List.tryPick (function | PCData x -> Some x | _ -> None)
@@ -258,7 +192,7 @@ module BulletmlRead =
           | x -> new BulletmlDTDViolationException(sprintf "not support ShootingDirection.：[%s]" x) |> raise
         let xmlns = tryFindAttrValue attrs "xmlns"
         let name = tryFindAttrValue attrs "name"
-        // description は BulletML公式の属性ではない。BulletMLの名前/説明文を格納するための属性として追加した。
+        // description は BulletML 公式の属性ではない（名前 / 説明文を入れるために足した）
         let description = tryFindAttrValue attrs "description"
         match tryFindAttrValue attrs "type" with
         | Some shootingDirection ->
@@ -268,16 +202,12 @@ module BulletmlRead =
 
       match tryFindBulletmlAttrs with
       | Some attrs ->
-        // 以前はここで、平らな Bulletml で受けた子を filter して BulletmlElm へ
-        // 入れ直していた。入れ直しの `| _ -> raise "convert error"` は
-        // **型が防げるはずの検査**で、読む段が位置の型で返せば要らない
         Bulletml.Bulletml (attrs, readTopElms children)
-      // 条件は type 属性の有無ではなく、attrs レコードそのものが取れなかったとき。
-      // 上の maybe には let! が 1 つも無いので必ず return に着き、いまは届かない
+      // いまは届かない（上の maybe には let! が 1 つも無いので必ず return に着く）
       | None -> new BulletmlDTDViolationException("bulletml element attributes could not be read.") |> raise
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise
 
-  /// XmlNode to action。**どの位置の腕を作るかは factory が決める**
+  /// XmlNode to action。どの位置の腕を作るかは factory が決める
   ///
   /// DTD :
   /// <!ELEMENT action (changeDirection | accel | vanish | changeSpeed | repeat | wait | (fire | fireRef) | (action | actionRef))*>
@@ -286,13 +216,11 @@ module BulletmlRead =
     match xml with
     | Element(name, attrs, children) ->
       let attrs = { actionLabel = tryFindLabelValue attrs |> Option.map ActionLabel }
-      // 命令でない子（bullet / bulletRef / direction …）は readCommands が
-      // 黙って落とす。**以前ここに 10 腕 の filter と 10 腕 の map が
-      // 並んでいたぶん。落とし方は変えていない**
+      // 命令でない子（bullet / bulletRef / direction …）は readCommands が黙って落とす
       factory(attrs, readCommands children)
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise
 
-  /// XmlNode to actionRef。**どの位置の腕を作るかは factory が決める**
+  /// XmlNode to actionRef。どの位置の腕を作るかは factory が決める
   ///
   /// DTD :
   /// <!ELEMENT actionRef (param* )>
@@ -332,7 +260,7 @@ module BulletmlRead =
       new BulletmlDTDViolationException("repeat element should have Action or ActionRef.") |> raise
     result.[0] |> f
 
-  /// XmlNode to bullet。**どの位置の腕を作るかは factory が決める**
+  /// XmlNode to bullet。どの位置の腕を作るかは factory が決める
   ///
   /// DTD :
   /// <!ELEMENT bullet (direction?, speed?, (action | actionRef)* )>
@@ -345,7 +273,7 @@ module BulletmlRead =
       factory(attr, tryFindDirection children, tryFindSpeed children, readActionElms children)
     | _ -> new BulletmlDTDViolationException("not support element.") |> raise
 
-  /// XmlNode to bulletRef。**どの位置の腕を作るかは factory が決める**
+  /// XmlNode to bulletRef。どの位置の腕を作るかは factory が決める
   ///
   /// DTD :
   /// <!ELEMENT bulletRef (param* )>
@@ -375,12 +303,12 @@ module BulletmlRead =
       | _ -> new BulletmlDTDViolationException("not support element.") |> raise
     children |> List.tryPick f
 
-  /// XmlNode to fire。**どの位置の腕を作るかは factory が決める**
+  /// XmlNode to fire。どの位置の腕を作るかは factory が決める
   ///
   /// DTD :
   /// <!ELEMENT fire (direction?, speed?, (bullet | bulletRef))>
   /// <!ATTLIST fire label CDATA #IMPLIED>
-  /// fire は action の子にも bulletml の子にもなれる。**位置が違えば型が違う**
+  /// fire は action の子にも bulletml の子にもなれる。位置が違えば型が違う
   /// ので、どちらの腕を作るかは呼び側が factory で渡す
   let internal createFire factory xml readActionElms =
     match xml with
@@ -508,27 +436,16 @@ module BulletmlRead =
         Action.Repeat(createTimes children "repeat", actionOrActionRef)
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise
 
-  /// 要素の名前から命令を作る。**None は「命令の位置に来ない節」**
-  /// —— direction / speed / term / times / param など、親が自分で読む子。
-  /// 呼び側（xmlToCommandList）はここで落ちたものを捨てる。
+  /// 子を、その位置の型で読む 3 本。
   ///
-  /// **エラーではない。** 名前が命令なのに中身が DTD と違うときは、
-  /// create* の中で BulletmlDTDViolationException が上がる。
-  /// 子を、**その位置の型で**読む 3 本。
-  ///
-  /// 以前は 1 本の xmlToCommandList が全位置ぶんを平らな Bulletml（13 腕）で
-  /// 返し、親がそれを filter + map で自分の位置の型へ入れ直していた。
-  /// 入れ直しには `| _ -> raise "convert error"` が付いていた ——
-  /// **型が防げるはずの検査を、実行時に置いていた。**
-  ///
-  /// 落とし方は位置ごとに違う。**ここは変えていない。**
+  /// 落とし方は位置ごとに違う。ここは変えていない。
   ///
   ///     action の子    命令でないものは黙って落とす（bullet / direction など）
   ///     bullet の子    action / actionRef 以外は黙って落とす
-  ///     bulletml の子  bullet / fire / action 以外の**命令**は上げる。
+  ///     bulletml の子  bullet / fire / action 以外の命令は上げる。
   ///                    命令ですらないもの（direction など）は黙って落とす
   ///
-  /// **fire だけが 2 つ の位置に来る**ので、どちらの腕を作るかは factory で渡す。
+  /// fire だけが 2 つ の位置に来るので、どちらの腕を作るかは factory で渡す。
   let rec internal readCommands (children: XmlNode list) : Action list =
     children |> List.choose (fun child ->
       match child with
@@ -566,22 +483,15 @@ module BulletmlRead =
         | "bullet" -> createBullet (BulletmlElm.Bullet) child readActionElms |> Some
         | "fire"   -> createFire (BulletmlElm.Fire) child readActionElms |> Some
         | "action" -> createAction (BulletmlElm.Action) child readCommands |> Some
-        // 命令ではあるが bulletml の子になれないもの。**以前と同じく上げる**
-        // （以前は平らな DU に一度組んでから filter で弾いていたので、
-        //   例文に組んだ中身が入っていた。いまは要素の名前を出す）
+        // 命令ではあるが bulletml の子になれないもの。上げる
         | "bulletml" | "actionref" | "fireref" | "changespeed" | "changedirection"
         | "accel" | "wait" | "vanish" | "bulletref" | "repeat" ->
           new BulletmlDTDViolationException (sprintf "not support child element：[%s]" name) |> raise
         | _ -> None)
 
-  /// XML の木を BulletML の木にする。**読めなければ上げる。**
+  /// XML の木を BulletML の木にする。読めなければ上げる。
   ///
-  /// 以前は「読めなかった」を NotCommand という値で返していた。
-  /// 値で返すと、呼び側が受け取ったものを検査しないかぎり
-  /// **空の弾幕がそのまま走る**（何も撃たない弾として）。
-  /// 上の階（readXmlString / readSxmlString …）はどれも読めなければ
-  /// 上げる形で書いてあるので、ここもそれに揃えた。
-  /// **読めなかったかを値で受けたいときは tryBulletmlFromXmlNode。**
+  /// 読めなかったかを値で受けたいときは `tryBulletmlFromXmlNode`。
   [<CompiledName("ConvertBulletmlFromXmlNode")>]
   let convertBulletmlFromXmlNode xml : Bulletml =
     match xml with
@@ -593,9 +503,7 @@ module BulletmlRead =
       else
         new BulletmlDTDViolationException (sprintf "root should be a bulletml element, not <%s>." name) |> raise
 
-  /// 読めなければ None。**「読めなかった」と「読めたが中身が無い」を
-  /// 見分けられなかったのはここ** —— 以前は例外だけを畳んでいたので、
-  /// 読めなかったときも Some NotCommand が返っていた。
+  /// 読めなければ None
   [<CompiledName("TryBulletmlFromXmlNode")>]
   let tryBulletmlFromXmlNode xml : Bulletml option =
     try
@@ -603,33 +511,22 @@ module BulletmlRead =
     with | _ -> None
 
  
-  /// 定数を畳む。**$ を含まない式だけを eval して数へ潰し、文字に書き戻す。**
+  /// 定数を畳む。$ を含まない式だけを eval して数へ潰し、文字に書き戻す。
   ///
-  /// 以前は convertRecBulletml という名前で、公開の木を走らせる木（Rec*）へ
-  /// 写しながら畳んでいた。**二重木を畳んで写す仕事が無くなったので、
-  /// 残ったのは畳みだけ** —— 名前をそちらに合わせた。
-  ///
-  /// 型は同じになったが走査は残る。**畳みは木を歩かないとかけられない。**
-  ///
-  /// test は小数の書き方だけを変える（下の toStr）。
+  /// 型が同じになっても走査は残る（畳みは木を歩かないとかけられない）。
+  /// `test` は小数の書き方だけを変える（下の `toStr`）。
   let private foldConstants' bulletml test =
-    // 値は BulletML の文書と同じ書き方（小数点は . ）で持ち回る。
-    // F10 を既定カルチャで作ると , が混ざり、読み直す側が桁区切りと読んで落ちる。
-    // test の側は元から不変（F# の string 演算子）で、明示に揃えただけ
+    // 値は小数点 `.` で持ち回る。 F10 を既定カルチャで作ると `,` が混ざり、
+    // 読み直す側が桁区切りと読んで落ちる
     let toStr (single: float32) =
       if test then single.ToString(CultureInfo.InvariantCulture)
       else single.ToString("F10", CultureInfo.InvariantCulture)
-    /// 畳むのは **$ を含まない式だけ**（下の rep が見ている）。
+    /// 畳むのは $ を含まない式だけ（下の rep が見ている）。
     /// 乱数も難度も読まれないので 0 を渡す。
     ///
-    /// **走行の `getValue` と同じ木・同じ評価**を通す。以前はここだけ
-    /// `System.Xml.XPath` で字を評価していて、Core が xml に縛られていた。
-    /// 両者が同じ値を返すことは ExprTests が実物の式で突き合わせている。
-    ///
-    /// **読めない式で落ちるのは、XPath だったころと同じ。**
-    /// `number("1 + ")` が XPathException になり、それが `Diagnosis` の
-    /// 4 層 目（式）だった。木は NaN を返すので落ちない —— **畳む側で線を引く。**
-    /// 走行（`getValue`）は素通りのまま（読めない式で台本を止めない決め）。
+    /// 走行の `getValue` と同じ木・同じ評価を通す。
+    /// 読めない式で落ちるのは畳む側だけ —— 走行は素通りのまま
+    /// （読めない式で台本を止めない決め）。
     let foldEval (x: Expr.NumExpr) =
       if not (Expr.NumExpr.isReadable x) then
         new BulletmlDTDViolationException(sprintf "式として読めない:[%s]" (Expr.NumExpr.text x)) |> raise
@@ -669,9 +566,7 @@ module BulletmlRead =
       rep times times (lazy (foldEval times |> toStr |> numExpr))
 
     // 位置ごとに変換する。公開の Bulletml ファミリと走らせる木が同じ形を
-    // しているので、腕が 1 対 1 に並ぶ。以前は平らな DU 同士だったので
-    // 「どの位置に来たか」を型が持たず、bulletElmToBulletml のような
-    // 位置を潰す変換を挟んでから 1 つの match で受けていた
+    // しているので、腕が 1 対 1 に並ぶ
     let rec convertCommand (c: Action) : Action =
       match c with
       | ChangeDirection (direction, term) ->
@@ -714,9 +609,7 @@ module BulletmlRead =
       | BulletmlElm.Action (attrs, commands) ->
         BulletmlElm.Action (attrs, commands |> List.map convertCommand)
 
-    // 根は bulletml だけ。**公開の Bulletml も腕が 1 つ になったので、
-    // ここで確かめる必要が無くなった** ——「どの要素でも表せる型」だった
-    // 頃は `| _ -> raise` が要った
+    // 根は bulletml だけ（腕が 1 つ なので `| _ -> raise` が要らない）
     match bulletml with
     | Bulletml.Bulletml (attrs, elms) ->
       Bulletml.Bulletml (attrs, elms |> List.map convertTopElm)

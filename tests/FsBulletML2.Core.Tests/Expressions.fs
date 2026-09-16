@@ -5,7 +5,7 @@ open NUnit.Framework
 open FsBulletML2.Eval
 
 /// 参照にパラメータを足りなく渡す形。上の式を直に書く経路と違って、
-/// **本番で踏める経路**かどうかをこちらで見る。
+/// 本番で踏める経路かどうかをこちらで見る。
 module Expressions =
   let private head = """<?xml version="1.0" ?>
 <!DOCTYPE bulletml SYSTEM "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml/bulletml.dtd">
@@ -100,7 +100,7 @@ type Expressions() =
     |> String.concat "\n"
     |> Golden.check "expr-unresolved-param"
 
-  /// 上は式を直に書いた場合。**本番の経路で踏めるのか**を別に測る。
+  /// 上は式を直に書いた場合。本番の経路で踏めるのかを別に測る。
   /// 参照に渡すパラメータが足りないと、余った $N がそのまま getValue へ行くはず。
   [<Test>]
   member _.``参照にパラメータを足りなく渡したとき``() =
@@ -110,7 +110,7 @@ type Expressions() =
     |> Golden.check "expr-short-params"
 
   /// 4 の当てる先を実物で見る。samples 227 本のうち、
-  /// **ref に渡す param が参照先の使う $N に足りないのは 2 本**（静的に数えた）。
+  /// ref に渡す param が参照先の使う $N に足りないのは 2 本（静的に数えた）。
   ///
   /// どちらも `<actionRef label="impl:30"></actionRef>` のように param を 1 つも渡さず、
   /// 参照先が `<direction>$2</direction>` `<speed>$1</speed>` を使う。

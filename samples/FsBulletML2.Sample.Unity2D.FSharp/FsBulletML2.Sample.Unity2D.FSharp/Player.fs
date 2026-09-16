@@ -1,7 +1,7 @@
 namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open R3
-// **R3 のあとに開くこと**（`Observable` が両方にある。FrameTicker の但し書き）
+// R3 のあとに開くこと（`Observable` が両方にある。FrameTicker の但し書き）
 open FSharp.Control.R3
 open UnityEngine
 open FsBulletML2
@@ -10,8 +10,8 @@ open FsBulletML2.Unity2D
 type Player () =
   inherit MonoBehaviour ()
 
-  /// 受けたダメージ。**増えたら爆風**（購読は `Start`）。
-  /// **F# は let 束縛を val より前に置く**ので、ここに居る
+  /// 受けたダメージ。増えたら爆風（購読は `Start`）。
+  /// F# は let 束縛を val より前に置くので、ここに居る
   let damageRp = new ReactiveProperty<int>(0)
 
   [<DefaultValue>]val mutable public bulletObject : GameObject
@@ -27,12 +27,12 @@ type Player () =
     member this.PlayerPosX () = this.transform.position.x
     member this.PlayerPosY () = this.transform.position.y
 
-  /// 受けたダメージ。**Informations が読む**
+  /// 受けたダメージ。Informations が読む
   member this.Damage = damageRp.Value
   member this.DamageRp = damageRp
 
   member this.Awake () =
-    // **Init が先。** 読む段の Env は BulletMLManager から rand と rank を
+    // Init が先。 読む段の Env は BulletMLManager から rand と rank を
     // 引くので、口を差し込む前に読むと NullReference になる
     BulletMLManager.Init(new BulletFunctions(this))
     this.b2wayLeftBulletTask <- Runner.load loadRand (loadRank ()) FsBulletML2.Bullets.Dsl.PlayerBullet.PlayerBullet.b2wayLeftBullet |> Some
@@ -44,14 +44,14 @@ type Player () =
   member this.Y with get () = this.transform.position.y
                  and set (v) = this.transform.position <- Vector3(this.transform.position.x, v, this.transform.position.z)
 
-  /// 毎コマ の仕事を 4 本 の流れに割る。**旧は 1 つ の Update に畳んであった。**
+  /// 毎コマ の仕事を 4 本 の流れに割る。旧は 1 つ の Update に畳んであった。
   ///
   /// 割ると、それぞれの条件が `filter` に出る —— 旧は入力が 0 のコマでも
-  /// 座標を計算し直していて、**止めているのか動かしているのかが字から読めなかった。**
+  /// 座標を計算し直していて、止めているのか動かしているのかが字から読めなかった。
   member this.Start () =
     let update = FrameTicker.Frames
 
-    // 1. 移動。**入力が入っているコマだけ**通す
+    // 1. 移動。入力が入っているコマだけ通す
     update
     |> Observable.map (fun _ -> struct (Input.GetAxisRaw "Horizontal", Input.GetAxisRaw "Vertical"))
     |> Observable.filter (fun struct (x, y) -> x <> 0.0f || y <> 0.0f)
@@ -65,14 +65,14 @@ type Player () =
         this.Shoot2WayRightBullet ())
 
     // 3. ホーミングは 61 コマ に 1 回 だけ。
-    //    **旧は counter を自分で数えていた** —— 毎コマ +1 して 61 で 0 に戻し、
+    //    旧は counter を自分で数えていた —— 毎コマ +1 して 61 で 0 に戻し、
     //    61 のコマだけ撃つ形。通し番号で同じ間隔になる
     update
     |> Observable.mapi (fun i _ -> i)
     |> Observable.filter (fun i -> i % 61 = 60 && Input.GetKey KeyCode.Z)
     |> subscribeUntilDestroy this (fun _ -> this.ShootHomingBullet ())
 
-    // 4. ダメージが増えたら爆風。**`skip 1` は初期値の 0 を捨てるため**
+    // 4. ダメージが増えたら爆風。`skip 1` は初期値の 0 を捨てるため
     //    （ReactiveProperty は購読した瞬間に現在値を 1 個 流す）
     (damageRp :> Observable<int>)
     |> Observable.skip 1
@@ -88,7 +88,7 @@ type Player () =
     if (my > -6.0f && my <= -0.4f) then
         this.Y <- my
 
-  /// 弾を 1 発 撃つ。**prefab ではなく Entity を作る。**
+  /// 弾を 1 発 撃つ。prefab ではなく Entity を作る。
   /// 台本が無ければ何もしない（Awake が走る前に呼ばれた場合）
   member private this.Fire (position: Vector3) (script: BulletmlScript option) =
     match script with
@@ -101,14 +101,14 @@ type Player () =
   member this.Shoot2WayRightBullet () =
     this.Fire (this.transform.position + new Vector3(0.1f, 0.1f, 0.f)) this.b2wayRightBulletTask
 
-  /// **間隔の判定はここに無い。** 持っているのは流れの側（`Start` の 3 番）
+  /// 間隔の判定はここに無い。 持っているのは流れの側（`Start` の 3 番）
   member this.ShootHomingBullet () =
     this.Fire this.transform.position this.hommingTask
 
-  /// 敵弾が当たった。**当たり判定は BulletEcsDriver がやる** ——
+  /// 敵弾が当たった。当たり判定は BulletEcsDriver がやる ——
   /// ECS の弾は Collider2D を持たないので、OnTriggerEnter2D は届かない。
   ///
-  /// **爆風はここで出さない。** ダメージを増やすだけで、
+  /// 爆風はここで出さない。 ダメージを増やすだけで、
   /// 出すのは `Start` の 4 番（`damageRp` の購読）
   member this.HitByEnemyBullet () =
     damageRp.Value <- damageRp.Value + 1

@@ -10,36 +10,21 @@ public class Informations : MonoBehaviour
     public bool showInEditor = false;
 
     /// <summary>
-    /// フレームレートの上限。<b>-1 で無制限。</b>
+    /// フレームレートの上限。-1 で無制限。
     ///
-    /// <b>以前は 40 だった。</b> 意図した設計ではなく、そのまま残っていた
+    /// 以前は 40 だった。 意図した設計ではなく、そのまま残っていた
     /// だけだった。いちど 外して実力を見たら 60 では収まらない量が出たので、
-    /// <b>60 で頭を押さえる</b>ことにした（弾幕の見た目を一定にするため）。
-    ///
-    /// 表示には上限も並べてある —— 数だけだと「これしか出ない」と
-    /// 「上限に張り付いている」を見分けられない（実際に読み違えた）。
-    /// <b>重さを見たいときは画面のボタンで外すこと。</b>
-    ///
-    /// 参考: エンジン（Runner.StepWith）が 1 コマ に使うのは弾 121 本 で
-    /// 0.12 ms、ホーミング 25 本 で 0.43 ms。<b>60 fps の予算 16.7 ms に対して
-    /// 3% 未満</b>なので、fps が落ちるならエンジンの外を疑うこと
-    /// （実測は Assets/Editor/BulletSmokeCheck.cs で出せる）。
-    /// </summary>
+    /// 60 で頭を押さえることにした（弾幕の見た目を一定にするため）。
     public int targetFps = DefaultTargetFps;
 
     /// <summary>既定の上限。<see cref="ApplyCapOnPlay"/> が Play の頭で使う</summary>
     public const int DefaultTargetFps = 60;
 
     /// <summary>
-    /// <b>Play に入った時点で上限を掛ける。</b>
+    /// Play に入った時点で上限を掛ける。
     ///
-    /// これを <c>Informations.Awake</c> だけに任せると、<b>シーンに
-    /// Informations が居ること</b>と<b>その Awake が先に走ること</b>に依存する。
-    /// どちらも外から見て分からないので、シーンに何が居ようが効く場所へ出した。
-    ///
-    /// Informations がシーンに居れば、そのあと Awake が inspector の値で
-    /// 上書きする（既定は同じ 60）。
-    /// </summary>
+    /// これを <c>Informations.Awake</c> だけに任せると、シーンに
+    /// Informations が居ることとその Awake が先に走ることに依存する。
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void ApplyCapOnPlay()
     {
@@ -47,11 +32,11 @@ public class Informations : MonoBehaviour
     }
 
     /// <summary>
-    /// 上限の掛け方。<b>vSync が先。</b>
+    /// 上限の掛け方。vSync が先。
     ///
     /// vSyncCount が 1 以上 だと Unity は targetFrameRate を無視して画面の
     /// リフレッシュレートに従う。品質設定「Good」では 1 なので、
-    /// <b>切らないと 60 に押さえられない</b>（実際に押さえられなかった）。
+    /// 切らないと 60 に押さえられない（実際に押さえられなかった）。
     /// </summary>
     static void ApplyCap(int fps)
     {
@@ -63,18 +48,18 @@ public class Informations : MonoBehaviour
     private Player player;
     private readonly ReactiveProperty<string> StatusTextRp = new("");
 
-    // fps を数えるための控え。**Update で毎コマ 数える。**
+    // fps を数えるための控え。Update で毎コマ 数える。
     //
     // 前は 0.5 秒 に 1 回 `1f / Time.unscaledDeltaTime` を読んでいた。あれは
-    // **その瞬間の 1 コマ の長さ**であって平均ではない。1 コマ でも長いものが
+    // その瞬間の 1 コマ の長さであって平均ではない。1 コマ でも長いものが
     // サンプリング点に当たれば、そのまま低い数字が出る ——
-    // **「40 前後しか出ない」の「前後」は、その振れ幅を見ていた可能性がある。**
+    // 「40 前後しか出ない」の「前後」は、その振れ幅を見ていた可能性がある。
     // ここは期間内のコマ数を数えて割る（本当の平均）。
     int frames;
     float elapsed;
     /// 直近 0.5 秒 の平均 fps
     float fps;
-    /// 直近 0.5 秒 でいちばん長かったコマ（ms）。**平均だけだと引っかかりが消える**
+    /// 直近 0.5 秒 でいちばん長かったコマ（ms）。平均だけだと引っかかりが消える
     float worstMs;
     float worstInWindow;
 
@@ -121,25 +106,30 @@ public class Informations : MonoBehaviour
         }
 
         var token = destroyCancellationToken;
-        var stats = Observable.Return((enemy: 0, player: 0, fps: 0f, worst: 0f, hitEnemy: 0, hitPlayer: 0))
+        var stats = Observable.Return((enemy: 0, player: 0, fps: 0f, worst: 0f))
             .Concat(
                 Observable.Interval(TimeSpan.FromSeconds(0.5), token)
                     .Select(_ => (
                         enemy: BulletEntityFactory.EnemyCount,
                         player: BulletEntityFactory.PlayerCount,
-                        // Update が数えた平均。**ここで割り算しない**
+                        // Update が数えた平均。ここで割り算しない
                         fps: this.fps,
-                        worst: this.worstMs,
-                        // **当たりはサーバーが数えている。** ここに出しているのは、
-                        // 判定 が届いていることを目 で確かめるため
-                        hitEnemy: DanmakuClient.Instance != null ? DanmakuClient.Instance.EnemyHits : 0,
-                        hitPlayer: DanmakuClient.Instance != null ? DanmakuClient.Instance.PlayerHits : 0
+                        worst: this.worstMs
                     )));
+
+        // 当たりは 0.5 秒 ごとに読みに行かない。 サーバーが数えた値 が
+        // 流れてくるので、購読して最新 を持つ。
+        // 読みに行く形 だと、繋がる前 は Instance が null なので 0 が出る ——
+        // 「判定 が効いていない」と見分けが付かない
+        var hits = DanmakuState.EnemyHits
+            .CombineLatest(DanmakuState.PlayerHits, (e, p) => (hitEnemy: e, hitPlayer: p));
 
         enemy.BulletNameRp
             .CombineLatest(enemy.LifeRp, (name, life) => (name, life))
             .CombineLatest(player.DamageRp, (x, dmg) => (name: x.name, life: x.life, dmg: dmg))
-            .CombineLatest(stats, (x, s) => FormatStatus(x.name, x.life, x.dmg, s.fps, s.worst, s.enemy, s.player, s.hitEnemy, s.hitPlayer))
+            .CombineLatest(stats, (x, s) => (x.name, x.life, x.dmg, s.fps, s.worst, s.enemy, s.player))
+            .CombineLatest(hits, (x, h) => FormatStatus(
+                x.name, x.life, x.dmg, x.fps, x.worst, x.enemy, x.player, h.hitEnemy, h.hitPlayer))
             .Subscribe(text => StatusTextRp.Value = text)
             .AddTo(this);
     }
@@ -157,7 +147,7 @@ public class Informations : MonoBehaviour
             this.show = !this.show;
         }
 
-        // 上限を外せるボタン。**既定は 60 で掛かっている。**
+        // 上限を外せるボタン。既定は 60 で掛かっている。
         // 60 に張り付いているのか届いていないのかは、外してみないと割れない
         if (Application.isPlaying)
         {
@@ -197,13 +187,13 @@ public class Informations : MonoBehaviour
                                        int hitEnemy, int hitPlayer)
     {
         var sb = new StringBuilder();
-        // **上限と、いちばん長かったコマも並べて出す。**
+        // 上限と、いちばん長かったコマも並べて出す。
         //
         // 数だけだと「これしか出ない」と読める —— 上限に張り付いているのか、
         // 届いていないのかが分からない。さらに平均だけだと、たまに 1 コマ
         // 引っかかる形（GC やアセットの読み込み）が消える。
         //
-        // **読み方**: 平均が上限どおりで最悪も予算内なら、出るべきものは出ている。
+        // 読み方: 平均が上限どおりで最悪も予算内なら、出るべきものは出ている。
         // 平均が低いなら継続的に重い。平均は出ていて最悪だけ大きいなら、
         // どこかで 1 コマ だけ止まっている
         var cap = Application.targetFrameRate;
@@ -218,7 +208,7 @@ public class Informations : MonoBehaviour
         sb.Append(string.Format("Player Damages:{0}\n", damage));
         sb.Append(string.Format("EnemyBullets:{0}\n", enemyBullets));
         sb.Append(string.Format("PlayerBullets:{0}\n", playerBullets));
-        // **当たりはサーバーが判定して数えている。** client は 1 つ も持たない ——
+        // 当たりはサーバーが判定して数えている。 client は 1 つ も持たない ——
         // 当たった弾はその場で並びから消えるので、出さないと
         // 「判定 が効いていない」と「当たっていない」が見分けられない
         sb.Append(string.Format("Hits（server）:敵へ {0} / 自機へ {1}\n", hitEnemy, hitPlayer));

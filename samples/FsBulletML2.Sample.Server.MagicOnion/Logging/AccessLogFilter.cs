@@ -9,9 +9,9 @@ using Microsoft.Extensions.Logging;
 namespace FsBulletML2.Sample.Server.MagicOnion.Logging
 {
     /// <summary>
-    /// Hub の口 が呼ばれたことを出す。<b>MagicOnion の filter。</b>
+    /// Hub の口 が呼ばれたことを出す。MagicOnion の filter。
     ///
-    /// <b>降りるほう（<c>OnFrame</c>）はここを通らない。</b>
+    /// 降りるほう（<c>OnFrame</c>）はここを通らない。
     /// filter が挟まるのは client から呼ばれた口 だけで、
     /// サーバーから配るぶんは素通り ——
     /// 配れているかは状況 の行（<see cref="StatusPrinter"/>）で見る。
@@ -41,7 +41,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
             }
             catch (System.Exception ex)
             {
-                // **落ちたものは、間引きの対象にしない。** 数えるだけにすると
+                // 落ちたものは、間引きの対象にしない。 数えるだけにすると
                 // 「呼ばれた回数は出るのに、なぜ効かないか分からない」になる
                 logger.LogError(ex, "{Path} が落ちた  #{Conn}", context.Path, Conn(context));
                 throw;
@@ -71,7 +71,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
 
     /// <summary>
     /// 1 往復 の口（<c>IDanmakuService</c>）を出す。
-    /// <b>こちらは間引かない</b> —— 部屋 に入る前 に 1 度 呼ばれるだけなので、
+    /// こちらは間引かない —— 部屋 に入る前 に 1 度 呼ばれるだけなので、
     /// 出しても流れない。
     /// </summary>
     public sealed class ServiceAccessLogFilter : IMagicOnionServiceFilter

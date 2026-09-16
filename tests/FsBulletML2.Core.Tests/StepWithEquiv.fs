@@ -7,14 +7,9 @@ open FsBulletML2.Domain
 
 /// Runner.stepWith が Runner.step（WithMotion 経由）と同じ答えを返すこと。
 ///
-/// **出荷側は stepWith しか呼ばない**（フロント 2 つ・ベンチ・TraceApi）ので、
+/// 出荷側は stepWith しか呼ばない（フロント 2 つ・ベンチ・TraceApi）ので、
 /// ここが無いと step のほうが誰にも確かめられなくなる。逆に、片方だけ直したら
 /// ここが割れる。
-///
-/// **2 回 走らせるので、乱数を二重に消費しない形にしてある。**
-/// 同じ列を独立に 2 本 用意して、それぞれに 1 本ずつ渡す。同じ env を
-/// 使い回して 2 回 呼ぶと、2 回目 は列が進んだ後の値を見るので、
-/// 「答えが違う」が実装の差なのか列の差なのか分けられなくなる。
 [<TestFixture>]
 type StepWithEquiv() =
 
@@ -69,7 +64,7 @@ type StepWithEquiv() =
       // 読む段で落ちる 3 本（DTD 違反）はここでも比べられない。
       // 数は下で門にするので、握って進む
       | _ -> ()
-    // **当てる先が本当に在るかを数で押さえる。** 全部 例外に吸われて
+    // 当てる先が本当に在るかを数で押さえる。 全部 例外に吸われて
     // 「0 本 比べて緑」になっても気づけない
     compared |> should be (greaterThan 200)
     TestContext.WriteLine(sprintf "比べた台本: %d 本" compared)

@@ -2,14 +2,14 @@ namespace FsBulletML2.Unity2D
 open FsBulletML2
 open UnityEngine
 
-/// フロントの弾。**IBulletmlObject を継承しない。**
+/// フロントの弾。IBulletmlObject を継承しない。
 ///
 /// 旧はここが `inherit IBulletmlObject` していて、エンジンがフロントを
 /// 呼び返すための 19 メンバ を実装させられていた。新 API は値の受け渡し
 /// だけなので、ここに残るのはフロント自身が要るものだけ。
 ///
-/// MonoGame 側の IBullet と同じ形にしてある。**片方だけ直すと、同じ規約を
-/// 2 通り に書いた状態になって、あとから読む人がどちらが正かを判断できない。**
+/// MonoGame 側の IBullet と同じ形にしてある。片方だけ直すと、同じ規約を
+/// 2 通り に書いた状態になって、あとから読む人がどちらが正かを判断できない。
 type IDefaultBullet =
   abstract Update : unit -> unit
   abstract Pos : Vector3 with get,set
@@ -23,7 +23,7 @@ type IDefaultBullet =
   abstract AccelerationY : float32 with get,set
   abstract Used : bool with get,set
   abstract IsBullet : bool with get,set
-  /// **フロントの印。エンジンは見ない。**
+  /// フロントの印。エンジンは見ない。
   ///
   /// 旧はエンジンが GetNewBullet の中で立てていて、Retired の判定に使って
   /// いた。いまエンジン側の同じ概念は Body.HasFired が持つ（BulletRun の中）。
@@ -38,18 +38,18 @@ type IDefaultBullet =
   /// 根から始める。実行状態は Core に作らせる
   abstract SetScript : BulletmlScript option -> unit
   /// 撃たれた弾を、エンジンから受け取った実行状態で始める。
-  /// **弾幕を渡す口が無い** —— 実行状態が親のものを持っている
+  /// 弾幕を渡す口が無い —— 実行状態が親のものを持っている
   abstract SetRun : BulletRun -> unit
   abstract Script : BulletmlScript option with get
   /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish
   abstract Finished : bool with get
 
 /// 弾幕を読む段に渡すもの。MonoGame 側の BulletmlLoad と同じ理由でここに置く
-/// —— **何を渡すかはフロントの決めごと**なので Core には置かない。
+/// —— 何を渡すかはフロントの決めごとなので Core には置かない。
 [<AutoOpen>]
 module BulletmlLoad =
 
-  /// **1 個 だけ作って使い回す**（MonoGame 側の同名と同じ理由）
+  /// 1 個 だけ作って使い回す（MonoGame 側の同名と同じ理由）
   let loadRand : unit -> float32 = BulletMLManager.GetRandom
 
   let loadRank () : float32 = BulletMLManager.GetRank ()

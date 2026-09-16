@@ -11,38 +11,31 @@ open FsBulletML2
 
 /// 弾の Entity を毎コマ 回す。
 ///
-/// **`SystemBase` を使っていないのは意図。** ECS の System は Roslyn の
+/// `SystemBase` を使っていないのは意図。 ECS の System は Roslyn の
 /// source generator（`SystemGenerator.dll`）が partial クラスを生成する
-/// 仕組みで、**F# コンパイラでは走らない**。`EntityManager` を直に触るぶんには
+/// 仕組みで、F# コンパイラでは走らない。`EntityManager` を直に触るぶんには
 /// F# から普通に呼べるので、MonoBehaviour の Update から回している。
-///
-/// **性能はどちらでも同じ。** `BulletSim` は managed component（class）なので、
-/// System で回しても Burst もジョブ化も効かない。C# サンプルは
-/// `SystemBase` を使っているが、その `OnUpdate` も `SystemAPI` を使わずに
-/// `ToEntityArray` して手で回す形で、中身はここと同じ。
-///
-/// 実行順は早めに寄せてある —— 弾を動かしてから当たり判定と描画に渡したいので。
 [<DefaultExecutionOrder(-100)>]
 type BulletEcsDriver () =
   inherit MonoBehaviour ()
 
   /// このコマで消す Entity。走査の途中で消すと列挙が壊れるので、いったん貯める
   let doomed = List<Entity>()
-  /// 自機に触れている弾。**入った瞬間だけ**ダメージにするための控え
+  /// 自機に触れている弾。入った瞬間だけダメージにするための控え
   let overlappingPlayer = HashSet<Entity>()
   let overlapScratch = List<Entity>()
 
-  /// 撃たれた弾を実体にする関数。**毎コマ 作らない**（弾の数だけ確保が増える）。
-  /// **F# は let 束縛を val より前に置く**ので、ここに居る
+  /// 撃たれた弾を実体にする関数。毎コマ 作らない（弾の数だけ確保が増える）。
+  /// F# は let 束縛を val より前に置くので、ここに居る
   let spawn = System.Action<BulletSim, BulletRun>(fun parent child ->
     BulletEntityFactory.SpawnChild(parent, child) |> ignore)
 
   [<DefaultValue>]val mutable private query : EntityQuery
   [<DefaultValue>]val mutable private hasQuery : bool
   /// 初回の 1 コマ だけログを出すための印。
-  /// **毎コマ 出すと弾の数だけ行が流れて Console が使えなくなる**
+  /// 毎コマ 出すと弾の数だけ行が流れて Console が使えなくなる
   [<DefaultValue>]val mutable private logged : bool
-  /// ダメージの通知先。**Bootstrap が入れる。**
+  /// ダメージの通知先。Bootstrap が入れる。
   /// BulletEcsRuntime は Transform しか持たない（型の輪を避けるため）ので、
   /// 型を知っているこちらで持つ
   [<DefaultValue>]val mutable public player : Player
@@ -78,7 +71,7 @@ type BulletEcsDriver () =
     doomed.Clear()
     let entities = this.query.ToEntityArray(Allocator.Temp)
 
-    // **初回だけ、回っていることと画面の範囲を出す。**
+    // 初回だけ、回っていることと画面の範囲を出す。
     // 「弾が変な位置に残る」を追うとき、Driver が回っていないのか
     // 消す範囲がずれているのかを、画面からは区別できない
     if not this.logged then
@@ -100,7 +93,7 @@ type BulletEcsDriver () =
           // 1 コマ 進める。撃たれた弾はその場で実体になる
           if sim.Used then sim.Step spawn
 
-          // 描画へ位置を渡す。**向きは -Dir**（エンジンの角度は時計回り）
+          // 描画へ位置を渡す。向きは -Dir（エンジンの角度は時計回り）
           let pos = float3(sim.X, sim.Y, 0.0f)
           let rot = quaternion.AxisAngle(float3(0.0f, 0.0f, 1.0f), -sim.Dir)
           let mutable tr = em.GetComponentData<LocalTransform> entity
@@ -108,16 +101,12 @@ type BulletEcsDriver () =
           tr.Rotation <- rot
           em.SetComponentData(entity, tr)
 
-          // **LocalToWorld も自分で書く。**
+          // LocalToWorld も自分で書く。
           //
           // Entities Graphics が見るのは LocalTransform ではなく LocalToWorld で、
           // その変換は TransformSystemGroup（ECS の System）がやる。
-          // **ここは MonoBehaviour の Update なので、その System との前後が
-          // 保証されない** —— LocalTransform だけ更新すると、描画が前のコマの
-          // 位置に残る（「弾の軌跡が変な位置に残る」はこれ）。
           //
-          // C# サンプルは [UpdateBefore(typeof(TransformSystemGroup))] を付けた
-          // System なので順序が取れている。**F# は System を書けない**ので、
+          // System なので順序が取れている。F# は System を書けないので、
           // 変換のほうを自分で済ませて System を待たない。
           if em.HasComponent<LocalToWorld> entity then
             let mutable ltw = LocalToWorld()
@@ -130,7 +119,7 @@ type BulletEcsDriver () =
             doomed.Add entity
           elif tag.Kind = BulletKind.Enemy && hasPlayer then
             if BulletEcsDriver.Overlaps sim.X sim.Y tag.Radius playerPos BulletEcsRuntime.PlayerRadius then
-              // **入った瞬間だけ**ダメージにする。触れ続けている間 減らさない
+              // 入った瞬間だけダメージにする。触れ続けている間 減らさない
               if overlappingPlayer.Add entity && not (isNull (box this.player)) then
                 this.player.HitByEnemyBullet()
               // 根の弾（弾幕の元）は当たっても消さない
@@ -148,14 +137,14 @@ type BulletEcsDriver () =
 
     for e in doomed do BulletEntityFactory.Destroy e
 
-    // 消えた Entity を控えから外す。**放っておくと際限なく溜まる**
+    // 消えた Entity を控えから外す。放っておくと際限なく溜まる
     if overlappingPlayer.Count > 0 then
       overlapScratch.Clear()
       for e in overlappingPlayer do
         if not (em.Exists e) then overlapScratch.Add e
       for e in overlapScratch do overlappingPlayer.Remove e |> ignore
 
-/// Play の頭で場面を組む。**シーンに置く必要はない** —— 居なければ自分で作る。
+/// Play の頭で場面を組む。シーンに置く必要はない —— 居なければ自分で作る。
 ///
 /// やることは 3 つ。
 ///   1. 自機と敵の Transform を BulletEcsRuntime へ（毎コマ 探さないため）
@@ -166,12 +155,12 @@ type BulletEcsBootstrap () =
 
   [<RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)>]
   static member AutoCreate () =
-    // **Play 中でなければ何もしない。**
+    // Play 中でなければ何もしない。
     //
     // ここは Informations.Awake からも呼ばれるが、あちらは
-    // [<ExecuteInEditMode()>] なので **Play していない Editor でも走る**。
+    // [<ExecuteInEditMode()>] なので Play していない Editor でも走る。
     // そこで DontDestroyOnLoad を呼ぶと InvalidOperationException になり、
-    // **呼んだ側（Informations.Awake）の残りが実行されない** ——
+    // 呼んだ側（Informations.Awake）の残りが実行されない ——
     // enemy / player が null のままになり、OnGUI が落ちて HUD が消える。
     // 実際にそれで「UI が表示されない」を出した。
     if Application.isPlaying then
@@ -180,33 +169,23 @@ type BulletEcsBootstrap () =
         let go = new GameObject("BulletEcsBootstrap")
         UnityEngine.Object.DontDestroyOnLoad go
         go.AddComponent<BulletEcsBootstrap>() |> ignore
-        // **ここが出ないなら、この属性が Unity に拾われていない。**
+        // ここが出ないなら、この属性が Unity に拾われていない。
         // F# の static member に付けた属性が効いているかを、
         // 画面ではなくログで確かめられるようにする
         Debug.Log "BulletEcsBootstrap: AutoCreate で作った"
 
   member this.Awake () = this.Configure ()
 
-  /// **component の型が TypeManager に登録されている前提で動く。**
+  /// component の型が TypeManager に登録されている前提で動く。
   ///
   /// Entities は普通、ILPostProcessor（Unity.Entities.CodeGen）が各アセンブリに
   /// `Unity.Entities.CodeGeneratedRegistry.AssemblyTypeRegistry` を埋め込み、
-  /// TypeManager がそれを集めて回る。**その加工は Unity がコンパイルした
-  /// アセンブリにしか掛からない。** このサンプルは F# を外でビルドして dll を
+  /// TypeManager がそれを集めて回る。その加工は Unity がコンパイルした
+  /// アセンブリにしか掛からない。 このサンプルは F# を外でビルドして dll を
   /// Assets へ置くので掛からず、こう落ちた ——
-  ///
   ///     ArgumentException: Unknown Type: ...BulletSim
-  ///
-  /// **例外文は `TypeManager.GetOrCreateTypeIndex` を案内するが、6.5.0 には
-  /// 存在しない**（メッセージだけが古い）。手で足す口は無い。
-  ///
-  /// 代わりに `DISABLE_TYPEMANAGER_ILPP`（Scripting Define Symbols）を
-  /// 定義してある。TypeManager がリフレクション走査へ切り替わり、
-  /// **Unity.Entities を参照している dll なら拾われる。**
-  /// 効いているかは `Assets/Editor/EcsEntityCheck.cs` が見る。
-  ///
-  /// **C# サンプルには要らない設定。** あちらは Assets の .cs なので
-  /// Unity がコンパイルし、加工が掛かる。**同じ ECS でも、dll で配ると違う。**
+  /// 例外文は `TypeManager.GetOrCreateTypeIndex` を案内するが、6.5.0 には
+  /// 存在しない（メッセージだけが古い）。手で足す口は無い。
   member this.Configure () =
     // シーンは Built-in の前提のままなので、URP で描ける形に
     // 直さないと自機も敵も背景も出ない（実際に真っ暗になった）
@@ -233,14 +212,14 @@ type BulletEcsBootstrap () =
         BulletEcsRuntime.EnemyRadius <- max 0.08f (max e.x e.y)
 
     // 弾の見た目は prefab の SpriteRenderer から取る。
-    // **prefab はもう実体化しない**（弾は Entity）が、見本としては残っている
+    // prefab はもう実体化しない（弾は Entity）が、見本としては残っている
     let spriteOf (go: GameObject) =
       if isNull (box go) then null else go.GetComponent<SpriteRenderer>()
     let enemySr = if hasEnemy then spriteOf enemy.bulletObject else null
     let playerSr = if hasPlayer then spriteOf player.bulletObject else null
     BulletEntityFactory.Configure(enemySr, playerSr)
 
-    // 弾を回す本体。**この GameObject に付ける**（自分で作った場合も含む）。
+    // 弾を回す本体。この GameObject に付ける（自分で作った場合も含む）。
     // F# の型に null は入れられないので、パターン照合ではなく isNull で見る
     let existing = this.GetComponent<BulletEcsDriver>()
     let driver =
@@ -249,7 +228,7 @@ type BulletEcsBootstrap () =
     driver.player <- player
     driver.enemy <- enemy
 
-    // **どこで切れているかを 1 行 で読めるようにする。**
+    // どこで切れているかを 1 行 で読めるようにする。
     // 弾が出ないとき、原因は「World が無い」「Configure が届いていない」
     // 「自機か敵が見つからない」のどれか。画面からは区別がつかない
     let world = World.DefaultGameObjectInjectionWorld

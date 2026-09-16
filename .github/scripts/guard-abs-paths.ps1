@@ -36,8 +36,6 @@ param(
        Why  = 'slnx の外。元の repo から持ち越したまま建てていない' }
     @{ Path = 'src/FsBulletML2.TypeProviders/ProvidedTypes.fs'
        Why  = 'よそから貰った現物。こちらで直さない' }
-    @{ Path = 'tools/frozen-corpus/DumpFrozenCorpus.fs'
-       Why  = '走らせ方の例。Temp の下に置くなという但し書きなので、絶対パスであることに意味がある' }
     @{ Path = '.github/scripts/guard-abs-paths.Tests.ps1'
        Why  = 'この門の校正の材料。落ちる側を字で置いてある' }
   ),

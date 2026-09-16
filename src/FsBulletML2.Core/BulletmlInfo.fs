@@ -12,7 +12,7 @@ type BulletmlInfo =
   ///
   /// 乱数とランクを受け取るのは、木を組む段が wait の term をその場で引くため
   /// （Runner.load の但し書き）。省くとグローバルから引くことになる。
-  /// **旧 API の BulletmlTask() / BulletmlTaskOption() は落とした。**
+  /// 旧 API の BulletmlTask() / BulletmlTaskOption() は落とした。
   /// どちらも BulletRunner.convertBulletmlTask を呼ぶだけの包みで、
   /// 呼び手は 0 だった（型プロバイダも sln の中のサンプルも Script を使う）。
   member this.Script (rand: unit -> float32, rank: float32) =

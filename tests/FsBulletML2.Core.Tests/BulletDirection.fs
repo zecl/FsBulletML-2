@@ -5,28 +5,8 @@ open NUnit.Framework
 
 /// bullet 要素の中に書いた direction が、弾の向きに入るか。
 ///
-/// **ここは「正しい姿」ではなく「いまの姿」を記録している。**
+/// ここは「正しい姿」ではなく「いまの姿」を記録している。
 /// 測った結果はこう。
-///
-///   fire 側に direction を書く   効く
-///   bullet の中に direction      効かない（aim に落ちる）。参照でもリテラルでも同じ
-///   bullet の中の speed          効く
-///
-/// 機構も見えていた。落とした `BulletRunner.fs` の fireCommand が
-///
-///   | ProcessableBulletml.Bullet(attr,_,speed,_) -> ...
-///
-/// と分解していて、2 番めの `Direction option` を捨てていた。向きは fire 側の
-/// SrcDir からしか入らない。同じ位置の speed は読んでいるので非対称。
-/// ProcessableBulletml.Bullet の型は
-///
-///   Bullet of BulletAttrs * Direction option * Speed option * ProcessableBulletml list
-///
-/// で、その 3 行上の DTD には `<!ELEMENT bullet (direction?, speed?, ...)>` とある。
-/// 仕様は許していて、パーサも AST に入れていて、走らせる側だけが捨てている。
-///
-/// **不具合の可能性が高いが、ここでは直していない。** リファクタリングでこの控えが
-/// 動いたら、直したのかどうかを人が決めること。
 [<TestFixture>]
 type BulletDirection() =
 
