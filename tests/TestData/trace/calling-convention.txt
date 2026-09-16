@@ -16,6 +16,10 @@ samples/FsBulletML2.Sample.Server.MagicOnion/Engine/ServerBullet.cs
     X += f.Delta.X / 100f;
     Y -= f.Delta.Y / 100f;
 
+samples/FsBulletML2.Sample.TypeProviders.Debug/Program.fs
+    let f = Runner.stepWith env bullet { bullet.Motion with Pos = pos }
+    next.Add (f.Run, { X = pos.X + f.Delta.X; Y = pos.Y + f.Delta.Y })
+
 samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/BaseBullet.cs
     X = X + (f.Delta.X / 100);
     Y = Y - (f.Delta.Y / 100);
@@ -44,4 +48,4 @@ run の経路に居ないが、座標を足している所（件数だけ）:
   samples/FsBulletML2.Sample.MonoGame.FSharp/Background.fs         1 行
   samples/FsBulletML2.Sample.MonoGame.FSharp/Player.fs             4 行
 
-―― 本体 9 ファイル / 16 行（0 なら走査か網が壊れている）
+―― 本体 10 ファイル / 18 行（0 なら走査か網が壊れている）

@@ -68,6 +68,11 @@ type internal SimBuilder() =
   member inline _.Return x = Sim.ret x
   member inline _.ReturnFrom (m: Sim<'a>) = m
   member inline _.Bind (m: Sim<'a>, [<InlineIfLambda>] f: 'a -> Sim<'b>) = Sim.bind f m
+  /// `let! x = m` の次が `return f x` のとき、F# は Bind + Return でなくこちらを選ぶ。
+  member inline _.BindReturn (m: Sim<'a>, [<InlineIfLambda>] f: 'a -> 'b) : Sim<'b> =
+    fun env st ->
+      let r = m env st
+      { Value = f r.Value; State = r.State; Emit = r.Emit }
   member inline _.Zero () = Sim.ret ()
   member _.Delay (f: unit -> Sim<'a>) = f
   member _.Run (f: unit -> Sim<'a>) = f ()
@@ -90,6 +95,7 @@ type internal SimBuilderForTests() =
   member _.Return x = b.Return x
   member _.ReturnFrom (m: Sim<'a>) = b.ReturnFrom m
   member _.Bind (m: Sim<'a>, f: 'a -> Sim<'b>) = b.Bind (m, f)
+  member _.BindReturn (m: Sim<'a>, f: 'a -> 'b) = b.BindReturn (m, f)
   member _.Zero () = b.Zero ()
   member _.Delay (f: unit -> Sim<'a>) = b.Delay f
   member _.Run (f: unit -> Sim<'a>) = b.Run f

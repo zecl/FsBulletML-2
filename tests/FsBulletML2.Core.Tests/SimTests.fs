@@ -23,6 +23,25 @@ type SimTests() =
       HasFired = false
       Tops = [] }
 
+  /// 効果と状態の両方 を動かす台本。どちらも動かないものを当てると、
+  /// モナド則の 4 本 は bind を壊しても緑のままになる
+  let moving =
+    simForTests {
+      do! Sim.put { st0 with Speed = 7.0f }
+      do! Sim.emit Vanished
+      let! s = Sim.get
+      return s.Speed
+    }
+
+  /// 値・状態・効果の 3 つ とも一致するか。Sim は 3 つ 持ち回るので、
+  /// 値だけ見ると State や Emit を落とす壊れ方が通る
+  let same (a: Sim<float32>) (b: Sim<float32>) =
+    let va, sa, wa = Sim.run env st0 a
+    let vb, sb, wb = Sim.run env st0 b
+    va |> should equal vb
+    sa |> should equal sb
+    wa |> should equal wb
+
   [<Test>]
   member _.``ask は環境を読む。状態も効果も動かない``() =
     let a, st, w = Sim.run env st0 Sim.ask
@@ -97,6 +116,34 @@ type SimTests() =
         a.Speed |> should equal 1.0f
         b.Speed |> should equal 1000.0f
     | _ -> Assert.Fail "先頭か末尾が Spawn ではない"
+
+  [<Test>]
+  member _.``モナド則: 左単位元 —— bind f (ret x) は f x``() =
+    let f x = simForTests { do! Sim.emit Vanished
+                            return x * 2.0f }
+    same (simForTests.Bind (Sim.ret 21.0f, f)) (f 21.0f)
+
+  [<Test>]
+  member _.``モナド則: 右単位元 —— bind ret m は m``() =
+    same (simForTests.Bind (moving, Sim.ret)) moving
+
+  [<Test>]
+  member _.``モナド則: 結合則 —— 繋ぐ順を変えても同じ``() =
+    let f (x: float32) = simForTests { do! Sim.emit (Spawn { st0 with Speed = x })
+                                       return x + 1.0f }
+    let g (x: float32) = simForTests { do! Sim.put { st0 with Speed = x }
+                                       return x * 3.0f }
+    same
+      (simForTests.Bind (simForTests.Bind (moving, f), g))
+      (simForTests.Bind (moving, fun x -> simForTests.Bind (f x, g)))
+
+  /// BindReturn は Bind + Return の速い道。**答えが変わってはいけない。**
+  /// 速い道を足したら、遅い道と突き合わせる
+  [<Test>]
+  member _.``BindReturn は Bind + Return と同じ答えを返す``() =
+    same
+      (simForTests.BindReturn (moving, fun x -> x * 2.0f))
+      (simForTests.Bind (moving, fun x -> Sim.ret (x * 2.0f)))
 
   [<Test>]
   member _.``状態は前から後ろへ渡る``() =

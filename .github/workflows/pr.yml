@@ -278,12 +278,30 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/guard-share-roundtrip.Tests.ps1
 
+  # **型プロバイダは「build が通る」と「型が出て走る」が別。** 上の `Build ·` が
+  # samples/FsBulletML2.Sample.TypeProviders.Debug を build しても、確かめているのは
+  # 「型プロバイダを呼ぶコードが通る」ことだけ。生成した型で弾が出るかは見ていない。
+  #
+  # 走らせると、撃った数を弾幕の字（`fire` と `repeat` の数）と突き合わせる。
+  # 合わなければ 1 で落ちる —— **「例外を投げずに 60 周 した」だけで緑にしない。**
+  #
+  # **選ばずに毎回 走らせる。** 型プロバイダは設計時にコンパイラの中で動くので、
+  # Core を 1 行 も触らなくても SDK や依存の側で壊れる（tests の Gate.fs を
+  # 置いたとき、実際に FS1108 24 件 → FS3033 16 件 と段が 2 つ 出ている）。
+  typeproviders:
+    name: TypeProviders Run
+    runs-on: [self-hosted, windows, fsbulletml2]
+    steps:
+      - uses: actions/checkout@v4
+      - name: 型プロバイダで引いた弾幕を走らせる
+        run: dotnet run --project samples/FsBulletML2.Sample.TypeProviders.Debug -c Release
+
   # 枝分かれした job をまとめて 1 つ の必須チェックにする。
   # **skipped を成功として数えない** —— 選ばれなかったのか、落ちて飛ばされたのかは
   # 別のことなので、select の結果を見て分ける
   gate:
     name: Gate
-    needs: [select, test, build, shipped, parity]
+    needs: [select, test, build, shipped, parity, typeproviders]
     if: always()
     runs-on: [self-hosted, windows, fsbulletml2]
     steps:
@@ -295,6 +313,7 @@ jobs:
           BUILD: ${{ needs.build.result }}
           SHIPPED: ${{ needs.shipped.result }}
           PARITY: ${{ needs.parity.result }}
+          TYPEPROVIDERS: ${{ needs.typeproviders.result }}
           TESTS: ${{ needs.select.outputs.tests }}
           BUILDS: ${{ needs.select.outputs.builds }}
         run: ./.github/scripts/gate.ps1
