@@ -82,6 +82,7 @@ function CheckThrows {
 
 $allTests = @(
 'FsBulletML2.Core.Tests', 'FsBulletML2.Dsl.Tests', 'FsBulletML2.Front.Tests',
+'FsBulletML2.Generate.Tests',
 'FsBulletML2.MonoGame.Tests', 'FsBulletML2.Parser.Tests', 'FsBulletML2.TypeProviders.Tests',
 'FsBulletML2.Unity2D.Tests')
 $allBuilds = @(
@@ -136,11 +137,12 @@ Check '.Compile 自身なら、借りている側 と 2 本' `
 Write-Host '=== 少ないほう'
 
 # Dsl は src/Bullets.Dsl 経由でサンプル 5 つ に届く（面は Danmaku Lab へ出た）。
-# **試験は 2 本。** v1.0 で Parser.Tests が Bullets.Dsl を引くようになった ——
-# F# の CE を読む口の目盛りが、その弾幕の**値**を正本にしている
-Check 'Dsl だけなら試験は Dsl.Tests と Parser.Tests、build は弾幕を使う 5 本と probe' `
+# **試験は 3 本。** v1.0 で Parser.Tests が Bullets.Dsl を引くようになった ——
+# F# の CE を読む口の目盛りが、その弾幕の**値**を正本にしている。
+# Generate.Tests は Generate が Dsl の CE で骨を組むので入る
+Check 'Dsl だけなら試験は Dsl.Tests と Generate.Tests と Parser.Tests、build は弾幕を使う 5 本と probe' `
   @('src/FsBulletML2.Dsl/BulletDsl.fs') `
-  @('FsBulletML2.Dsl.Tests', 'FsBulletML2.Parser.Tests') `
+  @('FsBulletML2.Dsl.Tests', 'FsBulletML2.Generate.Tests', 'FsBulletML2.Parser.Tests') `
   @('CoreFableProbe',
     'FsBulletML2.Sample.MonoGame.CSharp', 'FsBulletML2.Sample.MonoGame.FSharp',
     'FsBulletML2.Sample.Unity2D.CSharp.Compile', 'FsBulletML2.Sample.Unity2D.FSharp',
@@ -158,7 +160,7 @@ Check 'MonoGame だけなら MonoGame.Tests と、それが build しないサ�
 # **ここが本体。** Parser を触っても Dsl.Tests は走らない。
 Check 'Parser だけなら Dsl.Tests は走らない' `
   @('src/FsBulletML2.Parser/Sxml.fs') `
-  @('FsBulletML2.Core.Tests', 'FsBulletML2.Front.Tests', 'FsBulletML2.MonoGame.Tests', 'FsBulletML2.Parser.Tests', 'FsBulletML2.TypeProviders.Tests', 'FsBulletML2.Unity2D.Tests') `
+  @('FsBulletML2.Core.Tests', 'FsBulletML2.Front.Tests', 'FsBulletML2.Generate.Tests', 'FsBulletML2.MonoGame.Tests', 'FsBulletML2.Parser.Tests', 'FsBulletML2.TypeProviders.Tests', 'FsBulletML2.Unity2D.Tests') `
   @('FsBulletML2.Benchmarks',
     'FsBulletML2.Sample.MonoGame.CSharp',
     'FsBulletML2.Sample.MonoGame.FSharp', 'FsBulletML2.Sample.TypeProviders.Debug')
@@ -303,7 +305,7 @@ function CheckShape {
 
 CheckShape '0 件 でも空配列' @('README.md') 0 0
 CheckShape '1 件 が配列のまま出る' @('tests/FsBulletML2.Parser.Tests/ReadEntryPoints.fs') 1 0
-CheckShape '複数' @('src/FsBulletML2.Parser/Sxml.fs') 6 4
+CheckShape '複数' @('src/FsBulletML2.Parser/Sxml.fs') 7 4
 
 Write-Host ''
 if ($fails -gt 0) {

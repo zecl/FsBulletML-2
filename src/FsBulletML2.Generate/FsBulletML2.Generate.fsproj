@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML2.Generate</RootNamespace>
+    <AssemblyName>FsBulletML2.Generate</AssemblyName>
+    <Version>0.1.0</Version>
+    <Product>FsBulletML2.Generate</Product>
+    <Description>Builds BulletML from a PatternSpec.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Consts.fs" />
+    <Compile Include="PatternSpec.fs" />
+    <Compile Include="Exprs.fs" />
+    <Compile Include="Bound.fs" />
+    <Compile Include="Generate.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\FsBulletML2.Dsl\FsBulletML2.Dsl.fsproj" />
+  </ItemGroup>
+
+  <!--
+    `PatternSpec.withWaitScale` を試験 から 呼ぶ ため。
+    **public には しない** —— 外 から `WaitScale` を動かせる と、
+    `Bound.aliveBound` が計算 した 式 と、実際 に出る 式 が割れる。
+  -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="FsBulletML2.Generate.Tests" />
+  </ItemGroup>
+
+</Project>

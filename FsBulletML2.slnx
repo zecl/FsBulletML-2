@@ -31,6 +31,7 @@
     <Project Path="src/FsBulletML2.LanguageService.Js/FsBulletML2.LanguageService.Js.fsproj" />
     <Project Path="src/FsBulletML2.MonoGame/FsBulletML2.MonoGame.fsproj" />
     <Project Path="src/FsBulletML2.Parser/FsBulletML2.Parser.fsproj" />
+    <Project Path="src/FsBulletML2.Generate/FsBulletML2.Generate.fsproj" />
     <Project Path="src/FsBulletML2.TypeProviders/FsBulletML2.TypeProviders.fsproj" />
     <Project Path="src/FsBulletML2.Unity2D/FsBulletML2.Unity2D.fsproj" />
 
@@ -54,6 +55,7 @@
     <Project Path="tests/FsBulletML2.Front.Tests/FsBulletML2.Front.Tests.fsproj" />
     <Project Path="tests/FsBulletML2.MonoGame.Tests/FsBulletML2.MonoGame.Tests.fsproj" />
     <Project Path="tests/FsBulletML2.Parser.Tests/FsBulletML2.Parser.Tests.fsproj" />
+    <Project Path="tests/FsBulletML2.Generate.Tests/FsBulletML2.Generate.Tests.fsproj" />
     <Project Path="tests/FsBulletML2.TypeProviders.Tests/FsBulletML2.TypeProviders.Tests.fsproj" />
     <Project Path="tests/FsBulletML2.Unity2D.Tests/FsBulletML2.Unity2D.Tests.fsproj" />
   </Folder>
