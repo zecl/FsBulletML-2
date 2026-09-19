@@ -254,6 +254,21 @@ type BoundTests() =
     evalAt 1.0 (waitExpr (baseSpec ()) 0) |> should (equalWithin 0.001) 5.0
     aliveBound (baseSpec ()) |> should (equalWithin 0.01) 262.08
 
+  /// `perTurn` は 型 ごと に撃つ 数 が違う（頭 を 1 本目 に数える 型 と、頭 の後 に n 本 撃つ 型）。
+  /// 式 だけ 見る と 生成器 の数え方 が変わって も 緑 のまま なので、走らせて 1 コマ の発射数 と突き合わせる
+  [<Test>]
+  member _.``perTurn は 1 回 の腕 で実際 に撃つ 数``() =
+    let cases =
+      [ for kind in [ Spiral; Radial; Aimed; Spread; Curtain ] do
+          for ways in [ 0; 1; 3; 8 ] do
+            for p in [ false; true ] ->
+              spec (fun a -> { a with Kind = kind; Ways = ways; Parametrized = p }) ]
+    cases |> List.length |> should equal 40
+    for s in cases do
+      let fired =
+        Felt.run 30 (Generate.generate s).Bulletml |> List.map (fun f -> f.Headings.Length) |> List.max
+      (s.Kind, s.Ways, s.Parametrized, float fired) |> should equal (s.Kind, s.Ways, s.Parametrized, perTurn s)
+
   /// Core で 10 通り 走らせて 校正 した（2026-09-19、`$rank = 1.0`、種 3 通り の最大、
   /// 1,800 コマ）。ブラウザ では 背面タブ で コマ が間引かれて 数 が取れない ——
   /// 弾数 は論理値 なので 同じ Core を .NET で回す。

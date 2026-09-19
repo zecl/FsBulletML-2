@@ -19,6 +19,8 @@ open FsBulletML2
 /// 仕掛け の種類。1 つ の枝 は 1 つ に落ちる ——
 /// 複数 に当たる とき は 下 の順 で 先 に来た ほう
 type Kind =
+  /// 借りない。抜く 側 は この種類 に落とさない ので `find` は いつも 空
+  | Idle
   /// 曲がる
   | Curve
   /// 加速 する
@@ -30,16 +32,18 @@ type Kind =
   /// 速さ を 1 度 だけ 変える
   | Drift
 
-/// 知らない 字 は `Curve`。借りない 道 を持たない ——
-/// 同梱 に いちばん 多く（224 通り 中 96 個）在る ので、
-/// どの弾幕 を渡して も 1 つ は見つかる
+/// 空 も `none` も 知らない 字 も `Idle`。
+///
+/// `Curve` に倒して いた とき、頼んで いない のに 全部 の弾幕 の終点 が曲がり、
+/// どれ も 同じ 骨格 に見えた
 let ofString (s: string) : Kind =
   match s with
+  | "curve" -> Curve
   | "accel" -> Accelerate
   | "charge" -> Charge
   | "fade" -> Fade
   | "drift" -> Drift
-  | _ -> Curve
+  | _ -> Idle
 
 /// 仕掛け を どこ に仕込む か。
 ///

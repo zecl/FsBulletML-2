@@ -53,8 +53,14 @@ type PartsBorrow() =
     Parts.ofString "charge" |> should equal Parts.Charge
     Parts.ofString "fade" |> should equal Parts.Fade
     Parts.ofString "drift" |> should equal Parts.Drift
-    // 借りない 道 は持たない。知らない 字 は 同梱 に いちばん 多い 曲がる へ
-    Parts.ofString "spin" |> should equal Parts.Curve
+    // 空 も none も 知らない 字 も 借りない。曲がる に倒す と 全部 の弾幕 の終点 が曲がって いた
+    Parts.ofString "none" |> should equal Parts.Idle
+    Parts.ofString "" |> should equal Parts.Idle
+    Parts.ofString "spin" |> should equal Parts.Idle
+
+  [<Test>]
+  member _.``借りない なら 何 が在って も 見つけない``() =
+    Parts.find Parts.Idle [ read curving; read firing ] |> should equal None
 
   /// 弾 の中 の 動き を拾う。本物 の仕掛け は 弾 の中 に在る
   [<Test>]

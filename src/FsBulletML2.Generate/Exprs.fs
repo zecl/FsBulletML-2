@@ -23,7 +23,7 @@ let evalAt (rank: float) (expr: string) : float =
 /// 名指し（「3way」）が在れば そちら を 定数 で置く —— `$rank` を掛けない。
 /// 3way は どの難度 でも 3 本 で、増えたら 3way ではない。
 ///
-/// 刻み（`armStep` / `spinExpr` / `curtainStep`）は どれ も ここ から 引く ので、
+/// 刻み（`armStep` / `spinExpr` / `curtainStep` / `ringStep` / `spreadStep` / `aimStep`）は どれ も ここ から 引く ので、
 /// 本数 を名指し する と 角度 も 一緒 に追随 する
 let armsExpr (d: PatternSpec) =
   if d.Ways > 0 then string d.Ways
@@ -46,24 +46,67 @@ let facingGiven (d: PatternSpec) = d.Facing <> Around
 /// 名指し された 向き の字。
 ///
 /// 横 は 右 の 90 度 から 始める。左 へ 分けない のは、BulletML の式 に
-/// 比較 が無い から —— 腕 が 2 本 以上 あれば `armStep` が 全周 に散らす ので、
+/// 比較 が無い から —— 放射 は 腕 が 2 本 以上 あれば `armStep` が 全周 に散らす ので、
 /// 起点 が右 でも 左 にも 出る
 let facingExpr (d: PatternSpec) = string (facingBase d)
 
+let private jitterOf (d: PatternSpec) (small: int) (large: int) =
+  match step d.Jitter with
+  | 0 -> ""
+  | 1 -> sprintf " + $rand * %d - %d" (small * 2) small
+  | _ -> sprintf " + $rand * %d - %d" (large * 2) large
+
 /// 腕 の角度 の刻み。`armsExpr` から 引く —— 2 か所 で別 に計算 する と渦 が閉じない
 let armStep (d: PatternSpec) =
-  let jitter =
-    match step d.Jitter with
-    | 0 -> ""
-    | 1 -> " + $rand * 4 - 2"
-    | _ -> " + $rand * 20 - 10"
-  sprintf "360 / (%s)%s" (armsExpr d) jitter
+  sprintf "360 / (%s)%s" (armsExpr d) (jitterOf d 2 10)
 
-/// 自機 の周り に散らす 角度。`Aimed` の腕 は `armStep` を使えない ——
-/// `aim` は前 の弾 を見ない ので、毎回 同じ N を渡す と n 発 が同じ 方向 に重なる
-let aimSpread (d: PatternSpec) =
-  let w = 20 + step d.Symmetry * 25
-  sprintf "$rand * %d - %d - $rank * %d" (w * 2) w (w / 3)
+/// 中心 ± `half` 度 の弧 を腕 の数 で割った 刻み。頭 を `中心 - half` に置けば `中心 + half` で閉じる
+let private arcStep (half: int) (jitter: string) (d: PatternSpec) =
+  sprintf "%d / (%s)%s" (half * 2) (armsExpr d) jitter
+
+/// 頭 を 1 本目 に数える 型。n 本 = 頭 ＋ 腕 n - 1 本 で、頭 の後 に n 本 撃つ 型 より 1 発 少ない
+let headIsArm (d: PatternSpec) =
+  match d.Kind with
+  | Radial | Aimed | Spread -> true
+  | Spiral | Curtain -> false
+
+/// 本数 を整数 に切った 字。`repeat` は times を int に切る（`Step.fs`）ので、
+/// 刻み の分母 も 同じ 数 で割らない と 輪 も弧 も閉じない
+let wholeArms (d: PatternSpec) =
+  if d.Ways > 0 then string d.Ways
+  else
+    let a = armsExpr d
+    sprintf "(%s) - (%s) %% 1" a a
+
+/// `headIsArm` の型 が 頭 の後 に撃つ 腕 の数
+let restArms (d: PatternSpec) =
+  if d.Ways > 0 then string (d.Ways - 1) else sprintf "%s - 1" (wholeArms d)
+
+/// 放射 の刻み。頭 ＋ n - 1 回 なので、n 本 目 が頭 に重ならない
+let ringStep (d: PatternSpec) =
+  sprintf "360 / (%s)%s" (wholeArms d) (jitterOf d 2 10)
+
+/// 両端 を含めて n 本 で ± `half` 度 を割る ので 刻み は 2 half / (n - 1)
+let private fanStep (half: int) (d: PatternSpec) =
+  sprintf "%d / (%s)%s" (half * 2) (restArms d) (jitterOf d 2 10)
+
+/// 扇 の頭（左端）。1 本 なら 中心 に置く。
+///
+/// 本数 が `$rank` の式 の とき、式 に比較 が無い ので `1 % n`（1 本 で 0、2 本 以上 で 1）で分ける
+let fanHead (center: string) (half: int) (d: PatternSpec) =
+  if d.Ways = 1 then center
+  elif d.Ways > 1 then sprintf "%s - %d" center half
+  else sprintf "%s - %d * (1 %% (%s))" center half (wholeArms d)
+
+/// 扇 の片側 の開き。全幅 は 60〜120 度
+let spreadSpan (d: PatternSpec) = 30 + step d.Symmetry * 10
+
+let spreadStep (d: PatternSpec) = fanStep (spreadSpan d) d
+
+/// 狙い の扇 の片側 の開き。自機 の方位 を中心 に 全幅 20〜80 度
+let aimSpan (d: PatternSpec) = 10 + step d.Symmetry * 10
+
+let aimStep (d: PatternSpec) = fanStep (aimSpan d) d
 
 /// 波 ごと の回転。`Spiral` だけ が持つ。
 ///
@@ -101,13 +144,7 @@ let curtainHead (d: PatternSpec) =
 ///
 /// `sequence` は直前 の fire の向き から の差分（`Step.fs`）。
 /// 頭 が毎波 `absolute` で左端 に戻る ので、掃く のは 帯 の中 だけ
-let curtainStep (d: PatternSpec) =
-  let jitter =
-    match step d.Jitter with
-    | 0 -> ""
-    | 1 -> " + $rand * 2 - 1"
-    | _ -> " + $rand * 6 - 3"
-  sprintf "%d / (%s)%s" (curtainSpan d * 2) (armsExpr d) jitter
+let curtainStep (d: PatternSpec) = arcStep (curtainSpan d) (jitterOf d 1 3) d
 
 let speedExpr (d: PatternSpec) =
   sprintf "%.1f + $rank * %.1f" (1.0 + d.Speed * 0.5) (0.5 + d.Speed * 0.5)

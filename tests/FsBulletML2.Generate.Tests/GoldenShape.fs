@@ -103,4 +103,4 @@ type GoldenShape() =
     List.length specs |> should equal 180
     let got = digestOf specs
     TestContext.Out.WriteLine(sprintf "指紋 %s" got)
-    got |> should equal "1926885bcc96ccc9"
+    got |> should equal "21d7b412a4c2cb36"

@@ -38,6 +38,15 @@ type ExprTests() =
     let s = spec (fun a -> { a with Symmetry = 2.0 })
     armStep s |> should haveSubstring (armsExpr s)
 
+  /// 本数 が `$rank` の式 だと 易しい 難度 で 1 本 になる。1 本 の扇 は 中心 に撃つ
+  [<Test>]
+  member _.``扇 が 1 本 なら 頭 は中心``() =
+    let s = spec (fun a -> { a with Kind = Aimed; Symmetry = 0.0 })
+    evalAt 0.0 (armsExpr s) |> should (equalWithin 0.001) 1.0
+    evalAt 0.0 (fanHead "0" 30 s) |> should (equalWithin 0.001) 0.0
+    evalAt 1.0 (fanHead "0" 30 s) |> should (equalWithin 0.001) -30.0
+    fanHead "0" 30 (spec (fun a -> { a with Kind = Aimed; Ways = 1 })) |> should equal "0"
+
   /// `BulletKinds` は 0 で見る —— 大きく する と `BURST_BUDGET` の頭打ち が
   /// 先 に効いて lv の差 が消え、`- lv * 2` を外して も 緑 のまま になる
   [<Test>]

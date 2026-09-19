@@ -1,0 +1,148 @@
+module FsBulletML2.Generate.Tests.HarmonicTests
+
+open NUnit.Framework
+open FsUnit
+open FsBulletML2
+open FsBulletML2.Generate
+
+[<TestFixture>]
+type HarmonicTests() =
+
+  static let flower k =
+    HarmonicSpec.create (fun a -> { a with Folds = k; Speed = 1.0; Amplitude = 2.0; Arms = 24; Vanishing = true })
+
+  static let runOf frames (h: HarmonicSpec) = Felt.run frames (Harmonic.generate h).Bulletml
+
+  /// いちばん 多く 撃った コマ
+  static let fullest (snaps: Felt.Snapshot list) = snaps |> List.maxBy (fun s -> s.Speeds.Length)
+
+  [<Test>]
+  member _.``Folds の外 は 5 に倒す``() =
+    (HarmonicSpec.create (fun a -> { a with Folds = 2 })).Folds |> should equal 5
+    (HarmonicSpec.create (fun a -> { a with Folds = 6 })).Folds |> should equal 5
+    (HarmonicSpec.create (fun a -> { a with Folds = 5 })).Folds |> should equal 5
+    (HarmonicSpec.create (fun a -> { a with Folds = 3 })).Folds |> should equal 3
+    (HarmonicSpec.create (fun a -> { a with Folds = 7 })).Folds |> should equal 7
+    (HarmonicSpec.create (fun a -> { a with Folds = 8 })).Folds |> should equal 8
+
+  [<Test>]
+  member _.``目盛り の外 を閉じる``() =
+    let lo =
+      HarmonicSpec.create (fun a ->
+        { a with Speed = -3.0; Amplitude = -1.0; Spin = -1.0; Density = -2.0; Arms = 3; Phase = -1.0 })
+    let hi =
+      HarmonicSpec.create (fun a ->
+        { a with Speed = 99.0; Amplitude = 9.0; Spin = 9.0; Density = 99.0; Arms = 999; Phase = 7.0 })
+    (lo.Speed, lo.Amplitude, lo.Spin, lo.Density, lo.Arms) |> should equal (0.0, 0.0, 0.0, 0.0, 8)
+    (hi.Speed, hi.Amplitude, hi.Spin, hi.Density, hi.Arms) |> should equal (3.0, 2.0, 2.0, 3.0, 160)
+    lo.Phase |> should (equalWithin 1e-9) (2.0 * System.Math.PI - 1.0)
+    hi.Phase |> should (equalWithin 1e-9) (7.0 - 2.0 * System.Math.PI)
+    // 名指し が無ければ 花弁 x 24。8 枚 は 192 で 上限 に当たる
+    (HarmonicSpec.create id).Arms |> should equal 120
+    (HarmonicSpec.create (fun a -> { a with Folds = 3 })).Arms |> should equal 72
+    (HarmonicSpec.create (fun a -> { a with Folds = 8 })).Arms |> should equal 160
+
+  [<Test>]
+  member _.``k=5 は 5 回 対称 で、k=3 より foldScore 5 が高い``() =
+    let s5 = fullest (runOf 90 (flower 5))
+    let s3 = fullest (runOf 90 (flower 3))
+    Felt.foldScore 5 s5 |> should be (greaterThan 0.5)
+    Felt.foldScore 5 s5 |> should be (greaterThan (Felt.foldScore 5 s3))
+    Felt.foldScore 3 s3 |> should be (greaterThan (Felt.foldScore 3 s5))
+
+  [<Test>]
+  member _.``振幅 0 は花 に見えない``() =
+    let flat = HarmonicSpec.create (fun a -> { a with Folds = 5; Amplitude = 0.0; Arms = 24 })
+    Felt.foldScore 5 (fullest (runOf 90 flat)) |> should be (lessThan 0.3)
+
+  /// 1 波 の弾 が全部 1 コマ に出る。本数 は Arms
+  [<Test>]
+  member _.``1 波 で Arms 発 を全周 に撒く``() =
+    let s = fullest (runOf 90 (flower 5))
+    s.Headings.Length |> should equal 24
+    Felt.ringScore s |> should be (greaterThan 0.9)
+
+  [<Test>]
+  member _.``Spin が在れば 波 ごと に回り、無ければ 回らない``() =
+    let spin = HarmonicSpec.create (fun a -> { a with Folds = 8; Amplitude = 2.0; Spin = 1.0 })
+    let still = HarmonicSpec.create (fun a -> { a with Folds = 8; Amplitude = 2.0; Spin = 0.0 })
+    Felt.rotationScore (runOf 180 spin) |> should be (greaterThan 0.6)
+    Felt.rotationScore (runOf 180 still) |> should be (lessThan 0.5)
+
+  /// 花 1 輪 が 広がり ながら 回る。撃つ 向き だけ を輪 ごと に回す と、1 輪 は向き を変えず に広がって
+  /// 隣 と ずれて 見える だけ だった。
+  ///
+  /// 測り方: 最初 の輪 の弾 の位置 を敵 (240, 80) から見た 極座標 にして、花弁 の向き を k 次 の位相
+  /// arg Σ r e^{i k θ} / k で取る。生まれて 5 コマ と 20 コマ の差。20 コマ までは 面 の外 へ出ない ので 1 発 も欠けない
+  [<Test>]
+  member _.``回す 花 は 1 輪 ごと 広がり ながら 回る``() =
+    let phase (k: int) (s: Felt.Snapshot) =
+      let pts = List.zip s.Positions s.Born |> List.filter (fun (_, b) -> b = 1) |> List.map fst
+      let re, im =
+        pts
+        |> List.fold (fun (re, im) (x, y) ->
+            let dx, dy = x - 240.0, y - 80.0
+            let r = sqrt (dx * dx + dy * dy)
+            let t = atan2 dy dx
+            re + r * cos (float k * t), im + r * sin (float k * t)) (0.0, 0.0)
+      atan2 im re / float k
+    let turned (spin: float) =
+      let k = 5
+      let snaps = runOf 21 (HarmonicSpec.create (fun a -> { a with Folds = k; Amplitude = 2.0; Spin = spin }))
+      let at age = snaps |> List.find (fun s -> s.Frame = 1 + age)
+      let d = (phase k (at 20) - phase k (at 5)) * 180.0 / System.Math.PI
+      // 位相 は 360 / k で巡る
+      let p = 360.0 / float k
+      abs (((d % p) + p + p / 2.0) % p - p / 2.0)
+    turned 0.0 |> should be (lessThan 0.1)
+    // Spin 1 は ω = 0.75 度 / コマ、花 は ω/2 で回る ので 15 コマ で 5.6 度。Spin 2 は 1 度 / コマ で 7.5 度
+    turned 1.0 |> should (equalWithin 1.0) 5.625
+    turned 2.0 |> should (equalWithin 1.0) 7.5
+
+  /// 振幅 を目一杯 に上げて も 逆走 しない。$rank = 1.0 でも MAX_SPEED を越えない
+  [<Test>]
+  member _.``速さ は 正 で MAX_SPEED 以下``() =
+    for sp in [ 0.0; 3.0 ] do
+      for k in [ 3; 5; 7; 8 ] do
+        let h = HarmonicSpec.create (fun a -> { a with Folds = k; Speed = sp; Amplitude = 2.0 })
+        let speeds = runOf 30 h |> List.collect (fun s -> s.Speeds)
+        List.min speeds |> should be (greaterThan 0.0)
+        List.max speeds |> should be (lessThanOrEqualTo Consts.MAX_SPEED)
+
+  /// 走らせて 数える。面 の外 は Felt が間引く ので Positions.Length が 同時 に居る 数
+  [<Test>]
+  member _.``いちばん 重い 花 でも 同時 に MAX_ALIVE 以下``() =
+    let heavy =
+      HarmonicSpec.create (fun a -> { a with Folds = 8; Speed = 0.0; Amplitude = 2.0; Arms = 160; Density = 3.0; Vanishing = false })
+    Harmonic.aliveBound (Harmonic.fit heavy) |> should be (lessThanOrEqualTo (float Consts.MAX_ALIVE))
+    let alive = runOf 600 heavy |> List.map (fun s -> s.Positions.Length) |> List.max
+    alive |> should be (lessThanOrEqualTo Consts.MAX_ALIVE)
+    alive |> should be (greaterThan 0)
+
+  /// 回す 花 も曲がり を止めた あと 面 の外 へ出る ので 数 が積もらない
+  [<Test>]
+  member _.``回る 重い 花 でも 同時 に MAX_ALIVE 以下``() =
+    let heavy =
+      HarmonicSpec.create (fun a -> { a with Folds = 8; Speed = 0.0; Amplitude = 2.0; Arms = 160; Density = 3.0; Spin = 2.0 })
+    let alive = runOf 900 heavy |> List.map (fun s -> s.Positions.Length) |> List.max
+    alive |> should be (lessThanOrEqualTo Consts.MAX_ALIVE)
+
+  /// 180 コマ で消して いた とき、いちばん 速い 弾 でも 敵 から 489 px で消え、520 px 先 の自機 に 1 発 も届かなかった
+  [<Test>]
+  member _.``花 の弾 は 自機 の高さ まで 届く``() =
+    for spin in [ 0.0; 1.0 ] do
+      let h = HarmonicSpec.create (fun a -> { a with Folds = 5; Speed = 1.0; Amplitude = 1.5; Spin = spin })
+      runOf 400 h
+      |> List.exists (fun s -> s.Positions |> List.exists (fun (_, y) -> y >= 600.0))
+      |> should equal true
+
+  /// 軽い 花 は 絞らない
+  [<Test>]
+  member _.``軽い 花 は wait を伸ばさない``() =
+    (Harmonic.fit (flower 5)).WaitScale |> should equal 1.0
+
+  [<Test>]
+  member _.``難度 の式 を出す``() =
+    let xml = BulletmlWriter.toIndentedXml 2 (Harmonic.generate (flower 5)).Bulletml
+    xml |> should haveSubstring "$rank"
+    xml |> should haveSubstring "harmonic"

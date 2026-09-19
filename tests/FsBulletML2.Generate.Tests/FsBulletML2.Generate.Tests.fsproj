@@ -12,6 +12,8 @@
     <Compile Include="BoundTests.fs" />
     <Compile Include="ShapeTests.fs" />
     <Compile Include="GoldenShape.fs" />
+    <Compile Include="FeltTests.fs" />
+    <Compile Include="HarmonicTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

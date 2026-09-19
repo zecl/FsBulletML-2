@@ -31,6 +31,14 @@ let private lifeOf (d: PatternSpec) : float =
 
   min BULLET_LIFE (FIELD_SPAN / slowest)
 
+/// 1 回 の腕 で `top` が出す 弾（`$rank = 1.0`）。`Parametrized` は `arm` を 0 度 と 180 度 で 2 回 呼ぶ ので
+/// 倍 になる。どちら にも 速度 の起点 の 1 発 が付く。幕 は `arm` を通らない（`Generate.arms`）
+let perTurn (d: PatternSpec) : float =
+  let arms = evalAt 1.0 (armsExpr d)
+  if d.Parametrized && d.Kind <> Curtain then 3.0 + arms * 2.0
+  elif headIsArm d then arms
+  else 1.0 + arms
+
 /// `$rank = 1.0` で評価 する。
 ///
 ///     (top の発射率 × Σ段 ごと の撒く数 の積 ＋ 層 の発射率) × 寿命
@@ -39,10 +47,7 @@ let private lifeOf (d: PatternSpec) : float =
 /// 単位時間 あたり には効かない。掛けた とき 上界 5,100 万 発 が出た。
 let aliveBound (d: PatternSpec) : float =
   let arms = evalAt 1.0 (armsExpr d)
-
-  // 1 回 の腕 で出る 弾。`Parametrized` は `arm` を 0 度 と 180 度 で 2 回 呼ぶ ので
-  // 倍 になる。どちら にも 速度 の起点 の 1 発 が付く
-  let perTurn = if d.Parametrized then 3.0 + arms * 2.0 else 1.0 + arms
+  let perTurn = perTurn d
 
   // `Depth` 段 の中間 `repeat` は、1 波 の中 で腕 と wait を mid^Depth 回 繰り返す。
   // 分子 と分母 の両方 に掛かる ので、`Pause` が無ければ 約分 されて 消える

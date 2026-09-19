@@ -17,6 +17,8 @@
     <Compile Include="Exprs.fs" />
     <Compile Include="Bound.fs" />
     <Compile Include="Generate.fs" />
+    <Compile Include="Harmonic.fs" />
+    <Compile Include="Felt.fs" />
   </ItemGroup>
 
   <ItemGroup>

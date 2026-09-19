@@ -35,6 +35,11 @@ samples/FsBulletML2.Sample.Unity2D.FSharp/FsBulletML2.Sample.Unity2D.FSharp/Bull
 src/FsBulletML2.Front/Driver.fs
     Runner.stepWith env run motion
 
+src/FsBulletML2.Generate/Felt.fs
+    let f = Runner.stepWith (envOf rand rank root enemy) root { root.Motion with Pos = enemy }
+    let f = Runner.stepWith (envOf rand rank r mot.Pos) r mot
+    let p = { X = mot.Pos.X + f.Delta.X; Y = mot.Pos.Y + f.Delta.Y }
+
 src/FsBulletML2.MonoGame/BaseBullet.fs
     let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
     apply f.Delta.X f.Delta.Y
@@ -48,4 +53,4 @@ run の経路に居ないが、座標を足している所（件数だけ）:
   samples/FsBulletML2.Sample.MonoGame.FSharp/Background.fs         1 行
   samples/FsBulletML2.Sample.MonoGame.FSharp/Player.fs             4 行
 
-―― 本体 10 ファイル / 18 行（0 なら走査か網が壊れている）
+―― 本体 11 ファイル / 21 行（0 なら走査か網が壊れている）

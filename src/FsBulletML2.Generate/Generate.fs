@@ -22,17 +22,18 @@ let rec private nestRepeat (n: int) (times: string) (inner: Action list) : Actio
 type private Dir =
   | Seq of string
   | Abs of string
-  | Rel of string
   | At of string
 
-/// 腕 の 1 発 の向き。`Kind` が型 を決める
+/// 腕 の 1 発 の向き。`Kind` が型 を決める。
+///
+/// 腕 は どれ も 頭 から の `sequence`。`absolute` / `relative` / `aim` は 前 の弾 を見ない ので、
+/// 腕 に置く と n 発 が 1 つ の角 に重なる（放射 と扇 が {0, 45 x 8}、狙い が 157 x 8 だった）
 let private armDir (d: PatternSpec) : Dir =
   match d.Kind with
   | Spiral -> Seq(armStep d)
-  | Radial -> Abs(armStep d)
-  // `aim` は前 の弾 を見ない ので `armStep` を使えない（n 発 が同じ 方向 に重なる）
-  | Aimed -> At(aimSpread d)
-  | Spread -> Rel(armStep d)
+  | Radial -> Seq(ringStep d)
+  | Aimed -> Seq(aimStep d)
+  | Spread -> Seq(spreadStep d)
   // 幕 は 帯 を等間隔 に掃く。頭 が毎波 左端 へ戻る ので回り出さない
   | Curtain -> Seq(curtainStep d)
 
@@ -46,15 +47,17 @@ let private headDir (d: PatternSpec) : Dir =
   match d.Kind with
   // 毎波 少しずつ 回す。これ が渦 の正体 —— 名指し より 先 に見る
   | Spiral -> Seq(spinExpr d)
-  | Aimed -> At "0"
+  | Aimed -> At(fanHead "0" (aimSpan d) d)
   // 幕 の頭 は帯 の左端。ここ が毎波 の起点 になる
   | Curtain -> Abs(curtainHead d)
-  | Spread
+  | Spread ->
+    if facingGiven d then Abs(fanHead (facingExpr d) (spreadSpan d) d)
+    elif d.Aiming then At(fanHead "0" (spreadSpan d) d)
+    // 撃つ側 の向き（`relative`）を中心 に していた とき、敵 は 0 度 なので 自機 と逆 の真上 へ開いて いた
+    else Abs(fanHead "180" (spreadSpan d) d)
   | Radial ->
     if facingGiven d then Abs(facingExpr d)
     elif d.Aiming then At "0"
-    // 扇 は 直前 の向き から の相対。回らず に 同じ 方向 へ開く
-    elif d.Kind = Spread then Rel "0"
     // 回らない。毎波 同じ 向き から 撒く
     else Abs "0"
 
@@ -65,7 +68,6 @@ let private arms (d: PatternSpec) : Action list =
     match armDir d with
     | Seq e -> fire { sequence e; speedSeq "0"; refBullet "core" [] }
     | Abs e -> fire { absolute e; speedSeq "0"; refBullet "core" [] }
-    | Rel e -> fire { relative e; speedSeq "0"; refBullet "core" [] }
     | At e -> fire { aim e; speedSeq "0"; refBullet "core" [] }
 
   // 頭 の 1 発 が速度 の起点。`sequence` は差分 なので、無い と `Speed` 軸 が効かない
@@ -73,7 +75,6 @@ let private arms (d: PatternSpec) : Action list =
     match headDir d with
     | Seq e -> fire { sequence e; speed (speedExpr d); refBullet "core" [] }
     | Abs e -> fire { absolute e; speed (speedExpr d); refBullet "core" [] }
-    | Rel e -> fire { relative e; speed (speedExpr d); refBullet "core" [] }
     | At e -> fire { aim e; speed (speedExpr d); refBullet "core" [] }
 
   // 幕 は `Parametrized` を通さない —— `arm` は 0 度 と 180 度 の対称 で組む ので、
@@ -81,6 +82,8 @@ let private arms (d: PatternSpec) : Action list =
   // 頼まれた 形 のほう を優先 する
   if d.Parametrized && d.Kind <> Curtain then
     [ head; actionRef "arm" [ "0"; "1" ]; actionRef "arm" [ "180"; "-1" ] ]
+  elif headIsArm d then
+    if d.Ways = 1 then [ head ] else [ head; repeat (restArms d) { one () } ]
   else
     [ head; repeat (armsExpr d) { one () } ]
 
