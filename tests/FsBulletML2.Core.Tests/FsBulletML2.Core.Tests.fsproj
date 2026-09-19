@@ -55,6 +55,12 @@
     <Compile Include="RootAccel.fs" />
     <!-- 公式 DTD との突き合わせ（v2.4.1）。**写した字と、既定値** -->
     <Compile Include="OfficialDtd.fs" />
+    <Compile Include="TuneNumbers.fs" />
+    <Compile Include="CombineTwo.fs" />
+    <Compile Include="PartsBorrow.fs" />
+    <Compile Include="PruneDead.fs" />
+    <Compile Include="TuneThin.fs" />
+    <Compile Include="TuneHush.fs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\TestData\**\*">
@@ -75,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Edit\FsBulletML2.Edit.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
   </ItemGroup>
 </Project>

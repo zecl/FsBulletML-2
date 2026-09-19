@@ -18,9 +18,37 @@ let evalAt (rank: float) (expr: string) : float =
   let e = Expr.NumExpr.ofString expr
   float (Expr.evalWithValues 0.5f (float32 rank) e.Ast)
 
-/// 腕 の数。最小 は 1 本
+/// 腕 の数。最小 は 1 本。
+///
+/// 名指し（「3way」）が在れば そちら を 定数 で置く —— `$rank` を掛けない。
+/// 3way は どの難度 でも 3 本 で、増えたら 3way ではない。
+///
+/// 刻み（`armStep` / `spinExpr` / `curtainStep`）は どれ も ここ から 引く ので、
+/// 本数 を名指し する と 角度 も 一緒 に追随 する
 let armsExpr (d: PatternSpec) =
-  sprintf "%d + %d * $rank" (1 + step d.Symmetry * 2) (2 + step d.Symmetry * 3)
+  if d.Ways > 0 then string d.Ways
+  else sprintf "%d + %d * $rank" (1 + step d.Symmetry * 2) (2 + step d.Symmetry * 3)
+
+/// 撃つ 向き の基準 角。面 は 縦 で、180 度 が 自機 の方向。
+///
+/// `Around` は ここ を通らない —— 呼ぶ側 が `facingGiven` で 分ける
+let facingBase (d: PatternSpec) =
+  match d.Facing with
+  | Forward -> 180
+  | Backward -> 0
+  | Sideways -> 90
+  | Around -> 0
+
+/// 向き が名指し されて いるか。名指し が無ければ、型 が決める 向き
+/// （`Spiral` は回る / `Aimed` は狙う）を 上書き しない
+let facingGiven (d: PatternSpec) = d.Facing <> Around
+
+/// 名指し された 向き の字。
+///
+/// 横 は 右 の 90 度 から 始める。左 へ 分けない のは、BulletML の式 に
+/// 比較 が無い から —— 腕 が 2 本 以上 あれば `armStep` が 全周 に散らす ので、
+/// 起点 が右 でも 左 にも 出る
+let facingExpr (d: PatternSpec) = string (facingBase d)
 
 /// 腕 の角度 の刻み。`armsExpr` から 引く —— 2 か所 で別 に計算 する と渦 が閉じない
 let armStep (d: PatternSpec) =
@@ -37,8 +65,63 @@ let aimSpread (d: PatternSpec) =
   let w = 20 + step d.Symmetry * 25
   sprintf "$rand * %d - %d - $rank * %d" (w * 2) w (w / 3)
 
+/// 波 ごと の回転。`Spiral` だけ が持つ。
+///
+/// `sequence` は波 を跨いで 累積 する ので、頭 の 1 発 に刻み を渡せば
+/// リング が毎波 少しずつ 回る —— これ が無い と 同じ 向き の リング が
+/// 重なる だけ で、渦 に見えない（実機 で踏んだ）。
+///
+/// 腕 の刻み の 1/4。4 波 で 腕 1 本 ぶん 回る
+let spinExpr (d: PatternSpec) =
+  sprintf "360 / ((%s) * 4)" (armsExpr d)
+
+/// 幕 の横幅。下向き（180 度）を中心 に 左右 へ何度 ずつ 開く か。
+///
+/// 面 は 480x640 で、敵 は (240, 80)、自機 は (240, 600)。
+/// 横 の端 まで 届く のに要る のは `atan(240 / 520)` ＝ 25 度 ほど なので、
+/// それ を少し 越える ところ で 止める ——
+/// 90 度 まで 開いた とき、端 の弾 が真横 へ出て すぐ 画面 から 消え、
+/// 幕 でなく 扇 に見えた（実機 で踏んだ）
+let curtainSpan (d: PatternSpec) = 20 + step d.Symmetry * 10
+
+/// 幕 の頭 の向き。帯 の左端。
+///
+/// `absolute` で置く のが要 —— 毎波 ここ へ戻る ので、後ろ の `sequence` が
+/// 累積 しても 帯 が回り出さない
+/// 向き が名指し されて いれば そちら を中心 に。既定 は 自機 の方向（180 度）
+let curtainHead (d: PatternSpec) =
+  let center = if facingGiven d then facingBase d else 180
+  sprintf "%d - %d" center (curtainSpan d)
+
+/// 幕 の 1 発 の刻み。帯 を腕 の数 で割った 等間隔。
+///
+/// `$rand` で散らして いた とき、雨 にしか 見えなかった（実機 で踏んだ）——
+/// 幕 は「同じ コマ に出た 弾 が 1 本 の弧 を作る」形 なので、
+/// 角度 が揃って いない と 線 にならない。
+///
+/// `sequence` は直前 の fire の向き から の差分（`Step.fs`）。
+/// 頭 が毎波 `absolute` で左端 に戻る ので、掃く のは 帯 の中 だけ
+let curtainStep (d: PatternSpec) =
+  let jitter =
+    match step d.Jitter with
+    | 0 -> ""
+    | 1 -> " + $rand * 2 - 1"
+    | _ -> " + $rand * 6 - 3"
+  sprintf "%d / (%s)%s" (curtainSpan d * 2) (armsExpr d) jitter
+
 let speedExpr (d: PatternSpec) =
   sprintf "%.1f + $rank * %.1f" (1.0 + d.Speed * 0.5) (0.5 + d.Speed * 0.5)
+
+/// レーザー が伸びる 先 の速さ。素 の 3 倍 —— 2 倍 では 速い 弾 と
+/// 見分け が つかず、`Speed` 軸 を上げた だけ に見えた
+let laserSpeed (d: PatternSpec) =
+  sprintf "%.1f + $rank * %.1f" (3.0 + d.Speed * 1.5) (1.5 + d.Speed * 1.5)
+
+/// ミサイル の加速。下（自機 の方向）へ 押す。
+///
+/// `accel` は 面 の縦横 で効く ので、向き を変えた あと でも 同じ 向き に押す ——
+/// 曲がり ながら 加速 する のが ミサイル の 見え方
+let missileAccel (d: PatternSpec) = sprintf "%.1f + $rank * 0.6" (0.4 + d.Speed * 0.2)
 
 /// 間隔。`$rank = 1.0` でも 正 に保つ —— 負 の `wait` は 上界 の計算（÷ 間隔）ごと 壊す。
 ///

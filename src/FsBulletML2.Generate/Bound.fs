@@ -5,9 +5,31 @@ open FsBulletML2.Generate
 open FsBulletML2.Generate.Consts
 open FsBulletML2.Generate.Exprs
 
-/// 式 が見て いない ぶん の余裕。Core で 10 通り 走らせて 決めた（`BoundTests` に記録）——
-/// 素 の式 は いちばん 外す ところ で 実測 の 0.77 倍 だった
-let [<Literal>] SAFETY = 1.5
+/// 式 が見て いない ぶん の余裕。Core で 10 通り 走らせて 決めた（`BoundTests` に記録）。
+///
+/// 大きく する と 上限 を守る が、`fit` が `wait` を伸ばして 密度 が死ぬ ——
+/// 「速くて 避けにくい」と頼んだ のに スカスカ になる。
+///
+/// 1.15 まで 下げた ら 10 通り の 1 本 が 0.89 で破れた ので、1.3 に置く
+let [<Literal>] SAFETY = 1.3
+
+/// 弾 が生きて いる コマ数。`wait 180` で消える のと、画面 から 出る のと、早い ほう。
+///
+/// 速い 弾 ほど 短命 —— 180 固定 で見積もる と 上界 が 3 倍 過大 になり、
+/// `fit` が `wait` を 7 倍 に伸ばして「速い が スカスカ」な弾幕 が出る（実機 で踏んだ）
+let private lifeOf (d: PatternSpec) : float =
+  // いちばん 遅い 弾 で見る —— 段 の子 は 親 より 遅い（`subSpeedExpr`）ので、
+  // 親 の速度 だけ 見る と 短命 に見積もって 上界 が破れる
+  let slowest =
+    [ yield evalAt 1.0 (speedExpr d)
+      // `Breathe` は `changeSpeed "0.25"` で 60 コマ ほど 溜める。
+      // その間 ほとんど 進まない ので、見ない と 上界 が破れる
+      if d.Breathe then yield 0.25
+      for lv in 0 .. step d.Cascade - 1 -> evalAt 1.0 (subSpeedExpr d lv) ]
+    |> List.min
+    |> max 0.25
+
+  min BULLET_LIFE (FIELD_SPAN / slowest)
 
 /// `$rank = 1.0` で評価 する。
 ///
@@ -41,7 +63,7 @@ let aliveBound (d: PatternSpec) : float =
       total <- total + acc
     total
 
-  let steady = (topRate * burst + layerRate) * BULLET_LIFE
+  let steady = (topRate * burst + layerRate) * lifeOf d
 
   // `wait` が寿命 を超える と 発射率 で割る のが 無意味 になる ——
   // 1 回 の塊 が丸ごと 同時 に生きる。`fit` が wait を 278 倍 にして も

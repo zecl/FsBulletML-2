@@ -15,24 +15,71 @@ let rec private nestRepeat (n: int) (times: string) (inner: Action list) : Actio
   if n <= 0 then inner
   else [ repeat times { yield! nestRepeat (n - 1) times inner } ]
 
-/// 腕 を撃つ 最内側。`Kind` が向き の型 を決める:
+/// 撃つ 向き。`direction` の型 4 つ（`DTD.fs`）と 同じ 形。
 ///
-///     Spiral sequence / Radial absolute / Aimed aim / Spread relative
+/// CE の操作（`sequence` / `absolute` …）は 単独 では 値 に ならない ので、
+/// 向き を決める 規則 を ここ に落として、撃つ 形 は 1 か所 で書く
+type private Dir =
+  | Seq of string
+  | Abs of string
+  | Rel of string
+  | At of string
+
+/// 腕 の 1 発 の向き。`Kind` が型 を決める
+let private armDir (d: PatternSpec) : Dir =
+  match d.Kind with
+  | Spiral -> Seq(armStep d)
+  | Radial -> Abs(armStep d)
+  // `aim` は前 の弾 を見ない ので `armStep` を使えない（n 発 が同じ 方向 に重なる）
+  | Aimed -> At(aimSpread d)
+  | Spread -> Rel(armStep d)
+  // 幕 は 帯 を等間隔 に掃く。頭 が毎波 左端 へ戻る ので回り出さない
+  | Curtain -> Seq(curtainStep d)
+
+/// 頭 の 1 発 の向き。`Spread` と `Radial` は 順 に意味 が在る ——
+/// 名指し（前 / 後ろ / 横）が 最優先、次 が 狙い、最後 が 型 の既定。
+/// 「後方 へ」と頼まれた のに 自機 を狙う と、頼み の逆 を向く。
+///
+/// `Aiming` だけ で決めて いた とき、`Spiral` でも 毎波 `absolute 0` に戻って いて、
+/// 同じ 向き の リング が重なる だけ だった —— 頼んだ 渦 が 渦 に見えない（実機 で踏んだ）
+let private headDir (d: PatternSpec) : Dir =
+  match d.Kind with
+  // 毎波 少しずつ 回す。これ が渦 の正体 —— 名指し より 先 に見る
+  | Spiral -> Seq(spinExpr d)
+  | Aimed -> At "0"
+  // 幕 の頭 は帯 の左端。ここ が毎波 の起点 になる
+  | Curtain -> Abs(curtainHead d)
+  | Spread
+  | Radial ->
+    if facingGiven d then Abs(facingExpr d)
+    elif d.Aiming then At "0"
+    // 扇 は 直前 の向き から の相対。回らず に 同じ 方向 へ開く
+    elif d.Kind = Spread then Rel "0"
+    // 回らない。毎波 同じ 向き から 撒く
+    else Abs "0"
+
+/// 腕 を撃つ 最内側
 let private arms (d: PatternSpec) : Action list =
+  // 腕 は 速度 を持たない。`sequence` の 0 で 頭 の速さ を引き継ぐ
   let one () =
-    match d.Kind with
-    | Spiral -> fire { sequence (armStep d); speedSeq "0"; refBullet "core" [] }
-    | Radial -> fire { absolute (armStep d); speedSeq "0"; refBullet "core" [] }
-    // `aim` は前 の弾 を見ない ので `armStep` を使えない（n 発 が同じ 方向 に重なる）
-    | Aimed -> fire { aim (aimSpread d); speedSeq "0"; refBullet "core" [] }
-    | Spread -> fire { relative (armStep d); speedSeq "0"; refBullet "core" [] }
+    match armDir d with
+    | Seq e -> fire { sequence e; speedSeq "0"; refBullet "core" [] }
+    | Abs e -> fire { absolute e; speedSeq "0"; refBullet "core" [] }
+    | Rel e -> fire { relative e; speedSeq "0"; refBullet "core" [] }
+    | At e -> fire { aim e; speedSeq "0"; refBullet "core" [] }
 
-  // 頭 の 1 発 が速度 の起点。 `sequence` は差分 なので、無い と `Speed` 軸 が効かない
+  // 頭 の 1 発 が速度 の起点。`sequence` は差分 なので、無い と `Speed` 軸 が効かない
   let head =
-    if d.Aiming then fire { aim "0"; speed (speedExpr d); refBullet "core" [] }
-    else fire { absolute "0"; speed (speedExpr d); refBullet "core" [] }
+    match headDir d with
+    | Seq e -> fire { sequence e; speed (speedExpr d); refBullet "core" [] }
+    | Abs e -> fire { absolute e; speed (speedExpr d); refBullet "core" [] }
+    | Rel e -> fire { relative e; speed (speedExpr d); refBullet "core" [] }
+    | At e -> fire { aim e; speed (speedExpr d); refBullet "core" [] }
 
-  if d.Parametrized then
+  // 幕 は `Parametrized` を通さない —— `arm` は 0 度 と 180 度 の対称 で組む ので、
+  // 下向き に絞った 帯 が 上下 に割れて 幕 でなくなる。
+  // 頼まれた 形 のほう を優先 する
+  if d.Parametrized && d.Kind <> Curtain then
     [ head; actionRef "arm" [ "0"; "1" ]; actionRef "arm" [ "180"; "-1" ] ]
   else
     [ head; repeat (armsExpr d) { one () } ]
@@ -51,6 +98,29 @@ let private bullets (d: PatternSpec) : BulletmlElm list =
               changeSpeed "0.25" "26"
               wait "34"
               changeSpeed (speedExpr d) "40"
+
+            // 自機 を追う。`Aiming` を 頭 の向き で効かせる と `Spiral` の渦 が
+            // 止まる ので、弾 の側 で持つ —— 飛びながら 自機 の方 へ向き直る。
+            //
+            // 段 が無くて も 効く ように、撒く 枝 の外 に置く
+            if d.Aiming then
+              changeDirectionAim "0" "60"
+
+            // 1 発 が どう 飛ぶ か。`BulletKinds`（何種類 出すか）とは 別 の軸。
+            //
+            // どちら も 頭 の 1 段 目 に だけ 置く —— 段 の先 まで 引き継ぐ と、
+            // 割れた 破片 まで レーザー に なって 形 が消える
+            if lv = 0 then
+              match d.Motion with
+              | Laser ->
+                // 撃った 直後 に 一気 に伸びる。短い term が 線 に見せる
+                changeSpeed (laserSpeed d) "8"
+              | Missile ->
+                // 曲がり ながら 加速。狙い は `Aiming` と別 に持つ ——
+                // ミサイル と 言われた なら 狙う のが 本体
+                changeDirectionAim "0" "30"
+                accel "40" { vertical (missileAccel d) }
+              | Plain -> ()
 
             if not isLast then
               repeat (scatterExpr d lv) {
@@ -94,7 +164,9 @@ let private layers (d: PatternSpec) : BulletmlElm list =
 
 /// `Parametrized` が真 のとき の部品。`$1` が開始角、`$2` が向き
 let private armPart (d: PatternSpec) : BulletmlElm list =
-  if not d.Parametrized then []
+  // 幕 は `arm` を呼ばない（`arms` が外す）ので、定義 だけ 残さない ——
+  // 誰 も引かない `action` が字 に出ると、読む人 が形 を誤解 する
+  if not d.Parametrized || d.Kind = Curtain then []
   else
     [ defAction "arm" {
         fire { absolute "$1"; speed (speedExpr d); refBullet "core" [] }

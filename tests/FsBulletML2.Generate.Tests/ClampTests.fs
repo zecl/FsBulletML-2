@@ -9,13 +9,20 @@ open FsBulletML2.Generate
 [<TestFixture>]
 type ClampTests() =
 
-  static let spec speed density symmetry layers jitter rhythm depth kinds cascade =
-    PatternSpec.create Spiral speed density symmetry layers jitter rhythm depth kinds cascade
-                       true true false true false 0.8
+  /// 9 本 の段 に同じ 値 を入れる。clamp は 段階数 ごと に違う ので、
+  /// 端 を 1 つ の数 で入れて 別々 に見る
+  static let all (v: float) =
+    PatternSpec.create (fun a ->
+      { a with
+          Kind = Spiral
+          Speed = v; Density = v; Symmetry = v; Cascade = v
+          Layers = v; Jitter = v; Rhythm = v; Depth = v; BulletKinds = v
+          Breathe = true; Vanishing = true; Pause = true
+          KindConfidence = 0.8 })
 
   [<Test>]
   member _.``下 に外れた値 は 0 に戻る``() =
-    let s = spec -3.0 -3.0 -3.0 -3.0 -3.0 -3.0 -3.0 -3.0 -3.0
+    let s = all -3.0
     s.Speed |> should equal 0.0
     s.Density |> should equal 0.0
     s.Layers |> should equal 0.0
@@ -23,7 +30,7 @@ type ClampTests() =
 
   [<Test>]
   member _.``4 段 のフィールド は 3 が上限``() =
-    let s = spec 99.0 99.0 99.0 0.0 0.0 0.0 0.0 0.0 99.0
+    let s = all 99.0
     s.Speed |> should equal 3.0
     s.Density |> should equal 3.0
     s.Symmetry |> should equal 3.0
@@ -31,7 +38,7 @@ type ClampTests() =
 
   [<Test>]
   member _.``3 段 のフィールド は 2 が上限``() =
-    let s = spec 0.0 0.0 0.0 99.0 99.0 99.0 99.0 99.0 0.0
+    let s = all 99.0
     s.Layers |> should equal 2.0
     s.Jitter |> should equal 2.0
     s.Rhythm |> should equal 2.0
@@ -49,11 +56,9 @@ type ClampTests() =
   /// `KindConfidence` は 軸 ではない —— 画面 に出す 値 で 生成器 は読まない
   [<Test>]
   member _.``確率 は 0 から 1``() =
-    let over =
-      PatternSpec.create Spiral 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
-                         true true false true false 9.9
+    let over = PatternSpec.create (fun a -> { a with KindConfidence = 9.9 })
     over.KindConfidence |> should equal 1.0
 
   [<Test>]
   member _.``WaitScale の既定 は 1``() =
-    (spec 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0).WaitScale |> should equal 1.0
+    (all 1.0).WaitScale |> should equal 1.0

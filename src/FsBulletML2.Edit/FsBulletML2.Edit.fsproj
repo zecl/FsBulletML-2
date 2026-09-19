@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>FsBulletML2.Edit</RootNamespace>
+    <AssemblyName>FsBulletML2.Edit</AssemblyName>
+    <Version>0.1.0</Version>
+    <Product>FsBulletML2.Edit</Product>
+    <Description>Rewrites a BulletML tree: mix, tune, borrow parts, drop dead branches.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Combine.fs" />
+    <Compile Include="Tune.fs" />
+    <Compile Include="Parts.fs" />
+    <Compile Include="Prune.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+  </ItemGroup>
+
+</Project>
