@@ -117,15 +117,37 @@ let private seedBullet (name: string) (wave: Action list) =
           yield! wave
           yield Action.Vanish ]) ])
 
-/// 外側 の繰り返し は 撒く 側 に残す。1 波 の中身 だけ を 種 へ移す
+/// 外側 の繰り返し は 撒く 側 に残す。1 波 の中身 だけ を 種 へ移す。
+///
+/// 間合い が 1 つ も残らない なら 散らさない。待ち を持たない 台本 は 1 コマ で終わり、
+/// 面 が 頭 から 走らせ直す ので 毎コマ 茎 を撒き 直す ——
+/// 待ち が 内側 の `repeat` の中 にしか 無い 輪 を 3 か所 に散らして 100 コマ 走らせる と
+/// 221,390 発 まで 増えた（散らさなければ 1,482 発）
 let private split (stem: string) (xs: Action list) =
+  let keep (inner: Action list) (wrap: Action list -> Action list) =
+    match splitTailWaits inner with
+    | _, [] -> None
+    | wave, tail -> Some(wrap (stemFire stem :: tail), wave)
   match xs with
   | [ Action.Repeat(times, ActionElm.Action(a, inner)) ] ->
-    let wave, tail = splitTailWaits inner
-    [ Action.Repeat(times, ActionElm.Action(a, stemFire stem :: tail)) ], wave
-  | _ ->
-    let wave, tail = splitTailWaits xs
-    stemFire stem :: tail, wave
+    keep inner (fun body -> [ Action.Repeat(times, ActionElm.Action(a, body)) ])
+  | _ -> keep xs id
+
+/// 実際 に咲く 数。散らせない 木 は 1 ——
+/// 取り分 を `count` で割る 側 が、散らなかった とき に 弾 を 1/n に薄めない ため
+let places (count: int) (bulletml: Bulletml) : int =
+  if count <= 1 then 1
+  else
+    match bulletml with
+    | Bulletml(_, elms) ->
+      let splits e =
+        match e with
+        | BulletmlElm.Action(_, xs) when isTop e ->
+          match split (MARK + "-stem") xs with
+          | None | Some(_, []) -> false
+          | Some _ -> true
+        | _ -> false
+      if List.exists splits elms then count else 1
 
 /// 1 以下 は そのまま。撃つ もの を持たない 台本 も そのまま ——
 /// 「作れなかった」に しない
@@ -144,8 +166,8 @@ let apply (count: int) (bulletml: Bulletml) : Bulletml =
               let stem = freeName taken (MARK + "-stem")
               let seed = freeName taken (MARK + "-seed")
               match split stem xs with
-              | _, [] -> e
-              | top, wave ->
+              | None | Some(_, []) -> e
+              | Some(top, wave) ->
                 taken.Add stem |> ignore
                 taken.Add seed |> ignore
                 seeds.Add(stemBullet stem seed count)

@@ -173,15 +173,19 @@ module Harmonic =
     max (perWave / wait1) (float (h.Arms * h.Blooms)) * Bound.SAFETY
 
   /// 越える なら `wait` を伸ばす。花弁 の数 と Arms は形 そのもの なので 減らさない
-  let fit (h: HarmonicSpec) : HarmonicSpec =
+  /// 上限 は 引数 —— 混ぜ の相手 が居る とき は 半分 になる
+  let fitTo (budget: float) (h: HarmonicSpec) : HarmonicSpec =
+    let budget = max 1.0 budget
     let rec go (s: HarmonicSpec) (tries: int) =
-      let need = aliveBound s / float MAX_ALIVE
+      let need = aliveBound s / budget
       if need <= 1.0 || tries <= 0 then s
       else go (HarmonicSpec.withWaitScale (s.WaitScale * max 2.0 (ceil need)) s) (tries - 1)
     go h 12
 
-  let generate (spec: HarmonicSpec) : BulletmlInfo =
-    let h = fit spec
+  let fit (h: HarmonicSpec) : HarmonicSpec = fitTo (float MAX_ALIVE) h
+
+  let generateTo (budget: float) (spec: HarmonicSpec) : BulletmlInfo =
+    let h = fitTo budget spec
 
     createBulletmlInfo
     <| vertical "harmonic" {
@@ -206,3 +210,5 @@ module Harmonic =
              })
          }
        }
+
+  let generate (spec: HarmonicSpec) : BulletmlInfo = generateTo (float MAX_ALIVE) spec

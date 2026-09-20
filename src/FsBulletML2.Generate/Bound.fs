@@ -81,11 +81,11 @@ let aliveBound (d: PatternSpec) : float =
 /// これ なら ゆっくり になる だけ で済む。
 ///
 /// `waitExpr` は `max 2` と 整数 への丸め が在る ので、入れた 後 に もう一度 測る。
-let private byWait (d: PatternSpec) : PatternSpec =
+let private byWait (budget: float) (d: PatternSpec) : PatternSpec =
   let rec go (s: PatternSpec) (tries: int) =
     if tries <= 0 then s
     else
-      let need = aliveBound s / float MAX_ALIVE
+      let need = aliveBound s / budget
       if need <= 1.0 then s
       else
         let next = PatternSpec.withWaitScale (s.WaitScale * max 2.0 (ceil need)) s
@@ -97,10 +97,15 @@ let private byWait (d: PatternSpec) : PatternSpec =
 ///
 /// 1 回 の塊 は `wait` で減らない —— 全軸 最大 で wait を 278 倍 にして も
 /// 同時 3,351 発 のまま だった。上限 を破る より 段 を落とす
-let fit (d: PatternSpec) : PatternSpec =
+/// 上限 は 引数。混ぜ と 散らし は 1 面 を分け合う ので、呼ぶ側 が 取り分 を渡す。
+/// 0 以下 は 1 に倒す —— 呼ぶ側 の割り算 で 0 になりうる
+let fitTo (budget: float) (d: PatternSpec) : PatternSpec =
+  let budget = max 1.0 budget
   let rec go (s: PatternSpec) =
-    let w = byWait s
-    if aliveBound w <= float MAX_ALIVE || step w.Cascade = 0 then w
+    let w = byWait budget s
+    if aliveBound w <= budget || step w.Cascade = 0 then w
     else go (PatternSpec.withCascade (w.Cascade - 1.0) w)
 
   go d
+
+let fit (d: PatternSpec) : PatternSpec = fitTo (float MAX_ALIVE) d

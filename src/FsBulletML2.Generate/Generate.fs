@@ -182,9 +182,10 @@ let private armPart (d: PatternSpec) : BulletmlElm list =
         }
       } ]
 
-/// 中 で `fit` を通す —— 呼ぶ側 に任せる と 上限 が守られない 経路 が生まれる
-let generate (spec: PatternSpec) : BulletmlInfo =
-  let d = fit spec
+/// 中 で `fit` を通す —— 呼ぶ側 に任せる と 上限 が守られない 経路 が生まれる。
+/// 上限 そのもの は 引数（混ぜ と 散らし は 1 面 を分け合う）
+let generateTo (budget: float) (spec: PatternSpec) : BulletmlInfo =
+  let d = fitTo budget spec
 
   createBulletmlInfo
   <| vertical "AI" {
@@ -201,3 +202,5 @@ let generate (spec: PatternSpec) : BulletmlInfo =
        yield! armPart d
        yield! bullets d
      }
+
+let generate (spec: PatternSpec) : BulletmlInfo = generateTo (float Consts.MAX_ALIVE) spec

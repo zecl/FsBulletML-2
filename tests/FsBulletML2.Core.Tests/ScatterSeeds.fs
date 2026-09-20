@@ -21,6 +21,13 @@ open FsBulletML2
 ///   `split` で `Repeat` を 種 へ移す        繰り返し は 撒く 側 に残る
 ///   `seedBullet` の `Vanish` を落とす       咲いた 種 は 消える
 ///   `freeName` を素通し に                  名前 がぶつかったら 番号 を足す
+///   `split` の `None` を落とす              待ち が残らない 形 は 散らさない ／ 咲く 数 は 1
+///   `places` を count 固定 に               咲く 数 は 1
+///   `places` を 1 固定 に                   咲く 数 は 1
+///
+/// 「散らした なら 撒く 側 は 待つ」は 書いて 落とした ——
+/// 単独 で赤 に する 変異 が 無い。`ring` の 撒く 側 は
+/// 「間合い と 繰り返し は 撒く 側 に残る」が `<wait>4</wait>` で もっと 強く 見て いる
 [<TestFixture>]
 type ScatterSeeds() =
 
@@ -38,6 +45,21 @@ type ScatterSeeds() =
          <fire><direction type="sequence">13</direction><bulletRef label="core"/></fire>
          <wait>4</wait>
        </action></repeat></action>
+       <bullet label="core"><speed>2</speed></bullet>"""
+
+  /// 待ち が 内側 の `repeat` の中 にしか 無い 輪。外 の繰り返し の末尾 は `repeat`
+  static let nested =
+    """<action label="top"><repeat><times>180</times><action>
+         <repeat><times>13</times><action>
+           <fire><direction type="sequence">13</direction><bulletRef label="core"/></fire>
+           <wait>90</wait>
+         </action></repeat>
+       </action></repeat></action>
+       <bullet label="core"><speed>2</speed></bullet>"""
+
+  /// 待ち が 1 つ も無い 台本
+  static let waitless =
+    """<action label="top"><fire><bulletRef label="core"/></fire></action>
        <bullet label="core"><speed>2</speed></bullet>"""
 
   /// 種 の定義 から 後ろ。撒く 側（`top`）や 茎 と 見分ける ため
@@ -131,3 +153,22 @@ type ScatterSeeds() =
   member _.``撒く もの が無ければ そのまま``() =
     let idle = read """<action label="top"><wait>10</wait></action>"""
     xml (Scatter.apply 3 idle) |> should equal (xml idle)
+
+  /// 撒く 側 に 待ち が 1 つ も残らない と、その 台本 は 1 コマ で終わる ——
+  /// 面 は 終えた 弾 を 頭 から 走らせ直す ので、毎コマ 茎 を撒き 直す。
+  ///
+  /// `nested` を 3 か所 に散らした 木 を Felt で 100 コマ 走らせる と 221,390 発 まで 増えた
+  /// （散らさなければ 1,482 発）。待ち は 内側 の `repeat` の中 に在り、外 の末尾 には 1 つ も無い
+  [<Test>]
+  member _.``撒く 側 に 待ち が残らない 形 は 散らさない``() =
+    for src in [ nested; waitless ] do
+      let b = read src
+      xml (Scatter.apply 3 b) |> should equal (xml b)
+
+  /// 散らせない 木 に `count` を答える と、取り分 を割る 側 が 弾 を 1/n に薄める
+  [<Test>]
+  member _.``散らせない 木 の 咲く 数 は 1``() =
+    Scatter.places 3 (read ring) |> should equal 3
+    Scatter.places 3 (read nested) |> should equal 1
+    Scatter.places 3 (read waitless) |> should equal 1
+    Scatter.places 1 (read ring) |> should equal 1
