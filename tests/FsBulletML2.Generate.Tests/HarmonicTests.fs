@@ -117,7 +117,6 @@ type HarmonicTests() =
   ///   星 の正規化 sqrt(1-a^2) を 1 に        2 本
   ///   星 の分岐 を 花 に倒す                  3 本
   ///   星 の抉り alpha を 0 に                 3 本
-  ///   薔薇 の 半角 を落とす（k t/2 -> k t）   2 本
   ///   知らない 字 の既定 を Star に           1 本
   ///   速さ の床 を 0 に                       1 本
   ///   速さ の天井 を MAX_SPEED そのもの に    1 本
@@ -136,7 +135,8 @@ type HarmonicTests() =
   [<Test>]
   member _.``知らない 字 は Petal``() =
     Figure.ofString "star" |> should equal Star
-    Figure.ofString "rose" |> should equal Rose
+    // 薔薇 は 落とした。字 が来て も 花 に倒れる
+    Figure.ofString "rose" |> should equal Petal
     Figure.ofString "cardioid" |> should equal Heart
     Figure.ofString "petal" |> should equal Petal
     Figure.ofString "" |> should equal Petal
@@ -145,8 +145,8 @@ type HarmonicTests() =
     (HarmonicSpec.create id).Figure |> should equal Petal
 
   [<Test>]
-  member _.``振幅 0 は 4 札 とも 真円``() =
-    for fig in [ Petal; Star; Rose; Heart ] do
+  member _.``振幅 0 は 3 札 とも 真円``() =
+    for fig in [ Petal; Star; Heart ] do
       let s = fullest (runOf 90 (figure fig 5 0.0 1.0))
       ratio s |> should (equalWithin 1e-9) 1.0
       Felt.foldScore 5 s |> should equal 0.0
@@ -167,7 +167,6 @@ type HarmonicTests() =
   ///
   ///   星       0.00045 .. 0.00219
   ///   ハート   0.00159 .. 0.00229
-  ///   薔薇     0.00883 .. 0.01046
   ///   花       0.00770 .. 0.00982
   ///
   /// 床 0.005 は 星 と 花 の あいだ。ハート とは 分けない —— くびれ が 1 つ で 辺 が 長い ので
@@ -177,7 +176,6 @@ type HarmonicTests() =
   member _.``星 の 辺 は 直線``() =
     bend (fullest (runOf 90 (wide Star 5 1.51 1.0))) |> should be (lessThan 0.005)
     bend (fullest (runOf 90 (wide Petal 5 1.51 1.0))) |> should be (greaterThan 0.005)
-    bend (fullest (runOf 90 (wide Rose 5 1.51 1.0))) |> should be (greaterThan 0.005)
 
   /// 速さ の逆数 が 正弦 に乗る か で 星 を 剥がす。`recip` 単独 では 割れない ——
   /// 振幅 の浅い 花 も 0.85 まで 出る ので、`fold` との 差 の符号 で見る
@@ -187,7 +185,6 @@ type HarmonicTests() =
   ///   星 の差 の 最小      +0.083（振幅 1.00）
   ///   星 以外 の 最大      +0.021（ハート。k を 輪郭 に使わない ので fold も recip も ~0）
   ///   花 の差              -0.027 .. -0.146
-  ///   薔薇 の差            -0.062 .. -0.358
   ///
   /// 床 0.05 は その 2 つ の あいだ
   [<Test>]
@@ -198,7 +195,6 @@ type HarmonicTests() =
     diff Star 1.51 |> should be (greaterThan 0.05)
     diff Star 1.0 |> should be (greaterThan 0.05)
     diff Petal 1.51 |> should be (lessThan 0.0)
-    diff Rose 1.51 |> should be (lessThan 0.0)
     diff Heart 1.51 |> should be (lessThan 0.05)
 
   /// k 回 対称 の 札 は 1/k 周 だけ 書いて `repeat` で 回す。字 が 小さく なる だけ で、
@@ -222,7 +218,7 @@ type HarmonicTests() =
   ///   割り切れなくて も 畳む          4 本
   ///   `repeat` の 回数 を k+1 に      5 本
   ///   体 を 1/k 周 より 1 本 短く     7 本
-  ///   上界 が 畳み を数えない          2 本（薔薇 の 谷 ／ 速さ の 平均）
+  ///   上界 が 畳み を数えない          2 本
   [<Test>]
   member _.``k 回 対称 の 札 は 1/k 周 だけ 書く``() =
     let firesIn (h: HarmonicSpec) =
@@ -258,33 +254,8 @@ type HarmonicTests() =
     shotsOf folded |> should equal (folded.Arms + 1)
     shotsOf notFolded |> should equal notFolded.Arms
 
-  /// `|cos(kθ/2)|` の 山 は 1 周 に k 個。k が偶数 でも 倍 に ならない
-  [<Test>]
-  member _.``薔薇 の葉 は k 枚 で、偶数 でも 倍 に ならない``() =
-    for k in [ 3; 5; 8 ] do
-      peaks (fullest (runOf 90 (figure Rose k 2.0 1.0))) |> should equal k
 
-  /// 薔薇 と 花 を 分ける のは 波形 ではなく 谷 の深さ。
-  ///
-  /// `|cos(kθ/2)|²` は `(1 + cos kθ) / 2` そのもの なので、`foldScore` は 花 と同じ 1.000 ——
-  /// **波形 で 見分ける 門 は 置けない**（`2|cos|-1` の 頃 は 0.949 で 割れて いた が、
-  /// あちら は 葉 が 太くて 花 と 見分け が つかなかった）。
-  /// 分かれて 見える の は 谷 が 床 に着く から で、それ は `薔薇 の 谷 は 床 に着く` が見る
-  [<Test>]
-  member _.``薔薇 の 波形 は 花 と同じ``() =
-    let s fig = fullest (runOf 90 (wide fig 5 1.51 1.0))
-    Felt.foldScore 5 (s Rose) |> should (equalWithin 0.01) (Felt.foldScore 5 (s Petal))
 
-  /// 葉 が中心 から分かれる には、谷 が床 に着く 必要がある。
-  /// 花 の正弦 は 谷 が r0(1-a) で止まり、同じ コマ が 1 本 の環 に見える
-  [<Test>]
-  member _.``薔薇 の 谷 は 床 に着く``() =
-    let valley fig = List.min (fullest (runOf 90 (wide fig 5 1.51 1.0))).Speeds
-    // 床（0.3）に `$rank` の 1.3 倍 が 掛かった 値。葉 が 中心 で 分かれる
-    valley Rose |> should (equalWithin 0.01) 0.39
-    // 花 は 谷 も 丸い ので 床 に 着かない。内/外 を 見る と どちら も 0.20 で 割れない ——
-    // envelope を 同じ に して いた 頃 は ここ が 見分け が つかなかった
-    valley Petal |> should be (greaterThan 0.6)
 
   /// ハート の 下 は 尖る。素 の カージオイド（r = 1 - cos θ）に 戻す と ここ が 赤 になる ——
   /// あれ は 尖点 が 在る だけ で 裾 が 広く、96 発 で描く と 卵 に見えた。
@@ -294,7 +265,6 @@ type HarmonicTests() =
   ///   ハート   0.031 .. 0.115
   ///   星       0.094 .. 0.219
   ///   花       0.323 .. 0.448
-  ///   薔薇     0.323 .. 0.385
   ///
   /// 床 0.15 は ハート と 花 の あいだ。星 と は 分けない —— 分ける のは 逆数 の門 のほう
   [<Test>]
@@ -305,7 +275,6 @@ type HarmonicTests() =
     let shot fig = fullest (runOf 90 (wide fig 5 1.51 1.0))
     tip (shot Heart) |> should be (lessThan 0.15)
     tip (shot Petal) |> should be (greaterThan 0.15)
-    tip (shot Rose) |> should be (greaterThan 0.15)
 
   /// 平均 は r0 の まま。星 と ハート は 素 の式 の 高さ が r0 と 揃って いない ので
   /// 1 周 平均 で割って 戻す —— 割り忘れ は 形 を変えず に 速さ だけ を動かす ので、
@@ -313,17 +282,15 @@ type HarmonicTests() =
   ///
   /// --- 較正（平均 の速さ。振幅 1.51）
   ///
-  ///   速さ 0    花 1.300   星 1.300   薔薇 1.300   ハート 1.302
-  ///   速さ 1    花 1.950   星 1.950   薔薇 1.950   ハート 1.953
-  ///   速さ 3    花 3.250   星 3.251   薔薇 3.243   ハート 3.244
+  ///   速さ 0    花 1.300   星 1.300   ハート 1.302
+  ///   速さ 1    花 1.950   星 1.950   ハート 1.953
+  ///   速さ 3    花 3.250   星 3.251   ハート 3.244
   ///
-  /// 薔薇 は 1 周 平均 で割って 戻す（星・ハート と同じ）。`2|cos|-1` の 頃 は
-  /// 平均 が 0.273 ずれて 13.7% 速く、谷 を床 に落とせず 外していた
   [<Test>]
   member _.``速さ の 平均 は 花 と 揃う``() =
     for spd in [ 0.0; 1.0; 3.0 ] do
       let mean fig = List.average (fullest (runOf 90 (wide fig 5 1.51 spd))).Speeds
-      for fig in [ Star; Heart; Rose ] do
+      for fig in [ Star; Heart ] do
         mean fig / mean Petal |> should (equalWithin 0.03) 1.0
 
   /// くびれ は 1 点。床 から 立ち上げず に 掛ける と、谷 の まわり が 床 で 切られて
@@ -346,7 +313,7 @@ type HarmonicTests() =
   /// 床 を外した こと が ここ に出る
   [<Test>]
   member _.``速さ は 床 と 天井 の あいだ``() =
-    for fig in [ Petal; Star; Rose; Heart ] do
+    for fig in [ Petal; Star; Heart ] do
       for spd in [ 0.0; 1.0; 3.0 ] do
         let s = fullest (runOf 90 (figure fig 5 2.0 spd))
         List.min s.Speeds |> should be (greaterThanOrEqualTo 0.38)

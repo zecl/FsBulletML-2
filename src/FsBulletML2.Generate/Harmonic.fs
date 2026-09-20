@@ -8,12 +8,15 @@ open FsBulletML2.Generate.Consts
 /// 輪郭 の形。速さ を角 で変調 する 式 だけ が違う。
 ///
 /// `Petal` は 山 も 谷 も 丸い。`Star` は 逆数 余弦 で 山 が尖り 谷 が抉れる。
-/// `Rose` は `|cos(kθ/2)|` で 谷 に折り目 が立つ（k が偶数 でも 枚数 は倍 に ならない）。
-/// `Heart` は k を 輪郭 に使わず、1 周 に 1 つ の くびれ
+/// `Heart` は k を 輪郭 に使わず、1 周 に 1 つ の くびれ。
+///
+/// 薔薇 は 落とした。中心 から 見て どの 角 にも 半径 が 1 つ の 輪郭（`r = f(θ)`）しか
+/// 描けない ので、渦 を巻いて 花びら が 重なる 薔薇模様 は 式 を どう 変えて も 出ない ——
+/// `|cos(kθ/2)|` は 花 と 見分け が つかず、2 乗 は `(1 + cos kθ)/2` で 花 そのもの、
+/// 全角 の 2k 枚 は 薔薇 でなく 菊 の 座 に なった
 type Figure =
   | Petal
   | Star
-  | Rose
   | Heart
 
 [<RequireQualifiedAccess>]
@@ -26,7 +29,6 @@ module Figure =
   let ofString (s: string) =
     match s with
     | "star" -> Star
-    | "rose" -> Rose
     | "heart" | "cardioid" -> Heart
     | _ -> Petal
 
@@ -34,7 +36,6 @@ module Figure =
     match f with
     | Petal -> "petal"
     | Star -> "star"
-    | Rose -> "rose"
     | Heart -> "heart"
 
 /// 花 の軸 の生値。`HarmonicSpec.create` に渡す 途中 の形 で、clamp を通って いない。
@@ -169,9 +170,6 @@ module Harmonic =
   /// 割る 1.5 は 星 と同じ 都合 —— 面 が返す 1.2 では 0.6 に しか ならない
   let private betaOf (h: HarmonicSpec) = min 1.0 (h.Amplitude / 1.5)
 
-  /// `|cos|²` の 1 周 平均。k に依らず 1/2 —— 割って 平均 を 1 に戻す
-  let private ROSE_MEAN = 0.5
-
   /// ハート の 素 の輪郭。谷 が 0、山 が 4。t = 0 が くびれ（真上）。
   ///
   /// 素 の カージオイド（r = 1 - cos θ）は 使わない —— 尖点 は 在る が 二つ山 に ならず、
@@ -215,18 +213,6 @@ module Harmonic =
         let w = min 1.0 (h.Amplitude / 1.5)
         let m = defaultArg (Map.tryFind h.Folds starMean) 1.0
         r * ((1.0 - w) + w * starAt k (t + h.Phase) / m)
-      // 谷 を 床 まで 落とす。envelope を 花 と 同じ に すると 波打った 円 に しか ならず、
-      // 内/外 が 花 と 揃って しまった（どちら も 0.20。実測 で 見分け が つかない）——
-      // 葉 が 中心 で 分かれる のが 薔薇 なので、谷 は 0 に する。
-      // `|cos|` の 1 周 平均 は 2/π。π/2 を掛けて 平均 を 1 に戻す
-      | Rose ->
-        let w = min 1.0 (h.Amplitude / 1.5)
-        // 2 乗 で 葉 を 細める。素 の `|cos|`（数学 の 薔薇）は 葉 が 2π/k を 目一杯 使う ので
-        // 隣 と くっつき、花 と 見分け が つかなかった ——
-        // 山 の 4 割 より 外 に居る 弾 が 0.792 で、花 の 0.708 と 変わらない。
-        // 2 乗 で 0.625。4 乗 は 0.458 だが 細い 線 5 本 に見えた
-        let u = abs (cos (k * t / 2.0 + h.Phase)) ** 2.0 / ROSE_MEAN
-        SPEED_LO + (r - SPEED_LO) * ((1.0 - w) + w * u)
       | Heart ->
         let b = betaOf h
         SPEED_LO + (r - SPEED_LO) * ((1.0 - b) + b * heartAt (t + h.Phase) / HEART_MEAN)
@@ -279,7 +265,7 @@ module Harmonic =
   let private foldBy (h: HarmonicSpec) =
     let symmetric =
       match h.Figure with
-      | Petal | Star | Rose -> true
+      | Petal | Star -> true
       | Heart -> false
     if symmetric && h.Arms % h.Folds = 0 && h.Arms / h.Folds >= 2 then Some(h.Arms / h.Folds) else None
 
