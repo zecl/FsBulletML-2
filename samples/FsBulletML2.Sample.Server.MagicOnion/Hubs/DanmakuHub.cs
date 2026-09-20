@@ -42,7 +42,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Hubs
             return default;
         }
 
-        public async Task<RoomInfo> JoinAsync(JoinRequest request)
+        public async ValueTask<RoomInfo> JoinAsync(JoinRequest request)
         {
             request ??= new JoinRequest();
 
@@ -62,7 +62,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Hubs
             return room.Info;
         }
 
-        public async Task LeaveAsync()
+        public async ValueTask LeaveAsync()
         {
             if (room == null)
             {
@@ -77,16 +77,16 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Hubs
             key = null;
         }
 
-        public Task SetPlayerAsync(float x, float y)
+        public ValueTask SetPlayerAsync(float x, float y)
         {
             room?.SetPlayer(x, y);
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
 
-        public Task ShootAsync(float x, float y)
+        public ValueTask ShootAsync(float x, float y)
         {
             room?.Shoot(x, y);
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
 
         /// <summary>

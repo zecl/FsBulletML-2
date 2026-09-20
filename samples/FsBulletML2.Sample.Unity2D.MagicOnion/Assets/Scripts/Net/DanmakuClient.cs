@@ -188,8 +188,8 @@ public sealed class DanmakuClient : MonoBehaviour
         var p = player.transform.position;
         // 待たない。 待つと自機 の動きが往復 の遅れに引きずられる。
         // `_ =` ではなく Forget —— 落ちたときに UniTask が拾って出す
-        // `Task` には Forget が生えていない。 MagicOnion の口 は Task を返すので、
-        // UniTask へ移してから投げっぱなしにする（`_ =` と違って、
+        // `ValueTask` には Forget が生えていない。 MagicOnion の口 は ValueTask を
+        // 返すので、UniTask へ移してから投げっぱなしにする（`_ =` と違って、
         // 落ちたら UniTaskScheduler が拾って出す）
         hub.SetPlayerAsync(p.x, p.y).AsUniTask().Forget();
     }

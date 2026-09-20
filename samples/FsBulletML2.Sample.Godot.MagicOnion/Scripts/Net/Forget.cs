@@ -11,8 +11,26 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
     /// 網 が切れた・口 が 404 を返した、が画面 にも log にも 1 行 も出ずに
     /// 「なんとなく止まっている」になる。Unity 版 が `async void` を
     /// 全部 潰したのと同じ理由。
+    /// </summary>
     public static class Forget
     {
+        /// <summary>
+        /// Hub の口 は <c>ValueTask</c> を返す。 <c>ValueTask</c> には
+        /// <c>ContinueWith</c> が生えていないので、<c>Task</c> へ移してから繋ぐ。
+        ///
+        /// 同期 で終わっていたら移さない —— <c>AsTask</c> は <c>Task</c> を 1 つ作るので、
+        /// 待つものが無いときに払う理由 が無い。
+        /// </summary>
+        public static void Fire(this ValueTask task)
+        {
+            if (task.IsCompletedSuccessfully)
+            {
+                return;
+            }
+
+            task.AsTask().Fire();
+        }
+
         public static void Fire(this Task task)
         {
             if (task == null)
