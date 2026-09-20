@@ -257,18 +257,49 @@ module Harmonic =
   /// 前 の波 の最後 の弾 は 頭 から 1 刻み 手前 なので、刻み を 1 つ 足す と 頭 に戻る。
   /// 先 に出た 花 と向き が揃い、何重 の花 が 1 つ として 回る。
   /// `defAction` に θ0 を `$1` で渡す 形 は 波 を跨いで 足し込めない（`repeat` は毎回 同じ 引数 を渡す）
+  /// 1/k 周 の 腕 の数。ここ が `Some m` なら 畳める。
+  ///
+  /// 畳める のは 輪郭 が k 回 対称 で、`Arms` が k で 割り切れる とき だけ ——
+  /// ハート は 1 回 対称 で 畳めず、k = 7 は `Arms` が 160 で 割り切れない（160 / 7）。
+  /// 4 つ の k の うち 3 つ（3 / 5 / 8）が 畳まる
+  let private foldBy (h: HarmonicSpec) =
+    let symmetric =
+      match h.Figure with
+      | Petal | Star | Rose -> true
+      | Heart -> false
+    if symmetric && h.Arms % h.Folds = 0 && h.Arms / h.Folds >= 2 then Some(h.Arms / h.Folds) else None
+
+  /// 1 波 で撃つ 腕 の番号。畳む と 頭 と 最後 の 1 発 が 同じ 向き に なる ので 1 発 多い ——
+  /// 頭 は 1 波 に 1 度 しか 置けず（`absolute 0` か、回す とき の 足し込み）、
+  /// 残り を k 回 の `repeat` で 割る と 1/k 周 x k = 1 周 ちょうど で 頭 に戻る。
+  /// 120 発 の うち 1 発 が 重なる だけ なので、字 が 5 倍 小さく なる 代金 として 払う
+  let private firedArms (h: HarmonicSpec) =
+    match foldBy h with
+    | Some m -> 0 :: List.collect (fun _ -> [ 1 .. m ]) [ 1 .. h.Folds ]
+    | None -> [ 0 .. h.Arms - 1 ]
+
+  /// 1 波 で出る 弾 の数。畳んだ とき は `Arms + 1`
+  let shotsPerWave (h: HarmonicSpec) = (firedArms h).Length
+
   let private ring (h: HarmonicSpec) : Action list =
     let gap = 360.0 / float h.Arms
-    [ for i in 0 .. h.Arms - 1 do
-        let _, spd = armOf h i
-        if i = 0 then
-          if h.Spin > 0.0 then
-            let head = sprintf "%.2f + %.3f * (%s)" gap (turnDeg h / 2.0) (waitExpr h)
-            fire { sequence head; speed (speedOf spd); refBullet "core" [] }
-          else
-            fire { absolute "0"; speed (speedOf spd); refBullet "core" [] }
-        else
-          fire { sequence (sprintf "%.2f" gap); speed (speedOf spd); refBullet "core" [] } ]
+    let step i =
+      let _, spd = armOf h i
+      fire { sequence (sprintf "%.2f" gap); speed (speedOf spd); refBullet "core" [] }
+    let head =
+      let _, spd = armOf h 0
+      if h.Spin > 0.0 then
+        let d = sprintf "%.2f + %.3f * (%s)" gap (turnDeg h / 2.0) (waitExpr h)
+        fire { sequence d; speed (speedOf spd); refBullet "core" [] }
+      else
+        fire { absolute "0"; speed (speedOf spd); refBullet "core" [] }
+    match foldBy h with
+    | Some m ->
+      // 1/k 周 だけ 書いて 回す。`sequence` の刻み は `repeat` を跨いで 足し込まれる ので、
+      // k 回 で ちょうど 1 周 する。腕 m の 速さ は 対称 から 腕 0 と同じ
+      [ head
+        repeat (string h.Folds) { yield! [ for i in 1 .. m -> step i ] } ]
+    | None -> head :: [ for i in 1 .. h.Arms - 1 -> step i ]
 
   /// 同時 に居る 弾 の上界（`$rank = 1.0`）。
   ///
@@ -280,9 +311,9 @@ module Harmonic =
       let fly = FIELD_SPAN / (spd * (1.0 + rankFactor))
       if h.Vanishing then min BULLET_LIFE fly else fly
     // 種 は 1 波 に `Blooms` 発 しか 出ず、咲いたら 消える ので 数 に入れない
-    let perWave =
-      ([ 0 .. h.Arms - 1 ] |> List.sumBy (fun i -> lifeOf (snd (armOf h i)))) * float h.Blooms
-    max (perWave / wait1) (float (h.Arms * h.Blooms)) * Bound.SAFETY
+    let arms = firedArms h
+    let perWave = (arms |> List.sumBy (fun i -> lifeOf (snd (armOf h i)))) * float h.Blooms
+    max (perWave / wait1) (float (arms.Length * h.Blooms)) * Bound.SAFETY
 
   /// 越える なら `wait` を伸ばす。花弁 の数 と Arms は形 そのもの なので 減らさない
   /// 上限 は 引数 —— 混ぜ の相手 が居る とき は 半分 になる

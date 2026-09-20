@@ -201,19 +201,86 @@ type HarmonicTests() =
     diff Rose 1.51 |> should be (lessThan 0.0)
     diff Heart 1.51 |> should be (lessThan 0.05)
 
+  /// k 回 対称 の 札 は 1/k 周 だけ 書いて `repeat` で 回す。字 が 小さく なる だけ で、
+  /// 走る 弾 は 頭 と 最後 が 重なる 1 発 しか 増えない。
+  ///
+  /// `shotsPerWave` と `ring` が 食い違って いない か を、字 の `<fire>` の数 と
+  /// 走らせた 弾 の数 の 両方 から 見る —— 片方 だけ だと 数え方 の 写し に なる
+  ///
+  /// --- 較正（`<fire>` の数 と 字 の長さ。Blooms 1）
+  ///
+  ///   k=3   72 -> 25 個   12,665 -> 5,167
+  ///   k=5  120 -> 25 個   20,921 -> 5,167
+  ///   k=7  160 -> そのまま（160 / 7 が 割り切れない）
+  ///   k=8  160 -> 21 個   27,801 -> 4,399
+  ///   ハート は どの k でも そのまま（1 回 対称）
+  ///
+  /// --- 較正（畳み に当てた 変異 と、赤 くなった 数）
+  ///
+  ///   畳まない（いつも None）        2 本
+  ///   ハート も 畳む                  2 本
+  ///   割り切れなくて も 畳む          4 本
+  ///   `repeat` の 回数 を k+1 に      5 本
+  ///   体 を 1/k 周 より 1 本 短く     7 本
+  ///   上界 が 畳み を数えない          2 本（薔薇 の 谷 ／ 速さ の 平均）
+  [<Test>]
+  member _.``k 回 対称 の 札 は 1/k 周 だけ 書く``() =
+    let firesIn (h: HarmonicSpec) =
+      let xml = BulletmlWriter.toIndentedXml 2 (Harmonic.generate h).Bulletml
+      xml.Split([| "<fire" |], System.StringSplitOptions.None).Length - 1
+    let plain fig k = HarmonicSpec.create (fun a -> { a with Figure = fig; Folds = k; Speed = 1.0; Amplitude = 1.51 })
+    // 畳まる 3 つ の k。字 は 1/k 周 ＋ 頭
+    for k in [ 3; 5; 8 ] do
+      let h = plain Star k
+      firesIn h |> should equal (h.Arms / k + 1)
+      Harmonic.shotsPerWave h |> should equal (h.Arms + 1)
+    // 割り切れない k と、1 回 対称 の ハート は そのまま
+    let odd = plain Star 7
+    firesIn odd |> should equal odd.Arms
+    Harmonic.shotsPerWave odd |> should equal odd.Arms
+    let heart = plain Heart 5
+    firesIn heart |> should equal heart.Arms
+    Harmonic.shotsPerWave heart |> should equal heart.Arms
+
+  /// 走らせて 数える。`shotsPerWave` は 数え方 の 写し なので、走行 と 突き合わせない と
+  /// 両方 が 同じ 間違い を する。
+  ///
+  /// `Arms` は 名指し しない —— 24 も 96 も 5 で 割り切れず、畳まれない 木 を
+  /// 「畳んだ」と思って 測る ことに なる（踏んだ）。既定 の 120 なら 畳まる
+  [<Test>]
+  member _.``畳んだ 波 は 走らせて も 1 発 しか 増えない``() =
+    let auto fig =
+      HarmonicSpec.create (fun a -> { a with Figure = fig; Folds = 5; Speed = 1.0; Amplitude = 1.51 })
+    let shotsOf (h: HarmonicSpec) =
+      Felt.run 90 (Harmonic.generate h).Bulletml |> List.map (fun s -> s.Speeds.Length) |> List.max
+    let folded, notFolded = auto Star, auto Heart
+    folded.Arms |> should equal 120
+    shotsOf folded |> should equal (folded.Arms + 1)
+    shotsOf notFolded |> should equal notFolded.Arms
+
   /// `|cos(kθ/2)|` の 山 は 1 周 に k 個。k が偶数 でも 倍 に ならない
   [<Test>]
   member _.``薔薇 の葉 は k 枚 で、偶数 でも 倍 に ならない``() =
     for k in [ 3; 5; 8 ] do
       peaks (fullest (runOf 90 (figure Rose k 2.0 1.0))) |> should equal k
 
-  /// 薔薇 は 谷 に折り目 が立つ ぶん だけ 花 より 正弦 から 離れる。
-  /// 輪郭 は 花 に近い（実測 0.949 対 1.000）ので、剥がす 材料 は 逆数 のほう
+  /// 薔薇 は 谷 を床 まで落とす ので、花 より 正弦 から 離れる。
+  /// `2|cos|-1` の 頃 は 輪郭 が花 に近く（0.949 対 1.000）、葉 に見えなかった
   [<Test>]
   member _.``薔薇 は 花 より 正弦 から 離れる``() =
     let s fig = fullest (runOf 90 (figure fig 5 1.51 0.0))
     Felt.foldScore 5 (s Rose) |> should be (lessThan (Felt.foldScore 5 (s Petal)))
     Felt.recipScore 5 (s Rose) |> should be (lessThan (Felt.recipScore 5 (s Petal)))
+
+  /// 葉 が中心 から分かれる には、谷 が床 に着く 必要がある。
+  /// 花 の正弦 は 谷 が r0(1-a) で止まり、同じ コマ が 1 本 の環 に見える
+  [<Test>]
+  member _.``薔薇 の 谷 は 床 に着く``() =
+    let inner fig =
+      let s = fullest (runOf 90 (wide fig 5 1.51 1.0))
+      List.min s.Speeds / List.max s.Speeds
+    inner Rose |> should be (lessThan 0.22)
+    inner Petal |> should be (greaterThan 0.22)
 
   /// ハート の 下 は 尖る。素 の カージオイド（r = 1 - cos θ）に 戻す と ここ が 赤 になる ——
   /// あれ は 尖点 が 在る だけ で 裾 が 広く、96 発 で描く と 卵 に見えた。
@@ -242,17 +309,17 @@ type HarmonicTests() =
   ///
   /// --- 較正（平均 の速さ。振幅 1.51）
   ///
-  ///   速さ 0    花 1.300   星 1.300   ハート 1.302   薔薇 1.478
-  ///   速さ 1    花 1.950   星 1.950   ハート 1.953   薔薇 2.305
-  ///   速さ 3    花 3.250   星 3.251   ハート 3.244   薔薇 3.679
+  ///   速さ 0    花 1.300   星 1.300   ハート 1.302   薔薇 も 揃える
+  ///   速さ 1    花 1.950   星 1.950   ハート 1.953
+  ///   速さ 3    花 3.250   星 3.251   ハート 3.244
   ///
-  /// 薔薇 は 外す。`2|cos| - 1` の 1 周 平均 が 0 でなく 0.273 なので 13.7% 速い ——
-  /// 谷 を 床 に近づけず に 戻す 方法 が無く、いま は 測って 置いて いる だけ
+  /// 薔薇 は 1 周 平均 で割って 戻す（星・ハート と同じ）。`2|cos|-1` の 頃 は
+  /// 平均 が 0.273 ずれて 13.7% 速く、谷 を床 に落とせず 外していた
   [<Test>]
   member _.``速さ の 平均 は 花 と 揃う``() =
     for spd in [ 0.0; 1.0; 3.0 ] do
       let mean fig = List.average (fullest (runOf 90 (wide fig 5 1.51 spd))).Speeds
-      for fig in [ Star; Heart ] do
+      for fig in [ Star; Heart; Rose ] do
         mean fig / mean Petal |> should (equalWithin 0.03) 1.0
 
   /// くびれ は 1 点。床 から 立ち上げず に 掛ける と、谷 の まわり が 床 で 切られて
@@ -402,8 +469,10 @@ type HarmonicTests() =
       |> should be Empty
       let groups = Felt.bloomCenters 20.0 s |> List.filter (fun (_, k) -> k >= h.Arms / 2)
       groups.Length |> should equal n
-      // 束ねた のは その コマ に生まれた 弾 だけ。古い 弾 を混ぜる と ここ で増える
-      groups |> List.sumBy snd |> should equal (n * h.Arms)
+      // 束ねた のは その コマ に生まれた 弾 だけ。古い 弾 を混ぜる と ここ で増える。
+      // 畳んだ 木 は 頭 と 最後 が 重なる ので 1 発 多い —— `Blooms` で `Arms` が
+      // k で 割り切れなく なる ので、n ごと に 畳めたり 畳めなかったり する
+      groups |> List.sumBy snd |> should equal (n * Harmonic.shotsPerWave h)
       // 1 か所 なら 敵 の位置、2 か所 以上 なら 茎 の先 を中心 と する n 角形 の頂点
       for (x, y), _ in groups do
         if n = 1 then
