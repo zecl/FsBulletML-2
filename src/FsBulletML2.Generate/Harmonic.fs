@@ -20,9 +20,15 @@ type HarmonicAxes =
     Phase: float
     /// 0..2。0 は回らない
     Spin: float
-    /// 1 波 の弾 の数。8..160、0 は 花弁 x 24（上限 160）。
+    /// 1 波 の弾 の数。8..160、0 は 花弁 x 24 を `Blooms` で割った 数（上限 160、下限 16）。
     /// 24 発 では 広がる と点 が離れ、同じ 向き の点 が線 に並んで 花 でなく 放射 の線 に見えた
     Arms: int
+    /// 何 か所 で咲かせる か。1..8。
+    ///
+    /// ここ が決める のは 弾数 の割り当て だけ で、撒く のは `FsBulletML2.Scatter.apply` ——
+    /// あちら は Core しか 見ない ので 花 に限らず 使える。
+    /// 2 以上 に した まま 撒かない と、腕 が割られた だけ の まばらな 1 輪 が出る
+    Blooms: int
     /// `wait` に効く。4 段
     Density: float
     Vanishing: bool }
@@ -39,6 +45,7 @@ type HarmonicSpec =
   member this.Phase = this.Axes_.Phase
   member this.Spin = this.Axes_.Spin
   member this.Arms = this.Axes_.Arms
+  member this.Blooms = this.Axes_.Blooms
   member this.Density = this.Axes_.Density
   member this.Vanishing = this.Axes_.Vanishing
   member this.WaitScale = this.WaitScale_
@@ -55,6 +62,7 @@ module HarmonicSpec =
       Phase = 0.0
       Spin = 0.0
       Arms = 0
+      Blooms = 1
       Density = 0.0
       Vanishing = false }
 
@@ -65,6 +73,10 @@ module HarmonicSpec =
       match a.Folds with
       | 3 | 5 | 7 | 8 -> a.Folds
       | _ -> 5
+    // 花 を 2 つ 以上 咲かせて も 同時 に居られる 数 は変わらない。
+    // 名指し が無い とき は 1 輪 ぶん を 数 で割る —— 割らない と `fit` が `wait` を伸ばし、
+    // 輪 と輪 の間 が 3 秒 空いて「まばらな花」になる
+    let blooms = max 1 (min 8 a.Blooms)
     { Axes_ =
         { a with
             Folds = folds
@@ -72,7 +84,11 @@ module HarmonicSpec =
             Amplitude = max 0.0 (min 2.0 a.Amplitude)
             Phase = (let r = a.Phase % twoPi in if r < 0.0 then r + twoPi else r)
             Spin = max 0.0 (min 2.0 a.Spin)
-            Arms = (if a.Arms = 0 then min 160 (folds * 24) else max 8 (min 160 a.Arms))
+            // 名指し して も 咲かせる 数 で頭打ち。1 波 は まるごと 同時 に居る ので、
+            // ここ を割らない と 160 x 8 が 1 コマ に出て、`fit` は `wait` しか 伸ばせず 直せない
+            Arms = (let cap = max 8 (160 / blooms)
+                    if a.Arms = 0 then min cap (max 16 (folds * 24 / blooms)) else max 8 (min cap a.Arms))
+            Blooms = blooms
             Density = onScale 4 a.Density }
       WaitScale_ = 1.0 }
 
@@ -151,8 +167,10 @@ module Harmonic =
     let lifeOf spd =
       let fly = FIELD_SPAN / (spd * (1.0 + rankFactor))
       if h.Vanishing then min BULLET_LIFE fly else fly
-    let perWave = [ 0 .. h.Arms - 1 ] |> List.sumBy (fun i -> lifeOf (snd (petal h i)))
-    max (perWave / wait1) (float h.Arms) * Bound.SAFETY
+    // 種 は 1 波 に `Blooms` 発 しか 出ず、咲いたら 消える ので 数 に入れない
+    let perWave =
+      ([ 0 .. h.Arms - 1 ] |> List.sumBy (fun i -> lifeOf (snd (petal h i)))) * float h.Blooms
+    max (perWave / wait1) (float (h.Arms * h.Blooms)) * Bound.SAFETY
 
   /// 越える なら `wait` を伸ばす。花弁 の数 と Arms は形 そのもの なので 減らさない
   let fit (h: HarmonicSpec) : HarmonicSpec =

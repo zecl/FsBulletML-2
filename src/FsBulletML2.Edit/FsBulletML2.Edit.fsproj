@@ -15,6 +15,7 @@
     <Compile Include="Combine.fs" />
     <Compile Include="Tune.fs" />
     <Compile Include="Parts.fs" />
+    <Compile Include="Scatter.fs" />
     <Compile Include="Prune.fs" />
   </ItemGroup>
 

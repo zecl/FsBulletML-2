@@ -58,6 +58,7 @@
     <Compile Include="TuneNumbers.fs" />
     <Compile Include="CombineTwo.fs" />
     <Compile Include="PartsBorrow.fs" />
+    <Compile Include="ScatterSeeds.fs" />
     <Compile Include="PruneDead.fs" />
     <Compile Include="TuneThin.fs" />
     <Compile Include="TuneHush.fs" />

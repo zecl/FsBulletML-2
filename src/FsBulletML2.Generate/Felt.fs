@@ -112,6 +112,37 @@ let runWith (playerX: float) (playerY: float) (frames: int) (bulletml: Bulletml)
 let run (frames: int) (bulletml: Bulletml) : Snapshot list =
   runWith (float PlayerX) (float PlayerY) frames bulletml
 
+/// 生まれた ばかり の弾 を 半径 `radius` で束ねた 群 の、中心 と 発数。
+///
+/// 撃たれた 弾 は 撃った 側 の位置 に産まれる ので、1 か所 で撒けば 1 群、
+/// 種 を 3 発 飛ばして 咲かせれば 3 群 になる。
+/// `Positions` は 1 コマ 進んだ 後 の並び なので、見る のは `Born = Frame - 1`。
+///
+/// 発数 も返す のは、咲いた コマ に 次 の種 が重なる ことが在る から ——
+/// 数 で切る のは 呼ぶ側 の仕事 で、ここ は 束ねる だけ
+let bloomCenters (radius: float) (s: Snapshot) : ((float * float) * int) list =
+  let pts =
+    List.zip s.Positions s.Born
+    |> List.filter (fun (_, b) -> b = s.Frame - 1)
+    |> List.map fst
+    |> Array.ofList
+  if pts.Length = 0 then []
+  else
+    let parent = Array.init pts.Length id
+    let rec find i = if parent.[i] = i then i else (parent.[i] <- find parent.[i]; parent.[i])
+    for i in 0 .. pts.Length - 1 do
+      for j in i + 1 .. pts.Length - 1 do
+        let (xi, yi), (xj, yj) = pts.[i], pts.[j]
+        if (xi - xj) * (xi - xj) + (yi - yj) * (yi - yj) <= radius * radius then
+          let a, b = find i, find j
+          if a <> b then parent.[a] <- b
+    pts
+    |> Array.indexed
+    |> Array.groupBy (fst >> find)
+    |> Array.map (fun (_, g) ->
+        (g |> Array.averageBy (fun (_, (x, _)) -> x), g |> Array.averageBy (fun (_, (_, y)) -> y)), g.Length)
+    |> List.ofArray
+
 let private variance (xs: float[]) =
   let m = Array.average xs
   xs |> Array.averageBy (fun x -> (x - m) * (x - m))

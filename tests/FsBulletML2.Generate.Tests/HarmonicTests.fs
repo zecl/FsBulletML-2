@@ -16,6 +16,16 @@ type HarmonicTests() =
   /// いちばん 多く 撃った コマ
   static let fullest (snaps: Felt.Snapshot list) = snaps |> List.maxBy (fun s -> s.Speeds.Length)
 
+  /// 種 を撒いて 咲かせた 弾幕。撒く のは `Scatter`（中身 を読まない ので 花 に限らない）で、
+  /// `Blooms` は 1 輪 の腕 を割る だけ —— 対 で使わない と 弾数 か 密度 の どちら か が壊れる
+  static let blooms n k =
+    let h = HarmonicSpec.create (fun a -> { a with Folds = k; Speed = 1.0; Amplitude = 1.5; Blooms = n })
+    h, Scatter.apply n (Harmonic.generate h).Bulletml
+
+  /// いちばん 多く 生まれた コマ。種 が咲いた コマ が そこ に来る
+  static let bloomFrame (snaps: Felt.Snapshot list) =
+    snaps |> List.maxBy (fun s -> s.Born |> List.filter (fun b -> b = s.Frame - 1) |> List.length)
+
   [<Test>]
   member _.``Folds の外 は 5 に倒す``() =
     (HarmonicSpec.create (fun a -> { a with Folds = 2 })).Folds |> should equal 5
@@ -41,6 +51,12 @@ type HarmonicTests() =
     (HarmonicSpec.create id).Arms |> should equal 120
     (HarmonicSpec.create (fun a -> { a with Folds = 3 })).Arms |> should equal 72
     (HarmonicSpec.create (fun a -> { a with Folds = 8 })).Arms |> should equal 160
+    // 咲かせる 数 は 1..8。腕 は その数 で割られ、名指し して も 頭打ち になる
+    (HarmonicSpec.create (fun a -> { a with Blooms = 0 })).Blooms |> should equal 1
+    (HarmonicSpec.create (fun a -> { a with Blooms = 99 })).Blooms |> should equal 8
+    (HarmonicSpec.create (fun a -> { a with Folds = 5; Blooms = 3 })).Arms |> should equal 40
+    (HarmonicSpec.create (fun a -> { a with Folds = 5; Blooms = 8 })).Arms |> should equal 16
+    (HarmonicSpec.create (fun a -> { a with Arms = 999; Blooms = 8 })).Arms |> should equal 20
 
   [<Test>]
   member _.``k=5 は 5 回 対称 で、k=3 より foldScore 5 が高い``() =
@@ -140,6 +156,68 @@ type HarmonicTests() =
   [<Test>]
   member _.``軽い 花 は wait を伸ばさない``() =
     (Harmonic.fit (flower 5)).WaitScale |> should equal 1.0
+
+  /// --- 較正（当てた変異 と、赤くなった点）
+  ///
+  ///   `create` で 腕 を 咲かせる 数 で割らない     同時 に MAX_ALIVE 以下
+  ///   `aliveBound` の `* Blooms` を落とす          同時 に MAX_ALIVE 以下
+  ///   `bloomCenters` で いつも 束ねる              n か所 で咲く
+  ///   `bloomCenters` で 1 つ も 束ねない           n か所 で咲く
+  ///   `bloomCenters` で 全部 の弾 を見る           何 も生まれて いない コマ は 空
+  ///
+  /// 赤く ならなかった 変異：`aliveBound` の 下限（`Arms * Blooms`）から `Blooms` を落とす。
+  /// 腕 の上限 を 咲かせる 数 で割った ので、1 波 は 160 発 を越えられず この 下限 は 効かない
+  [<Test>]
+  member _.``n か所 で咲き、1 は 敵 の位置 のまま``() =
+    for n in [ 1; 3; 5; 8 ] do
+      let h, xml = blooms n 5
+      let snaps = Felt.run 200 xml
+      let s = bloomFrame snaps
+      // 何 も生まれて いない コマ は 空。古い 弾 を束ねて いたら ここ に群 が出る
+      snaps
+      |> List.find (fun q -> q.Frame > s.Frame && q.Born |> List.forall (fun b -> b <> q.Frame - 1))
+      |> Felt.bloomCenters 20.0
+      |> should be Empty
+      let groups = Felt.bloomCenters 20.0 s |> List.filter (fun (_, k) -> k >= h.Arms / 2)
+      groups.Length |> should equal n
+      // 束ねた のは その コマ に生まれた 弾 だけ。古い 弾 を混ぜる と ここ で増える
+      groups |> List.sumBy snd |> should equal (n * h.Arms)
+      // 1 か所 なら 敵 の位置、2 か所 以上 なら 茎 の先 を中心 と する n 角形 の頂点
+      for (x, y), _ in groups do
+        if n = 1 then
+          sqrt ((x - 240.0) ** 2.0 + (y - 80.0) ** 2.0) |> should be (lessThan 20.0)
+        else
+          sqrt ((x - 240.0) ** 2.0 + (y - (80.0 + Scatter.DROP)) ** 2.0)
+          |> should (equalWithin 8.0) Scatter.REACH
+
+  /// 割って 咲かせて も 花弁 は 読める。速さ は 角 の関数 なので、同じ 輪 を 何 か所 で撒いて も
+  /// `foldScore` は 同じ 当てはまり を返す。
+  ///
+  /// 見る のは 撃たれた コマ（`Speeds` が乗る のは そこ）—— 咲いた 場所 を数える `bloomFrame` は
+  /// その 1 つ 後 で、発射角 が 1 つ も無い
+  [<Test>]
+  member _.``割った 花 でも 5 枚 に読める``() =
+    let _, xml = blooms 3 5
+    Felt.foldScore 5 (fullest (Felt.run 200 xml)) |> should be (greaterThan 0.5)
+
+  /// 咲かせる 数 だけ 弾 は増える。`Blooms` が 腕 を割って いない と ここ で越える
+  [<Test>]
+  member _.``n か所 で咲かせて も 同時 に MAX_ALIVE 以下``() =
+    for n in [ 3; 8 ] do
+      let h =
+        HarmonicSpec.create (fun a ->
+          { a with Folds = 8; Speed = 0.0; Amplitude = 2.0; Density = 3.0; Spin = 1.0; Blooms = n })
+      let bound = Harmonic.aliveBound (Harmonic.fit h)
+      bound |> should be (lessThanOrEqualTo (float Consts.MAX_ALIVE))
+      let alive =
+        Scatter.apply n (Harmonic.generate h).Bulletml
+        |> Felt.run 600
+        |> List.map (fun s -> s.Positions.Length)
+        |> List.max
+      alive |> should be (lessThanOrEqualTo Consts.MAX_ALIVE)
+      alive |> should be (greaterThan 0)
+      // 上界 が 咲かせる 数 を見て いない と ここ で下 に潜る。`fit` は この 数 だけ を見て 絞る
+      float alive |> should be (lessThanOrEqualTo bound)
 
   [<Test>]
   member _.``難度 の式 を出す``() =

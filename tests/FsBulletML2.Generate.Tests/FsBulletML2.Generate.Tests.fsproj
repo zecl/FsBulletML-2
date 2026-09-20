@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsBulletML2.Edit\FsBulletML2.Edit.fsproj" />
     <ProjectReference Include="..\..\src\FsBulletML2.Generate\FsBulletML2.Generate.fsproj" />
     <!-- BulletmlWriter.toIndentedXml で出た AST を字 にして 数える -->
     <ProjectReference Include="..\..\src\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
