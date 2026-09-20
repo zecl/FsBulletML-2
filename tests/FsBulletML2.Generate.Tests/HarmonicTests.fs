@@ -11,10 +11,25 @@ type HarmonicTests() =
   static let flower k =
     HarmonicSpec.create (fun a -> { a with Folds = k; Speed = 1.0; Amplitude = 2.0; Arms = 24; Vanishing = true })
 
+  static let figure fig k amp spd =
+    HarmonicSpec.create (fun a ->
+      { a with Figure = fig; Folds = k; Speed = spd; Amplitude = amp; Arms = 24; Vanishing = true })
+
   static let runOf frames (h: HarmonicSpec) = Felt.run frames (Harmonic.generate h).Bulletml
 
   /// いちばん 多く 撃った コマ
   static let fullest (snaps: Felt.Snapshot list) = snaps |> List.maxBy (fun s -> s.Speeds.Length)
+
+  /// 外 と内 の比。速さ の比 が そのまま 同じ コマ の半径 の比 になる
+  static let ratio (s: Felt.Snapshot) = List.max s.Speeds / List.min s.Speeds
+
+  /// 角 の順 に並べた 速さ の 山 の数。輪 なので 頭 と尻 を繋ぐ
+  static let peaks (s: Felt.Snapshot) =
+    let v = List.zip s.Headings s.Speeds |> List.sortBy fst |> List.map snd |> Array.ofList
+    let n = v.Length
+    [ 0 .. n - 1 ]
+    |> List.filter (fun i -> v.[i] > v.[(i + n - 1) % n] && v.[i] >= v.[(i + 1) % n])
+    |> List.length
 
   /// 種 を撒いて 咲かせた 弾幕。撒く のは `Scatter`（中身 を読まない ので 花 に限らない）で、
   /// `Blooms` は 1 輪 の腕 を割る だけ —— 対 で使わない と 弾数 か 密度 の どちら か が壊れる
@@ -70,6 +85,103 @@ type HarmonicTests() =
   member _.``振幅 0 は花 に見えない``() =
     let flat = HarmonicSpec.create (fun a -> { a with Folds = 5; Amplitude = 0.0; Arms = 24 })
     Felt.foldScore 5 (fullest (runOf 90 flat)) |> should be (lessThan 0.3)
+
+  /// --- 較正（輪郭 の 4 札 に当てた 変異 と、赤 くなった 数）
+  ///
+  ///   星 の正規化 sqrt(1-a^2) を 1 に        2 本
+  ///   星 の分岐 を 花 に倒す                  3 本
+  ///   星 の抉り alpha を 0 に                 3 本
+  ///   薔薇 の 半角 を落とす（k t/2 -> k t）   2 本
+  ///   知らない 字 の既定 を Star に           1 本
+  ///   速さ の床 を 0 に                       1 本
+  ///   速さ の天井 を MAX_SPEED そのもの に    1 本
+  ///   recip の 逆数 を そのまま に            3 本
+  ///   recip の ほぼ 0 落とし を外す           1 本
+  ///
+  /// 床 と ほぼ 0 落とし は 1 周 目 が 緑 だった。床 は 見る 門 が無く、
+  /// ほぼ 0 落とし は 材料 が ちょうど 0 で、逆数 の 無限 を `IsFinite` が 先 に落として いた
+  [<Test>]
+  member _.``知らない 字 は Petal``() =
+    Figure.ofString "star" |> should equal Star
+    Figure.ofString "rose" |> should equal Rose
+    Figure.ofString "cardioid" |> should equal Cardioid
+    Figure.ofString "petal" |> should equal Petal
+    Figure.ofString "" |> should equal Petal
+    Figure.ofString "STAR" |> should equal Petal
+    // 書かない 呼び手 は 今 の花 の まま
+    (HarmonicSpec.create id).Figure |> should equal Petal
+
+  [<Test>]
+  member _.``振幅 0 は 4 札 とも 真円``() =
+    for fig in [ Petal; Star; Rose; Cardioid ] do
+      let s = fullest (runOf 90 (figure fig 5 0.0 1.0))
+      ratio s |> should (equalWithin 1e-9) 1.0
+      Felt.foldScore 5 s |> should equal 0.0
+
+  /// α = 0.85 で 外/内 は (1+α)/(1-α) = 12.3。床 で内 が止まる ので 実測 は 11.69。
+  /// 同じ 軸 の 花 は 5.00 —— 星 は 花 の 2 倍 以上 抉れる
+  [<Test>]
+  member _.``星 は 外 と内 が 10 倍 を超える``() =
+    let star = ratio (fullest (runOf 90 (figure Star 5 1.51 0.0)))
+    let petal = ratio (fullest (runOf 90 (figure Petal 5 1.51 0.0)))
+    star |> should be (greaterThan 10.0)
+    star |> should be (greaterThan (petal * 2.0))
+
+  /// 速さ の逆数 が 正弦 に乗る か で 星 を 剥がす。`recip` 単独 では 割れない ——
+  /// 振幅 の浅い 花 も 0.85 まで 出る ので、`fold` との 差 の符号 で見る
+  ///
+  /// --- 較正（4 札 x 振幅 3 段 x 速さ 3 段 = 36 通り の実測）
+  ///
+  ///   星 の差 の 最小      +0.093（amp 1.00 / spd 3.0）
+  ///   星 以外 の 最大      +0.010（ハート。k を 輪郭 に使わない ので fold も recip も ~0）
+  ///   花 の差              -0.027 .. -0.147
+  ///   薔薇 の差            -0.103 .. -0.323
+  ///
+  /// 床 0.05 は その 2 つ の あいだ
+  [<Test>]
+  member _.``星 だけ 逆数 が 正弦 に乗る``() =
+    let diff fig amp =
+      let s = fullest (runOf 90 (figure fig 5 amp 0.0))
+      Felt.recipScore 5 s - Felt.foldScore 5 s
+    diff Star 1.51 |> should be (greaterThan 0.05)
+    diff Star 1.0 |> should be (greaterThan 0.05)
+    diff Petal 1.51 |> should be (lessThan 0.0)
+    diff Rose 1.51 |> should be (lessThan 0.0)
+    diff Cardioid 1.51 |> should be (lessThan 0.05)
+
+  /// `|cos(kθ/2)|` の 山 は 1 周 に k 個。k が偶数 でも 倍 に ならない
+  [<Test>]
+  member _.``薔薇 の葉 は k 枚 で、偶数 でも 倍 に ならない``() =
+    for k in [ 3; 5; 8 ] do
+      peaks (fullest (runOf 90 (figure Rose k 2.0 1.0))) |> should equal k
+
+  /// 薔薇 は 谷 に折り目 が立つ ぶん だけ 花 より 正弦 から 離れる。
+  /// 輪郭 は 花 に近い（実測 0.949 対 1.000）ので、剥がす 材料 は 逆数 のほう
+  [<Test>]
+  member _.``薔薇 は 花 より 正弦 から 離れる``() =
+    let s fig = fullest (runOf 90 (figure fig 5 1.51 0.0))
+    Felt.foldScore 5 (s Rose) |> should be (lessThan (Felt.foldScore 5 (s Petal)))
+    Felt.recipScore 5 (s Rose) |> should be (lessThan (Felt.recipScore 5 (s Petal)))
+
+  /// 床 を割る と 敵 の近く に居座る。ハート は 振幅 2.0 で 谷 が ちょうど 0 に落ちる ので、
+  /// 床 を外した こと が ここ に出る
+  [<Test>]
+  member _.``速さ は 床 と 天井 の あいだ``() =
+    for fig in [ Petal; Star; Rose; Cardioid ] do
+      for spd in [ 0.0; 1.0; 3.0 ] do
+        let s = fullest (runOf 90 (figure fig 5 2.0 spd))
+        List.min s.Speeds |> should be (greaterThanOrEqualTo 0.38)
+        List.max s.Speeds |> should be (lessThanOrEqualTo (float Consts.MAX_SPEED))
+
+  /// `Speed` が高い 札 は 星 の山 が `MAX_SPEED` で 平ら に潰れ、★ が 角 の丸い 多角形 になる。
+  /// 潰れた こと は 弾数 にも 形 の門 にも 出ない ので、速さ の最大 と 外/内 で止める
+  [<Test>]
+  member _.``速さ の高い 星 は 山 が 天井 で潰れる``() =
+    let hot = fullest (runOf 90 (figure Star 5 1.51 3.0))
+    let cool = fullest (runOf 90 (figure Star 5 1.51 0.0))
+    List.max hot.Speeds |> should (equalWithin 1e-6) (float Consts.MAX_SPEED)
+    List.max cool.Speeds |> should be (lessThan (float Consts.MAX_SPEED))
+    ratio hot |> should be (lessThan (ratio cool))
 
   /// 1 波 の弾 が全部 1 コマ に出る。本数 は Arms
   [<Test>]

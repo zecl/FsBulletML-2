@@ -244,14 +244,17 @@ let private solve3 (a: float[,]) (b: float[]) : float[] option =
               m.[r, j] <- m.[r, j] - k * m.[c, j]
   if ok then Some [| for i in 0 .. 2 -> m.[i, 3] / m.[i, i] |] else None
 
-/// 速さ を `a + b sin kθ + c cos kθ` に最小二乗 で当てた 決定係数 R²。
+/// 速さ を `f` で写した 値 を `a + b sin kθ + c cos kθ` に最小二乗 で当てた 決定係数 R²。
 ///
-/// 速さ の分散 が ~0 なら 0（0/0 の NaN は どの 比較 も偽 になる）
-let foldScore (k: int) (s: Snapshot) : float =
-  let pts = List.zip s.Headings s.Speeds |> Array.ofList
+/// 写した 値 の分散 が ~0 なら 0（0/0 の NaN は どの 比較 も偽 になる）
+let private fitScore (k: int) (f: float -> float) (s: Snapshot) : float =
+  let pts =
+    List.zip s.Headings s.Speeds
+    |> List.filter (fun (_, v) -> System.Double.IsFinite(f v))
+    |> Array.ofList
   if pts.Length < 3 then 0.0
   else
-    let ys = pts |> Array.map snd
+    let ys = pts |> Array.map (snd >> f)
     let sst = variance ys * float ys.Length
     if sst < 1e-12 then 0.0
     else
@@ -267,3 +270,14 @@ let foldScore (k: int) (s: Snapshot) : float =
               let e = y - (w.[0] * r.[0] + w.[1] * r.[1] + w.[2] * r.[2])
               acc + e * e) 0.0 rows ys
           max 0.0 (min 1.0 (1.0 - sse / sst))
+
+/// 速さ そのもの の当てはまり。花（`r0 + A sin kθ`）は 1 に張り付く
+let foldScore (k: int) (s: Snapshot) : float = fitScore k id s
+
+/// 速さ の逆数 の当てはまり。星（`r0 sqrt(1-α²) / (1 + α cos kθ)`）は
+/// 逆数 が ちょうど 正弦 なので 1 に張り付く。
+///
+/// 単独 では 割れない —— 振幅 の浅い 花 は 1/(r0 + A sin) も ほぼ 正弦 で 高く 出る。
+/// 星 を花 から 剥がす のは `recipScore - foldScore` の符号
+let recipScore (k: int) (s: Snapshot) : float =
+  fitScore k (fun v -> if abs v < 1e-6 then nan else 1.0 / v) s
