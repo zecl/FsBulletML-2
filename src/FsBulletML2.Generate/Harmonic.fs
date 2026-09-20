@@ -142,11 +142,28 @@ module Harmonic =
 
   let private rankFactor = 0.3
 
-  /// 星 の抉り。外 と内 の比 は (1+α)/(1-α) で r0 に依らない ので、ここ だけ で 見え方 が決まる ——
-  /// 0.85 で 12.3 倍。分母 が 0 に近づく ので これ 以上 は 上げない。
-  /// 割る 1.5 は 目盛り の側 の都合 —— 面 は `amplitude` を 1.0 未満 に落とさない ので、
-  /// 2.0 で割る と 収録 の 1.51 が 0.64（比 4.6 倍）に しか ならず ★ に読めなかった
-  let private alphaOf (h: HarmonicSpec) = 0.85 * min 1.0 (h.Amplitude / 1.5)
+  /// 正 星型 多角形 の 内/外。0.382 は 正 五芒星（辺 を 伸ばす と 隣 の 頂点 に当たる 比）
+  let private STAR_INNER = 0.382
+
+  /// 外 の頂点 と 内 の頂点 を 直線 で結んだ 輪郭。t = 0 が 外 の頂点。
+  ///
+  /// 逆数 余弦（r = sqrt(1-α²)/(1 + α cos kθ)）は 使わない —— α を どこ に振って も
+  /// ★ に ならなかった。0.85 では 細い トゲ 5 本 と 中心 の ダマ（外/内 12.3 の 閃光）、
+  /// 0.45 では 外/内 が ★ と同じ 2.6 でも 山 が 丸い 5 弁 の花。
+  /// 滑らかな 曲線 から 直線 の 辺 は 出ない
+  let private starAt (k: float) (t: float) =
+    let b = Math.PI / k
+    let u = ((t % (2.0 * b)) + 2.0 * b) % (2.0 * b)
+    let a = if u <= b then u else 2.0 * b - u
+    STAR_INNER * sin b / (sin a + STAR_INNER * sin (b - a))
+
+  /// `starAt` の 1 周 平均。k で変わる ので 先 に 4 通り 持つ（`Folds` は 3 / 5 / 7 / 8）
+  let private starMean =
+    let n = 720
+    [ 3; 5; 7; 8 ]
+    |> List.map (fun k ->
+        k, (Seq.init n (fun i -> starAt (float k) (float i * 2.0 * Math.PI / float n)) |> Seq.average))
+    |> Map.ofList
 
   /// ハート の くびれ。1.0 で 谷 が 床 に着き、0 は 真円。
   /// 割る 1.5 は 星 と同じ 都合 —— 面 が返す 1.2 では 0.6 に しか ならない
@@ -190,8 +207,11 @@ module Harmonic =
       match h.Figure with
       | Petal -> r * (1.0 + a * sin (k * t + h.Phase))
       | Star ->
-        let al = alphaOf h
-        r * sqrt (1.0 - al * al) / (1.0 + al * cos (k * t + h.Phase))
+        // 振幅 は 星 らしさ。0 は 真円、1 で 正 星型 多角形 —— 素 の 多角形 は
+        // 内 と外 が 同じ とき でも 2k 角形 で、真円 に ならない
+        let w = min 1.0 (h.Amplitude / 1.5)
+        let m = defaultArg (Map.tryFind h.Folds starMean) 1.0
+        r * ((1.0 - w) + w * starAt k (t + h.Phase) / m)
       | Rose -> r * (1.0 + a * (2.0 * abs (cos (k * t / 2.0 + h.Phase)) - 1.0))
       | Heart ->
         let b = betaOf h

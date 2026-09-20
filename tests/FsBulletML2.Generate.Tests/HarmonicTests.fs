@@ -29,6 +29,26 @@ type HarmonicTests() =
   /// 外 と内 の比。速さ の比 が そのまま 同じ コマ の半径 の比 になる
   static let ratio (s: Felt.Snapshot) = List.max s.Speeds / List.min s.Speeds
 
+  /// 輪郭 を 角 の順 に並べ、続く 3 点 の 真ん中 が 両隣 を結ぶ 線 から 離れる 距離。
+  /// 山 の半径 で割った 値 の 中央値 —— 辺 が 直線 なら 0 に近い
+  static let bend (s: Felt.Snapshot) =
+    let pts =
+      List.zip s.Headings s.Speeds
+      |> List.sortBy fst
+      |> List.map (fun (h, r) -> r * sin h, -(r * cos h))
+      |> Array.ofList
+    let n = pts.Length
+    let hi = List.max s.Speeds
+    let d i =
+      let (ax, ay) = pts.[(i + n - 1) % n]
+      let (bx, by) = pts.[i]
+      let (cx, cy) = pts.[(i + 1) % n]
+      let ux, uy = cx - ax, cy - ay
+      let len = sqrt (ux * ux + uy * uy)
+      if len < 1e-9 then 0.0 else abs ((bx - ax) * uy - (by - ay) * ux) / len / hi
+    let all = [ 0 .. n - 1 ] |> List.map d |> List.sort
+    all.[n / 2]
+
   /// 角 の順 に並べた 速さ の 山 の数。輪 なので 頭 と尻 を繋ぐ
   static let peaks (s: Felt.Snapshot) =
     let v = List.zip s.Headings s.Speeds |> List.sortBy fst |> List.map snd |> Array.ofList
@@ -131,24 +151,43 @@ type HarmonicTests() =
       ratio s |> should (equalWithin 1e-9) 1.0
       Felt.foldScore 5 s |> should equal 0.0
 
-  /// α = 0.85 で 外/内 は (1+α)/(1-α) = 12.3。床 で内 が止まる ので 実測 は 11.69。
-  /// 同じ 軸 の 花 は 5.00 —— 星 は 花 の 2 倍 以上 抉れる
+  /// 外/内 は 内/外 の 逆数 —— 1 / 0.382 = 2.618。星 らしさ は 比 ではなく 辺 が 直線 か で決まる。
+  ///
+  /// 逆数 余弦 は 外/内 を 12 倍 まで 開ける が、それ でも ★ に ならなかった ——
+  /// 細い トゲ 5 本 と 中心 の ダマ。比 を ★ と同じ 2.6 に下げる と 今度 は 山 が 丸い 5 弁 の花
   [<Test>]
-  member _.``星 は 外 と内 が 10 倍 を超える``() =
-    let star = ratio (fullest (runOf 90 (figure Star 5 1.51 0.0)))
-    let petal = ratio (fullest (runOf 90 (figure Petal 5 1.51 0.0)))
-    star |> should be (greaterThan 10.0)
-    star |> should be (greaterThan (petal * 2.0))
+  member _.``星 の 外 と内 は 正 五芒星 の 比``() =
+    for spd in [ 0.0; 1.0; 3.0 ] do
+      ratio (fullest (runOf 90 (wide Star 5 1.51 spd))) |> should (equalWithin 0.15) 2.618
+
+  /// 続く 3 点 の 真ん中 が 両隣 を結ぶ 線 から どれだけ 離れるか の 中央値 を、山 の半径 で割る。
+  /// 辺 が 直線 なら 0 に近い。
+  ///
+  /// --- 較正（96 発。振幅 1.0 以上 の 9 通り）
+  ///
+  ///   星       0.00045 .. 0.00219
+  ///   ハート   0.00159 .. 0.00229
+  ///   薔薇     0.00725 .. 0.00979
+  ///   花       0.00770 .. 0.00982
+  ///
+  /// 床 0.005 は 星 と 花 の あいだ。ハート とは 分けない —— くびれ が 1 つ で 辺 が 長い ので
+  /// 同じく 曲がり が 小さい。あちら と 分ける のは 尖り の門 のほう。
+  /// 振幅 0 の 真円 も 0.00214 なので、当てる のは 振幅 を入れた 木 だけ
+  [<Test>]
+  member _.``星 の 辺 は 直線``() =
+    bend (fullest (runOf 90 (wide Star 5 1.51 1.0))) |> should be (lessThan 0.005)
+    bend (fullest (runOf 90 (wide Petal 5 1.51 1.0))) |> should be (greaterThan 0.005)
+    bend (fullest (runOf 90 (wide Rose 5 1.51 1.0))) |> should be (greaterThan 0.005)
 
   /// 速さ の逆数 が 正弦 に乗る か で 星 を 剥がす。`recip` 単独 では 割れない ——
   /// 振幅 の浅い 花 も 0.85 まで 出る ので、`fold` との 差 の符号 で見る
   ///
   /// --- 較正（4 札 x 振幅 3 段 x 速さ 3 段 = 36 通り の実測）
   ///
-  ///   星 の差 の 最小      +0.093（amp 1.00 / spd 3.0）
-  ///   星 以外 の 最大      +0.035（ハート。k を 輪郭 に使わない ので fold も recip も ~0）
-  ///   花 の差              -0.027 .. -0.147
-  ///   薔薇 の差            -0.103 .. -0.323
+  ///   星 の差 の 最小      +0.083（振幅 1.00）
+  ///   星 以外 の 最大      +0.021（ハート。k を 輪郭 に使わない ので fold も recip も ~0）
+  ///   花 の差              -0.027 .. -0.146
+  ///   薔薇 の差            -0.096 .. -0.286
   ///
   /// 床 0.05 は その 2 つ の あいだ
   [<Test>]
@@ -197,20 +236,24 @@ type HarmonicTests() =
     tip (shot Petal) |> should be (greaterThan 0.15)
     tip (shot Rose) |> should be (greaterThan 0.15)
 
-  /// 平均 は 4 札 とも r0 の 近く。ハート の 素 の式 は 山 が 4 / 谷 が 0 なので、
-  /// `HEART_MEAN` で 割らない と ハート だけ 2 倍 速い ——
-  /// 形 は 変わらない ので 尖り の門 も 比 の門 も 通って しまう
+  /// 平均 は r0 の まま。星 と ハート は 素 の式 の 高さ が r0 と 揃って いない ので
+  /// 1 周 平均 で割って 戻す —— 割り忘れ は 形 を変えず に 速さ だけ を動かす ので、
+  /// 尖り の門 も 比 の門 も 通って しまう（星 は 0.55 倍、ハート は 2 倍）
   ///
   /// --- 較正（平均 の速さ。振幅 1.51）
   ///
-  ///   速さ 0    花 1.300   ハート 1.302
-  ///   速さ 1    花 1.950   ハート 1.953
-  ///   速さ 3    花 3.250   ハート 3.244
+  ///   速さ 0    花 1.300   星 1.300   ハート 1.302   薔薇 1.478
+  ///   速さ 1    花 1.950   星 1.950   ハート 1.953   薔薇 2.305
+  ///   速さ 3    花 3.250   星 3.251   ハート 3.244   薔薇 3.679
+  ///
+  /// 薔薇 は 外す。`2|cos| - 1` の 1 周 平均 が 0 でなく 0.273 なので 13.7% 速い ——
+  /// 谷 を 床 に近づけず に 戻す 方法 が無く、いま は 測って 置いて いる だけ
   [<Test>]
-  member _.``ハート の 速さ は 花 と 揃う``() =
+  member _.``速さ の 平均 は 花 と 揃う``() =
     for spd in [ 0.0; 1.0; 3.0 ] do
       let mean fig = List.average (fullest (runOf 90 (wide fig 5 1.51 spd))).Speeds
-      mean Heart / mean Petal |> should (equalWithin 0.03) 1.0
+      for fig in [ Star; Heart ] do
+        mean fig / mean Petal |> should (equalWithin 0.03) 1.0
 
   /// くびれ は 1 点。床 から 立ち上げず に 掛ける と、谷 の まわり が 床 で 切られて
   /// 平ら になる —— 96 発 の うち 谷 に並ぶ 数 で出る（花 は k 個、星 は 最大 17 個）
@@ -238,15 +281,17 @@ type HarmonicTests() =
         List.min s.Speeds |> should be (greaterThanOrEqualTo 0.38)
         List.max s.Speeds |> should be (lessThanOrEqualTo (float Consts.MAX_SPEED))
 
-  /// `Speed` が高い 札 は 星 の山 が `MAX_SPEED` で 平ら に潰れ、★ が 角 の丸い 多角形 になる。
-  /// 潰れた こと は 弾数 にも 形 の門 にも 出ない ので、速さ の最大 と 外/内 で止める
+  /// 折れ線 に替えて 天井 に 当たらなく なった。逆数 余弦 の 頃 は `Speed` の高い 札 で
+  /// 山 が `MAX_SPEED` に 貼り付き、★ が 角 の丸い 多角形 に 潰れて いた ——
+  /// いま は 山 が r0 の 1.82 倍 止まり で、`Speed` を 振って も 外/内 が 動かない。
+  /// 天井 そのもの を見る のは `速さ は 床 と 天井 の あいだ` の側
   [<Test>]
-  member _.``速さ の高い 星 は 山 が 天井 で潰れる``() =
-    let hot = fullest (runOf 90 (figure Star 5 1.51 3.0))
-    let cool = fullest (runOf 90 (figure Star 5 1.51 0.0))
-    List.max hot.Speeds |> should (equalWithin 1e-6) (float Consts.MAX_SPEED)
-    List.max cool.Speeds |> should be (lessThan (float Consts.MAX_SPEED))
-    ratio hot |> should be (lessThan (ratio cool))
+  member _.``星 の 外/内 は 速さ で 動かない``() =
+    let of_ spd = ratio (fullest (runOf 90 (wide Star 5 1.51 spd)))
+    let hot, cool = of_ 3.0, of_ 0.0
+    abs (hot - cool) |> should be (lessThan 0.1)
+    List.max (fullest (runOf 90 (wide Star 5 1.51 3.0))).Speeds
+    |> should be (lessThan (float Consts.MAX_SPEED))
 
   /// 1 波 の弾 が全部 1 コマ に出る。本数 は Arms
   [<Test>]
