@@ -212,7 +212,14 @@ module Harmonic =
         let w = min 1.0 (h.Amplitude / 1.5)
         let m = defaultArg (Map.tryFind h.Folds starMean) 1.0
         r * ((1.0 - w) + w * starAt k (t + h.Phase) / m)
-      | Rose -> r * (1.0 + a * (2.0 * abs (cos (k * t / 2.0 + h.Phase)) - 1.0))
+      // 谷 を 床 まで 落とす。envelope を 花 と 同じ に すると 波打った 円 に しか ならず、
+      // 内/外 が 花 と 揃って しまった（どちら も 0.20。実測 で 見分け が つかない）——
+      // 葉 が 中心 で 分かれる のが 薔薇 なので、谷 は 0 に する。
+      // `|cos|` の 1 周 平均 は 2/π。π/2 を掛けて 平均 を 1 に戻す
+      | Rose ->
+        let w = min 1.0 (h.Amplitude / 1.5)
+        let u = Math.PI / 2.0 * abs (cos (k * t / 2.0 + h.Phase))
+        SPEED_LO + (r - SPEED_LO) * ((1.0 - w) + w * u)
       | Heart ->
         let b = betaOf h
         SPEED_LO + (r - SPEED_LO) * ((1.0 - b) + b * heartAt (t + h.Phase) / HEART_MEAN)
