@@ -15,6 +15,12 @@ type HarmonicTests() =
     HarmonicSpec.create (fun a ->
       { a with Figure = fig; Folds = k; Speed = spd; Amplitude = amp; Arms = 24; Vanishing = true })
 
+  /// 輪郭 の 尖り を見る 側。24 発 では 谷 と 山 の あいだ が 3 発 しか 無く、
+  /// 「山 の 8 割 より 速い 弾 の 割合」が 刻み の粗さ に 埋もれる
+  static let wide fig k amp spd =
+    HarmonicSpec.create (fun a ->
+      { a with Figure = fig; Folds = k; Speed = spd; Amplitude = amp; Arms = 96; Vanishing = true })
+
   static let runOf frames (h: HarmonicSpec) = Felt.run frames (Harmonic.generate h).Bulletml
 
   /// いちばん 多く 撃った コマ
@@ -97,14 +103,21 @@ type HarmonicTests() =
   ///   速さ の天井 を MAX_SPEED そのもの に    1 本
   ///   recip の 逆数 を そのまま に            3 本
   ///   recip の ほぼ 0 落とし を外す           1 本
+  ///   ハート を 素 の カージオイド に戻す      2 本
+  ///   ハート を HEART_MEAN で 割らない        1 本
+  ///   ハート の くびれ beta を 0 に           5 本
+  ///   ハート の くびれ を 真下 に             1 本
+  ///   ハート を 床 から 立ち上げない          1 本
   ///
-  /// 床 と ほぼ 0 落とし は 1 周 目 が 緑 だった。床 は 見る 門 が無く、
-  /// ほぼ 0 落とし は 材料 が ちょうど 0 で、逆数 の 無限 を `IsFinite` が 先 に落として いた
+  /// 1 周 目 が 緑 だった のは 4 つ。床 は 見る 門 が無く、ほぼ 0 落とし は 材料 が
+  /// ちょうど 0 で 逆数 の 無限 を `IsFinite` が 先 に落として いた。
+  /// ハート の 2 つ は どちら も 形 を変えず に 通る 変異 —— 平均 で 割らない のは
+  /// 速さ だけ が 2 倍 に なり、床 から 立ち上げない のは 谷 が 床 で 切られて 平ら になる
   [<Test>]
   member _.``知らない 字 は Petal``() =
     Figure.ofString "star" |> should equal Star
     Figure.ofString "rose" |> should equal Rose
-    Figure.ofString "cardioid" |> should equal Cardioid
+    Figure.ofString "cardioid" |> should equal Heart
     Figure.ofString "petal" |> should equal Petal
     Figure.ofString "" |> should equal Petal
     Figure.ofString "STAR" |> should equal Petal
@@ -113,7 +126,7 @@ type HarmonicTests() =
 
   [<Test>]
   member _.``振幅 0 は 4 札 とも 真円``() =
-    for fig in [ Petal; Star; Rose; Cardioid ] do
+    for fig in [ Petal; Star; Rose; Heart ] do
       let s = fullest (runOf 90 (figure fig 5 0.0 1.0))
       ratio s |> should (equalWithin 1e-9) 1.0
       Felt.foldScore 5 s |> should equal 0.0
@@ -133,7 +146,7 @@ type HarmonicTests() =
   /// --- 較正（4 札 x 振幅 3 段 x 速さ 3 段 = 36 通り の実測）
   ///
   ///   星 の差 の 最小      +0.093（amp 1.00 / spd 3.0）
-  ///   星 以外 の 最大      +0.010（ハート。k を 輪郭 に使わない ので fold も recip も ~0）
+  ///   星 以外 の 最大      +0.035（ハート。k を 輪郭 に使わない ので fold も recip も ~0）
   ///   花 の差              -0.027 .. -0.147
   ///   薔薇 の差            -0.103 .. -0.323
   ///
@@ -147,7 +160,7 @@ type HarmonicTests() =
     diff Star 1.0 |> should be (greaterThan 0.05)
     diff Petal 1.51 |> should be (lessThan 0.0)
     diff Rose 1.51 |> should be (lessThan 0.0)
-    diff Cardioid 1.51 |> should be (lessThan 0.05)
+    diff Heart 1.51 |> should be (lessThan 0.05)
 
   /// `|cos(kθ/2)|` の 山 は 1 周 に k 個。k が偶数 でも 倍 に ならない
   [<Test>]
@@ -163,11 +176,63 @@ type HarmonicTests() =
     Felt.foldScore 5 (s Rose) |> should be (lessThan (Felt.foldScore 5 (s Petal)))
     Felt.recipScore 5 (s Rose) |> should be (lessThan (Felt.recipScore 5 (s Petal)))
 
-  /// 床 を割る と 敵 の近く に居座る。ハート は 振幅 2.0 で 谷 が ちょうど 0 に落ちる ので、
+  /// ハート の 下 は 尖る。素 の カージオイド（r = 1 - cos θ）に 戻す と ここ が 赤 になる ——
+  /// あれ は 尖点 が 在る だけ で 裾 が 広く、96 発 で描く と 卵 に見えた。
+  ///
+  /// --- 較正（山 の 8 割 より 速い 弾 の 割合。振幅 3 段 x 速さ 3 段 の 実測）
+  ///
+  ///   ハート   0.031 .. 0.115
+  ///   星       0.094 .. 0.219
+  ///   花       0.323 .. 0.448
+  ///   薔薇     0.448 .. 0.594
+  ///
+  /// 床 0.15 は ハート と 花 の あいだ。星 と は 分けない —— 分ける のは 逆数 の門 のほう
+  [<Test>]
+  member _.``ハート の 下 は 尖る``() =
+    let tip (s: Felt.Snapshot) =
+      let hi = List.max s.Speeds
+      float (s.Speeds |> List.filter (fun v -> v >= 0.8 * hi) |> List.length) / float s.Speeds.Length
+    let shot fig = fullest (runOf 90 (wide fig 5 1.51 1.0))
+    tip (shot Heart) |> should be (lessThan 0.15)
+    tip (shot Petal) |> should be (greaterThan 0.15)
+    tip (shot Rose) |> should be (greaterThan 0.15)
+
+  /// 平均 は 4 札 とも r0 の 近く。ハート の 素 の式 は 山 が 4 / 谷 が 0 なので、
+  /// `HEART_MEAN` で 割らない と ハート だけ 2 倍 速い ——
+  /// 形 は 変わらない ので 尖り の門 も 比 の門 も 通って しまう
+  ///
+  /// --- 較正（平均 の速さ。振幅 1.51）
+  ///
+  ///   速さ 0    花 1.300   ハート 1.302
+  ///   速さ 1    花 1.950   ハート 1.953
+  ///   速さ 3    花 3.250   ハート 3.244
+  [<Test>]
+  member _.``ハート の 速さ は 花 と 揃う``() =
+    for spd in [ 0.0; 1.0; 3.0 ] do
+      let mean fig = List.average (fullest (runOf 90 (wide fig 5 1.51 spd))).Speeds
+      mean Heart / mean Petal |> should (equalWithin 0.03) 1.0
+
+  /// くびれ は 1 点。床 から 立ち上げず に 掛ける と、谷 の まわり が 床 で 切られて
+  /// 平ら になる —— 96 発 の うち 谷 に並ぶ 数 で出る（花 は k 個、星 は 最大 17 個）
+  [<Test>]
+  member _.``ハート の くびれ は 1 点``() =
+    let s = fullest (runOf 90 (wide Heart 5 1.51 1.0))
+    let lo = List.min s.Speeds
+    s.Speeds |> List.filter (fun v -> v <= lo + 1e-6) |> List.length |> should equal 1
+
+  /// くびれ は 真上。撒く 向き が 回って いない こと も ここ で見る
+  [<Test>]
+  member _.``ハート の くびれ は 真上``() =
+    let s = fullest (runOf 90 (wide Heart 5 1.51 1.0))
+    let head, _ = List.zip s.Headings s.Speeds |> List.minBy snd
+    // 0 と 2π の 継ぎ目 を またぐ ので、どちら の端 でも いい
+    min head (2.0 * System.Math.PI - head) |> should be (lessThan 0.2)
+
+  /// 床 を割る と 敵 の近く に居座る。ハート は 振幅 2.0 で 谷 が 床 に着く ので、
   /// 床 を外した こと が ここ に出る
   [<Test>]
   member _.``速さ は 床 と 天井 の あいだ``() =
-    for fig in [ Petal; Star; Rose; Cardioid ] do
+    for fig in [ Petal; Star; Rose; Heart ] do
       for spd in [ 0.0; 1.0; 3.0 ] do
         let s = fullest (runOf 90 (figure fig 5 2.0 spd))
         List.min s.Speeds |> should be (greaterThanOrEqualTo 0.38)

@@ -9,22 +9,25 @@ open FsBulletML2.Generate.Consts
 ///
 /// `Petal` は 山 も 谷 も 丸い。`Star` は 逆数 余弦 で 山 が尖り 谷 が抉れる。
 /// `Rose` は `|cos(kθ/2)|` で 谷 に折り目 が立つ（k が偶数 でも 枚数 は倍 に ならない）。
-/// `Cardioid` は k を 輪郭 に使わず、1 周 に 1 つ の くびれ
+/// `Heart` は k を 輪郭 に使わず、1 周 に 1 つ の くびれ
 type Figure =
   | Petal
   | Star
   | Rose
-  | Cardioid
+  | Heart
 
 [<RequireQualifiedAccess>]
 module Figure =
 
-  /// 知らない 字 は `Petal`。`figure` を書かない 呼び手 は 今 の花 の まま
+  /// 知らない 字 は `Petal`。`figure` を書かない 呼び手 は 今 の花 の まま。
+  ///
+  /// `cardioid` は `heart` の 旧名 として 受ける —— 素 の r = 1 - cos θ は
+  /// 卵 に しか 見えなかった ので 式 を替えた が、字 で名指し して いた 側 を落とさない
   let ofString (s: string) =
     match s with
     | "star" -> Star
     | "rose" -> Rose
-    | "cardioid" -> Cardioid
+    | "heart" | "cardioid" -> Heart
     | _ -> Petal
 
   let toString (f: Figure) =
@@ -32,7 +35,7 @@ module Figure =
     | Petal -> "petal"
     | Star -> "star"
     | Rose -> "rose"
-    | Cardioid -> "cardioid"
+    | Heart -> "heart"
 
 /// 花 の軸 の生値。`HarmonicSpec.create` に渡す 途中 の形 で、clamp を通って いない。
 ///
@@ -145,8 +148,25 @@ module Harmonic =
   /// 2.0 で割る と 収録 の 1.51 が 0.64（比 4.6 倍）に しか ならず ★ に読めなかった
   let private alphaOf (h: HarmonicSpec) = 0.85 * min 1.0 (h.Amplitude / 1.5)
 
-  /// ハート の くびれ。1.0 で 谷 が 0 に落ちる（床 で止まる）
-  let private betaOf (h: HarmonicSpec) = min 1.0 (h.Amplitude / 2.0)
+  /// ハート の くびれ。1.0 で 谷 が 床 に着き、0 は 真円。
+  /// 割る 1.5 は 星 と同じ 都合 —— 面 が返す 1.2 では 0.6 に しか ならない
+  let private betaOf (h: HarmonicSpec) = min 1.0 (h.Amplitude / 1.5)
+
+  /// ハート の 素 の輪郭。谷 が 0、山 が 4。t = 0 が くびれ（真上）。
+  ///
+  /// 素 の カージオイド（r = 1 - cos θ）は 使わない —— 尖点 は 在る が 二つ山 に ならず、
+  /// 96 発 で描く と 上 が へこんだ 卵 に見えた（実測。床 から 立ち上げて 外/内 を 9 倍 に
+  /// しても 形 は 変わらなかった ので、深さ ではなく 式 の問題）
+  let private heartAt (t: float) =
+    let p = Math.PI / 2.0 - t
+    let s = sin p
+    max 0.0 (2.0 - 2.0 * s + s * sqrt (abs (cos p)) / (s + 1.4))
+
+  /// `heartAt` の 1 周 平均。割って 平均 を 1 に戻す ——
+  /// 割らない と ハート だけ が 他 の 3 札 より 2 倍 速い
+  let private HEART_MEAN =
+    let n = 720
+    Seq.init n (fun i -> heartAt (float i * 2.0 * Math.PI / float n)) |> Seq.average
 
   /// 速さ の床。割る と 敵 の近く に居座る。星 の内 の頂点 は ここ に当たる ——
   /// r0 = 1・α = 0.85 で 素 の谷 は 0.285 で、床 で止めて も 外/内 は 11.7 倍 残る
@@ -173,7 +193,9 @@ module Harmonic =
         let al = alphaOf h
         r * sqrt (1.0 - al * al) / (1.0 + al * cos (k * t + h.Phase))
       | Rose -> r * (1.0 + a * (2.0 * abs (cos (k * t / 2.0 + h.Phase)) - 1.0))
-      | Cardioid -> r * (1.0 - betaOf h * cos (t + h.Phase))
+      | Heart ->
+        let b = betaOf h
+        SPEED_LO + (r - SPEED_LO) * ((1.0 - b) + b * heartAt (t + h.Phase) / HEART_MEAN)
     max SPEED_LO (min speedHi raw)
 
   /// 頭 から i 本 目 の角（度）と速さ（`$rank = 0`）
