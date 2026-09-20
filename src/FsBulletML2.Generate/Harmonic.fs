@@ -9,22 +9,25 @@ open FsBulletML2.Generate.Consts
 ///
 /// `Petal` は 山 も 谷 も 丸い。`Star` は 逆数 余弦 で 山 が尖り 谷 が抉れる。
 /// `Rose` は `|cos(kθ/2)|` で 谷 に折り目 が立つ（k が偶数 でも 枚数 は倍 に ならない）。
-/// `Cardioid` は k を 輪郭 に使わず、1 周 に 1 つ の くびれ
+/// `Heart` は k を 輪郭 に使わず、1 周 に 1 つ の くびれ
 type Figure =
   | Petal
   | Star
   | Rose
-  | Cardioid
+  | Heart
 
 [<RequireQualifiedAccess>]
 module Figure =
 
-  /// 知らない 字 は `Petal`。`figure` を書かない 呼び手 は 今 の花 の まま
+  /// 知らない 字 は `Petal`。`figure` を書かない 呼び手 は 今 の花 の まま。
+  ///
+  /// `cardioid` は `heart` の 旧名 として 受ける —— 素 の r = 1 - cos θ は
+  /// 卵 に しか 見えなかった ので 式 を替えた が、字 で名指し して いた 側 を落とさない
   let ofString (s: string) =
     match s with
     | "star" -> Star
     | "rose" -> Rose
-    | "cardioid" -> Cardioid
+    | "heart" | "cardioid" -> Heart
     | _ -> Petal
 
   let toString (f: Figure) =
@@ -32,7 +35,7 @@ module Figure =
     | Petal -> "petal"
     | Star -> "star"
     | Rose -> "rose"
-    | Cardioid -> "cardioid"
+    | Heart -> "heart"
 
 /// 花 の軸 の生値。`HarmonicSpec.create` に渡す 途中 の形 で、clamp を通って いない。
 ///
@@ -139,14 +142,48 @@ module Harmonic =
 
   let private rankFactor = 0.3
 
-  /// 星 の抉り。外 と内 の比 は (1+α)/(1-α) で r0 に依らない ので、ここ だけ で 見え方 が決まる ——
-  /// 0.85 で 12.3 倍。分母 が 0 に近づく ので これ 以上 は 上げない。
-  /// 割る 1.5 は 目盛り の側 の都合 —— 面 は `amplitude` を 1.0 未満 に落とさない ので、
-  /// 2.0 で割る と 収録 の 1.51 が 0.64（比 4.6 倍）に しか ならず ★ に読めなかった
-  let private alphaOf (h: HarmonicSpec) = 0.85 * min 1.0 (h.Amplitude / 1.5)
+  /// 正 星型 多角形 の 内/外。0.382 は 正 五芒星（辺 を 伸ばす と 隣 の 頂点 に当たる 比）
+  let private STAR_INNER = 0.382
 
-  /// ハート の くびれ。1.0 で 谷 が 0 に落ちる（床 で止まる）
-  let private betaOf (h: HarmonicSpec) = min 1.0 (h.Amplitude / 2.0)
+  /// 外 の頂点 と 内 の頂点 を 直線 で結んだ 輪郭。t = 0 が 外 の頂点。
+  ///
+  /// 逆数 余弦（r = sqrt(1-α²)/(1 + α cos kθ)）は 使わない —— α を どこ に振って も
+  /// ★ に ならなかった。0.85 では 細い トゲ 5 本 と 中心 の ダマ（外/内 12.3 の 閃光）、
+  /// 0.45 では 外/内 が ★ と同じ 2.6 でも 山 が 丸い 5 弁 の花。
+  /// 滑らかな 曲線 から 直線 の 辺 は 出ない
+  let private starAt (k: float) (t: float) =
+    let b = Math.PI / k
+    let u = ((t % (2.0 * b)) + 2.0 * b) % (2.0 * b)
+    let a = if u <= b then u else 2.0 * b - u
+    STAR_INNER * sin b / (sin a + STAR_INNER * sin (b - a))
+
+  /// `starAt` の 1 周 平均。k で変わる ので 先 に 4 通り 持つ（`Folds` は 3 / 5 / 7 / 8）
+  let private starMean =
+    let n = 720
+    [ 3; 5; 7; 8 ]
+    |> List.map (fun k ->
+        k, (Seq.init n (fun i -> starAt (float k) (float i * 2.0 * Math.PI / float n)) |> Seq.average))
+    |> Map.ofList
+
+  /// ハート の くびれ。1.0 で 谷 が 床 に着き、0 は 真円。
+  /// 割る 1.5 は 星 と同じ 都合 —— 面 が返す 1.2 では 0.6 に しか ならない
+  let private betaOf (h: HarmonicSpec) = min 1.0 (h.Amplitude / 1.5)
+
+  /// ハート の 素 の輪郭。谷 が 0、山 が 4。t = 0 が くびれ（真上）。
+  ///
+  /// 素 の カージオイド（r = 1 - cos θ）は 使わない —— 尖点 は 在る が 二つ山 に ならず、
+  /// 96 発 で描く と 上 が へこんだ 卵 に見えた（実測。床 から 立ち上げて 外/内 を 9 倍 に
+  /// しても 形 は 変わらなかった ので、深さ ではなく 式 の問題）
+  let private heartAt (t: float) =
+    let p = Math.PI / 2.0 - t
+    let s = sin p
+    max 0.0 (2.0 - 2.0 * s + s * sqrt (abs (cos p)) / (s + 1.4))
+
+  /// `heartAt` の 1 周 平均。割って 平均 を 1 に戻す ——
+  /// 割らない と ハート だけ が 他 の 3 札 より 2 倍 速い
+  let private HEART_MEAN =
+    let n = 720
+    Seq.init n (fun i -> heartAt (float i * 2.0 * Math.PI / float n)) |> Seq.average
 
   /// 速さ の床。割る と 敵 の近く に居座る。星 の内 の頂点 は ここ に当たる ——
   /// r0 = 1・α = 0.85 で 素 の谷 は 0.285 で、床 で止めて も 外/内 は 11.7 倍 残る
@@ -170,10 +207,15 @@ module Harmonic =
       match h.Figure with
       | Petal -> r * (1.0 + a * sin (k * t + h.Phase))
       | Star ->
-        let al = alphaOf h
-        r * sqrt (1.0 - al * al) / (1.0 + al * cos (k * t + h.Phase))
+        // 振幅 は 星 らしさ。0 は 真円、1 で 正 星型 多角形 —— 素 の 多角形 は
+        // 内 と外 が 同じ とき でも 2k 角形 で、真円 に ならない
+        let w = min 1.0 (h.Amplitude / 1.5)
+        let m = defaultArg (Map.tryFind h.Folds starMean) 1.0
+        r * ((1.0 - w) + w * starAt k (t + h.Phase) / m)
       | Rose -> r * (1.0 + a * (2.0 * abs (cos (k * t / 2.0 + h.Phase)) - 1.0))
-      | Cardioid -> r * (1.0 - betaOf h * cos (t + h.Phase))
+      | Heart ->
+        let b = betaOf h
+        SPEED_LO + (r - SPEED_LO) * ((1.0 - b) + b * heartAt (t + h.Phase) / HEART_MEAN)
     max SPEED_LO (min speedHi raw)
 
   /// 頭 から i 本 目 の角（度）と速さ（`$rank = 0`）
