@@ -169,6 +169,9 @@ module Harmonic =
   /// 割る 1.5 は 星 と同じ 都合 —— 面 が返す 1.2 では 0.6 に しか ならない
   let private betaOf (h: HarmonicSpec) = min 1.0 (h.Amplitude / 1.5)
 
+  /// `|cos|²` の 1 周 平均。k に依らず 1/2 —— 割って 平均 を 1 に戻す
+  let private ROSE_MEAN = 0.5
+
   /// ハート の 素 の輪郭。谷 が 0、山 が 4。t = 0 が くびれ（真上）。
   ///
   /// 素 の カージオイド（r = 1 - cos θ）は 使わない —— 尖点 は 在る が 二つ山 に ならず、
@@ -218,7 +221,11 @@ module Harmonic =
       // `|cos|` の 1 周 平均 は 2/π。π/2 を掛けて 平均 を 1 に戻す
       | Rose ->
         let w = min 1.0 (h.Amplitude / 1.5)
-        let u = Math.PI / 2.0 * abs (cos (k * t / 2.0 + h.Phase))
+        // 2 乗 で 葉 を 細める。素 の `|cos|`（数学 の 薔薇）は 葉 が 2π/k を 目一杯 使う ので
+        // 隣 と くっつき、花 と 見分け が つかなかった ——
+        // 山 の 4 割 より 外 に居る 弾 が 0.792 で、花 の 0.708 と 変わらない。
+        // 2 乗 で 0.625。4 乗 は 0.458 だが 細い 線 5 本 に見えた
+        let u = abs (cos (k * t / 2.0 + h.Phase)) ** 2.0 / ROSE_MEAN
         SPEED_LO + (r - SPEED_LO) * ((1.0 - w) + w * u)
       | Heart ->
         let b = betaOf h
