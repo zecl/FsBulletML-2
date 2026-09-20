@@ -15,6 +15,7 @@
     <Compile Include="FeltTests.fs" />
     <Compile Include="HarmonicTests.fs" />
     <Compile Include="BudgetTests.fs" />
+    <Compile Include="ScatterPacing.fs" />
   </ItemGroup>
 
   <ItemGroup>
