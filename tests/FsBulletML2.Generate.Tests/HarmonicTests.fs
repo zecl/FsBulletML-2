@@ -86,6 +86,20 @@ type HarmonicTests() =
     let flat = HarmonicSpec.create (fun a -> { a with Folds = 5; Amplitude = 0.0; Arms = 24 })
     Felt.foldScore 5 (fullest (runOf 90 flat)) |> should be (lessThan 0.3)
 
+  /// --- 較正（輪郭 の 4 札 に当てた 変異 と、赤 くなった 数）
+  ///
+  ///   星 の正規化 sqrt(1-a^2) を 1 に        2 本
+  ///   星 の分岐 を 花 に倒す                  3 本
+  ///   星 の抉り alpha を 0 に                 3 本
+  ///   薔薇 の 半角 を落とす（k t/2 -> k t）   2 本
+  ///   知らない 字 の既定 を Star に           1 本
+  ///   速さ の床 を 0 に                       1 本
+  ///   速さ の天井 を MAX_SPEED そのもの に    1 本
+  ///   recip の 逆数 を そのまま に            3 本
+  ///   recip の ほぼ 0 落とし を外す           1 本
+  ///
+  /// 床 と ほぼ 0 落とし は 1 周 目 が 緑 だった。床 は 見る 門 が無く、
+  /// ほぼ 0 落とし は 材料 が ちょうど 0 で、逆数 の 無限 を `IsFinite` が 先 に落として いた
   [<Test>]
   member _.``知らない 字 は Petal``() =
     Figure.ofString "star" |> should equal Star
@@ -148,6 +162,16 @@ type HarmonicTests() =
     let s fig = fullest (runOf 90 (figure fig 5 1.51 0.0))
     Felt.foldScore 5 (s Rose) |> should be (lessThan (Felt.foldScore 5 (s Petal)))
     Felt.recipScore 5 (s Rose) |> should be (lessThan (Felt.recipScore 5 (s Petal)))
+
+  /// 床 を割る と 敵 の近く に居座る。ハート は 振幅 2.0 で 谷 が ちょうど 0 に落ちる ので、
+  /// 床 を外した こと が ここ に出る
+  [<Test>]
+  member _.``速さ は 床 と 天井 の あいだ``() =
+    for fig in [ Petal; Star; Rose; Cardioid ] do
+      for spd in [ 0.0; 1.0; 3.0 ] do
+        let s = fullest (runOf 90 (figure fig 5 2.0 spd))
+        List.min s.Speeds |> should be (greaterThanOrEqualTo 0.38)
+        List.max s.Speeds |> should be (lessThanOrEqualTo (float Consts.MAX_SPEED))
 
   /// `Speed` が高い 札 は 星 の山 が `MAX_SPEED` で 平ら に潰れ、★ が 角 の丸い 多角形 になる。
   /// 潰れた こと は 弾数 にも 形 の門 にも 出ない ので、速さ の最大 と 外/内 で止める

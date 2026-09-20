@@ -217,11 +217,14 @@ type FeltTests() =
     Felt.recipScore 5 s |> should be (greaterThan 0.99)
     Felt.foldScore 5 s |> should be (lessThan 0.8)
 
-  /// 速さ 0 の逆数 は 無限。落とさない と sst も sse も NaN になり、どの 比較 も偽 になる
+  /// ほぼ 0 の速さ は 逆数 が 巨大 に なって 当てはまり を 潰す。
+  ///
+  /// ちょうど 0 だけ では 門 に ならない —— 逆数 が 無限 になり、
+  /// `IsFinite` の ふるい が 落とす ので 見張り を外して も 緑 の まま
   [<Test>]
-  member _.``recip は 速さ 0 の弾 を 数 から 落とす``() =
+  member _.``recip は ほぼ 0 の弾 を 数 から 落とす``() =
     let heads = even 36
-    let speeds = heads |> List.mapi (fun i t -> if i < 3 then 0.0 else 1.0 / (1.0 + 0.85 * cos (5.0 * t)))
+    let speeds = heads |> List.mapi (fun i t -> if i < 3 then 1e-9 else 1.0 / (1.0 + 0.85 * cos (5.0 * t)))
     Felt.recipScore 5 (shot heads speeds) |> should be (greaterThan 0.99)
 
   [<Test>]
