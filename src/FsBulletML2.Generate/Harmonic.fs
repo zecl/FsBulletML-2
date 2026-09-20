@@ -5,12 +5,43 @@ open FsBulletML2
 open FsBulletML2.Dsl
 open FsBulletML2.Generate.Consts
 
+/// 輪郭 の形。速さ を角 で変調 する 式 だけ が違う。
+///
+/// `Petal` は 山 も 谷 も 丸い。`Star` は 逆数 余弦 で 山 が尖り 谷 が抉れる。
+/// `Rose` は `|cos(kθ/2)|` で 谷 に折り目 が立つ（k が偶数 でも 枚数 は倍 に ならない）。
+/// `Cardioid` は k を 輪郭 に使わず、1 周 に 1 つ の くびれ
+type Figure =
+  | Petal
+  | Star
+  | Rose
+  | Cardioid
+
+[<RequireQualifiedAccess>]
+module Figure =
+
+  /// 知らない 字 は `Petal`。`figure` を書かない 呼び手 は 今 の花 の まま
+  let ofString (s: string) =
+    match s with
+    | "star" -> Star
+    | "rose" -> Rose
+    | "cardioid" -> Cardioid
+    | _ -> Petal
+
+  let toString (f: Figure) =
+    match f with
+    | Petal -> "petal"
+    | Star -> "star"
+    | Rose -> "rose"
+    | Cardioid -> "cardioid"
+
 /// 花 の軸 の生値。`HarmonicSpec.create` に渡す 途中 の形 で、clamp を通って いない。
 ///
 /// 放射 の速さ を角 で変調 する —— speed_i = r0 + A sin(k θ_i + φ)。
 /// 同じ コマ に出た 弾 が k 枚 の花弁 の輪郭 を描いて 広がる
 type HarmonicAxes =
-  { /// 花弁 の数 k。3 / 5 / 7 / 8 の外 は 5 に倒す
+  { /// 輪郭 の式。`Petal` が既定
+    Figure: Figure
+    /// 花弁 の数 k。3 / 5 / 7 / 8 の外 は 5 に倒す
     Folds: int
     /// r0。`PatternSpec` と同じ 4 段
     Speed: float
@@ -39,6 +70,7 @@ type HarmonicSpec =
     { Axes_: HarmonicAxes
       WaitScale_: float }
 
+  member this.Figure = this.Axes_.Figure
   member this.Folds = this.Axes_.Folds
   member this.Speed = this.Axes_.Speed
   member this.Amplitude = this.Axes_.Amplitude
@@ -56,7 +88,8 @@ module HarmonicSpec =
   let private onScale (steps: int) (v: float) = max 0.0 (min (float steps - 1.0) v)
 
   let zero =
-    { Folds = 5
+    { Figure = Petal
+      Folds = 5
       Speed = 0.0
       Amplitude = 0.0
       Phase = 0.0
@@ -104,12 +137,49 @@ module Harmonic =
   /// 振幅 は r0 - 0.5 で止める。越える と 谷 の弾 が負 の速さ で逆走 し、0.3 では 敵 の近く に居座った
   let private amp (h: HarmonicSpec) = min (h.Amplitude * 0.8) (r0 h - 0.5)
 
-  /// 頭 から i 本 目 の角（度）と速さ（`$rank = 0`）
-  let private petal (h: HarmonicSpec) (i: int) =
-    let theta = float i * 360.0 / float h.Arms
-    theta, r0 h + amp h * sin (float h.Folds * theta * Math.PI / 180.0 + h.Phase)
-
   let private rankFactor = 0.3
+
+  /// 星 の抉り。外 と内 の比 は (1+α)/(1-α) で r0 に依らない ので、ここ だけ で 見え方 が決まる ——
+  /// 0.85 で 12.3 倍。分母 が 0 に近づく ので これ 以上 は 上げない。
+  /// 割る 1.5 は 目盛り の側 の都合 —— 面 は `amplitude` を 1.0 未満 に落とさない ので、
+  /// 2.0 で割る と 収録 の 1.51 が 0.64（比 4.6 倍）に しか ならず ★ に読めなかった
+  let private alphaOf (h: HarmonicSpec) = 0.85 * min 1.0 (h.Amplitude / 1.5)
+
+  /// ハート の くびれ。1.0 で 谷 が 0 に落ちる（床 で止まる）
+  let private betaOf (h: HarmonicSpec) = min 1.0 (h.Amplitude / 2.0)
+
+  /// 速さ の床。割る と 敵 の近く に居座る。星 の内 の頂点 は ここ に当たる ——
+  /// r0 = 1・α = 0.85 で 素 の谷 は 0.285 で、床 で止めて も 外/内 は 11.7 倍 残る
+  let private SPEED_LO = 0.3
+
+  /// 速さ の天井。`$rank = 1` で `rankFactor` 倍 されて `MAX_SPEED` に当たる 手前。
+  /// `Speed` の高い 札 で 星 の山 が ここ に当たり、尖り が平ら に潰れる ——
+  /// 潰れた こと は 弾数 にも 形 の門 にも 出ない ので、速さ の最大 を見る 門 で止める
+  let private speedHi = MAX_SPEED / (1.0 + rankFactor)
+
+  /// 角 t（ラジアン）での 速さ（`$rank = 0`）。振幅 0 は どの 札 でも 真円。
+  ///
+  /// `Star` は 相乗 でなく 算術 の平均 が r0 —— 1/(1 + α cos) の 平均 は 1/sqrt(1-α²) なので、
+  /// sqrt(1-α²) を掛ける と 平均 が r0 に戻る。これ で 山 と谷 の比 が `Speed` から 外れる。
+  /// 素 の `r0 / (1 + α cos)` だと 山 が 6.67 r0 まで 伸びて、`Speed` が高い 札 は 天井 で 全部 潰れた
+  let private speedAt (h: HarmonicSpec) (t: float) =
+    let r = r0 h
+    let a = amp h / r
+    let k = float h.Folds
+    let raw =
+      match h.Figure with
+      | Petal -> r * (1.0 + a * sin (k * t + h.Phase))
+      | Star ->
+        let al = alphaOf h
+        r * sqrt (1.0 - al * al) / (1.0 + al * cos (k * t + h.Phase))
+      | Rose -> r * (1.0 + a * (2.0 * abs (cos (k * t / 2.0 + h.Phase)) - 1.0))
+      | Cardioid -> r * (1.0 - betaOf h * cos (t + h.Phase))
+    max SPEED_LO (min speedHi raw)
+
+  /// 頭 から i 本 目 の角（度）と速さ（`$rank = 0`）
+  let private armOf (h: HarmonicSpec) (i: int) =
+    let theta = float i * 360.0 / float h.Arms
+    theta, speedAt h (theta * Math.PI / 180.0)
 
   let private speedOf (spd: float) = sprintf "%.2f + $rank * %.2f" spd (spd * rankFactor)
 
@@ -148,7 +218,7 @@ module Harmonic =
   let private ring (h: HarmonicSpec) : Action list =
     let gap = 360.0 / float h.Arms
     [ for i in 0 .. h.Arms - 1 do
-        let _, spd = petal h i
+        let _, spd = armOf h i
         if i = 0 then
           if h.Spin > 0.0 then
             let head = sprintf "%.2f + %.3f * (%s)" gap (turnDeg h / 2.0) (waitExpr h)
@@ -169,7 +239,7 @@ module Harmonic =
       if h.Vanishing then min BULLET_LIFE fly else fly
     // 種 は 1 波 に `Blooms` 発 しか 出ず、咲いたら 消える ので 数 に入れない
     let perWave =
-      ([ 0 .. h.Arms - 1 ] |> List.sumBy (fun i -> lifeOf (snd (petal h i)))) * float h.Blooms
+      ([ 0 .. h.Arms - 1 ] |> List.sumBy (fun i -> lifeOf (snd (armOf h i)))) * float h.Blooms
     max (perWave / wait1) (float (h.Arms * h.Blooms)) * Bound.SAFETY
 
   /// 越える なら `wait` を伸ばす。花弁 の数 と Arms は形 そのもの なので 減らさない

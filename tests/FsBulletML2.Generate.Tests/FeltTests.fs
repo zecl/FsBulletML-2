@@ -207,6 +207,22 @@ type FeltTests() =
   member _.``速さ が一定 なら fold は 0``() =
     let heads = even 36
     Felt.foldScore 5 (shot heads (List.replicate 36 2.0)) |> should equal 0.0
+    Felt.recipScore 5 (shot heads (List.replicate 36 2.0)) |> should equal 0.0
+
+  /// 逆数 が正弦 の形。星 の式 `r0 sqrt(1-α²) / (1 + α cos kθ)` を 素 で置いた もの
+  [<Test>]
+  member _.``速さ が 1 除 1 + 0.85 cos 5θ なら recip 5 だけ が高い``() =
+    let heads = even 36
+    let s = shot heads (heads |> List.map (fun t -> 1.0 / (1.0 + 0.85 * cos (5.0 * t))))
+    Felt.recipScore 5 s |> should be (greaterThan 0.99)
+    Felt.foldScore 5 s |> should be (lessThan 0.8)
+
+  /// 速さ 0 の逆数 は 無限。落とさない と sst も sse も NaN になり、どの 比較 も偽 になる
+  [<Test>]
+  member _.``recip は 速さ 0 の弾 を 数 から 落とす``() =
+    let heads = even 36
+    let speeds = heads |> List.mapi (fun i t -> if i < 3 then 0.0 else 1.0 / (1.0 + 0.85 * cos (5.0 * t)))
+    Felt.recipScore 5 (shot heads speeds) |> should be (greaterThan 0.99)
 
   [<Test>]
   member _.``渦 は回る``() =
