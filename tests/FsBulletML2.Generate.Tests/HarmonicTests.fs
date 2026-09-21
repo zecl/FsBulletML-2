@@ -498,13 +498,17 @@ type HarmonicTests() =
   //
   // --- 較正（当てた変異 と、赤 になった 点）
   //
-  //   create の layers の max 1 を外す        指紋 ほか 35 本（Layers 0 で 割り算 が落ちる）
+  //   create の layers の max 1 を外す        指紋 ほか 10 本（Layers 0 で 1 波 が 0 発 に 数えられる）
   //   layerShift を 常 に 0                   層 は 同じ 角 に… / ハート の 層 は 半周 ずれる
-  //   Arms を 層 で割らない                   層 は 1 波 の 弾数 を… / 層 は 字 の値段 を…
-  //   symmetryOf の gcd を Folds に           互いに素 の 第 2 の波 は 畳めない
+  //   Arms を 層 で 割る に 戻す              解像度 を 割らず に… / 7 枚 も 畳める / 標本
+  //   Arms を 対称 の 倍数 に 丸めない         7 枚 も 畳める
+  //   種 の ハート 除外 を外す                種 は ハート に 層 を 足さない
+  //   symmetry の gcd を Folds に             互いに素 の 第 2 の波 は 畳めない
   //   a1 を a に して 足す 式 に戻す          深さ は 足さず に 分け合う
   //   create の 取り分 0 の 倒し を外す       取り分 0 は いま と同じ
   //   layerShift を Folds で割る              ハート の 層 は 半周 ずれる だけ
+  //   入れ子 の 振幅 の 頭打ち を外す         入れ子 の 層 は 交わらない / 天井 と 床
+  //   入れ子 を 外 に 合わせて 縮めない       入れ子 でも 天井 と 床 に 当たらない
 
   [<Test>]
   member _.``軸 を書かない 花 は 第 2 の波 を持たない``() =
@@ -517,7 +521,7 @@ type HarmonicTests() =
   member _.``種 は 18 通り を 巡る``() =
     let of_ seed =
       let h = petal5 (fun a -> { a with Seed = seed })
-      h.Folds2, h.Amplitude2, h.Layers, h.LayerPhase
+      h.Folds2, h.Amplitude2, h.Layers, h.LayerPhase, h.LayerScale
     [ 1 .. 18 ] |> List.map of_ |> List.distinct |> List.length |> should equal 18
     of_ 19 |> should equal (of_ 1)
 
@@ -565,11 +569,59 @@ type HarmonicTests() =
     half |> should be (greaterThan (tenth * 1.5))
 
   [<Test>]
-  member _.``層 は 1 波 の 弾数 を 増やさない``() =
-    let mk layers = petal5 (fun a -> { a with Layers = layers })
-    // 畳んだ 波 は 頭 が 1 発 重なる。層 を足す と その 1 発 も 層 の数 だけ 増える
-    Harmonic.shotsPerWave (mk 2) |> should be (lessThanOrEqualTo (Harmonic.shotsPerWave (mk 1) + 1))
-    Harmonic.shotsPerWave (mk 2) |> should be (greaterThan (Harmonic.shotsPerWave (mk 1) - 10))
+  member _.``層 は 解像度 を 割らず に 層 の 数 だけ 撃つ``() =
+    // 割る と 1 層 60 点・40 点 に なって、半周期 ずらした 層 が 絡み 点 の 散らばり に 見えた
+    let mk layers = petal5 (fun a -> { a with Folds2 = 10; Amplitude2 = 0.4; Layers = layers })
+    (mk 3).Arms |> should equal (mk 1).Arms
+    // 倍音 は 畳める まま —— (Arms + 1) x 層
+    for layers in [ 1; 2; 3 ] do
+      Harmonic.shotsPerWave (mk layers) |> should equal (((mk 1).Arms + 1) * layers)
+
+  [<Test>]
+  member _.``層 を 重ねる と 7 枚 も 畳める``() =
+    // 160 は 7 で 割れず 畳めない。層 を 重ねる とき だけ 154 に 丸める —— 単層 は 160 の まま
+    let mk layers = HarmonicSpec.create (fun a -> { a with Folds = 7; Speed = 2.0; Amplitude = 1.2; Layers = layers })
+    (mk 1).Arms |> should equal 160
+    (mk 2).Arms |> should equal 154
+    Harmonic.shotsPerWave (mk 2) |> should equal ((154 + 1) * 2)
+
+  [<Test>]
+  member _.``種 は ハート に 層 を 足さない``() =
+    // ハート は 1 回 対称 で 畳めない。種 4 は 重ね 2 枚 の 組
+    let heart (f: HarmonicAxes -> HarmonicAxes) =
+      HarmonicSpec.create (fun a -> f { a with Figure = Heart; Folds = 5; Speed = 2.0; Amplitude = 1.2 })
+    (petal5 (fun a -> { a with Seed = 4 })).Layers |> should equal 2
+    (heart (fun a -> { a with Seed = 4 })).Layers |> should equal 1
+    (heart (fun a -> { a with Seed = 4; Layers = 2 })).Layers |> should equal 2
+
+  [<Test>]
+  member _.``入れ子 の 層 は 交わらない``() =
+    // 全部 の 向き で 外 の 層 ほど 速い こと。振幅 を 深く して も 頭打ち で 交わらない こと と、
+    // 刻み 0 の 重ね は 入れ替わる こと を 対 で 見る。
+    //
+    // 層 は 撃った 順 で 分かる —— `ring` は 向き ごと に 層 0, 1, … と 続けて 撃つ ので、
+    // L 発 ずつ 区切る と 層 の 順 に 並ぶ。その 前提 も ここ で 確かめる。
+    //
+    // 速さ を 小さい 順 に 並べて 隣 と 比べる 形 は 使えない。入れ替わり が 見えず、
+    // 頭打ち を 外して 交わらせた ほう が 1.806 と、正しい 実装 の 1.253 より 大きく 出た
+    let orderedOf scale =
+      let s = fullest (runOf 90 (petal5 (fun a -> { a with Amplitude = 2.0; Layers = 2; LayerPhase = 0.5; LayerScale = scale })))
+      let chunks = List.zip s.Headings s.Speeds |> List.chunkBySize 2
+      chunks |> List.forall (fun c -> c |> List.map fst |> List.distinct |> List.length = 1) |> should equal true
+      chunks |> List.forall (fun c -> c |> List.map snd |> List.pairwise |> List.forall (fun (inner, outer) -> outer > inner))
+    orderedOf 0.8 |> should equal true
+    orderedOf 0.0 |> should equal false
+
+  [<Test>]
+  member _.``入れ子 でも 天井 と 床 に 当たらない``() =
+    let floor, ceil = 0.3 * 1.3, float Consts.MAX_SPEED
+    for spd in [ 1.0; 3.0 ] do
+      let h =
+        HarmonicSpec.create (fun a ->
+          { a with Folds = 5; Speed = spd; Amplitude = 2.0; Layers = 3; LayerPhase = 0.5; LayerScale = 0.6 })
+      let s = fullest (runOf 90 h)
+      List.min s.Speeds |> should be (greaterThan (floor + 0.01))
+      List.max s.Speeds |> should be (lessThan (ceil - 0.01))
 
   [<Test>]
   member _.``深さ は 足さず に 分け合う``() =
@@ -602,14 +654,6 @@ type HarmonicTests() =
           HarmonicSpec.create (fun a -> { a with Folds = folds; Speed = 2.0; Amplitude = 1.2; Seed = seed })
         if h.Folds2 > 0 then
           float h.Arms / float h.Folds2 |> should be (greaterThanOrEqualTo 4.0)
-
-  [<Test>]
-  member _.``層 は 字 の値段 を上げない``() =
-    let sizeOf layers =
-      let h = petal5 (fun a -> { a with Folds2 = 8; Amplitude2 = 0.4; Layers = layers })
-      (BulletmlWriter.toIndentedXml 2 (Harmonic.generate h).Bulletml).Length
-    for layers in [ 2; 3 ] do
-      float (sizeOf layers) / float (sizeOf 1) |> should be (lessThan 1.2)
 
   [<Test>]
   member _.``互いに素 の 第 2 の波 は 畳めない``() =

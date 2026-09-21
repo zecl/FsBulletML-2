@@ -77,7 +77,10 @@ type HarmonicAxes =
     Layers: int
     /// 層 の 位相 ずれ。輪郭 の 1 周期 に対する 比 0..1
     LayerPhase: float
-    /// 上 の 4 本 を 表 から 一括 で引く 番号。0 は 引かない
+    /// 層 を 半径 で 離す 刻み 0..1。0 は 同じ 大きさ で 重ねる（花弁 が 互い違い に 絡む）、
+    /// 正 は 入れ子（内 と 外 が 分かれる）
+    LayerScale: float
+    /// 上 の 5 本 を 表 から 一括 で引く 番号。0 は 引かない
     Seed: int }
 
 /// 花 の仕様。`private` なので `HarmonicSpec.create` を通らず に作れない
@@ -100,6 +103,7 @@ type HarmonicSpec =
   member this.Amplitude2 = this.Axes_.Amplitude2
   member this.Layers = this.Axes_.Layers
   member this.LayerPhase = this.Axes_.LayerPhase
+  member this.LayerScale = this.Axes_.LayerScale
   member this.Seed = this.Axes_.Seed
   member this.WaitScale = this.WaitScale_
 
@@ -112,23 +116,33 @@ module HarmonicSpec =
   /// 7 は フィボナッチ の外 なので 11 —— 11/7 = 1.571 で、12/7 = 1.714 より 近い
   let private GOLDEN_PARTNER = dict [ 3, 5; 5, 8; 7, 11; 8, 13 ]
 
-  /// 比 と 層 の 組。比 の 0 と 1 は 倍音 で 対称 が 残り、2 は 互いに素 で 畳めない。
+  let rec private gcd a b = if b = 0 then a else gcd b (a % b)
+
+  /// 輪郭 が 1 周 に 何回 繰り返す か。第 2 の波 が入る と 2 つ の 回数 の 最大公約数 に落ちる。
+  /// `create` が `Arms` を 丸める とき と `Harmonic` が 畳む とき の 両方 が ここ を読む
+  let internal symmetry (figure: Figure) (folds: int) (folds2: int) =
+    match figure with
+    | Heart -> 1
+    | Star -> folds
+    | Petal -> if folds2 = 0 then folds else gcd folds folds2
+
+  /// 比 と 層 の 組（比、層 の 枚数、位相、半径 の 刻み）。
+  /// 比 の 0 と 1 は 倍音 で 対称 が 残り、2 は 互いに素 で 畳めない。
   ///
-  /// 比 3 x 層 3 を 独立 に 振らない —— `Arms` を 層 で割る ので `Folds2` が 大きい と
-  /// 1 周期 の 点 が 足りなく なり、Folds 8 で (3k, 3 枚) が Arms / Folds2 = 2.21、
-  /// (2k, 3 枚) が 3.31、(3k, 2 枚) が 3.33 に 落ちた。残る 6 組 は 4 つ の Folds 全部 で 4 以上
+  /// 互いに素 は 単層 だけ —— 畳めない まま 層 を 重ねる と `<fire>` が 層 の 数 だけ 増える。
+  /// 重ね（刻み 0）は 花弁 が 互い違い に 絡み、入れ子（刻み 正）は 内 と 外 が 分かれる
   let private RATIO_LAYERS =
-    [ 0, 1, 0.0
-      0, 2, 0.5
-      1, 1, 0.0
-      2, 1, 0.0
-      2, 2, 0.5
-      2, 3, 1.0 / 3.0 ]
+    [ 0, 1, 0.0, 0.0
+      0, 2, 0.5, 0.0
+      0, 2, 0.5, 0.8
+      1, 3, 1.0 / 3.0, 0.0
+      1, 3, 0.5, 0.6
+      2, 1, 0.0, 0.0 ]
 
   /// 種 が引く 18 通り。比 と 層 の 6 組 x 深さ 3
   let private SEED_TABLE =
-    [| for ratio, layers, phase in RATIO_LAYERS do
-         for depth in [ 0.25; 0.4; 0.6 ] -> ratio, depth, layers, phase |]
+    [| for ratio, layers, phase, scale in RATIO_LAYERS do
+         for depth in [ 0.25; 0.4; 0.6 ] -> ratio, depth, layers, phase, scale |]
 
   let zero =
     { Figure = Petal
@@ -145,6 +159,7 @@ module HarmonicSpec =
       Amplitude2 = 0.0
       Layers = 0
       LayerPhase = 0.0
+      LayerScale = 0.0
       Seed = 0 }
 
   let create (f: HarmonicAxes -> HarmonicAxes) : HarmonicSpec =
@@ -159,10 +174,10 @@ module HarmonicSpec =
     // 輪 と輪 の間 が 3 秒 空いて「まばらな花」になる
     let blooms = max 1 (min 8 a.Blooms)
     // 種 は 名指し の 無い 欄 だけ を埋める。`Arms = 0` が 既定 を引く のと 同じ 決め方
-    let folds2, amp2, layers0, layerPhase =
-      if a.Seed <= 0 then a.Folds2, a.Amplitude2, a.Layers, a.LayerPhase
+    let folds2, amp2, layers0, layerPhase, layerScale =
+      if a.Seed <= 0 then a.Folds2, a.Amplitude2, a.Layers, a.LayerPhase, a.LayerScale
       else
-        let ratio, depth, l, p = SEED_TABLE.[(a.Seed - 1) % SEED_TABLE.Length]
+        let ratio, depth, l, p, s = SEED_TABLE.[(a.Seed - 1) % SEED_TABLE.Length]
         let k2 =
           match ratio with
           | 0 -> 2 * folds
@@ -170,8 +185,11 @@ module HarmonicSpec =
           | _ -> GOLDEN_PARTNER.[folds]
         (if a.Folds2 <> 0 then a.Folds2 else k2),
         (if a.Amplitude2 > 0.0 then a.Amplitude2 else depth),
-        (if a.Layers > 0 then a.Layers else l),
-        (if a.LayerPhase > 0.0 then a.LayerPhase else p)
+        // ハート は 1 回 対称 で 畳めず、層 を 重ねる と `<fire>` が 層 の 数 だけ 増える
+        // （3 枚 で 480 本・82,842 バイト）。種 では 重ねない。名指し すれば 重なる
+        (if a.Layers > 0 then a.Layers elif a.Figure = Heart then 1 else l),
+        (if a.LayerPhase > 0.0 then a.LayerPhase else p),
+        (if a.LayerScale > 0.0 then a.LayerScale else s)
     let layers = max 1 (min 3 layers0)
     let amp2 = max 0.0 (min 1.0 amp2)
     // 取り分 0 は 第 2 の波 が 無い のと 同じ。ここ で 0 に倒さない と symmetryOf が
@@ -187,16 +205,25 @@ module HarmonicSpec =
             Spin = max 0.0 (min 2.0 a.Spin)
             // 名指し して も 咲かせる 数 で頭打ち。1 波 は まるごと 同時 に居る ので、
             // ここ を割らない と 160 x 8 が 1 コマ に出て、`fit` は `wait` しか 伸ばせず 直せない。
-            // 層 は 同じ 角 に重ねる ので 層 でも 割る —— 割らない と 層 を足した だけ で 3 倍
-            Arms = (let per = blooms * layers
-                    let cap = max 8 (160 / per)
-                    if a.Arms = 0 then min cap (max 16 (folds * 24 / per)) else max 8 (min cap a.Arms))
+            //
+            // 層 では 割らない。割る と 1 層 あたり 60 点・40 点 に なり、半周期 ずらした 層 が
+            // 互い に 絡んで 点 の 散らばり に しか 見えなかった（同じ 式 で 120 点 の まま なら
+            // 花弁 が 互い違い に 編まれた ロゼット に なる）。増えた 弾 は `fit` が 間隔 で 払う
+            //
+            // 層 を 重ねる とき だけ 対称 の 回数 の 倍数 に 丸める。k = 7 は 160 が 7 で 割れず
+            // 畳めない まま 層 の 数 だけ 増えた（3 枚 で 480 本）。154 に 丸める と 畳める。
+            // 単層 は 丸めない —— 丸める と 書かない 呼び手 の 字 が 動く
+            Arms = (let cap = max 8 (160 / blooms)
+                    let arms = if a.Arms = 0 then min cap (max 16 (folds * 24 / blooms)) else max 8 (min cap a.Arms)
+                    let n = symmetry a.Figure folds folds2
+                    if layers > 1 && n >= 2 && arms >= 2 * n then arms - arms % n else arms)
             Blooms = blooms
             Density = onScale 4 a.Density
             Folds2 = folds2
             Amplitude2 = amp2
             Layers = layers
             LayerPhase = max 0.0 (min 1.0 layerPhase)
+            LayerScale = max 0.0 (min 1.0 layerScale)
             Seed = max 0 a.Seed }
       WaitScale_ = 1.0 }
 
@@ -212,15 +239,8 @@ module Harmonic =
   /// 振幅 は r0 - 0.5 で止める。越える と 谷 の弾 が負 の速さ で逆走 し、0.3 では 敵 の近く に居座った
   let private amp (h: HarmonicSpec) = min (h.Amplitude * 0.8) (r0 h - 0.5)
 
-  let rec private gcd a b = if b = 0 then a else gcd b (a % b)
-
-  /// 輪郭 が 1 周 に 何回 繰り返す か。畳み の 回数 と、層 の 位相 の 周期 に なる。
-  /// 第 2 の波 が入る と 対称 は 2 つ の 回数 の 最大公約数 に落ちる
-  let private symmetryOf (h: HarmonicSpec) =
-    match h.Figure with
-    | Heart -> 1
-    | Star -> h.Folds
-    | Petal -> if h.Folds2 = 0 then h.Folds else gcd h.Folds h.Folds2
+  /// 輪郭 が 1 周 に 何回 繰り返す か。畳み の 回数 と、層 の 位相 の 周期 に なる
+  let private symmetryOf (h: HarmonicSpec) = HarmonicSpec.symmetry h.Figure h.Folds h.Folds2
 
   /// 層 j の 位相 の ずれ。割る のは `Folds` でなく `symmetryOf` ——
   /// ハート は Folds を 輪郭 に使わず 周期 が 2π なので、Folds で割る と
@@ -289,8 +309,13 @@ module Harmonic =
   /// 素 の `r0 / (1 + α cos)` だと 山 が 6.67 r0 まで 伸びて、`Speed` が高い 札 は 天井 で 全部 潰れた
   let private speedAt (h: HarmonicSpec) (j: int) (t0: float) =
     let t = t0 + layerShift h j
-    let r = r0 h
-    let a = amp h / r
+    let s = h.LayerScale
+    // 入れ子 は 外 の 層 に 合わせて 全体 を 縮める。外 を 伸ばす と 天井 に当たる
+    let r =
+      if s > 0.0 then r0 h * (1.0 + float j * s) / (1.0 + float (h.Layers - 1) * s) else r0 h
+    // 入れ子 で 内 と 外 が 交わらない のは a < s / (2 + s)（外 の 谷 が 内 の 山 より 外）。
+    // Jev が 深い 振幅 を返して も 読める ように、その 9 割 で 頭打ち に する
+    let a = if s > 0.0 then min (amp h / r0 h) (0.9 * s / (2.0 + s)) else amp h / r
     let k = float h.Folds
     let raw =
       match h.Figure with
