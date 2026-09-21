@@ -27,6 +27,22 @@ type LineageTests() =
           for root in [ Root.Radial; Root.Bar ] ->
             make (fun a -> { a with Root = root; Seed = seed; Stillness = still; Spread = 1.0; Streak = 1.0; Speed = 1.0 }) ]
 
+  static let runs frames (s: LineageSpec) = Felt.run frames (Lineage.generate s).Bulletml
+  static let births (snaps: Felt.Snapshot list) = snaps |> List.sumBy (fun s -> s.Headings.Length)
+
+  /// 生まれて 1 コマ 目 の 弾 の 位置
+  static let newborn (s: Felt.Snapshot) =
+    List.zip s.Positions s.Born |> List.filter (fun (_, b) -> b = s.Frame - 1) |> List.map fst
+
+  /// 同じ コマ に 生まれた 群 の、続く 2 コマ の 平均 移動 量。並び は 生き残り の 順 で 保たれる
+  static let groupSpeed (snaps: Felt.Snapshot list) (born: int) (frame: int) =
+    let at f =
+      let s = snaps.[f - 1]
+      List.zip s.Positions s.Born |> List.filter (fun (_, b) -> b = born) |> List.map fst
+    let a, b = at frame, at (frame + 1)
+    if a.Length = 0 || a.Length <> b.Length then nan
+    else List.zip a b |> List.averageBy (fun ((x0, y0), (x1, y1)) -> sqrt ((x1 - x0) ** 2.0 + (y1 - y0) ** 2.0))
+
   [<Test>]
   member _.``目盛り の 外 を 切り詰める``() =
     let s = make (fun a -> { a with Generations = 9; Streak = 5.0; Ways = 99; Speed = 9.0 })
@@ -122,3 +138,71 @@ type LineageTests() =
   member _.``字 は 数 KB に 収まる``() =
     let biggest = all36 |> List.map (fun s -> (xml s).Length) |> List.max
     biggest |> should be (lessThan 8000)
+
+  /// 止めた 弾 から `relative 90` で 撃った 列 が、親 の 向き と 直角 か。
+  /// 速さ 0.0001 で 向き が 残る か の 答え
+  [<Test>]
+  member _.``止めた 弾 の 横撃ち は 直角``() =
+    let s = make (fun a -> { a with Ways = 1; Seed = 2 })   // B → Plain
+    let snaps = runs 60 s
+    let parent = snaps.[0].Headings |> List.exactlyOne
+    let burst = snaps |> List.skip 1 |> List.find (fun x -> x.Headings.Length > 0)
+    for h in burst.Headings do
+      abs (sin (h - parent)) |> should be (greaterThan 0.99)
+
+  [<Test>]
+  member _.``Trail は 通り道 に 撒く``() =
+    let s = make (fun a -> { a with Ways = 1; Seed = 1 })   // T → Plain
+    let snaps = runs 120 s
+    let spots =
+      snaps |> List.map newborn |> List.filter (fun p -> p.Length > 0)
+      |> List.map (fun p -> List.averageBy fst p, List.averageBy snd p)
+    spots.Length |> should be (greaterThanOrEqualTo 5)
+    let (x0, y0), (x1, y1) = List.head spots, List.last spots
+    sqrt ((x1 - x0) ** 2.0 + (y1 - y0) ** 2.0) |> should be (greaterThan 50.0)
+
+  [<Test>]
+  member _.``Relaunch は 止まって から 動く``() =
+    let s = make (fun a -> { a with Ways = 1; Seed = 2; Stillness = 1.0 })   // B → Relaunch
+    let snaps = runs 300 s
+    let born = (snaps |> List.skip 1 |> List.find (fun x -> x.Headings.Length > 0)).Frame
+    let hold = s.RelaunchHold.Base - s.RelaunchHold.Rank     // $rank = 1
+    groupSpeed snaps born (born + 5) |> should be (greaterThan 0.5)
+    groupSpeed snaps born (born + 20 + hold / 2) |> should be (lessThan 0.05)
+    groupSpeed snaps born (born + 20 + hold + 50) |> should be (greaterThan 0.5)
+
+  [<Test>]
+  member _.``難度 1 は 難度 0 より 多く 生む``() =
+    for seed in [ 1; 2 ] do
+      for root in [ Root.Radial; Root.Bar ] do
+        let s = make (fun a -> { a with Root = root; Seed = seed; Spread = 1.0 })
+        let b = (Lineage.generate s).Bulletml
+        births (Felt.runAt 1.0f 400 b) |> should be (greaterThan (births (Felt.runAt 0.0f 400 b)))
+
+  /// 赤 の とき は 並び と 見積もり を 報告 に 書く。`BUDGET` を 黙って 上げない —— `shrink` の 順 が 足りない 証拠
+  [<Test>]
+  member _.``合計 は 削った 先 に 収まる``() =
+    for s in all36 do
+      LineageSpec.aliveBound s |> should be (lessThanOrEqualTo LineageSpec.BUDGET)
+
+  [<Test>]
+  member _.``Trail は 画面 を 横切る 時間 で 止める``() =
+    // 根 の 速さ 1.0、間隔 8：280 / 1.0 / 8 = 35。本数 12 だと 上界 が 6,000 を 越えて `fit` が 半分 に する ので 4 本
+    let s = make (fun a -> { a with Seed = 1; Ways = 4; Speed = 0.0; Streak = 0.0 })
+    s.TrailTimes |> should equal 35
+
+  /// 36 通り を 難度 1 で 走らせた 最大数。最大 に なる のは 遅くて 587 コマ 目 なので 600 コマ 見る。
+  ///
+  /// --- 較正 の 記録（700 コマ で 測った 実測）
+  ///
+  ///   最大数 の 最大            3,015 発（T → B → B・Bar・Plain）
+  ///   実測 / 見積もり の 最大   0.895（B → B・Bar・Plain）
+  ///   字 の 大きさ の 最大      4,126 字（B → B → B・Bar・Relaunch）
+  ///
+  /// 根 は 繰り返す。重なる 周 を 見積もり に 入れる 前 は 実測 / 見積もり が 4.1 倍、最大数 は 18,512 発 だった
+  [<Test>]
+  member _.``36 通り は 面 の 天井 に 収まる``() =
+    for s in all36 do
+      let peak = runs 600 s |> List.map (fun x -> x.Positions.Length) |> List.max
+      peak |> should be (lessThanOrEqualTo 10000)
+      float peak |> should be (lessThanOrEqualTo (LineageSpec.aliveBound s))
