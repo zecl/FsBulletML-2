@@ -14,6 +14,10 @@ open FsBulletML2.Generate
 ///   Relaunch の 加速 を 消す                  Relaunch は 止まって から 動く / 36 通り（止まった 弾 が 溜まる）
 ///   上界 から 重なる 周 を 外す               36 通り
 ///   Bar の 周 の 待ち を 1 に                 Bar の 発射台 は 周 に 1 度
+///   狙い 直す 弾 の 向き 直し を 消す         自機 に 届く / 軸 が 1 以上
+///   Burst の 先頭 を 狙う 弾 に しない        自機 に 届く / 軸 が 1 以上
+///   狙う 弾 の 境目 を 0 に                   自機 に 届く / 軸 が 1 以上 / 台本 を 終わらせない（wait 9999 が 1 つ 増える）
+///   Trail の 狙う 組 を 普通 の 弾 に         軸 が 1 以上（定義 だけ 見て いた とき は 緑 だった）
 [<TestFixture>]
 type LineageTests() =
 
@@ -34,7 +38,7 @@ type LineageTests() =
     [ for seed in 1 .. 9 do
         for still in [ 0.0; 1.0 ] do
           for root in [ Root.Radial; Root.Bar ] ->
-            make (fun a -> { a with Root = root; Seed = seed; Stillness = still; Spread = 1.0; Streak = 1.0; Speed = 1.0 }) ]
+            make (fun a -> { a with Root = root; Seed = seed; Stillness = still; Homing = still; Spread = 1.0; Streak = 1.0; Speed = 1.0 }) ]
 
   static let runs frames (s: LineageSpec) = Felt.run frames (Lineage.generate s).Bulletml
   static let births (snaps: Felt.Snapshot list) = snaps |> List.sumBy (fun s -> s.Headings.Length)
@@ -214,9 +218,9 @@ type LineageTests() =
   ///
   /// --- 較正 の 記録（700 コマ で 測った 実測）
   ///
-  ///   最大数 の 最大            4,958 発（T → B → B・Bar・Relaunch）
+  ///   最大数 の 最大            5,589 発（B → B → T・Bar・Relaunch・狙う 弾 あり）
   ///   実測 / 見積もり の 最大   0.756（T・Bar・Plain）
-  ///   字 の 大きさ の 最大      4,126 字（B → B → B・Bar・Relaunch）
+  ///   字 の 大きさ の 最大      5,098 字（B → B → T・Bar・Relaunch・狙う 弾 あり）
   ///
   /// 根 は 繰り返す。重なる 周 を 見積もり に 入れる 前 は 実測 / 見積もり が 4.1 倍、最大数 は 18,512 発 だった
   [<Test>]
@@ -225,6 +229,27 @@ type LineageTests() =
       let peak = runs 610 s |> List.map (fun x -> x.Positions.Length) |> List.max
       peak |> should be (lessThanOrEqualTo 10000)
       float peak |> should be (lessThanOrEqualTo (LineageSpec.aliveBound s))
+
+  [<Test>]
+  member _.``狙う 弾 は 軸 が 1 以上 の とき だけ``() =
+    for seed in [ 1; 9 ] do   // 最後 の 遺伝子 が Trail / Burst
+      let x h = xml (make (fun a -> { a with Seed = seed; Homing = h }))
+      x 0.0 |> should not' (haveSubstring "label=\"seeker\"")
+      // 定義 が 在る だけ では 撃って いない ことが ある。撃つ 側 の 参照 を 見る
+      x 1.0 |> should haveSubstring "<bulletRef label=\"seeker\""
+      x 1.0 |> should haveSubstring "<changeDirection>"
+
+  /// 自機 の まわり 48 px を 通った 弾 の 延べ 数。固まった 一列 から 狙う 弾 が ばらけて 来る か
+  [<Test>]
+  member _.``狙う 弾 は 自機 に 届く``() =
+    let near h =
+      let s = make (fun a -> { a with Seed = 9; Homing = h })
+      runs 610 s
+      |> List.sumBy (fun x ->
+          x.Positions |> List.filter (fun (px, py) ->
+            sqrt ((px - float Felt.PlayerX) ** 2.0 + (py - float Felt.PlayerY) ** 2.0) < 48.0) |> List.length)
+    let off, on = near 0.0, near 1.0
+    on |> should be (greaterThan (off * 2 + 20))
 
 /// 走らせ 直し の 罠 だけ を 見る。壊す と `LineageTests` の 36 通り が 止まらなく なる ので、別 の 型 に 置いて 型 名 で 絞る
 [<TestFixture>]

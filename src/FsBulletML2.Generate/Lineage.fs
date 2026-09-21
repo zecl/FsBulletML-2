@@ -33,6 +33,8 @@ type LineageAxes =
     Streak: float
     Stillness: float
     Spread: float
+    /// 1 以上 で 最後 の 世代 に 自機 を 狙い 直す 弾 が 混ざる
+    Homing: float
     Seed: int }
 
 /// 待ち は `Base - Rank * $rank`、回数 は `Base + Rank * $rank`
@@ -52,6 +54,8 @@ type LineageSpec =
     /// 一列 の 発数。先頭 の 1 発 を 除く
     Line: Ranked
     Columns: int
+    /// 最後 の 世代 に 狙い 直す 弾 を 混ぜる
+    Seekers: bool
     Hold: int
     RelaunchHold: Ranked
     BarSteps: Ranked
@@ -90,6 +94,7 @@ module LineageSpec =
       Streak = 0.0
       Stillness = 0.0
       Spread = 0.0
+      Homing = 0.0
       Seed = 0 }
 
   /// 回数 の `$rank = 1`
@@ -133,9 +138,13 @@ module LineageSpec =
       | Spawner.Burst -> float (flyOf s i + s.Hold)
       | Spawner.Trail -> FIELD_SPAN / fast speed
     else
-      match s.Leaf with
-      | Terminal.Plain -> FIELD_SPAN / fast speed
-      | Terminal.Relaunch -> float (flyOf s i) + at1 s.RelaunchHold + float RELAUNCH_TERM + FIELD_SPAN / fast RELAUNCH_SPEED
+      let relaunch = float (flyOf s i) + at1 s.RelaunchHold + float RELAUNCH_TERM + FIELD_SPAN / fast RELAUNCH_SPEED
+      let leaf =
+        match s.Leaf with
+        | Terminal.Plain -> FIELD_SPAN / fast speed
+        | Terminal.Relaunch -> relaunch
+      // 狙い 直す 弾 は Relaunch と 同じ 動き
+      if s.Seekers then max leaf relaunch else leaf
 
   /// 同時 に 居る 弾 の 上界（`$rank = 1`）。根 は 繰り返す ので、段 ごと に 1 周 の 数 と 重なる 周 の 数 を 掛けて 足す。
   /// 系譜 まるごと の 寿命 で 掛ける と 実測 / 見積もり が 0.3 まで 下がり、`fit` が 削り すぎた。
@@ -201,6 +210,7 @@ module LineageSpec =
         TrailWait = { Base = trailWait; Rank = trailWait / 2 }
         Line = { Base = [| 2; 3; 4 |].[step spread]; Rank = 3 }
         Columns = if spread >= 1.5 then 2 else 1
+        Seekers = onScale a.Homing >= 1.0
         Hold = 10 + 10 * step still
         RelaunchHold = { Base = relaunch; Rank = relaunch / 2 }
         BarSteps = { Base = 12; Rank = 8 }
@@ -214,7 +224,10 @@ module Lineage =
   let SPEED_HI = LineageSpec.SPEED_HI
 
   let private STOP = "0.0001"
-  let private LINE_STEP = 0.1
+  /// 一列 の 中 の 速さ の 刻み。0.1 だと 止まる 頃 に 5 px しか 離れず、四角 い 塊 に 見えた
+  let private LINE_STEP = 0.3
+  /// 最後 が Trail の とき、何 組 に 1 組 を 狙い 直す 弾 に する か
+  let private SEEK_EVERY = 4
   let private BAR_LINE_STEP = 0.4
   let private BAR_TURN = 10
   let private BAR_WAIT = LineageSpec.BAR_WAIT
@@ -228,29 +241,55 @@ module Lineage =
   let private label (i: int) = sprintf "g%d" (i + 1)
   let private childOf (s: LineageSpec) (i: int) = if i + 1 < s.Chain.Length then label (i + 1) else "leaf"
 
+  /// 最後 の 世代 の 子 を 狙い 直す 弾 に 替える か
+  let private seeks (s: LineageSpec) (child: string) = s.Seekers && child = "leaf"
+
   let private trailBody (s: LineageSpec) (child: string) =
+    let pair (c: string) =
+      [ fire { relative "90"; speed (speedOf LineageSpec.CHILD_SPEED); refBullet c [] }
+        fire { relative "-90"; speed (speedOf LineageSpec.CHILD_SPEED); refBullet c [] }
+        wait (waitOf s.TrailWait) ]
+    let groups, rest = s.TrailTimes / SEEK_EVERY, s.TrailTimes % SEEK_EVERY
     body {
-      repeat (string s.TrailTimes) {
-        fire { relative "90"; speed (speedOf LineageSpec.CHILD_SPEED); refBullet child [] }
-        fire { relative "-90"; speed (speedOf LineageSpec.CHILD_SPEED); refBullet child [] }
-        wait (waitOf s.TrailWait)
-      }
+      if not (seeks s child) then
+        repeat (string s.TrailTimes) { yield! pair child }
+      else
+        if groups > 0 then
+          repeat (string groups) {
+            repeat (string (SEEK_EVERY - 1)) { yield! pair child }
+            yield! pair "seeker"
+          }
+        if rest > 0 then
+          repeat (string rest) { yield! pair child }
       // 面 は 終えた 台本 を 頭 から 走らせ 直す。終わらせる と 撒き 続ける
       wait "9999"
     }
 
   let private burstBody (s: LineageSpec) (i: int) (child: string) =
     let step = sprintf "%.2f" LINE_STEP
+    let head = if seeks s child then "seeker" else child
     body {
       wait (string (LineageSpec.flyOf s i))
       changeSpeedAbs STOP "1"
       wait (string s.Hold)
-      fire { relative "90"; speed (speedOf LineageSpec.BURST_SPEED); refBullet child [] }
+      // 一列 の 先頭 を 狙い 直す 弾 に する
+      fire { relative "90"; speed (speedOf LineageSpec.BURST_SPEED); refBullet head [] }
       repeat (timesOf s.Line) { fire { sequence "0"; speedSeq step; refBullet child [] } }
       if s.Columns = 2 then
-        fire { sequence "180"; speed (speedOf LineageSpec.BURST_SPEED); refBullet child [] }
+        fire { sequence "180"; speed (speedOf LineageSpec.BURST_SPEED); refBullet head [] }
         repeat (timesOf s.Line) { fire { sequence "0"; speedSeq step; refBullet child [] } }
       vanish
+    }
+
+  /// 止まって、待って、自機 へ 向き 直して から 加速 する
+  let private seekerBody (s: LineageSpec) =
+    body {
+      wait (string (LineageSpec.flyOf s s.Chain.Length))
+      changeSpeedAbs STOP "1"
+      wait (waitOf s.RelaunchHold)
+      changeDirectionAim "0" "1"
+      changeSpeedAbs (speedOf RELAUNCH_SPEED) (string RELAUNCH_TERM)
+      wait "9999"
     }
 
   let private relaunchBody (s: LineageSpec) =
@@ -335,4 +374,5 @@ module Lineage =
            barDef s
          yield! defs
          leaf
+         if s.Seekers then defBullet "seeker" { doActs (seekerBody s) }
        }
