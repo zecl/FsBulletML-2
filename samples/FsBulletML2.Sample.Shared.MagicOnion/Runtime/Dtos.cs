@@ -6,8 +6,12 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
     /// 弾 1 発。この struct が、client が知ってよいものの全部。
     ///
     /// BulletML の語（<c>changeDirection</c> / <c>accel</c> / <c>term</c>）は
-    ///
+    /// 1 つ も出てこない。出した瞬間に client が運動則を持つことになり、
     /// サーバーと 2 か所 に同じものが在る形になる。
+    ///
+    /// 位置は <see cref="RoomInfo"/> が宣言した空間の値で、
+    /// client はそれを描く座標へ移すだけ。掛ける係数を client が決めない。
+    /// </summary>
     [MessagePackObject]
     public struct BulletDto
     {
@@ -19,6 +23,14 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
         /// 盤面 を 0..65535 に割った位置。float ではない。
         ///
         /// float32 は MessagePack で 5 バイト固定（0xca ＋ 4）。
+        /// ushort は 3 バイト で乗るので、x / y / 向き の 3 本 で
+        /// 弾 1 発 が 19.9 -> 13.8 バイト（実測。<c>--measure-wire</c>）。
+        ///
+        /// 刻み は盤面 4.8 x 6.4 に対して 0.0001 未満。
+        /// 描く前 に <see cref="Wire"/> で戻す —— 戻す式 は
+        /// <see cref="RoomInfo"/> の盤面 から決まるので、client は
+        /// 相変わらず物理量 を持たない。
+        /// </summary>
         [Key(1)] public ushort X;
         [Key(2)] public ushort Y;
 
