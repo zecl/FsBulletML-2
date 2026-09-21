@@ -281,3 +281,49 @@ let foldScore (k: int) (s: Snapshot) : float = fitScore k id s
 /// 星 を花 から 剥がす のは `recipScore - foldScore` の符号
 let recipScore (k: int) (s: Snapshot) : float =
   fitScore k (fun v -> if abs v < 1e-6 then nan else 1.0 / v) s
+
+/// 走行 を 絵 にする。形 を 目 で見る ためだけ の 口 で、門 は ここ を通らない
+module Draw =
+
+  /// いちばん 多く 撃った コマ。1 波 が まるごと そこ に 出る
+  let fullest (snaps: Snapshot list) : Snapshot = snaps |> List.maxBy (fun s -> s.Speeds.Length)
+
+  /// 撃った 弾 を 向き と 速さ から 点 に する。0 rad が 真上（y は 下向き）。
+  /// `Positions` は 使わない —— 生きて いる 弾 の 絶対 座標 で、上 に飛んだ 弾 は
+  /// 敵 から 80 px で 面 の外 に出て 間引かれる。同じ コマ に出た 弾 は 同じ 時間 飛ぶ ので
+  /// 速さ の比 が 半径 の比 に なる
+  let outline (s: Snapshot) : (float * float) list =
+    List.zip s.Headings s.Speeds |> List.map (fun (h, v) -> v * sin h, -(v * cos h))
+
+  let [<Literal>] private CELL = 200.0
+
+  /// 倍率 は 枡 ごと に取る。揃える と 速い 札 だけ が 枠 いっぱい に なり、遅い 札 の 輪郭 が 潰れる
+  let private cell (ox: float) (oy: float) (label: string) (s: Snapshot) =
+    let c = CELL / 2.0
+    let pts = outline s
+    let span =
+      match pts with
+      | [] -> 1.0
+      | ps -> ps |> List.collect (fun (x, y) -> [ abs x; abs y ]) |> List.max |> max 1e-6
+    let k = (c - 12.0) / span
+    let dots =
+      pts
+      |> List.map (fun (x, y) -> sprintf "<circle cx=\"%.1f\" cy=\"%.1f\" r=\"1.6\"/>" (ox + c + x * k) (oy + c + y * k))
+      |> String.concat ""
+    sprintf
+      "<g><rect x=\"%.1f\" y=\"%.1f\" width=\"%.1f\" height=\"%.1f\" fill=\"none\" stroke=\"#ccc\"/>%s<text x=\"%.1f\" y=\"%.1f\" font-size=\"11\" font-family=\"monospace\">%s (%d / %.2f)</text></g>"
+      ox oy CELL CELL dots (ox + 6.0) (oy + 14.0) label pts.Length span
+
+  /// `cols` 枚 ずつ 折り返して 1 枚 に並べる
+  let grid (cols: int) (cells: (string * Snapshot) list) : string =
+    let cols = max 1 cols
+    let rows = (cells.Length + cols - 1) / cols
+    let w = float cols * CELL
+    let hgt = float (max 1 rows) * CELL
+    let body =
+      cells
+      |> List.mapi (fun i (label, s) -> cell (float (i % cols) * CELL) (float (i / cols) * CELL) label s)
+      |> String.concat ""
+    sprintf
+      "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%.0f\" height=\"%.0f\" viewBox=\"0 0 %.0f %.0f\"><rect width=\"%.0f\" height=\"%.0f\" fill=\"#fff\"/>%s</svg>\n"
+      w hgt w hgt w hgt body
