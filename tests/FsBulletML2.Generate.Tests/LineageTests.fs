@@ -5,6 +5,15 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.Generate
 
+/// --- 較正（`Lineage.fs` に 当てた 変異 と、赤 くなった 試験）
+///
+///   種 0 の 並び を 全部 Trail に            Trail は 1 回 まで / 種 0 は 軸 から 組む
+///   Trail の 回数 の 画面 の 上限 を 外す     Trail は 画面 を 横切る 時間 で 止める
+///   Burst の 一列 から 難度 を 外す（2 か所） Burst の 一列 は 難度 で 伸びる / 難度 が 間隔 と 発数 に 入る
+///   止める 速さ を 0 に                       止める 速さ は 0 に しない（直角 は 緑。0 でも 向き は 残る）
+///   Relaunch の 加速 を 消す                  Relaunch は 止まって から 動く / 36 通り（止まった 弾 が 溜まる）
+///   上界 から 重なる 周 を 外す               36 通り
+///   Bar の 周 の 待ち を 1 に                 Bar の 発射台 は 周 に 1 度
 [<TestFixture>]
 type LineageTests() =
 
@@ -179,6 +188,15 @@ type LineageTests() =
         let b = (Lineage.generate s).Bulletml
         births (Felt.runAt 1.0f 400 b) |> should be (greaterThan (births (Felt.runAt 0.0f 400 b)))
 
+  [<Test>]
+  member _.``Burst の 一列 は 難度 で 伸びる``() =
+    let s = make (fun a -> { a with Ways = 1; Seed = 2; Spread = 0.0 })   // B → Plain、1 列
+    let column rank =
+      let snaps = Felt.runAt rank 60 (Lineage.generate s).Bulletml
+      (snaps |> List.skip 1 |> List.find (fun x -> x.Headings.Length > 0)).Headings.Length
+    column 0.0f |> should equal (1 + s.Line.Base)
+    column 1.0f |> should equal (1 + s.Line.Base + s.Line.Rank)
+
   /// 赤 の とき は 並び と 見積もり を 報告 に 書く。`BUDGET` を 黙って 上げない —— `shrink` の 順 が 足りない 証拠
   [<Test>]
   member _.``合計 は 削った 先 に 収まる``() =
@@ -206,3 +224,16 @@ type LineageTests() =
       let peak = runs 600 s |> List.map (fun x -> x.Positions.Length) |> List.max
       peak |> should be (lessThanOrEqualTo 10000)
       float peak |> should be (lessThanOrEqualTo (LineageSpec.aliveBound s))
+
+/// 走らせ 直し の 罠 だけ を 見る。壊す と `LineageTests` の 36 通り が 止まらなく なる ので、別 の 型 に 置いて 型 名 で 絞る
+[<TestFixture>]
+type LineageCycleTests() =
+
+  /// 速さ 0.0001 で 撃つ のは 発射台 だけ。`top` が 待たない と 毎コマ 出る
+  [<Test>]
+  member _.``Bar の 発射台 は 周 に 1 度``() =
+    let s = LineageSpec.create (fun a -> { a with Root = Root.Bar; Seed = 2 })
+    let pads =
+      Felt.run 30 (Lineage.generate s).Bulletml
+      |> List.map (fun x -> x.Speeds |> List.filter (fun v -> v < 0.001) |> List.length)
+    pads |> should equal (s.Ways :: List.replicate 29 0)
