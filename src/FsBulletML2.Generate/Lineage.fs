@@ -159,3 +159,126 @@ module LineageSpec =
     // 画面 を 抜けた 弾 は 撒かない ので、横切る コマ数 より 長く 書かない
     let screen = int (ceil (FIELD_SPAN / trailParentSpeed s / float s.TrailWait.Base))
     fit { s with TrailTimes = min MAX_REPEAT (max 1 screen) } 30
+
+module Lineage =
+
+  let SPEED_HI = LineageSpec.SPEED_HI
+
+  let private STOP = "0.0001"
+  /// 止まる まで に 飛ぶ コマ数
+  let private FLY = 20
+  let private LINE_STEP = 0.1
+  let private BAR_LINE_STEP = 0.4
+  let private BAR_TURN = 10
+  let private BAR_WAIT = 5
+  let private RELAUNCH_SPEED = 2.5
+  let private RELAUNCH_TERM = 60
+
+  let private speedOf (v: float) = sprintf "%.2f + $rank * %.2f" v (v * 0.3)
+  let private waitOf (r: Ranked) = sprintf "%d - %d * $rank" r.Base r.Rank
+  let private timesOf (r: Ranked) = sprintf "%d + %d * $rank" r.Base r.Rank
+
+  let private label (i: int) = sprintf "g%d" (i + 1)
+  let private childOf (s: LineageSpec) (i: int) = if i + 1 < s.Chain.Length then label (i + 1) else "leaf"
+
+  let private trailBody (s: LineageSpec) (child: string) =
+    body {
+      repeat (string s.TrailTimes) {
+        fire { relative "90"; speed (speedOf LineageSpec.CHILD_SPEED); refBullet child [] }
+        fire { relative "-90"; speed (speedOf LineageSpec.CHILD_SPEED); refBullet child [] }
+        wait (waitOf s.TrailWait)
+      }
+      // 面 は 終えた 台本 を 頭 から 走らせ 直す。終わらせる と 撒き 続ける
+      wait "9999"
+    }
+
+  let private burstBody (s: LineageSpec) (child: string) =
+    let step = sprintf "%.2f" LINE_STEP
+    body {
+      wait (string FLY)
+      changeSpeedAbs STOP "1"
+      wait (string s.Hold)
+      fire { relative "90"; speed (speedOf LineageSpec.BURST_SPEED); refBullet child [] }
+      repeat (timesOf s.Line) { fire { sequence "0"; speedSeq step; refBullet child [] } }
+      if s.Columns = 2 then
+        fire { sequence "180"; speed (speedOf LineageSpec.BURST_SPEED); refBullet child [] }
+        repeat (timesOf s.Line) { fire { sequence "0"; speedSeq step; refBullet child [] } }
+      vanish
+    }
+
+  let private relaunchBody (s: LineageSpec) =
+    body {
+      wait (string FLY)
+      changeSpeedAbs STOP "1"
+      wait (waitOf s.RelaunchHold)
+      changeSpeedAbs (speedOf RELAUNCH_SPEED) (string RELAUNCH_TERM)
+      wait "9999"
+    }
+
+  let private radialTop (s: LineageSpec) =
+    let gap = 360.0 / float s.Ways
+    // 刻み の 半分 ずらす と 自機 の 真上 が 隙間 に なる（見本 は aim 15 / 刻み 30）
+    let first = if s.Ways >= 2 then gap / 2.0 else 0.0
+    top {
+      repeat (timesOf s.Waves) {
+        fire { aim (sprintf "%.2f" first); speed (speedOf s.RootSpeed); refBullet "g1" [] }
+        if s.Ways > 1 then
+          repeat (string (s.Ways - 1)) {
+            fire { sequence (sprintf "%.2f" gap); speed (speedOf s.RootSpeed); refBullet "g1" [] }
+          }
+        wait (waitOf s.WaveWait)
+      }
+    }
+
+  let private barTop (s: LineageSpec) =
+    let gap = 360.0 / float s.Ways
+    top {
+      fire { aim "0"; speed STOP; refBullet "bar" [] }
+      if s.Ways > 1 then
+        repeat (string (s.Ways - 1)) { fire { sequence (sprintf "%.2f" gap); speed STOP; refBullet "bar" [] } }
+    }
+
+  /// 発射台。一列 の 頭 は 1 本目 だけ `relative 0`、2 本目 から は 前 の 列 から `sequence` で 回す
+  let private barDef (s: LineageSpec) =
+    let line (head: Action) =
+      [ head
+        repeat (timesOf s.Line) {
+          fire { sequence "0"; speedSeq (sprintf "%.2f" BAR_LINE_STEP); refBullet "g1" [] }
+        } ]
+    defBullet "bar" {
+      doActs (
+        body {
+          yield! line (fire { relative "0"; speed (speedOf LineageSpec.BAR_LINE_SPEED); refBullet "g1" [] })
+          repeat (timesOf s.BarSteps) {
+            wait (string BAR_WAIT)
+            yield! line (fire { sequence (string BAR_TURN); speed (speedOf LineageSpec.BAR_LINE_SPEED); refBullet "g1" [] })
+          }
+          vanish
+        })
+    }
+
+  let generate (s: LineageSpec) : BulletmlInfo =
+    let defs =
+      s.Chain
+      |> List.mapi (fun i gene ->
+          let child = childOf s i
+          defBullet (label i) {
+            doActs (
+              match gene with
+              | Spawner.Trail -> trailBody s child
+              | Spawner.Burst -> burstBody s child)
+          })
+    let leaf =
+      match s.Leaf with
+      | Terminal.Plain -> defBullet "leaf" { () }
+      | Terminal.Relaunch -> defBullet "leaf" { doActs (relaunchBody s) }
+    createBulletmlInfo
+    <| vertical "lineage" {
+         match s.Root with
+         | Root.Radial -> radialTop s
+         | Root.Bar ->
+           barTop s
+           barDef s
+         yield! defs
+         leaf
+       }
