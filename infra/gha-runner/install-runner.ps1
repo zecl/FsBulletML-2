@@ -54,6 +54,13 @@ param(
   [string]$Label = 'fsbulletml2',
   [string]$Repo = 'zecl/FsBulletML-2',
   [string]$Version = '2.335.1',
+  # 何台目 か。**既定 の 1 は 今まで と同じ 置き場・名前・Startup の字**。
+  # 2 台目 を足しても 1 台目 は 1 文字 も動かない。
+  #
+  # 名前 を instance ごと に分けない と `--replace` が 1 台目 を置き換える ——
+  # 2 台 建てた つもり で 1 台 のまま に なり、**GitHub 側 は online 1 台 で緑 に見える**
+  [ValidateRange(1, 9)]
+  [int]$Instance = 1,
   # **管理者を使わない道。** サービスにせず、Startup に置いた 1 枚 の cmd で
   # サインインのたびに起こす。runner は今この場でも立ち上げる。
   #
@@ -66,10 +73,25 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+# 1 台目 は 尻尾 を付けない。既に建って いる ものの 置き場・名前・Startup の字 を動かさない
+$suffix = if ($Instance -le 1) { '' } else { "-$Instance" }
+
 if (-not $RunnerDir) {
   if (-not $env:LOCALAPPDATA) { throw 'LOCALAPPDATA が無い。-RunnerDir で置き場を渡すこと' }
-  $RunnerDir = Join-Path $env:LOCALAPPDATA 'gha-runner\FsBulletML-2'
+  $RunnerDir = Join-Path $env:LOCALAPPDATA "gha-runner\FsBulletML-2$suffix"
 }
+
+# **区切り を付けて から 前方一致 する。** 付けない と `FsBulletML-2` が
+# `FsBulletML-2-2\bin\...` に当たり、1 台目 を落とす つもり で 2 台目 も死ぬ
+$dirPrefix = $RunnerDir.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+
+function Get-MyListeners {
+  Get-Process -Name 'Runner.Listener' -ErrorAction SilentlyContinue |
+    Where-Object { $_.Path -and $_.Path.StartsWith($dirPrefix, [StringComparison]::OrdinalIgnoreCase) }
+}
+
+# runner の名前。**機械の名前を入れる** —— 何台か 並んだとき、どれがどこか分かる
+$name = "$Label-$($env:COMPUTERNAME.ToLower())$suffix"
 
 function Test-Admin {
   $me = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -84,7 +106,7 @@ function Assert-Admin {
 
 # Startup に置く起動役。**cmd 1 枚 だけ** —— サインインのたびに runner を起こす
 function Get-StartupCmdPath {
-  Join-Path ([Environment]::GetFolderPath('Startup')) 'gha-runner-FsBulletML-2.cmd'
+  Join-Path ([Environment]::GetFolderPath('Startup')) "gha-runner-FsBulletML-2$suffix.cmd"
 }
 
 function Get-RegistrationToken {
@@ -101,13 +123,17 @@ function Get-RegistrationToken {
 # --- 落とす -------------------------------------------------------------------
 if ($Remove) {
   # **走っているものを先に止める。** 掴まれたまま消すと、GitHub 側 に
-  # offline の残骸が残って一覧が汚れる
-  $svc = @(Get-Service -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'actions.runner.*' })
+  # offline の残骸が残って一覧が汚れる。
+  #
+  # **この instance の ぶん だけ 止める。** `actions.runner.*` と
+  # `Runner.Listener` を名前 で全部 拾う と、2 台目 を落とす つもり で
+  # **1 台目 も道連れ に なる**（そして GitHub 側 は offline 2 台 に見える）
+  $svc = @(Get-Service -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "actions.runner.*.$name" })
   if ($svc.Count -gt 0) {
     if (-not (Test-Admin)) { throw 'サービスが在るので、外すには管理者が要る' }
     $svc | Stop-Service -Force -ErrorAction SilentlyContinue
   }
-  Get-Process -Name 'Runner.Listener' -ErrorAction SilentlyContinue | Stop-Process -Force
+  Get-MyListeners | Stop-Process -Force
   $startup = Get-StartupCmdPath
   if (Test-Path -LiteralPath $startup) {
     [IO.File]::Delete($startup)
@@ -136,6 +162,7 @@ if (-not $NoService) { Assert-Admin }
 
 Write-Host "repo      $Repo"
 Write-Host "label     self-hosted, windows, $Label"
+Write-Host "名前      $name（$Instance 台目）"
 Write-Host "置き場    $RunnerDir"
 Write-Host "版        $Version"
 Write-Host ("起こし方  {0}" -f $(if ($NoService) { 'Startup の cmd（サインインのたび）' } else { 'サービス（サインイン前から）' }))
@@ -159,9 +186,6 @@ if (Test-Path -LiteralPath (Join-Path $RunnerDir 'config.cmd')) {
 }
 
 $rt = Get-RegistrationToken
-
-# runner の名前。**機械の名前を入れる** —— 何台か 並んだとき、どれがどこか分かる
-$name = "$Label-$($env:COMPUTERNAME.ToLower())"
 
 Push-Location $RunnerDir
 try {
@@ -192,8 +216,9 @@ if ($NoService) {
   [IO.File]::WriteAllText($startup, $cmd + "`r`n", (New-Object Text.UTF8Encoding $false))
   Write-Host "Startup に置いた: $startup"
 
-  # いまこの場でも起こす。**サインインを待たない**
-  Get-Process -Name 'Runner.Listener' -ErrorAction SilentlyContinue | Stop-Process -Force
+  # いまこの場でも起こす。**サインインを待たない**。
+  # 止めるのは この置き場 の ぶん だけ —— 名前 で拾う と 隣 の instance が死ぬ
+  Get-MyListeners | Stop-Process -Force
   Start-Process -FilePath (Join-Path $RunnerDir 'run.cmd') -WorkingDirectory $RunnerDir -WindowStyle Hidden
   Start-Sleep -Seconds 8
 }
