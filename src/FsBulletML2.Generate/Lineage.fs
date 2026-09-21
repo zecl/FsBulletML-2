@@ -66,14 +66,17 @@ module LineageSpec =
   let internal CHILD_SPEED = 1.0
   let internal BURST_SPEED = 1.3
   let internal BAR_LINE_SPEED = 1.5
-  /// 止まる まで に 飛ぶ コマ数
-  let internal FLY = 20
+  /// 止まる 段 が 飛ぶ 距離 の 合計（px）。1 段 ずつ 遠く へ 出る ので、段 が 多い ほど 1 段 を 短く する ——
+  /// 1 段 60 コマ で 固定 した とき、3 段 目 は 画面 の 外 で 止まって 撒かなかった
+  let internal FLY_SPAN = 180.0
   let internal BAR_WAIT = 5
   let internal RELAUNCH_SPEED = 2.5
   let internal RELAUNCH_TERM = 60
 
-  /// `$rank = 1` で 同時 に 居る 弾 の 上界 を ここ まで 削る。面 の 天井 10,000 との 差 は 見積もり の 誤差
-  let BUDGET = 6000.0
+  /// `$rank = 1` で 同時 に 居る 弾 の 上界 を ここ まで 削る。面 の 天井 と 同じ 10,000 ——
+  /// 上界 は 実測 を 下回らない（36 通り の 試験 が 見る）ので、余白 を 別 に 取らない。
+  /// 6,000 に した とき は 上界 が 実測 の 1.5〜6 倍 で、Trail が 2 回 まで 削られた
+  let BUDGET = 10000.0
 
   let private CHAIN_TABLE =
     let t, b = Spawner.Trail, Spawner.Burst
@@ -106,37 +109,43 @@ module LineageSpec =
     | Spawner.Trail -> 2.0 * float s.TrailTimes
     | Spawner.Burst -> (1.0 + at s.Line) * float s.Columns
 
-  /// 1 周 に 生まれる 弾 の 合計。段 ごと の 数 の 和
-  let private perCycle (s: LineageSpec) =
-    s.Chain
-    |> List.scan (fun n g -> n * factor s g) (roots s)
-    |> List.sum
-
   /// 根 の 1 周 の コマ数。`top` は 終える と 頭 から 走り 直す
   let private cycle (s: LineageSpec) =
     match s.Root with
     | Root.Radial -> at s.Waves * at1 s.WaveWait
     | Root.Bar -> at s.BarSteps * float BAR_WAIT + at1 s.WaveWait
 
-  /// 根 が 撃って から 最後 の 子孫 が 画面 を 抜ける まで。子 の 速さ は 列 の 中 で いちばん 遅い 弾 で 取る
-  let private lifespan (s: LineageSpec) =
-    let rootTime = match s.Root with Root.Radial -> 0.0 | Root.Bar -> at s.BarSteps * float BAR_WAIT
-    let geneTime g =
-      match g with
-      | Spawner.Trail -> float s.TrailTimes * at1 s.TrailWait
-      | Spawner.Burst -> float (FLY + s.Hold)
-    let lastSpeed = match List.last s.Chain with Spawner.Trail -> CHILD_SPEED | Spawner.Burst -> BURST_SPEED
-    let leaf =
-      match s.Leaf with
-      | Terminal.Plain -> FIELD_SPAN / fast lastSpeed
-      | Terminal.Relaunch -> float FLY + at1 s.RelaunchHold + float RELAUNCH_TERM + FIELD_SPAN / fast RELAUNCH_SPEED
-    rootTime + List.sumBy geneTime s.Chain + leaf
+  /// 段 `i` の 弾 の 速さ（`$rank = 0`）。0 は 根 が 撃つ 弾、ほか は 1 つ 上 の 遺伝子 が 撃つ 弾
+  let internal stageSpeed (s: LineageSpec) (i: int) =
+    if i = 0 then (match s.Root with Root.Radial -> s.RootSpeed | Root.Bar -> BAR_LINE_SPEED)
+    else (match s.Chain.[i - 1] with Spawner.Trail -> CHILD_SPEED | Spawner.Burst -> BURST_SPEED)
 
-  /// 同時 に 居る 弾 の 上界（`$rank = 1`）。子孫 は 1 周 より 長く 生きる ので、
-  /// 1 周 の 合計 に 重なる 周 の 数 を 掛ける —— 掛けない と 実測 が 最大 4.1 倍 に なった。
+  /// 段 `i` が 止まる まで に 飛ぶ コマ数（`$rank = 1` の 速さ で 数える）
+  let flyOf (s: LineageSpec) (i: int) =
+    let stops = (s.Chain |> List.filter ((=) Spawner.Burst) |> List.length) + (if s.Leaf = Terminal.Relaunch then 1 else 0)
+    max 10 (int (ceil (FLY_SPAN / float (max 1 stops) / fast (stageSpeed s i))))
+
+  /// 段 `i` の 弾 の 寿命。止まって 撃つ 弾 は 撃ったら 消え、ほか は 画面 を 抜ける まで 生きる
+  let private lifeOf (s: LineageSpec) (i: int) =
+    let speed = stageSpeed s i
+    if i < s.Chain.Length then
+      match s.Chain.[i] with
+      | Spawner.Burst -> float (flyOf s i + s.Hold)
+      | Spawner.Trail -> FIELD_SPAN / fast speed
+    else
+      match s.Leaf with
+      | Terminal.Plain -> FIELD_SPAN / fast speed
+      | Terminal.Relaunch -> float (flyOf s i) + at1 s.RelaunchHold + float RELAUNCH_TERM + FIELD_SPAN / fast RELAUNCH_SPEED
+
+  /// 同時 に 居る 弾 の 上界（`$rank = 1`）。根 は 繰り返す ので、段 ごと に 1 周 の 数 と 重なる 周 の 数 を 掛けて 足す。
+  /// 系譜 まるごと の 寿命 で 掛ける と 実測 / 見積もり が 0.3 まで 下がり、`fit` が 削り すぎた。
   /// 画面 を 抜ける 距離 を `FIELD_SPAN` で 取る ので、下向き に 長く 飛ぶ ぶん は `SAFETY` が 持つ
   let aliveBound (s: LineageSpec) : float =
-    perCycle s * ceil (lifespan s / cycle s) * Bound.SAFETY
+    let c = cycle s
+    List.scan (fun n g -> n * factor s g) (roots s) s.Chain
+    |> List.mapi (fun i n -> n * ceil (lifeOf s i / c))
+    |> List.sum
+    |> (*) Bound.SAFETY
 
   /// Trail を 撃つ 側 の 速さ（`$rank = 0`）。画面 を 横切る コマ数 を 出す のに 使う
   let private trailParentSpeed (s: LineageSpec) =
@@ -146,13 +155,16 @@ module LineageSpec =
 
   /// 波 を 減らす 手 は 無い。1 周 が 半分 に なる と 周 も 半分 に なり、重なる 周 が 倍 に なる
   let private shrink (s: LineageSpec) : LineageSpec option =
-    if List.contains Spawner.Trail s.Chain && s.TrailTimes > 2 then Some { s with TrailTimes = s.TrailTimes / 2 }
-    elif s.WaveWait.Base < 360 then Some { s with WaveWait = { Base = s.WaveWait.Base * 2; Rank = s.WaveWait.Rank * 2 } }
+    let trail = List.contains Spawner.Trail s.Chain
+    // 軌跡 は 4 回 まで 残して 後回し。先 に 削る と 3 世代 の 並び で 2 回 に なり、線 に 見えなかった
+    if s.WaveWait.Base < 360 then Some { s with WaveWait = { Base = s.WaveWait.Base * 2; Rank = s.WaveWait.Rank * 2 } }
+    elif trail && s.TrailTimes > 4 then Some { s with TrailTimes = s.TrailTimes / 2 }
     elif s.Root = Root.Bar && s.BarSteps.Base > 2 then
       Some { s with BarSteps = { Base = s.BarSteps.Base / 2; Rank = s.BarSteps.Rank / 2 } }
     elif s.Line.Rank > 0 then Some { s with Line = { s.Line with Rank = s.Line.Rank - 1 } }
     elif s.Line.Base > 1 then Some { s with Line = { s.Line with Base = s.Line.Base - 1 } }
     elif s.Columns = 2 then Some { s with Columns = 1 }
+    elif trail && s.TrailTimes > 2 then Some { s with TrailTimes = s.TrailTimes / 2 }
     elif s.WaveWait.Base < 1440 then Some { s with WaveWait = { Base = s.WaveWait.Base * 2; Rank = s.WaveWait.Rank * 2 } }
     else None
 
@@ -202,7 +214,6 @@ module Lineage =
   let SPEED_HI = LineageSpec.SPEED_HI
 
   let private STOP = "0.0001"
-  let private FLY = LineageSpec.FLY
   let private LINE_STEP = 0.1
   let private BAR_LINE_STEP = 0.4
   let private BAR_TURN = 10
@@ -228,10 +239,10 @@ module Lineage =
       wait "9999"
     }
 
-  let private burstBody (s: LineageSpec) (child: string) =
+  let private burstBody (s: LineageSpec) (i: int) (child: string) =
     let step = sprintf "%.2f" LINE_STEP
     body {
-      wait (string FLY)
+      wait (string (LineageSpec.flyOf s i))
       changeSpeedAbs STOP "1"
       wait (string s.Hold)
       fire { relative "90"; speed (speedOf LineageSpec.BURST_SPEED); refBullet child [] }
@@ -244,7 +255,7 @@ module Lineage =
 
   let private relaunchBody (s: LineageSpec) =
     body {
-      wait (string FLY)
+      wait (string (LineageSpec.flyOf s s.Chain.Length))
       changeSpeedAbs STOP "1"
       wait (waitOf s.RelaunchHold)
       changeSpeedAbs (speedOf RELAUNCH_SPEED) (string RELAUNCH_TERM)
@@ -309,7 +320,7 @@ module Lineage =
             doActs (
               match gene with
               | Spawner.Trail -> trailBody s child
-              | Spawner.Burst -> burstBody s child)
+              | Spawner.Burst -> burstBody s i child)
           })
     let leaf =
       match s.Leaf with

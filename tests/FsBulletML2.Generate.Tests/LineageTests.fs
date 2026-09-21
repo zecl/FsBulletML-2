@@ -153,9 +153,9 @@ type LineageTests() =
   [<Test>]
   member _.``止めた 弾 の 横撃ち は 直角``() =
     let s = make (fun a -> { a with Ways = 1; Seed = 2 })   // B → Plain
-    let snaps = runs 60 s
+    let snaps = runs 240 s
     let parent = snaps.[0].Headings |> List.exactlyOne
-    let burst = snaps |> List.skip 1 |> List.find (fun x -> x.Headings.Length > 0)
+    let burst = snaps |> List.skip 1 |> List.find (fun x -> x.Headings.Length > 1)
     for h in burst.Headings do
       abs (sin (h - parent)) |> should be (greaterThan 0.99)
 
@@ -174,11 +174,12 @@ type LineageTests() =
   member _.``Relaunch は 止まって から 動く``() =
     let s = make (fun a -> { a with Ways = 1; Seed = 2; Stillness = 1.0 })   // B → Relaunch
     let snaps = runs 300 s
-    let born = (snaps |> List.skip 1 |> List.find (fun x -> x.Headings.Length > 0)).Frame
+    let born = (snaps |> List.skip 1 |> List.find (fun x -> x.Headings.Length > 1)).Frame
     let hold = s.RelaunchHold.Base - s.RelaunchHold.Rank     // $rank = 1
+    let fly = LineageSpec.flyOf s 1
     groupSpeed snaps born (born + 5) |> should be (greaterThan 0.5)
-    groupSpeed snaps born (born + 20 + hold / 2) |> should be (lessThan 0.05)
-    groupSpeed snaps born (born + 20 + hold + 50) |> should be (greaterThan 0.5)
+    groupSpeed snaps born (born + fly + hold / 2) |> should be (lessThan 0.05)
+    groupSpeed snaps born (born + fly + hold + 50) |> should be (greaterThan 0.5)
 
   [<Test>]
   member _.``難度 1 は 難度 0 より 多く 生む``() =
@@ -192,8 +193,8 @@ type LineageTests() =
   member _.``Burst の 一列 は 難度 で 伸びる``() =
     let s = make (fun a -> { a with Ways = 1; Seed = 2; Spread = 0.0 })   // B → Plain、1 列
     let column rank =
-      let snaps = Felt.runAt rank 60 (Lineage.generate s).Bulletml
-      (snaps |> List.skip 1 |> List.find (fun x -> x.Headings.Length > 0)).Headings.Length
+      let snaps = Felt.runAt rank 240 (Lineage.generate s).Bulletml
+      (snaps |> List.skip 1 |> List.find (fun x -> x.Headings.Length > 1)).Headings.Length
     column 0.0f |> should equal (1 + s.Line.Base)
     column 1.0f |> should equal (1 + s.Line.Base + s.Line.Rank)
 
@@ -209,19 +210,19 @@ type LineageTests() =
     let s = make (fun a -> { a with Seed = 1; Ways = 4; Speed = 0.0; Streak = 0.0 })
     s.TrailTimes |> should equal 35
 
-  /// 36 通り を 難度 1 で 走らせた 最大数。最大 に なる のは 遅くて 587 コマ 目 なので 600 コマ 見る。
+  /// 36 通り を 難度 1 で 走らせた 最大数。最大 に なる のは 遅くて 601 コマ 目 なので 610 コマ 見る。
   ///
   /// --- 較正 の 記録（700 コマ で 測った 実測）
   ///
-  ///   最大数 の 最大            3,015 発（T → B → B・Bar・Plain）
-  ///   実測 / 見積もり の 最大   0.895（B → B・Bar・Plain）
+  ///   最大数 の 最大            4,958 発（T → B → B・Bar・Relaunch）
+  ///   実測 / 見積もり の 最大   0.756（T・Bar・Plain）
   ///   字 の 大きさ の 最大      4,126 字（B → B → B・Bar・Relaunch）
   ///
   /// 根 は 繰り返す。重なる 周 を 見積もり に 入れる 前 は 実測 / 見積もり が 4.1 倍、最大数 は 18,512 発 だった
   [<Test>]
   member _.``36 通り は 面 の 天井 に 収まる``() =
     for s in all36 do
-      let peak = runs 600 s |> List.map (fun x -> x.Positions.Length) |> List.max
+      let peak = runs 610 s |> List.map (fun x -> x.Positions.Length) |> List.max
       peak |> should be (lessThanOrEqualTo 10000)
       float peak |> should be (lessThanOrEqualTo (LineageSpec.aliveBound s))
 
