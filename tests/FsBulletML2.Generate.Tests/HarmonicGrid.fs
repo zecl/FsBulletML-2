@@ -43,3 +43,11 @@ type HarmonicGrid() =
             waveOf (HarmonicSpec.create (fun a ->
               { a with Figure = figure; Folds = folds; Speed = 2.0; Amplitude = 1.2 })) ]
     write "harmonic-grid.svg" 4 cells |> File.Exists |> should equal true
+
+  [<Test>]
+  member _.``種 18 通り を 1 枚 に書き出す``() =
+    let cells =
+      [ for seed in 1 .. 18 ->
+          let h = HarmonicSpec.create (fun a -> { a with Folds = 5; Speed = 2.0; Amplitude = 1.2; Seed = seed })
+          sprintf "seed-%d k2=%d L%d a%.2f" seed h.Folds2 h.Layers h.Amplitude2, waveOf h ]
+    write "harmonic-seeds.svg" 6 cells |> File.Exists |> should equal true
