@@ -246,8 +246,9 @@ let private solve3 (a: float[,]) (b: float[]) : float[] option =
 
 /// 速さ を `f` で写した 値 を `a + b sin kθ + c cos kθ` に最小二乗 で当てた 決定係数 R²。
 ///
-/// 写した 値 の分散 が ~0 なら 0（0/0 の NaN は どの 比較 も偽 になる）
-let private fitScore (k: int) (f: float -> float) (s: Snapshot) : float =
+/// 写した 値 の分散 が ~0 なら 0（0/0 の NaN は どの 比較 も偽 になる）。
+/// `k` を 呼ぶ側 が 渡せない と 第 2 の波 の 当てはまり が 測れない ので 出して いる
+let fitScore (k: int) (f: float -> float) (s: Snapshot) : float =
   let pts =
     List.zip s.Headings s.Speeds
     |> List.filter (fun (_, v) -> System.Double.IsFinite(f v))
