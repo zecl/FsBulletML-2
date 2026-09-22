@@ -267,6 +267,48 @@ type LineageTests() =
     bound (fun a -> { a with Strands = 2.0 }) |> should be (greaterThan (bound id))
     bound (fun a -> { a with Fall = 1.0 }) |> should be (greaterThan (bound id))
 
+  /// 扇 2 本 は 自機（真下 180°）から ±60° ＝ 120° と 240°
+  [<Test>]
+  member _.``扇 は 自機 の 向き から 幅 120°``() =
+    let heads ways =
+      let s = make (fun a -> { a with Root = Root.Fan; Ways = ways; Seed = 2 })
+      (runs 2 s).[0].Headings |> List.map (fun h -> Math.Round(h * 180.0 / Math.PI)) |> List.sort
+    heads 2 |> should equal [ 120.0; 240.0 ]
+    heads 3 |> should equal [ 120.0; 180.0; 240.0 ]
+    heads 1 |> should equal [ 180.0 ]
+
+  /// 放射 2 本 は 真横。入れ替え が あれば 左右 の 糸 は 敵 の 縦 の 線 を 挟んで 鏡写し
+  [<Test>]
+  member _.``入れ替え は 左右 を 鏡写し に する``() =
+    let mirrored alt =
+      let s = make (fun a -> { a with Ways = 2; Seed = 1; Drift = 2.0; Alternate = alt })
+      let snap = (runs 150 s).[149]
+      let ps = snap.Positions
+      let hit (x, y) = ps |> List.exists (fun (x2, y2) -> abs (x2 - (2.0 * float Felt.EnemyX - x)) < 1.0 && abs (y2 - y) < 1.0)
+      float (ps |> List.filter hit |> List.length) / float ps.Length
+    mirrored true |> should be (greaterThan 0.95)
+    mirrored false |> should be (lessThan 0.5)
+    // 振り が 回って いない と、入れ替え が 無くて も 鏡写し に なる。$1 が 届かず 0 の とき が それ
+    let s = make (fun a -> { a with Ways = 2; Seed = 1; Drift = 2.0; Alternate = true })
+    let heads = trailFrames (runs 60 s) 4 |> List.map (fun x -> Math.Round(x.Headings.[0], 3)) |> List.distinct
+    heads.Length |> should be (greaterThan 3)
+
+  [<Test>]
+  member _.``入れ替え の 波 は 2 波 で 1 組``() =
+    let x = xml (make (fun a -> { a with Ways = 2; Seed = 1; Alternate = true }))
+    x |> should haveSubstring "(1 + 1 * $rank + 1) / 2"
+    x |> should haveSubstring "<param>1</param>"
+    x |> should haveSubstring "<param>-1</param>"
+    // 難度 0 でも 2 波（1 周 に 1 波 増える）
+    let s = make (fun a -> { a with Ways = 2; Seed = 2; Alternate = true })
+    let roots = Felt.runAt 0.0f (1 + 2 * s.WaveWait.Base) (Lineage.generate s).Bulletml |> List.filter (fun x -> x.Headings.Length = 2)
+    roots.Length |> should be (greaterThanOrEqualTo 2)
+
+  [<Test>]
+  member _.``入れ替え が 無ければ 引数 を 渡さない``() =
+    for s in grid do
+      if not s.Alternate then (xml s) |> should not' (haveSubstring "<param>")
+
   [<Test>]
   member _.``難度 1 は 難度 0 より 多く 生む``() =
     for seed in [ 1; 2 ] do
@@ -345,3 +387,13 @@ type LineageCycleTests() =
       Felt.run 30 (Lineage.generate s).Bulletml
       |> List.map (fun x -> x.Speeds |> List.filter (fun v -> v < 0.001) |> List.length)
     pads |> should equal (s.Ways :: List.replicate 29 0)
+
+  /// Bar の 入れ替え は 2 周 を 1 つ の top に 書く。2 周目 も 発射台 は 腕 の 数 だけ
+  [<Test>]
+  member _.``Bar の 入れ替え でも 発射台 は 周 に 1 度``() =
+    let s = LineageSpec.create (fun a -> { a with Root = Root.Bar; Seed = 2; Alternate = true })
+    let c = s.BarSteps.Base * LineageSpec.BAR_WAIT + s.WaveWait.Base + (s.BarSteps.Rank * LineageSpec.BAR_WAIT - s.WaveWait.Rank)
+    let pads =
+      Felt.run (c + 5) (Lineage.generate s).Bulletml
+      |> List.map (fun x -> x.Speeds |> List.filter (fun v -> v < 0.001) |> List.length)
+    pads |> List.sum |> should equal (2 * s.Ways)

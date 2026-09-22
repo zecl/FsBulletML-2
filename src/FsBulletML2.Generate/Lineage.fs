@@ -142,10 +142,14 @@ module LineageSpec =
     let h = (RISE_ROOM - v * tr / 2.0) / v
     max 0 (min FALL_HOLD_MAX (int (floor h)))
 
+  /// 入れ替え の 根 は 符号 の 違う 2 波 を 1 組 に して `(n + g × $rank + 1) / 2` 回。走らせ役 は 回数 を 切り捨てる ので、端数 の とき 1 波 増える
+  let private waves (s: LineageSpec) =
+    if s.Alternate && s.Root <> Root.Bar then 2.0 * floor ((at s.Waves + 1.0) / 2.0) else at s.Waves
+
   /// 1 段目 の 弾 の 数。Bar は 最初 の 一列 と `BarSteps` 回 の 列 で、一列 は 先頭 + `Line`
   let private roots (s: LineageSpec) =
     match s.Root with
-    | Root.Radial | Root.Fan -> float s.Ways * at s.Waves
+    | Root.Radial | Root.Fan -> float s.Ways * waves s
     | Root.Bar -> float s.Ways * (1.0 + at s.BarSteps) * (1.0 + at s.Line)
 
   let private factor (s: LineageSpec) (g: Spawner) =
@@ -156,7 +160,7 @@ module LineageSpec =
   /// 根 の 1 周 の コマ数。`top` は 終える と 頭 から 走り 直す
   let private cycle (s: LineageSpec) =
     match s.Root with
-    | Root.Radial | Root.Fan -> at s.Waves * at1 s.WaveWait
+    | Root.Radial | Root.Fan -> waves s * at1 s.WaveWait
     | Root.Bar -> at s.BarSteps * float BAR_WAIT + at1 s.WaveWait
 
   /// 段 `i` の 弾 の 速さ（`$rank = 0`）。0 は 根 が 撃つ 弾、ほか は 1 つ 上 の 遺伝子 が 撃つ 弾
@@ -404,6 +408,37 @@ module Lineage =
       wait "9999"
     }
 
+  let private sign (i: int) (w: int) = if (i + w) % 2 = 0 then 1 else -1
+  let private argsAt (s: LineageSpec) (i: int) (w: int) = if s.Alternate then [ string (sign i w) ] else []
+  let private pairsOf (r: Ranked) = sprintf "(%d + %d * $rank + 1) / 2" r.Base r.Rank
+
+  /// 1 波 の 筋 の 向き（aim から の 度）
+  let private raysOf (s: LineageSpec) =
+    match s.Root with
+    | Root.Fan ->
+      if s.Ways = 1 then [ 0.0 ]
+      else [ for i in 0 .. s.Ways - 1 -> -60.0 + 120.0 * float i / float (s.Ways - 1) ]
+    | _ ->
+      let gap = 360.0 / float s.Ways
+      let first = if s.Ways >= 2 then gap / 2.0 else 0.0
+      [ for i in 0 .. s.Ways - 1 -> first + gap * float i ]
+
+  /// 筋 を 並べて 書く 1 波
+  let private waveOf (s: LineageSpec) (w: int) =
+    (raysOf s |> List.mapi (fun i d -> fire { aim (sprintf "%.2f" d); speed (speedOf s.RootSpeed); refBullet "g1" (argsAt s i w) }))
+    @ [ wait (waitOf s.WaveWait) ]
+
+  let private spreadTop (s: LineageSpec) =
+    top {
+      if s.Alternate then
+        repeat (pairsOf s.Waves) {
+          yield! waveOf s 0
+          yield! waveOf s 1
+        }
+      else
+        repeat (timesOf s.Waves) { yield! waveOf s 0 }
+    }
+
   let private radialTop (s: LineageSpec) =
     let gap = 360.0 / float s.Ways
     // 刻み の 半分 ずらす と 自機 の 真上 が 隙間 に なる（見本 は aim 15 / 刻み 30）
@@ -427,11 +462,19 @@ module Lineage =
 
   let private barTop (s: LineageSpec) =
     let gap = 360.0 / float s.Ways
+    let pads (w: int) =
+      if s.Alternate then
+        [ for i in 0 .. s.Ways - 1 -> fire { aim (sprintf "%.2f" (gap * float i)); speed STOP; refBullet "bar" (argsAt s i w) } ]
+        @ [ wait (barCycle s) ]
+      else
+        [ yield fire { aim "0"; speed STOP; refBullet "bar" [] }
+          if s.Ways > 1 then
+            yield repeat (string (s.Ways - 1)) { fire { sequence (sprintf "%.2f" gap); speed STOP; refBullet "bar" [] } }
+          yield wait (barCycle s) ]
     top {
-      fire { aim "0"; speed STOP; refBullet "bar" [] }
-      if s.Ways > 1 then
-        repeat (string (s.Ways - 1)) { fire { sequence (sprintf "%.2f" gap); speed STOP; refBullet "bar" [] } }
-      wait (barCycle s)
+      yield! pads 0
+      // top は 終える と 頭 から 走り 直す ので、周 を またぐ 符号 は 2 周 を 1 つ に 書いて 持つ
+      if s.Alternate then yield! pads 1
     }
 
   /// 発射台。一列 の 頭 は 1 本目 だけ `relative 0`、2 本目 から は 前 の 列 から `sequence` で 回す
@@ -439,15 +482,15 @@ module Lineage =
     let line (head: Action) =
       [ head
         repeat (timesOf s.Line) {
-          fire { sequence "0"; speedSeq (sprintf "%.2f" BAR_LINE_STEP); refBullet "g1" [] }
+          fire { sequence "0"; speedSeq (sprintf "%.2f" BAR_LINE_STEP); refBullet "g1" (passOn s) }
         } ]
     defBullet "bar" {
       doActs (
         body {
-          yield! line (fire { relative "0"; speed (speedOf LineageSpec.BAR_LINE_SPEED); refBullet "g1" [] })
+          yield! line (fire { relative "0"; speed (speedOf LineageSpec.BAR_LINE_SPEED); refBullet "g1" (passOn s) })
           repeat (timesOf s.BarSteps) {
             wait (string BAR_WAIT)
-            yield! line (fire { sequence (string BAR_TURN); speed (speedOf LineageSpec.BAR_LINE_SPEED); refBullet "g1" [] })
+            yield! line (fire { sequence (string BAR_TURN); speed (speedOf LineageSpec.BAR_LINE_SPEED); refBullet "g1" (passOn s) })
           }
           vanish
         })
@@ -472,7 +515,8 @@ module Lineage =
     createBulletmlInfo
     <| vertical "lineage" {
          match s.Root with
-         | Root.Radial -> radialTop s
+         | Root.Radial when not s.Alternate -> radialTop s
+         | Root.Radial | Root.Fan -> spreadTop s
          | Root.Bar ->
            barTop s
            barDef s
