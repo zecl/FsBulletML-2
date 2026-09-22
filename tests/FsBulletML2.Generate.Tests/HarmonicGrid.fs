@@ -5,10 +5,7 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2.Generate
 
-/// 1 波 を 絵 に して 1 枚 に並べる。
-///
-/// 形 の判断 を 8787 の 目視 だけ で やって いて、ハート で 2 周・星 で 2 周・
-/// 薔薇 で 4 周 外した。絵 が 試験 の中 で 出れば その 全部 が 1 回 で済む
+/// 1 波 を 絵 に して 1 枚 に並べる
 [<TestFixture>]
 type HarmonicGrid() =
 

@@ -87,8 +87,7 @@ module LineageSpec =
   let internal CHILD_SPEED = 1.0
   let internal BURST_SPEED = 1.3
   let internal BAR_LINE_SPEED = 1.5
-  /// 止まる 段 が 飛ぶ 距離 の 合計（px）。1 段 ずつ 遠く へ 出る ので、段 が 多い ほど 1 段 を 短く する ——
-  /// 1 段 60 コマ で 固定 した とき、3 段 目 は 画面 の 外 で 止まって 撒かなかった
+  /// 止まる 段 が 飛ぶ 距離 の 合計（px）。1 段 ずつ 遠く へ 出る ので、段 が 多い ほど 1 段 を 短く する
   let internal FLY_SPAN = 180.0
   let internal BAR_WAIT = 5
   let internal RELAUNCH_SPEED = 2.5
@@ -100,9 +99,7 @@ module LineageSpec =
   let internal RISE_ROOM = 64.0
   let internal FALL_HOLD_MAX = 45
 
-  /// `$rank = 1` で 同時 に 居る 弾 の 上界 を ここ まで 削る。面 の 天井 と 同じ 10,000 ——
-  /// 上界 は 実測 を 下回らない（36 通り の 試験 が 見る）ので、余白 を 別 に 取らない。
-  /// 6,000 に した とき は 上界 が 実測 の 1.5〜6 倍 で、Trail が 2 回 まで 削られた
+  /// `$rank = 1` で 同時 に 居る 弾 の 上界 を ここ まで 削る（面 の 天井 と 同じ）
   let BUDGET = 10000.0
 
   let private CHAIN_TABLE =
@@ -190,9 +187,7 @@ module LineageSpec =
       // 狙い 直す 弾 は Relaunch と 同じ 動き
       if s.Seekers then max leaf relaunch else leaf
 
-  /// 同時 に 居る 弾 の 上界（`$rank = 1`）。根 は 繰り返す ので、段 ごと に 1 周 の 数 と 重なる 周 の 数 を 掛けて 足す。
-  /// 系譜 まるごと の 寿命 で 掛ける と 実測 / 見積もり が 0.3 まで 下がり、`fit` が 削り すぎた。
-  /// 画面 を 抜ける 距離 を `FIELD_SPAN` で 取る ので、下向き に 長く 飛ぶ ぶん は `SAFETY` が 持つ
+  /// 同時 に 居る 弾 の 上界（`$rank = 1`）。段 ごと に 1 周 の 数 × 重なる 周 の 数 を 足す
   let aliveBound (s: LineageSpec) : float =
     let c = cycle s
     List.scan (fun n g -> n * factor s g) (roots s) s.Chain
@@ -332,10 +327,8 @@ module Lineage =
       }
     else
       let d = if s.TrailTimes > 1 then s.Sweep / float (s.TrailTimes - 1) else 0.0
-      // 1 発目 の sequence の 起点 は 走らせ役 で 違う（この Core は 0、libBulletML は 自機 の 向き）。
-      // 1 組目 だけ relative で 撃って、どちら でも 親 の 進む 向き に 揃える
+      // 1 組目 だけ relative で 撃つ。1 発目 の sequence の 起点 は 走らせ役 で 違う
       let turn = if s.Alternate then sprintf "180 + $1 * %.3f" d else sprintf "%.3f" (180.0 + d)
-      // 撚り の 倍率 は 等差 なので、2 発目 から は 前 の 弾 に 刻み を 足す `speedSeq` の `repeat` に 畳む
       let muls = LineageSpec.strandMul s.Strands
       let speeds = [ speedOf (LineageSpec.CHILD_SPEED * muls.Head) ]
       let stepOf = if muls.Length > 1 then speedOf (LineageSpec.CHILD_SPEED * (muls.[1] - muls.[0])) else ""
@@ -426,9 +419,7 @@ module Lineage =
       let gap = 360.0 / float s.Ways
       (if s.Ways >= 2 then gap / 2.0 else 0.0), gap
 
-  /// 1 波。符号 は 筋 の 番号 で 交互 に なる ので、2 本目 から は 2 本 ずつ `repeat` に 畳む ——
-  /// 並べて 書く と 放射 12 本 × 2 波 で 字 が 12,729 字 に なった。
-  /// 入れ替え の とき は `wave` の action に 波 の 符号 を `$1` で 渡し、奇数 本目 は `0 - $1`
+  /// 1 波。入れ替え の とき は `wave` の action に 波 の 符号 を `$1` で 渡し、奇数 本目 は `0 - $1`
   let private waveBody (s: LineageSpec) =
     let first, step = raysOf s
     let args (odd: bool) = if not s.Alternate then [] elif odd then [ "0 - $1" ] else [ "$1" ]
@@ -453,7 +444,7 @@ module Lineage =
 
   let private radialTop (s: LineageSpec) =
     let gap = 360.0 / float s.Ways
-    // 刻み の 半分 ずらす と 自機 の 真上 が 隙間 に なる（見本 は aim 15 / 刻み 30）
+    // 刻み の 半分 ずらす と 自機 の 真上 が 隙間 に なる
     let first = if s.Ways >= 2 then gap / 2.0 else 0.0
     top {
       repeat (timesOf s.Waves) {

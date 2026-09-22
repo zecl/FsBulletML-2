@@ -5,13 +5,7 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.Generate
 
-/// 同時 に許す 弾数 の取り分。
-///
-/// --- 較正（当てた変異 と、赤くなった点）
-///
-///   `Bound.fitTo` が budget を捨てて MAX_ALIVE を使う      取り分 を半分 にすると 同時数 が減る
-///   `Harmonic.fitTo` が同上                                 花 も 取り分 で減る
-///   `Generate.generateTo` が fit を通さない                 取り分 を半分 にすると 同時数 が減る
+/// 同時 に許す 弾数 の取り分
 [<TestFixture>]
 type BudgetTests() =
 

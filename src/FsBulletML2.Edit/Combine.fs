@@ -16,8 +16,8 @@
 /// ## 名前 がぶつかる
 ///
 /// どちら の弾幕 も `<action label="top">` と `<bullet label="core">` を
-/// 持って いる ことが多い。素 で繋ぐ と、**あと から 引いた ほう が
-/// 両方 の参照 を持って いく**（`BulletmlOps` は名前 で引く）。
+/// 持って いる ことが多い。素 で繋ぐ と、あと から 引いた ほう が
+/// 両方 の参照 を持って いく（`BulletmlOps` は名前 で引く）。
 ///
 /// 相手 の名前 を ぜんぶ 付け直して から 繋ぐ。
 /// 名前空間 は 3 つ（action / fire / bullet）で、型 が別 なので
@@ -152,7 +152,7 @@ let private mapTop p (e: BulletmlElm) : BulletmlElm =
   | BulletmlElm.Fire(attrs, d, s, b) ->
     BulletmlElm.Fire({ fireLabel = Option.map (fLabel p) attrs.fireLabel }, d, s, mapBullet p b)
 
-/// 相手 の名前 を ぜんぶ 付け直す。**参照 も一緒 に** ——
+/// 相手 の名前 を ぜんぶ 付け直す。参照 も一緒 に ——
 /// 定義 だけ 直す と、参照 が 元 の名前 を指した まま 迷子 になる
 let private prefixed (p: string) (bulletml: Bulletml) =
   match bulletml with

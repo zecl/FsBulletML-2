@@ -46,7 +46,7 @@ open FsBulletML2
 ///   `ok` を いつも true に                   目 で決まる 間合い ／ 間合い が決まらない actionRef
 ///   `ok` を いつも false に                  14 点（`$rank` の側 も 散らなく なる）
 ///
-/// `seen` の番 を落とす と、赤 ではなく **テスト の ホスト が落ちる**（`looped` で 無限 再帰）。
+/// `seen` の番 を落とす と、赤 ではなく テスト の ホスト が落ちる（`looped` で 無限 再帰）。
 /// 「アクティブ なテスト の実行 が 中止 されました」だけ が出て 件数 は 出ない。
 ///
 /// 上 の 2 つ（`NeedRand` と `times` の `ok`）は、`$rand` の fixture を足す まで
@@ -101,7 +101,7 @@ type ScatterSeeds() =
        <action label="arm"><wait>$1</wait><fire><bulletRef label="core"/></fire></action>
        <bullet label="core"><speed>2</speed></bullet>"""
 
-  /// 辿れない label。**待ち を 1 つ 持たせる** ——
+  /// 辿れない label。待ち を 1 つ 持たせる ——
   /// 持たせない と「辿れない から 散らない」と「間合い が無い から 散らない」が 見分けられない
   static let dangling =
     """<action label="top"><repeat><times>8</times><action>

@@ -1,6 +1,5 @@
-/// 生成 した 弾幕 を走らせて、形 の「感じ」を数 にする。
-///
-/// 門 に使う 数 なので、見て いる のは「形 が違えば 数 が割れる か」だけ。閾値 は呼ぶ側 が持つ
+/// 生成 した 弾幕 を走らせて、形 の「感じ」を数 にする
+/// 見て いる のは「形 が違えば 数 が割れる か」だけ。閾値 は呼ぶ側 が持つ
 module FsBulletML2.Generate.Felt
 
 open FsBulletML2
@@ -79,9 +78,8 @@ let runWithRank (rank: float32) (playerX: float) (playerY: float) (frames: int) 
         next.Add(struct (child, m, frame))
         heads.Add(wrap (float m.Dir))
         speeds.Add(float m.Speed)
-    // 台本 を終えた 弾 は頭 から走らせ直す。面（Playfield）が根 も撃たれた 弾 も そうして いる ——
-    // 走らせ直さない と、曲がり を 120 コマ で止めた 花 が ここ では真っすぐ 抜け、面 では曲がり 続けて
-    // 円 を描き、自機 まで 1 発 も届かない のに 試験 は緑 だった
+    // 台本 を終えた 弾 は頭 から走らせ直す。面（Playfield）が根 も撃たれた 弾 も そうして いる
+    // 走らせ直さない と 面 と振る舞い が割れ、面 で届かない 弾幕 でも 試験 が緑 になる
     let again (f: Frame) =
       if f.Finished then Runner.restart { Rand = rand; Rank = rank; Aim = noAim; Spawn = noSpawn } f.Run
       else f.Run
@@ -119,14 +117,8 @@ let runAt (rank: float32) (frames: int) (bulletml: Bulletml) : Snapshot list =
 let run (frames: int) (bulletml: Bulletml) : Snapshot list =
   runWith (float PlayerX) (float PlayerY) frames bulletml
 
-/// 生まれた ばかり の弾 を 半径 `radius` で束ねた 群 の、中心 と 発数。
-///
-/// 撃たれた 弾 は 撃った 側 の位置 に産まれる ので、1 か所 で撒けば 1 群、
-/// 種 を 3 発 飛ばして 咲かせれば 3 群 になる。
-/// `Positions` は 1 コマ 進んだ 後 の並び なので、見る のは `Born = Frame - 1`。
-///
-/// 発数 も返す のは、咲いた コマ に 次 の種 が重なる ことが在る から ——
-/// 数 で切る のは 呼ぶ側 の仕事 で、ここ は 束ねる だけ
+/// 生まれた ばかり の弾 を 半径 `radius` で束ねた 群 の、中心 と 発数
+/// `Positions` は 1 コマ 進んだ 後 の並び なので、見る のは `Born = Frame - 1`
 let bloomCenters (radius: float) (s: Snapshot) : ((float * float) * int) list =
   let pts =
     List.zip s.Positions s.Born
@@ -166,8 +158,7 @@ let private shortest (a: float) (b: float) =
   elif d <= -System.Math.PI then d + twoPi
   else d
 
-/// 波 を跨いだ 発射角 の中央値 が 同じ 向き に回って いる 割合。1 に近いほど 渦。
-///
+/// 波 を跨いだ 発射角 の中央値 が 同じ 向き に回って いる 割合。1 に近いほど 渦
 /// 撃った コマ だけ を並べ、隣 との差 を数える。差 0 は 回って いない 側 に数える（分母 には入る）
 let rotationScore (snaps: Snapshot list) : float =
   let diffs =
@@ -183,10 +174,8 @@ let rotationScore (snaps: Snapshot list) : float =
     let down = diffs |> List.filter (fun d -> d < -still) |> List.length
     float (max up down) / float diffs.Length
 
-/// 同じ コマ に生まれた 群 の、y の分散 が x の分散 より 小さい ほど 1。1 に近いほど 幕。
-///
-/// 測る のは 生まれて 8 コマ 以上 経ち、8 発 以上 残って いる 群 のうち いちばん 大きい 1 つ。
-/// 無ければ 0。群 を混ぜる と 波 ごと の縦 のずれ が var(y) に入って、幕 が放射 より 低く出た
+/// 同じ コマ に生まれた 群 の、y の分散 が x の分散 より 小さい ほど 1。1 に近いほど 幕
+/// 測る のは 生まれて 8 コマ 以上・8 発 以上 残る 群 のうち いちばん 大きい 1 つ（無ければ 0）
 let bandScore (s: Snapshot) : float =
   let groups =
     List.zip s.Positions s.Born
@@ -251,10 +240,8 @@ let private solve3 (a: float[,]) (b: float[]) : float[] option =
               m.[r, j] <- m.[r, j] - k * m.[c, j]
   if ok then Some [| for i in 0 .. 2 -> m.[i, 3] / m.[i, i] |] else None
 
-/// 速さ を `f` で写した 値 を `a + b sin kθ + c cos kθ` に最小二乗 で当てた 決定係数 R²。
-///
-/// 写した 値 の分散 が ~0 なら 0（0/0 の NaN は どの 比較 も偽 になる）。
-/// `k` を 呼ぶ側 が 渡せない と 第 2 の波 の 当てはまり が 測れない ので 出して いる
+/// 速さ を `f` で写した 値 を `a + b sin kθ + c cos kθ` に最小二乗 で当てた 決定係数 R²
+/// 写した 値 の分散 が ~0 なら 0（0/0 の NaN は どの 比較 も偽 になる）
 let fitScore (k: int) (f: float -> float) (s: Snapshot) : float =
   let pts =
     List.zip s.Headings s.Speeds
@@ -282,11 +269,8 @@ let fitScore (k: int) (f: float -> float) (s: Snapshot) : float =
 /// 速さ そのもの の当てはまり。花（`r0 + A sin kθ`）は 1 に張り付く
 let foldScore (k: int) (s: Snapshot) : float = fitScore k id s
 
-/// 速さ の逆数 の当てはまり。星（`r0 sqrt(1-α²) / (1 + α cos kθ)`）は
-/// 逆数 が ちょうど 正弦 なので 1 に張り付く。
-///
-/// 単独 では 割れない —— 振幅 の浅い 花 は 1/(r0 + A sin) も ほぼ 正弦 で 高く 出る。
-/// 星 を花 から 剥がす のは `recipScore - foldScore` の符号
+/// 速さ の逆数 の当てはまり。星 は 逆数 が ちょうど 正弦 なので 1 に張り付く
+/// 単独 では 割れない（浅い 花 も高い）。星 を花 から 剥がす のは `recipScore - foldScore` の符号
 let recipScore (k: int) (s: Snapshot) : float =
   fitScore k (fun v -> if abs v < 1e-6 then nan else 1.0 / v) s
 
@@ -296,10 +280,8 @@ module Draw =
   /// いちばん 多く 撃った コマ。1 波 が まるごと そこ に 出る
   let fullest (snaps: Snapshot list) : Snapshot = snaps |> List.maxBy (fun s -> s.Speeds.Length)
 
-  /// 撃った 弾 を 向き と 速さ から 点 に する。0 rad が 真上（y は 下向き）。
-  /// `Positions` は 使わない —— 生きて いる 弾 の 絶対 座標 で、上 に飛んだ 弾 は
-  /// 敵 から 80 px で 面 の外 に出て 間引かれる。同じ コマ に出た 弾 は 同じ 時間 飛ぶ ので
-  /// 速さ の比 が 半径 の比 に なる
+  /// 撃った 弾 を 向き と 速さ から 点 に する。0 rad が 真上（y は 下向き）
+  /// `Positions` は 使わない（上 に飛んだ 弾 は すぐ 間引かれる）。同じ コマ の弾 は 速さ の比 が 半径 の比
   let outline (s: Snapshot) : (float * float) list =
     List.zip s.Headings s.Speeds |> List.map (fun (h, v) -> v * sin h, -(v * cos h))
 

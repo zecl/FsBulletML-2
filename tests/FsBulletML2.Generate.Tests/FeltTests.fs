@@ -102,7 +102,7 @@ type FeltTests() =
       for b in s.Born do
         (b >= 1 && b < s.Frame) |> should equal true
 
-  /// 渦 の sequence は 波 を跨いで 増え続ける（畳まない と 90 コマ で 13 rad を越えた）
+  /// 渦 の sequence は 波 を跨いで 増え続ける
   [<Test>]
   member _.``発射角 は 0..2π に畳む``() =
     let heads = Felt.run 90 (Generate.generate (spiral ())).Bulletml |> List.collect (fun s -> s.Headings)
@@ -122,7 +122,6 @@ type FeltTests() =
     Felt.fanScore s |> should be (greaterThan 0.9)
     Felt.ringScore s |> should be (lessThan 0.2)
 
-  /// 12 ビン の均一さ で測って いた とき、完全 な 8 方向 が 0.29、3・4・6 方向 が 0 だった
   [<Test>]
   member _.``完全 な 3・4・8 方向 は ring が高い``() =
     for n in [ 3; 4; 8 ] do
@@ -219,10 +218,8 @@ type FeltTests() =
     Felt.recipScore 5 s |> should be (greaterThan 0.99)
     Felt.foldScore 5 s |> should be (lessThan 0.8)
 
-  /// ほぼ 0 の速さ は 逆数 が 巨大 に なって 当てはまり を 潰す。
-  ///
-  /// ちょうど 0 だけ では 門 に ならない —— 逆数 が 無限 になり、
-  /// `IsFinite` の ふるい が 落とす ので 見張り を外して も 緑 の まま
+  /// ほぼ 0 の速さ は 逆数 が 巨大 に なって 当てはまり を 潰す
+  /// ちょうど 0 は `IsFinite` の ふるい が 落とす ので、見張り を外して も 緑 の まま（門 に ならない）
   [<Test>]
   member _.``recip は ほぼ 0 の弾 を 数 から 落とす``() =
     let heads = even 36
@@ -280,7 +277,7 @@ type FeltTests() =
     distinct three.Headings |> should equal 3
     near System.Math.PI three.Headings |> should equal 1
 
-  /// 自機 が真下 に居る と 幕 も狙い も 下向き の弧 で、aim では割れない（自機 を横 へ ずらして も 幕 の aimScore は 0.85 残る）。
+  /// 自機 が真下 に居る と 幕 も狙い も 下向き の弧 で、aim では割れない。
   /// 自機 を (240, 600) から (60, 600) へ動かした とき の 発射 の中心角 の ずれ で見る。敵 (240, 80) から 見て atan(180 / 520) = 19.1 度
   [<Test>]
   member _.``狙い は自機 を追い、幕 は追わない``() =

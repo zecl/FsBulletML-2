@@ -15,7 +15,6 @@ type ExprTests() =
             Breathe = true; Vanishing = true; Pause = true
             KindConfidence = 0.8 })
 
-  /// 同梱 193 本 中 184 本（95%）が `$rank` を式 に持つ
   [<Test>]
   member _.``どの式 にも rank が入る``() =
     let s = spec (fun a -> { a with Speed = 2.0; Density = 2.0; Symmetry = 2.0; Layers = 1.0; Jitter = 1.0; Rhythm = 1.0; Depth = 1.0; BulletKinds = 1.0; Cascade = 1.0 })
@@ -63,7 +62,6 @@ type ExprTests() =
     let three = spec (fun a -> { a with BulletKinds = 2.0; Cascade = 3.0 })
     evalAt 1.0 (scatterExpr three 0) |> should be (lessThan (evalAt 1.0 (scatterExpr one 0)))
 
-  /// 同梱 は 1 本 が wait を中央 3 種類 使い、1 種類 だけ の本 は 6% しか 無い
   [<Test>]
   member _.``Rhythm が wait を散らす``() =
     let flat = spec (fun a -> { a with Density = 1.0 })
