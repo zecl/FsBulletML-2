@@ -150,7 +150,7 @@ module LineageSpec =
 
   let private factor (s: LineageSpec) (g: Spawner) =
     match g with
-    | Spawner.Trail -> 2.0 * float s.TrailTimes
+    | Spawner.Trail -> 2.0 * float s.TrailTimes * float s.Strands
     | Spawner.Burst -> (1.0 + at s.Line) * float s.Columns
 
   /// 根 の 1 周 の コマ数。`top` は 終える と 頭 から 走り 直す
@@ -289,6 +289,7 @@ module Lineage =
   let private BAR_WAIT = LineageSpec.BAR_WAIT
   let private RELAUNCH_SPEED = LineageSpec.RELAUNCH_SPEED
   let private RELAUNCH_TERM = LineageSpec.RELAUNCH_TERM
+  let private FALL_TERM = LineageSpec.FALL_TERM
 
   let private speedOf (v: float) = sprintf "%.2f + $rank * %.2f" v (v * 0.3)
   let private waitOf (r: Ranked) = sprintf "%d - %d * $rank" r.Base r.Rank
@@ -300,26 +301,64 @@ module Lineage =
   /// 最後 の 世代 の 子 を 狙い 直す 弾 に 替える か
   let private seeks (s: LineageSpec) (child: string) = s.Seekers && child = "leaf"
 
+  /// 入れ替え の 符号 を 世代 に 渡す。Alternate が 無ければ 何 も 渡さない（字 を いま の まま に する）
+  let private passOn (s: LineageSpec) = if s.Alternate then [ "$1" ] else []
+
   let private trailBody (s: LineageSpec) (child: string) =
-    let pair (c: string) =
-      [ fire { relative "90"; speed (speedOf LineageSpec.CHILD_SPEED); refBullet c [] }
-        fire { relative "-90"; speed (speedOf LineageSpec.CHILD_SPEED); refBullet c [] }
+    let args = passOn s
+    let plainPair (c: string) =
+      [ fire { relative "90"; speed (speedOf LineageSpec.CHILD_SPEED); refBullet c args }
+        fire { relative "-90"; speed (speedOf LineageSpec.CHILD_SPEED); refBullet c args }
         wait (waitOf s.TrailWait) ]
     let groups, rest = s.TrailTimes / SEEK_EVERY, s.TrailTimes % SEEK_EVERY
-    body {
-      if not (seeks s child) then
-        repeat (string s.TrailTimes) { yield! pair child }
-      else
-        if groups > 0 then
-          repeat (string groups) {
-            repeat (string (SEEK_EVERY - 1)) { yield! pair child }
-            yield! pair "seeker"
-          }
-        if rest > 0 then
-          repeat (string rest) { yield! pair child }
-      // 面 は 終えた 台本 を 頭 から 走らせ 直す。終わらせる と 撒き 続ける
-      wait "9999"
-    }
+    if s.Sweep = 0.0 && s.Strands = 1 then
+      body {
+        if not (seeks s child) then
+          repeat (string s.TrailTimes) { yield! plainPair child }
+        else
+          if groups > 0 then
+            repeat (string groups) {
+              repeat (string (SEEK_EVERY - 1)) { yield! plainPair child }
+              yield! plainPair "seeker"
+            }
+          if rest > 0 then
+            repeat (string rest) { yield! plainPair child }
+        // 面 は 終えた 台本 を 頭 から 走らせ 直す。終わらせる と 撒き 続ける
+        wait "9999"
+      }
+    else
+      let d = if s.TrailTimes > 1 then s.Sweep / float (s.TrailTimes - 1) else 0.0
+      // sequence の 起点 は 0 なので、1 組目 だけ relative で 親 の 進む 向き に 揃える
+      let turn = if s.Alternate then sprintf "180 + $1 * %.3f" d else sprintf "%.3f" (180.0 + d)
+      let speeds = LineageSpec.strandMul s.Strands |> List.map (fun m -> speedOf (LineageSpec.CHILD_SPEED * m))
+      let side (head: Action) (c: string) =
+        head :: [ for v in List.tail speeds -> fire { sequence "0"; speed v; refBullet c args } ]
+      let firstPair (c: string) =
+        side (fire { relative "90"; speed speeds.Head; refBullet c args }) c
+        @ side (fire { relative "-90"; speed speeds.Head; refBullet c args }) c
+        @ [ wait (waitOf s.TrailWait) ]
+      let nextPair (c: string) =
+        side (fire { sequence turn; speed speeds.Head; refBullet c args }) c
+        @ side (fire { sequence "180"; speed speeds.Head; refBullet c args }) c
+        @ [ wait (waitOf s.TrailWait) ]
+      let more = s.TrailTimes - 1
+      let g, r = more / SEEK_EVERY, more % SEEK_EVERY
+      body {
+        yield! firstPair child
+        if not (seeks s child) then
+          if more > 0 then
+            repeat (string more) { yield! nextPair child }
+        else
+          // 2 組目 から 4 組 に 1 組
+          if g > 0 then
+            repeat (string g) {
+              repeat (string (SEEK_EVERY - 1)) { yield! nextPair child }
+              yield! nextPair "seeker"
+            }
+          if r > 0 then
+            repeat (string r) { yield! nextPair child }
+        wait "9999"
+      }
 
   let private burstBody (s: LineageSpec) (i: int) (child: string) =
     let step = sprintf "%.2f" LINE_STEP
@@ -329,11 +368,11 @@ module Lineage =
       changeSpeedAbs STOP "1"
       wait (string s.Hold)
       // 一列 の 先頭 を 狙い 直す 弾 に する
-      fire { relative "90"; speed (speedOf LineageSpec.BURST_SPEED); refBullet head [] }
-      repeat (timesOf s.Line) { fire { sequence "0"; speedSeq step; refBullet child [] } }
+      fire { relative "90"; speed (speedOf LineageSpec.BURST_SPEED); refBullet head (passOn s) }
+      repeat (timesOf s.Line) { fire { sequence "0"; speedSeq step; refBullet child (passOn s) } }
       if s.Columns = 2 then
-        fire { sequence "180"; speed (speedOf LineageSpec.BURST_SPEED); refBullet head [] }
-        repeat (timesOf s.Line) { fire { sequence "0"; speedSeq step; refBullet child [] } }
+        fire { sequence "180"; speed (speedOf LineageSpec.BURST_SPEED); refBullet head (passOn s) }
+        repeat (timesOf s.Line) { fire { sequence "0"; speedSeq step; refBullet child (passOn s) } }
       vanish
     }
 
@@ -354,6 +393,14 @@ module Lineage =
       changeSpeedAbs STOP "1"
       wait (waitOf s.RelaunchHold)
       changeSpeedAbs (speedOf RELAUNCH_SPEED) (string RELAUNCH_TERM)
+      wait "9999"
+    }
+
+  /// 待って、下 へ 引かれる。accel は 面 の 縦横 で 効く ので、どの 向き に 撃たれて も 下 へ 落ちる
+  let private fallBody (s: LineageSpec) =
+    body {
+      wait (string s.FallHold)
+      accel (string FALL_TERM) { vertical (sprintf "%.2f" s.Gravity) }
       wait "9999"
     }
 
@@ -421,7 +468,7 @@ module Lineage =
       match s.Leaf with
       | Terminal.Plain -> defBullet "leaf" { () }
       | Terminal.Relaunch -> defBullet "leaf" { doActs (relaunchBody s) }
-      | Terminal.Fall -> defBullet "leaf" { () }
+      | Terminal.Fall -> defBullet "leaf" { doActs (fallBody s) }
     createBulletmlInfo
     <| vertical "lineage" {
          match s.Root with

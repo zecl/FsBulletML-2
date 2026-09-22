@@ -57,6 +57,14 @@ type LineageTests() =
     if a.Length = 0 || a.Length <> b.Length then nan
     else List.zip a b |> List.averageBy (fun ((x0, y0), (x1, y1)) -> sqrt ((x1 - x0) ** 2.0 + (y1 - y0) ** 2.0))
 
+  /// Trail の 子 を 生む コマ だけ を 並べる。根 の 1 コマ目 は 除く
+  static let trailFrames (snaps: Felt.Snapshot list) (perPair: int) =
+    snaps |> List.skip 1 |> List.filter (fun x -> x.Headings.Length = perPair)
+
+  static let wrapDeg (r: float) =
+    let d = r * 180.0 / Math.PI % 360.0
+    if d > 180.0 then d - 360.0 elif d < -180.0 then d + 360.0 else d
+
   [<Test>]
   member _.``目盛り の 外 を 切り詰める``() =
     let s = make (fun a -> { a with Generations = 9; Streak = 5.0; Ways = 99; Speed = 9.0 })
@@ -214,6 +222,50 @@ type LineageTests() =
     groupSpeed snaps born (born + 5) |> should be (greaterThan 0.5)
     groupSpeed snaps born (born + fly + hold / 2) |> should be (lessThan 0.05)
     groupSpeed snaps born (born + fly + hold + 50) |> should be (greaterThan 0.5)
+
+  /// 1 組目 は 親 と 直角、1 組 ごと に 掃く 角 / (T - 1) 回る。
+  /// 2 波目 の 根 が 撒き 始める と 同じ 数 の コマ が 混ざる ので、2 波目 より 前 の 組 だけ を 見る
+  [<Test>]
+  member _.``振り は 1 本 の 間 に 掃く 角 だけ 回る``() =
+    let s = make (fun a -> { a with Ways = 1; Seed = 1; Drift = 2.0 })   // T → Plain
+    let snaps = runs 400 s
+    let parent = snaps.[0].Headings |> List.exactlyOne
+    let wave2 = 1 + s.WaveWait.Base - s.WaveWait.Rank
+    let pairs = trailFrames snaps 2 |> List.filter (fun x -> x.Frame < wave2) |> List.truncate s.TrailTimes
+    pairs.Length |> should be (greaterThanOrEqualTo 5)
+    let first, last = pairs.Head.Headings.[0], (List.last pairs).Headings.[0]
+    abs (sin (first - parent)) |> should be (greaterThan 0.99)
+    let d = 96.0 / float (s.TrailTimes - 1)
+    wrapDeg (last - first) |> should (equalWithin 0.5) (d * float (pairs.Length - 1))
+
+  [<Test>]
+  member _.``撚り は 同じ 向き に 速さ 違い を 重ねる``() =
+    let s = make (fun a -> { a with Ways = 1; Seed = 1; Strands = 2.0 })   // T → Plain、3 本
+    let pair = trailFrames (runs 120 s) 6 |> List.head
+    // 難度 1 の 速さ は v x 1.3、v は 1.0 x 倍率
+    (pair.Speeds |> List.map (fun v -> Math.Round(v, 2)) |> List.distinct |> List.sort) |> should equal [ 0.65; 1.3; 1.95 ]
+    (pair.Headings |> List.map (fun h -> Math.Round(h, 3)) |> List.distinct).Length |> should equal 2
+
+  /// 放射 1 本 は 自機（真下）へ、子 は 真横 へ 撒く。落ち の 葉 は 待って から 下 へ 動く
+  [<Test>]
+  member _.``落ち の 葉 は 待って から 下 へ 引かれる``() =
+    let drop fall =
+      let s = make (fun a -> { a with Ways = 1; Seed = 1; Fall = fall })
+      let snaps = runs 400 s
+      // コマ F に 撃った 弾 は Born = F で、次 の コマ から Positions に 出る
+      let born = (trailFrames snaps 2 |> List.head).Frame
+      let meanY f =
+        let x = snaps.[f - 1]
+        List.zip x.Positions x.Born |> List.filter (fun (_, b) -> b = born) |> List.averageBy (fst >> snd)
+      meanY (born + 1 + s.FallHold + 100) - meanY (born + 1 + s.FallHold)
+    drop 2.0 |> should be (greaterThan 30.0)
+    abs (drop 0.0) |> should be (lessThan 5.0)
+
+  [<Test>]
+  member _.``撚り と 落ち は 上界 に 入る``() =
+    let bound f = LineageSpec.aliveBound (make (fun a -> f { a with Seed = 1; Ways = 1 }))
+    bound (fun a -> { a with Strands = 2.0 }) |> should be (greaterThan (bound id))
+    bound (fun a -> { a with Fall = 1.0 }) |> should be (greaterThan (bound id))
 
   [<Test>]
   member _.``難度 1 は 難度 0 より 多く 生む``() =
