@@ -5,12 +5,13 @@ open FsBulletML2
 open FsBulletML2.Dsl
 open FsBulletML2.Generate.Consts
 
-/// 根。`Radial` は 放射、`Bar` は 止まった 発射台 が 回りながら 直線 を 敷く。
+/// 根。`Radial` は 放射、`Bar` は 止まった 発射台 が 回りながら 直線 を 敷く、`Fan` は 自機 の 方 へ 幅 120° の 扇。
 /// 腕 の 名前 が `PatternSpec` の `Radial` と ぶつかる ので 型 名 で 書かせる
 [<RequireQualifiedAccess>]
 type Root =
   | Radial
   | Bar
+  | Fan
 
 /// 子 を 生む 遺伝子。`Trail` は 飛びながら 左右 へ 撒き、`Burst` は 止まって 横 へ 一列 撃って 消える
 [<RequireQualifiedAccess>]
@@ -18,11 +19,12 @@ type Spawner =
   | Trail
   | Burst
 
-/// 系譜 の 終わり。`Relaunch` は 止まって、待って、加速 する
+/// 系譜 の 終わり。`Relaunch` は 止まって、待って、加速 する。`Fall` は 待って から 下 へ 引かれる
 [<RequireQualifiedAccess>]
 type Terminal =
   | Plain
   | Relaunch
+  | Fall
 
 type LineageAxes =
   { Root: Root
@@ -35,6 +37,14 @@ type LineageAxes =
     Spread: float
     /// 1 以上 で 最後 の 世代 に 自機 を 狙い 直す 弾 が 混ざる
     Homing: float
+    /// 0..2。Trail の 撒く 向き を 回す
+    Drift: float
+    /// 0..2。Trail の 糸 の 本数 1 / 2 / 3
+    Strands: float
+    /// 1 以上 で 終わり を 落ち に
+    Fall: float
+    /// 振り の 向き を 筋 と 波 で 入れ替える
+    Alternate: bool
     Seed: int }
 
 /// 待ち は `Base - Rank * $rank`、回数 は `Base + Rank * $rank`
@@ -56,6 +66,13 @@ type LineageSpec =
     Columns: int
     /// 最後 の 世代 に 狙い 直す 弾 を 混ぜる
     Seekers: bool
+    /// Trail が 1 本 の 間 に 回る 角（度）
+    Sweep: float
+    Strands: int
+    /// 落ち の `accel vertical` の 行き先
+    Gravity: float
+    FallHold: int
+    Alternate: bool
     Hold: int
     RelaunchHold: Ranked
     BarSteps: Ranked
@@ -76,6 +93,12 @@ module LineageSpec =
   let internal BAR_WAIT = 5
   let internal RELAUNCH_SPEED = 2.5
   let internal RELAUNCH_TERM = 60
+  /// 落ちる 葉 が 画面 の 下 を 抜ける まで の 距離（px）。縦 の 端 から 端
+  let internal FALL_SPAN = 640.0
+  let internal FALL_TERM = 120
+  /// 真上 へ 撃たれた 葉 が 上がって よい 高さ。敵 の 高さ 80 から 余白 16
+  let internal RISE_ROOM = 64.0
+  let internal FALL_HOLD_MAX = 45
 
   /// `$rank = 1` で 同時 に 居る 弾 の 上界 を ここ まで 削る。面 の 天井 と 同じ 10,000 ——
   /// 上界 は 実測 を 下回らない（36 通り の 試験 が 見る）ので、余白 を 別 に 取らない。
@@ -95,6 +118,10 @@ module LineageSpec =
       Stillness = 0.0
       Spread = 0.0
       Homing = 0.0
+      Drift = 0.0
+      Strands = 0.0
+      Fall = 0.0
+      Alternate = false
       Seed = 0 }
 
   /// 回数 の `$rank = 1`
@@ -103,10 +130,22 @@ module LineageSpec =
   let private at1 (r: Ranked) = float (r.Base - r.Rank)
   let private fast (v: float) = v * 1.3
 
+  let strandMul (n: int) =
+    match n with
+    | 3 -> [ 0.5; 1.0; 1.5 ]
+    | 2 -> [ 2.0 / 3.0; 4.0 / 3.0 ]
+    | _ -> [ 1.0 ]
+
+  /// `accel vertical` は 縦 の 速さ を `FALL_TERM` で -v から g まで 直線 に 変える。折り返す まで に 上がる のは v × tr / 2
+  let fallHoldOf (v: float) (g: float) =
+    let tr = float FALL_TERM * v / (v + g)
+    let h = (RISE_ROOM - v * tr / 2.0) / v
+    max 0 (min FALL_HOLD_MAX (int (floor h)))
+
   /// 1 段目 の 弾 の 数。Bar は 最初 の 一列 と `BarSteps` 回 の 列 で、一列 は 先頭 + `Line`
   let private roots (s: LineageSpec) =
     match s.Root with
-    | Root.Radial -> float s.Ways * at s.Waves
+    | Root.Radial | Root.Fan -> float s.Ways * at s.Waves
     | Root.Bar -> float s.Ways * (1.0 + at s.BarSteps) * (1.0 + at s.Line)
 
   let private factor (s: LineageSpec) (g: Spawner) =
@@ -117,12 +156,12 @@ module LineageSpec =
   /// 根 の 1 周 の コマ数。`top` は 終える と 頭 から 走り 直す
   let private cycle (s: LineageSpec) =
     match s.Root with
-    | Root.Radial -> at s.Waves * at1 s.WaveWait
+    | Root.Radial | Root.Fan -> at s.Waves * at1 s.WaveWait
     | Root.Bar -> at s.BarSteps * float BAR_WAIT + at1 s.WaveWait
 
   /// 段 `i` の 弾 の 速さ（`$rank = 0`）。0 は 根 が 撃つ 弾、ほか は 1 つ 上 の 遺伝子 が 撃つ 弾
   let internal stageSpeed (s: LineageSpec) (i: int) =
-    if i = 0 then (match s.Root with Root.Radial -> s.RootSpeed | Root.Bar -> BAR_LINE_SPEED)
+    if i = 0 then (match s.Root with Root.Radial | Root.Fan -> s.RootSpeed | Root.Bar -> BAR_LINE_SPEED)
     else (match s.Chain.[i - 1] with Spawner.Trail -> CHILD_SPEED | Spawner.Burst -> BURST_SPEED)
 
   /// 段 `i` が 止まる まで に 飛ぶ コマ数（`$rank = 1` の 速さ で 数える）
@@ -143,6 +182,7 @@ module LineageSpec =
         match s.Leaf with
         | Terminal.Plain -> FIELD_SPAN / fast speed
         | Terminal.Relaunch -> relaunch
+        | Terminal.Fall -> float s.FallHold + float FALL_TERM + FALL_SPAN / s.Gravity
       // 狙い 直す 弾 は Relaunch と 同じ 動き
       if s.Seekers then max leaf relaunch else leaf
 
@@ -159,7 +199,7 @@ module LineageSpec =
   /// Trail を 撃つ 側 の 速さ（`$rank = 0`）。画面 を 横切る コマ数 を 出す のに 使う
   let private trailParentSpeed (s: LineageSpec) =
     match List.tryFindIndex ((=) Spawner.Trail) s.Chain with
-    | Some 0 -> (match s.Root with Root.Radial -> s.RootSpeed | Root.Bar -> BAR_LINE_SPEED)
+    | Some 0 -> (match s.Root with Root.Radial | Root.Fan -> s.RootSpeed | Root.Bar -> BAR_LINE_SPEED)
     | _ -> BURST_SPEED
 
   /// 波 を 減らす 手 は 無い。1 周 が 半分 に なる と 周 も 半分 に なり、重なる 周 が 倍 に なる
@@ -188,7 +228,7 @@ module LineageSpec =
     let a = f zero
     let streak, still, spread = onScale a.Streak, onScale a.Stillness, onScale a.Spread
     let ways =
-      if a.Ways <= 0 then (match a.Root with Root.Radial -> 12 | Root.Bar -> 2)
+      if a.Ways <= 0 then (match a.Root with Root.Radial -> 12 | Root.Bar | Root.Fan -> 2)
       else max 1 (min 24 a.Ways)
     let chain =
       if a.Seed > 0 then CHAIN_TABLE.[(a.Seed - 1) % 9]
@@ -198,23 +238,39 @@ module LineageSpec =
         else List.replicate g Spawner.Burst
     let trailWait = [| 8; 6; 4 |].[step streak]
     let relaunch = 30 + 20 * step still
+    let fall = onScale a.Fall
+    let leaf =
+      if fall >= 1.0 then Terminal.Fall
+      elif still >= 1.0 then Terminal.Relaunch
+      else Terminal.Plain
     let s : LineageSpec =
       { Root = a.Root
         Ways = ways
         RootSpeed = min SPEED_HI (1.0 + 1.2 * onScale a.Speed)
         Chain = chain
-        Leaf = if still >= 1.0 then Terminal.Relaunch else Terminal.Plain
-        Waves = (match a.Root with Root.Radial -> { Base = 1; Rank = 1 } | Root.Bar -> { Base = 1; Rank = 0 })
+        Leaf = leaf
+        Waves = (match a.Root with Root.Radial | Root.Fan -> { Base = 1; Rank = 1 } | Root.Bar -> { Base = 1; Rank = 0 })
         WaveWait = { Base = 90; Rank = 30 }
         TrailTimes = 0
         TrailWait = { Base = trailWait; Rank = trailWait / 2 }
         Line = { Base = [| 2; 3; 4 |].[step spread]; Rank = 3 }
         Columns = if spread >= 1.5 then 2 else 1
         Seekers = onScale a.Homing >= 1.0
+        Sweep = [| 0.0; 48.0; 96.0 |].[step (onScale a.Drift)]
+        Strands = 1 + step (onScale a.Strands)
+        Gravity = 2.1 * float (step fall)
+        FallHold = 0
+        Alternate = a.Alternate
         Hold = 10 + 10 * step still
         RelaunchHold = { Base = relaunch; Rank = relaunch / 2 }
         BarSteps = { Base = 12; Rank = 8 }
         Seed = a.Seed }
+    let leafSpeed =
+      let v = fast (stageSpeed s s.Chain.Length)
+      match List.tryLast s.Chain with
+      | Some Spawner.Trail -> v * List.max (strandMul s.Strands)
+      | _ -> v
+    let s = { s with FallHold = if leaf = Terminal.Fall then fallHoldOf leafSpeed s.Gravity else 0 }
     // 画面 を 抜けた 弾 は 撒かない ので、横切る コマ数 より 長く 書かない
     let screen = int (ceil (FIELD_SPAN / trailParentSpeed s / float s.TrailWait.Base))
     fit { s with TrailTimes = min MAX_REPEAT (max 1 screen) } 30
@@ -365,6 +421,7 @@ module Lineage =
       match s.Leaf with
       | Terminal.Plain -> defBullet "leaf" { () }
       | Terminal.Relaunch -> defBullet "leaf" { doActs (relaunchBody s) }
+      | Terminal.Fall -> defBullet "leaf" { () }
     createBulletmlInfo
     <| vertical "lineage" {
          match s.Root with

@@ -1,5 +1,6 @@
 module FsBulletML2.Generate.Tests.LineageTests
 
+open System
 open NUnit.Framework
 open FsUnit
 open FsBulletML2
@@ -24,13 +25,13 @@ type LineageTests() =
   static let make f = LineageSpec.create f
 
   static let grid =
-    [ for root in [ Root.Radial; Root.Bar ] do
+    [ for root in [ Root.Radial; Root.Bar; Root.Fan ] do
         for seed in 0 .. 9 do
           for g in 1 .. 3 do
             for v in [ 0.0; 1.0; 2.0 ] ->
               make (fun a ->
                 { a with Root = root; Seed = seed; Generations = g
-                         Streak = v; Stillness = v; Spread = v; Speed = v }) ]
+                         Streak = v; Stillness = v; Spread = v; Speed = v; Fall = v }) ]
 
   static let xml (s: LineageSpec) = BulletmlWriter.toIndentedXml 2 (Lineage.generate s).Bulletml
 
@@ -69,6 +70,35 @@ type LineageTests() =
   member _.``本数 0 は 根 ごと の 既定``() =
     (make (fun a -> { a with Root = Root.Radial })).Ways |> should equal 12
     (make (fun a -> { a with Root = Root.Bar })).Ways |> should equal 2
+
+  [<Test>]
+  member _.``扇 の 本数 0 は 2``() =
+    (make (fun a -> { a with Root = Root.Fan })).Ways |> should equal 2
+
+  [<Test>]
+  member _.``終わり は 落ち が 先``() =
+    let leaf fall still = (make (fun a -> { a with Fall = fall; Stillness = still })).Leaf
+    leaf 1.0 1.0 |> should equal Terminal.Fall
+    leaf 0.9 1.0 |> should equal Terminal.Relaunch
+    leaf 0.9 0.9 |> should equal Terminal.Plain
+
+  [<Test>]
+  member _.``振り と 撚り と 落ち の 目盛り``() =
+    let s v = make (fun a -> { a with Drift = v; Strands = v; Fall = v })
+    [ for v in [ 0.0; 1.0; 2.0 ] -> (s v).Sweep ] |> should equal [ 0.0; 48.0; 96.0 ]
+    [ for v in [ 0.0; 1.0; 2.0 ] -> (s v).Strands ] |> should equal [ 1; 2; 3 ]
+    [ for v in [ 1.0; 2.0 ] -> (s v).Gravity ] |> should equal [ 2.1; 4.2 ]
+    LineageSpec.strandMul 3 |> should equal [ 0.5; 1.0; 1.5 ]
+    (LineageSpec.strandMul 2 |> List.map (fun m -> Math.Round(m, 4))) |> should equal [ 0.6667; 1.3333 ]
+
+  /// v 1.3、G 4.2：tr = 120 x 1.3 / 5.5 = 28.36、上がる 距離 18.4、H = (64 - 18.4) / 1.3 = 35.07
+  [<Test>]
+  member _.``落ち の 待ち は 上端 を 越えない 長さ``() =
+    LineageSpec.fallHoldOf 1.3 4.2 |> should equal 35
+    LineageSpec.fallHoldOf 0.1 4.2 |> should equal 45
+    LineageSpec.fallHoldOf 9.0 0.1 |> should equal 0
+    for s in grid do
+      s.FallHold |> should be (inRange 0 45)
 
   [<Test>]
   member _.``Trail は 1 回 まで``() =
