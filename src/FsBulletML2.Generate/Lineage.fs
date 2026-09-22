@@ -332,7 +332,8 @@ module Lineage =
       }
     else
       let d = if s.TrailTimes > 1 then s.Sweep / float (s.TrailTimes - 1) else 0.0
-      // sequence の 起点 は 0 なので、1 組目 だけ relative で 親 の 進む 向き に 揃える
+      // 1 発目 の sequence の 起点 は 走らせ役 で 違う（この Core は 0、libBulletML は 自機 の 向き）。
+      // 1 組目 だけ relative で 撃って、どちら でも 親 の 進む 向き に 揃える
       let turn = if s.Alternate then sprintf "180 + $1 * %.3f" d else sprintf "%.3f" (180.0 + d)
       // 撚り の 倍率 は 等差 なので、2 発目 から は 前 の 弾 に 刻み を 足す `speedSeq` の `repeat` に 畳む
       let muls = LineageSpec.strandMul s.Strands

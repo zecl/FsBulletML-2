@@ -12,13 +12,25 @@ open FsBulletML2.Generate
 ///   Trail の 回数 の 画面 の 上限 を 外す     Trail は 画面 を 横切る 時間 で 止める
 ///   Burst の 一列 から 難度 を 外す（2 か所） Burst の 一列 は 難度 で 伸びる / 難度 が 間隔 と 発数 に 入る
 ///   止める 速さ を 0 に                       止める 速さ は 0 に しない（直角 は 緑。0 でも 向き は 残る）
-///   Relaunch の 加速 を 消す                  Relaunch は 止まって から 動く / 36 通り（止まった 弾 が 溜まる）
-///   上界 から 重なる 周 を 外す               36 通り
+///   Relaunch の 加速 を 消す                  Relaunch は 止まって から 動く / 81 通り（止まった 弾 が 溜まる）
+///   上界 から 重なる 周 を 外す               81 通り
 ///   Bar の 周 の 待ち を 1 に                 Bar の 発射台 は 周 に 1 度
 ///   狙い 直す 弾 の 向き 直し を 消す         自機 に 届く / 軸 が 1 以上
 ///   Burst の 先頭 を 狙う 弾 に しない        自機 に 届く / 軸 が 1 以上
 ///   狙う 弾 の 境目 を 0 に                   自機 に 届く / 軸 が 1 以上 / 台本 を 終わらせない（wait 9999 が 1 つ 増える）
 ///   Trail の 狙う 組 を 普通 の 弾 に         軸 が 1 以上（定義 だけ 見て いた とき は 緑 だった）
+///   振り の 刻み を T で 割る                 振り は 1 本 の 間 に 掃く 角 だけ 回る
+///   振り の 1 組目 を sequence に             振り は 1 本 の 間 に 掃く 角 だけ 回る（親 が 真下 へ 飛ぶ 形 で は 直角 の 確かめ が 緑 だった）
+///   strandMul 3 の 3 つ目 を 1.4 に           目盛り だけ（撃つ 側 は 1 つ目 と 2 つ目 の 差 で 刻む ので 3 つ目 を 読まない）
+///   落ち の accel を 消す                     落ち の 葉 は 待って から 下 へ 引かれる
+///   奇数 本目 の 符号 を $1 に                 入れ替え は 左右 を 鏡写し に する
+///   2 波 の 組 の + 1 を 外す                  入れ替え の 波 は 2 波 で 1 組
+///   扇 の -60 を -30 に                       扇 は 自機 の 向き から 幅 120°
+///   上界 から 撚り の 本数 を 外す             撚り と 落ち は 上界 に 入る
+///   落ち の 寿命 を Plain と 同じ に           撚り と 落ち は 上界 に 入る
+///   終わり の 順 を Relaunch 先 に             終わり は 落ち が 先
+///   引数 を 常に 渡す                         入れ替え が 無ければ 引数 を 渡さない
+///   Bar の 符号 を 波 だけ で 決める           どれ も 緑（Bar の 入れ替え の 向き を 見る 門 は 無い）
 [<TestFixture>]
 type LineageTests() =
 
@@ -229,14 +241,15 @@ type LineageTests() =
     groupSpeed snaps born (born + fly + hold + 50) |> should be (greaterThan 0.5)
 
   /// 1 組目 は 親 と 直角、1 組 ごと に 掃く 角 / (T - 1) 回る。
-  /// 2 波目 の 根 が 撒き 始める と 同じ 数 の コマ が 混ざる ので、2 波目 より 前 の 組 だけ を 見る
+  /// 2 波目 の 根 が 撒き 始める と 同じ 数 の コマ が 混ざる ので、2 波目 より 前 の 組 だけ を 見る。
+  /// 親 は 扇 の 120° へ 飛ばす —— 真下 へ 飛ぶ と、起点 0 の sequence 90 も たまたま 直角 に なり、直角 の 確かめ が 何 も 見ない
   [<Test>]
   member _.``振り は 1 本 の 間 に 掃く 角 だけ 回る``() =
-    let s = make (fun a -> { a with Ways = 1; Seed = 1; Drift = 2.0 })   // T → Plain
+    let s = make (fun a -> { a with Root = Root.Fan; Ways = 2; Seed = 1; Drift = 2.0 })   // T → Plain
     let snaps = runs 400 s
-    let parent = snaps.[0].Headings |> List.exactlyOne
+    let parent = snaps.[0].Headings.[0]
     let wave2 = 1 + s.WaveWait.Base - s.WaveWait.Rank
-    let pairs = trailFrames snaps 2 |> List.filter (fun x -> x.Frame < wave2) |> List.truncate s.TrailTimes
+    let pairs = trailFrames snaps 4 |> List.filter (fun x -> x.Frame < wave2) |> List.truncate s.TrailTimes
     pairs.Length |> should be (greaterThanOrEqualTo 5)
     let first, last = pairs.Head.Headings.[0], (List.last pairs).Headings.[0]
     abs (sin (first - parent)) |> should be (greaterThan 0.99)
