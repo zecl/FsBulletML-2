@@ -35,11 +35,16 @@ type LineageTests() =
 
   static let xml (s: LineageSpec) = BulletmlWriter.toIndentedXml 2 (Lineage.generate s).Bulletml
 
-  static let all36 =
+  static let all81 =
     [ for seed in 1 .. 9 do
-        for still in [ 0.0; 1.0 ] do
-          for root in [ Root.Radial; Root.Bar ] ->
-            make (fun a -> { a with Root = root; Seed = seed; Stillness = still; Homing = still; Spread = 1.0; Streak = 1.0; Speed = 1.0 }) ]
+        for leaf in [ 0; 1; 2 ] do
+          for root in [ Root.Radial; Root.Bar; Root.Fan ] ->
+            make (fun a ->
+              { a with Root = root; Seed = seed; Spread = 1.0; Streak = 1.0; Speed = 1.0
+                       Stillness = (if leaf = 1 then 1.0 else 0.0)
+                       Homing = (if leaf = 1 then 1.0 else 0.0)
+                       Fall = (if leaf = 2 then 2.0 else 0.0)
+                       Strands = 2.0; Drift = 2.0; Alternate = true }) ]
 
   static let runs frames (s: LineageSpec) = Felt.run frames (Lineage.generate s).Bulletml
   static let births (snaps: Felt.Snapshot list) = snaps |> List.sumBy (fun s -> s.Headings.Length)
@@ -156,7 +161,7 @@ type LineageTests() =
 
   [<Test>]
   member _.``定義 に 速さ を 書かない``() =
-    for s in all36 do
+    for s in all81 do
       match (Lineage.generate s).Bulletml with
       | Bulletml(_, elms) ->
         for e in elms do
@@ -187,7 +192,7 @@ type LineageTests() =
   /// 字 の 大きさ の 最大。参照 で 繋ぐ ので 世代数 に 比例 する
   [<Test>]
   member _.``字 は 数 KB に 収まる``() =
-    let biggest = all36 |> List.map (fun s -> (xml s).Length) |> List.max
+    let biggest = all81 |> List.map (fun s -> (xml s).Length) |> List.max
     biggest |> should be (lessThan 8000)
 
   /// 止めた 弾 から `relative 90` で 撃った 列 が、親 の 向き と 直角 か。
@@ -329,7 +334,7 @@ type LineageTests() =
   /// 赤 の とき は 並び と 見積もり を 報告 に 書く。`BUDGET` を 黙って 上げない —— `shrink` の 順 が 足りない 証拠
   [<Test>]
   member _.``合計 は 削った 先 に 収まる``() =
-    for s in all36 do
+    for s in all81 do
       LineageSpec.aliveBound s |> should be (lessThanOrEqualTo LineageSpec.BUDGET)
 
   [<Test>]
@@ -338,19 +343,22 @@ type LineageTests() =
     let s = make (fun a -> { a with Seed = 1; Ways = 4; Speed = 0.0; Streak = 0.0 })
     s.TrailTimes |> should equal 35
 
-  /// 36 通り を 難度 1 で 走らせた 最大数。最大 に なる のは 遅くて 601 コマ 目 なので 610 コマ 見る。
+  /// 81 通り（並び 9 × 終わり 3 × 根 3、撚り 3 本・振り 96°・入れ替え あり）を 難度 1 で 走らせた 最大数。
+  /// 610 コマ で 見て いた とき は、その 後 に 最大 が 伸びる 並び が 26 本 在った ので 700 コマ 見る。
   ///
-  /// --- 較正 の 記録（700 コマ で 測った 実測）
+  /// --- 較正 の 記録
   ///
-  ///   最大数 の 最大            5,589 発（B → B → T・Bar・Relaunch・狙う 弾 あり）
-  ///   実測 / 見積もり の 最大   0.756（T・Bar・Plain）
-  ///   字 の 大きさ の 最大      5,098 字（B → B → T・Bar・Relaunch・狙う 弾 あり）
+  ///   700 コマ   最大数 の 最大 7,918 発、実測 / 見積もり の 最大 0.829（どちら も T・Plain・Bar）
+  ///   1,000 コマ 最大数 の 最大 8,379 発（794 コマ 目）、実測 / 見積もり の 最大 0.877（T・Plain・Bar）。
+  ///              700 コマ より 後 に 伸びた 並び が 12 本、998 コマ 目 で まだ 伸びる 並び も 在る（落ち着いて いない）
+  ///   字 の 大きさ の 最大 7,419 字（B → B → T・Relaunch・Bar）
+  ///   上端 の 帯（y < 8）に 居た 弾 の 延べ 数（葉 を 1 発 ずつ 追う 口 が 無い ので 目安）：落ち あり の 最大 13,182、落ち なし の 最大 61,668
   ///
   /// 根 は 繰り返す。重なる 周 を 見積もり に 入れる 前 は 実測 / 見積もり が 4.1 倍、最大数 は 18,512 発 だった
   [<Test>]
-  member _.``36 通り は 面 の 天井 に 収まる``() =
-    for s in all36 do
-      let peak = runs 610 s |> List.map (fun x -> x.Positions.Length) |> List.max
+  member _.``81 通り は 面 の 天井 に 収まる``() =
+    for s in all81 do
+      let peak = runs 700 s |> List.map (fun x -> x.Positions.Length) |> List.max
       peak |> should be (lessThanOrEqualTo 10000)
       float peak |> should be (lessThanOrEqualTo (LineageSpec.aliveBound s))
 

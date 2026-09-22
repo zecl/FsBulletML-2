@@ -334,9 +334,14 @@ module Lineage =
       let d = if s.TrailTimes > 1 then s.Sweep / float (s.TrailTimes - 1) else 0.0
       // sequence の 起点 は 0 なので、1 組目 だけ relative で 親 の 進む 向き に 揃える
       let turn = if s.Alternate then sprintf "180 + $1 * %.3f" d else sprintf "%.3f" (180.0 + d)
-      let speeds = LineageSpec.strandMul s.Strands |> List.map (fun m -> speedOf (LineageSpec.CHILD_SPEED * m))
+      // 撚り の 倍率 は 等差 なので、2 発目 から は 前 の 弾 に 刻み を 足す `speedSeq` の `repeat` に 畳む
+      let muls = LineageSpec.strandMul s.Strands
+      let speeds = [ speedOf (LineageSpec.CHILD_SPEED * muls.Head) ]
+      let stepOf = if muls.Length > 1 then speedOf (LineageSpec.CHILD_SPEED * (muls.[1] - muls.[0])) else ""
+      // 狙い 直す 弾 は 止まって 自機 へ 向き 直す ので、撚って も 同じ 所 に 集まる。1 本 だけ 撃つ
       let side (head: Action) (c: string) =
-        head :: [ for v in List.tail speeds -> fire { sequence "0"; speed v; refBullet c args } ]
+        if muls.Length = 1 || c = "seeker" then [ head ]
+        else [ head; repeat (string (muls.Length - 1)) { fire { sequence "0"; speedSeq stepOf; refBullet c args } } ]
       let firstPair (c: string) =
         side (fire { relative "90"; speed speeds.Head; refBullet c args }) c
         @ side (fire { relative "-90"; speed speeds.Head; refBullet c args }) c
@@ -412,32 +417,38 @@ module Lineage =
   let private argsAt (s: LineageSpec) (i: int) (w: int) = if s.Alternate then [ string (sign i w) ] else []
   let private pairsOf (r: Ranked) = sprintf "(%d + %d * $rank + 1) / 2" r.Base r.Rank
 
-  /// 1 波 の 筋 の 向き（aim から の 度）
+  /// 筋 の 1 本目 の 向き（aim から の 度）と 刻み
   let private raysOf (s: LineageSpec) =
     match s.Root with
-    | Root.Fan ->
-      if s.Ways = 1 then [ 0.0 ]
-      else [ for i in 0 .. s.Ways - 1 -> -60.0 + 120.0 * float i / float (s.Ways - 1) ]
+    | Root.Fan -> if s.Ways = 1 then 0.0, 0.0 else -60.0, 120.0 / float (s.Ways - 1)
     | _ ->
       let gap = 360.0 / float s.Ways
-      let first = if s.Ways >= 2 then gap / 2.0 else 0.0
-      [ for i in 0 .. s.Ways - 1 -> first + gap * float i ]
+      (if s.Ways >= 2 then gap / 2.0 else 0.0), gap
 
-  /// 筋 を 並べて 書く 1 波
-  let private waveOf (s: LineageSpec) (w: int) =
-    (raysOf s |> List.mapi (fun i d -> fire { aim (sprintf "%.2f" d); speed (speedOf s.RootSpeed); refBullet "g1" (argsAt s i w) }))
-    @ [ wait (waitOf s.WaveWait) ]
+  /// 1 波。符号 は 筋 の 番号 で 交互 に なる ので、2 本目 から は 2 本 ずつ `repeat` に 畳む ——
+  /// 並べて 書く と 放射 12 本 × 2 波 で 字 が 12,729 字 に なった。
+  /// 入れ替え の とき は `wave` の action に 波 の 符号 を `$1` で 渡し、奇数 本目 は `0 - $1`
+  let private waveBody (s: LineageSpec) =
+    let first, step = raysOf s
+    let args (odd: bool) = if not s.Alternate then [] elif odd then [ "0 - $1" ] else [ "$1" ]
+    let shot (odd: bool) = fire { sequence (sprintf "%.2f" step); speed (speedOf s.RootSpeed); refBullet "g1" (args odd) }
+    let more = s.Ways - 1
+    [ yield fire { aim (sprintf "%.2f" first); speed (speedOf s.RootSpeed); refBullet "g1" (args false) }
+      if more >= 2 then yield repeat (string (more / 2)) { yield! [ shot true; shot false ] }
+      if more % 2 = 1 then yield shot true
+      yield wait (waitOf s.WaveWait) ]
 
   let private spreadTop (s: LineageSpec) =
     top {
       if s.Alternate then
         repeat (pairsOf s.Waves) {
-          yield! waveOf s 0
-          yield! waveOf s 1
+          yield! [ actionRef "wave" [ "1" ]; actionRef "wave" [ "-1" ] ]
         }
       else
-        repeat (timesOf s.Waves) { yield! waveOf s 0 }
+        repeat (timesOf s.Waves) { yield! waveBody s }
     }
+
+  let private waveDef (s: LineageSpec) = defAction "wave" { yield! waveBody s }
 
   let private radialTop (s: LineageSpec) =
     let gap = 360.0 / float s.Ways
@@ -516,7 +527,9 @@ module Lineage =
     <| vertical "lineage" {
          match s.Root with
          | Root.Radial when not s.Alternate -> radialTop s
-         | Root.Radial | Root.Fan -> spreadTop s
+         | Root.Radial | Root.Fan ->
+           spreadTop s
+           if s.Alternate then waveDef s
          | Root.Bar ->
            barTop s
            barDef s
