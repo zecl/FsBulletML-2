@@ -17,6 +17,7 @@
     <Compile Include="HarmonicTests.fs" />
     <Compile Include="HarmonicGrid.fs" />
     <Compile Include="HarmonicSpace.fs" />
+    <Compile Include="LineageTests.fs" />
     <Compile Include="BudgetTests.fs" />
     <Compile Include="ScatterPacing.fs" />
     <Compile Include="EditBudget.fs" />

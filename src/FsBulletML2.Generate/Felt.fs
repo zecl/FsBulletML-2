@@ -55,12 +55,11 @@ let private noSpawn : SpawnAim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
 let private inside (p: Vec2) =
   p.X >= 0.0f && p.X <= FieldW && p.Y >= 0.0f && p.Y <= FieldH
 
-/// rank=1.0、rand=0.5 固定。敵 は (240, 80) に居て 動かない。
+/// rand=0.5 固定。敵 は (240, 80) に居て 動かない。
 /// 自機 (playerX, playerY) も動かず、そこ への Aim を毎コマ 弾 ごと に組む
-let runWith (playerX: float) (playerY: float) (frames: int) (bulletml: Bulletml) : Snapshot list =
+let runWithRank (rank: float32) (playerX: float) (playerY: float) (frames: int) (bulletml: Bulletml) : Snapshot list =
   let envOf = envOf { X = float32 playerX; Y = float32 playerY }
   let rand () = 0.5f
-  let rank = 1.0f
   let script = Runner.load rand rank bulletml
   let enemy = { X = EnemyX; Y = EnemyY }
   let mutable root = Runner.newRoot BulletType.Enemy script
@@ -107,6 +106,14 @@ let runWith (playerX: float) (playerY: float) (frames: int) (bulletml: Bulletml)
         Headings = List.ofSeq heads
         Speeds = List.ofSeq speeds }
   List.ofSeq acc
+
+/// rank=1.0 の `runWithRank`
+let runWith (playerX: float) (playerY: float) (frames: int) (bulletml: Bulletml) : Snapshot list =
+  runWithRank 1.0f playerX playerY frames bulletml
+
+/// 自機 を (240, 600) に置いた `runWithRank`
+let runAt (rank: float32) (frames: int) (bulletml: Bulletml) : Snapshot list =
+  runWithRank rank (float PlayerX) (float PlayerY) frames bulletml
 
 /// 自機 を (240, 600) に置いた `runWith`
 let run (frames: int) (bulletml: Bulletml) : Snapshot list =

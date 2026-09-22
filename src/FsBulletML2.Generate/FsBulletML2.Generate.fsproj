@@ -18,6 +18,7 @@
     <Compile Include="Bound.fs" />
     <Compile Include="Generate.fs" />
     <Compile Include="Harmonic.fs" />
+    <Compile Include="Lineage.fs" />
     <Compile Include="Felt.fs" />
   </ItemGroup>
 

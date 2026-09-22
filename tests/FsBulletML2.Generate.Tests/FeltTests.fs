@@ -4,6 +4,8 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2.Generate
 
+module Dsl = FsBulletML2.Dsl
+
 [<TestFixture>]
 type FeltTests() =
 
@@ -287,3 +289,21 @@ type FeltTests() =
     abs (shift Aimed - atan (180.0 / 520.0)) |> should be (lessThanOrEqualTo (deg 1.0))
     shift Curtain |> should be (lessThanOrEqualTo (deg 0.5))
     shift Spread |> should be (lessThanOrEqualTo (deg 0.5))
+
+  /// 難度 を 下げる と 撃つ 数 が 減る。`$rank` を 読む 木 で 見る —— 読まない 木 では 同じ
+  [<Test>]
+  member _.``runAt は 難度 を 渡す``() =
+    let b =
+      Dsl.vertical "rank" {
+        Dsl.top {
+          Dsl.repeat "1 + 4 * $rank" {
+            Dsl.fire { absolute "180"; speed "1"; plain }
+          }
+          // 終えた 台本 は 頭 から 走り 直す ので、止めない と コマ 数 だけ 撃つ
+          Dsl.wait "9999"
+        }
+      }
+    let shots rank = Felt.runAt rank 3 b |> List.sumBy (fun s -> s.Headings.Length)
+    shots 0.0f |> should equal 1
+    shots 1.0f |> should equal 5
+    (Felt.run 3 b |> List.sumBy (fun s -> s.Headings.Length)) |> should equal 5
