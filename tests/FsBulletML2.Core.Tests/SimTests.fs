@@ -137,7 +137,7 @@ type SimTests() =
       (simForTests.Bind (simForTests.Bind (moving, f), g))
       (simForTests.Bind (moving, fun x -> simForTests.Bind (f x, g)))
 
-  /// BindReturn は Bind + Return の速い道。**答えが変わってはいけない。**
+  /// BindReturn は Bind + Return の速い道。答えが変わってはいけない。
   /// 速い道を足したら、遅い道と突き合わせる
   [<Test>]
   member _.``BindReturn は Bind + Return と同じ答えを返す``() =

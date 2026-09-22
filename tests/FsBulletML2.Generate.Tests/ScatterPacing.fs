@@ -5,26 +5,8 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.Generate
 
-/// 散らした 弾幕 を 走らせて 数える ところ。
-///
-/// `ScatterSeeds`（Core.Tests）は 木 の 字 を見る。ここ は 走行 を見る ——
-/// 1 コマ の ずれ も、余計 に待つ 20 コマ も、XML には 出ない。
-///
-/// --- 較正（当てた変異 と、赤くなった点）
-///
-///   `changeSpeed` を `Wait term` に          散らして も 1 周 が変わらない（1 コマ ずれる）
-///   `accel` を `Wait term` に                散らして も 1 周 が変わらない（余計 に待つ）
-///   `ghost` を いつも `Some []` に           1 周 が変わらない ／ 弾数 が跳ねない
-///
-/// 上 の 3 つ は **XML を見る 門 では 1 つ も 赤 に ならない** ——
-/// 1 コマ の ずれ も、余計 に待つ 20 コマ も、字 には 出ない。
-///
-/// `split` の `spends g` を true に固定／`spends` の再帰 を落とす は ここ では
-/// 赤 に ならない。`paced` も 生成 した 型 も 写し が 上っ面 に 待ち を持つ ので 変わらない ——
-/// どちら も `ScatterSeeds`（Core.Tests）の `waitless` と `nested` が 捕まえる。
-///
-/// **弾数 の比 だけ では 足りない。** 散らなく なった とき も 比 は 1 倍 前後 に収まる ので、
-/// `places` の assert を 先 に置く
+/// 散らした 弾幕 を 走らせて 数える。1 コマ の ずれ も、余計 に待つ コマ も、XML には 出ない
+/// 散らなく なった とき も 弾数 の比 は 1 倍 前後 に収まる ので、`places` の assert を 先 に置く
 [<TestFixture>]
 type ScatterPacing() =
 
@@ -45,8 +27,7 @@ type ScatterPacing() =
        | a :: c :: _ -> c - a
        | _ -> -1
 
-  /// `changeSpeed` と `accel` を 1 つ ずつ 挟んだ 輪。
-  /// 実測: wait 20 は 20 コマ / changeSpeed term 20 は 19 コマ / accel term 20 は 1 コマ
+  /// `changeSpeed` と `accel` を 1 つ ずつ 挟んだ 輪
   static let paced =
     """<action label="top"><repeat><times>9</times><action>
          <wait>4</wait>
@@ -64,10 +45,8 @@ type ScatterPacing() =
     Scatter.places 3 b |> should equal 3
     cycleOf (Scatter.apply 3 b) |> should equal (cycleOf b)
 
-  /// 撒く 側 に 間合い が戻った ので、面 が 走らせ直して も 毎コマ 茎 を撒き 直さない。
-  ///
-  /// `Depth` を 2.0 にする のは、ここ が 散らせなかった 軸 だから ——
-  /// 直す 前 は 5 つ の型 とも depth 1.0 以上 で 1 か所 のまま だった
+  /// 撒く 側 に 間合い が在る ので、面 が 走らせ直して も 毎コマ 茎 を撒き 直さない
+  /// `Depth` を 2.0 にする のは、ここ が 散らせなかった 軸 だから
   [<Test>]
   member _.``散らして も 弾数 が 跳ねない``() =
     for kind in [ Spiral; Radial; Aimed; Spread; Curtain ] do
@@ -77,5 +56,5 @@ type ScatterPacing() =
       let plain = (Generate.generateTo 900.0 spec).Bulletml
       Scatter.places 3 plain |> should equal 3
       let three = Scatter.apply 3 (Generate.generateTo 300.0 spec).Bulletml
-      // 直す 前 は 708 倍。取り分 を 3 で割って いる ので 本当 は 1 倍 前後
+      // 取り分 を 3 で割って いる ので 本当 は 1 倍 前後
       float (peak 300 three) / float (peak 300 plain) |> should be (lessThan 3.0)

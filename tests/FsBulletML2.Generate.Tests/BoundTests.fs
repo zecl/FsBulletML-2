@@ -87,10 +87,7 @@ type BoundTests() =
     allExtremes () |> Seq.filter (fun s -> s.Cascade = 3.0) |> Seq.length |> should equal 8192
     allExtremes () |> Seq.filter (fun s -> s.Pause) |> Seq.length |> should equal 8192
 
-  /// 軸 ごと の clamp は「1 本 の式 が暴れない」ことしか 保証 しない。実機 で確かめた:
-  ///
-  ///     Cascade 3 段   同時 21,517 発（MAX_ALIVE の 24 倍）
-  ///     Cascade 無し   同時  1,070 発（それでも 破れる）
+  /// 軸 ごと の clamp は「1 本 の式 が暴れない」ことしか 保証 しない
   [<Test>]
   member _.``fit を通せば どの 組み合わせ でも 上界 の中``() =
     let bad =
@@ -102,7 +99,6 @@ type BoundTests() =
 
     bad |> List.length |> should equal 0
 
-  /// 実機 で 1,958 -> 662 に絞った 後 も、腕 18 本 のリング も 3 層 の重なり も残った。
   /// `Cascade` だけ は最後 の手段 で落ちる（下 の 2 本 が見る）
   [<Test>]
   member _.``fit は形 を壊さない``() =
@@ -128,8 +124,7 @@ type BoundTests() =
     for s in ok do
       (fit s).Cascade |> should equal s.Cascade
 
-  /// `wait` を伸ばして も 1 回 の塊 は減らない ので、段 を落とす 経路 が要る ——
-  /// 全軸 最大 は wait 278 倍 でも 同時 3,351 発 だった
+  /// `wait` を伸ばして も 1 回 の塊 は減らない ので、段 を落とす 経路 が要る
   [<Test>]
   member _.``塊 が越える 仕様 では 段 が落ちる``() =
     let heavy = allMax ()
@@ -146,11 +141,8 @@ type BoundTests() =
   member _.``重い 仕様 では WaitScale が伸びる``() =
     (fit (allMax ())).WaitScale |> should be (greaterThan 1.0)
 
-  // ------------------------------------------------------------------
-  // `aliveBound (fit s) <= MAX_ALIVE` だけ を見る と、両側 が一緒 にずれて
-  // 緑 のまま になる —— 掛け算 の項 を落とす 変異 が 4 本 とも 空振り した。
+  // `aliveBound (fit s) <= MAX_ALIVE` だけ だと 両側 が一緒 にずれて 緑 のまま になる
   // だから 軸 を 1 つ 上げた ら 上界 が増える を直 に見る
-  // ------------------------------------------------------------------
 
   [<Test>]
   member _.``Cascade を上げる と 上界 が増える``() =
@@ -160,8 +152,7 @@ type BoundTests() =
   member _.``Layers を上げる と 上界 が増える``() =
     aliveBound (withAxis "layers") |> should be (greaterThan (aliveBound (baseSpec ())))
 
-  /// `Depth` は上界 に効かない —— 中間 `repeat` は発射 の回数 を増やす が
-  /// 同じ だけ 時間 も 伸びる。掛けた とき 上界 5,100 万 発 が出た
+  /// `Depth` は上界 に効かない。中間 `repeat` は発射 の回数 を増やす が 同じ だけ 時間 も 伸びる
   [<Test>]
   member _.``Depth は上界 に効かない``() =
     aliveBound (withAxis "depth") |> should (equalWithin 0.001) (aliveBound (baseSpec ()))
@@ -170,29 +161,20 @@ type BoundTests() =
   member _.``Symmetry を上げる と 上界 が増える``() =
     aliveBound (withAxis "symmetry") |> should be (greaterThan (aliveBound (baseSpec ())))
 
-  /// 速い 弾 ほど 短命。180 固定 で見積もる と 上界 が過大 になり、
-  /// `fit` が `wait` を伸ばして「速い が スカスカ」になる（実機 で踏んだ）
+  /// 速い 弾 ほど 短命。180 固定 で見積もる と 上界 が過大 になる
   [<Test>]
   member _.``速い 弾幕 ほど 上界 が小さい``() =
     let atSpeed v = spec (fun a -> { a with Speed = v })
     aliveBound (atSpeed 3.0) |> should be (lessThan (aliveBound (atSpeed 0.0)))
 
-  /// `Breathe` は `changeSpeed "0.25"` で 60 コマ ほど 溜める ——
-  /// その間 ほとんど 進まない ので、見ない と 上界 が破れた（全軸 最大 で 0.85 倍）
+  /// `Breathe` は `changeSpeed "0.25"` で 60 コマ ほど 溜める。見ない と 上界 が破れる
   [<Test>]
   member _.``溜める 弾幕 は 上界 が大きい``() =
     let withBreathe b = spec (fun a -> { a with Speed = 3.0; Breathe = b })
     aliveBound (withBreathe true) |> should be (greaterThan (aliveBound (withBreathe false)))
 
-  /// 段 の子 は 親 より 遅い（`subSpeedExpr` の係数 が 0.9 - lv * 0.15）ので 長命。
-  /// 親 の速度 だけ 見る と 短命 に見積もって 上界 が破れる。
-  ///
-  /// 段 の子 は 親 より 遅い（`subSpeedExpr` の係数 は 0.9 - lv * 0.15）ので 長命。
-  ///
-  /// `Cascade` は `burst` でも `wait` でも 上界 を動かす ので、比 では 寿命 の効き が
-  /// 見えない —— `subSpeedExpr` が 親 より 遅い こと を直 に固定 する。
-  /// ここ が破れる と `lifeOf` の `List.min` が 親 だけ 見て も 同じ 値 になり、
-  /// 上界 が短命 に寄って 破れる（実機 の全軸 最大 で 0.85 倍）
+  /// 段 の子 は 親 より 遅い（`subSpeedExpr` の係数 は 0.9 - lv * 0.15）ので 長命
+  /// 比 では 寿命 の効き が見えない（`Cascade` は `burst` も `wait` も動かす）ので 直 に固定 する
   [<Test>]
   member _.``段 の子 は 親 より 遅い``() =
     let s = spec (fun a -> { a with Speed = 3.0; Cascade = 2.0 })
@@ -205,13 +187,8 @@ type BoundTests() =
     // 深い 段 ほど 遅い
     kids |> List.last |> should be (lessThan (List.head kids))
 
-  /// 子 の速度 が `lifeOf` に届いて いる か。
-  ///
-  /// 上 の 1 本 は `subSpeedExpr` の中身 しか 見ない ので、`lifeOf` が 子 を
-  /// 数え損ねて も 緑 のまま だった（`for lv in 0 .. -1` の変異 が空振り）。
-  ///
-  /// 段 を深く する と 最遅 が下がる —— `scatterExpr` の増分 を打ち消して、
-  /// 寿命 が伸びた ぶん だけ 上界 が余計 に増える ことを 見る
+  /// 子 の速度 が `lifeOf` に届いて いる か。上 の 1 本 は `subSpeedExpr` の中身 しか 見ない
+  /// 段 を深く した とき、寿命 が伸びた ぶん だけ 上界 が余計 に増える ことを 見る
   [<Test>]
   member _.``子 の速度 が 上界 に届く``() =
     let atCascade c = spec (fun a -> { a with Speed = 3.0; Cascade = c })
@@ -240,14 +217,8 @@ type BoundTests() =
     let lifeRatio = slowestOf (atCascade 1.0) / slowestOf (atCascade 2.0)
     ratio |> should (equalWithin 0.05) lifeRatio
 
-  /// 値 を手 で固定 する —— 不等式 で書く と 緩すぎて、項 を 1 つ だけ
-  /// `$rank = 0.5` にした 変異 が通り抜けた。
-  ///
-  ///     armsExpr 8 腕 ＋ 速度 の起点 1 発 = 9   waitExpr 5 間隔
-  ///     Depth 0 / Cascade 0 / Layers 0 / Pause 無し
-  ///
-  /// 寿命 は 180 固定 でなく 速度 で決まる。`speedExpr` が `$rank = 1` で 2.5 なので
-  /// `FIELD_SPAN 280 ÷ 2.5 = 112` —— 9 ÷ 5 × 112 × 1.3 = 262.08
+  /// 値 を手 で固定 する（不等式 だと 緩すぎる）。8 腕 ＋ 起点 1 発 = 9、間隔 5、
+  /// 寿命 280 ÷ 2.5 = 112 で 9 ÷ 5 × 112 × 1.3 = 262.08
   [<Test>]
   member _.``上界 は いちばん 重い側 の値 になる``() =
     evalAt 1.0 (armsExpr (baseSpec ())) |> should (equalWithin 0.001) 8.0
@@ -269,29 +240,7 @@ type BoundTests() =
         Felt.run 30 (Generate.generate s).Bulletml |> List.map (fun f -> f.Headings.Length) |> List.max
       (s.Kind, s.Ways, s.Parametrized, float fired) |> should equal (s.Kind, s.Ways, s.Parametrized, perTurn s)
 
-  /// Core で 10 通り 走らせて 校正 した（2026-09-19、`$rank = 1.0`、種 3 通り の最大、
-  /// 1,800 コマ）。ブラウザ では 背面タブ で コマ が間引かれて 数 が取れない ——
-  /// 弾数 は論理値 なので 同じ Core を .NET で回す。
-  ///
-  /// 面 も 実機 に合わせる（`Stage.portrait` の 480x640、敵 240,80、自機 240,600）——
-  /// 画面外 で消える 条件（`client/Playfield.fs:432`）を入れない と、
-  /// `Vanishing` が偽 の弾 が永久 に溜まって 別物 を測る。
-  ///
-  ///     仕様                      予測   実測    比
-  ///     a-spiral-2層-間            724    418   1.73
-  ///     b-radial-parametrized      710    514   1.38
-  ///     c-aimed-cascade3           793    682   1.16
-  ///     d-全軸最大                  672    322   2.09
-  ///     e-最小                     134     68   1.97
-  ///     f-間なし-密                 728    506   1.44
-  ///     g-間あり-密                  18     18   1.01
-  ///     h-depth2                   262    167   1.57
-  ///     i-layers2                  728    528   1.38
-  ///     j-spread-breathe           493    265   1.86
-  ///
-  /// `SAFETY` を 1.15 まで 下げた ら g が 0.89 で破れた ので 1.3 に置く。
-  /// 上げすぎる と `fit` が `wait` を伸ばして 密度 が死ぬ ——
-  /// 「速くて 避けにくい」と頼んだ のに スカスカ になる（実機 で踏んだ）
+  /// Core で 10 通り 走らせた 予測 / 実測 の比 の最小（1.01）を覆う か
   [<Test>]
   member _.``SAFETY は いちばん 外す ところ を覆う``() =
     SAFETY |> should be (greaterThanOrEqualTo (1.0 / 1.01))

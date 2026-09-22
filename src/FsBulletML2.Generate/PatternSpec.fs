@@ -6,28 +6,18 @@ type PatternKind =
   | Radial
   | Aimed
   | Spread
-  /// 幕。上 から 横一列 に降りて くる ——
-  /// 回る でも 全方位 でも 扇 でもない ので、4 つ では 表せなかった
-  /// （jev が conf 0.09 で `spiral` に落として いた）
+  /// 幕。上 から 横一列 に降りて くる
   | Curtain
 
-/// 撃つ 向き。
-///
-/// 面 は 縦 で、敵 が上（240, 80）/ 自機 が下（240, 600）——
-/// `absolute` の 180 度 が 自機 の方向 で、0 度 が その 真裏。
-///
-/// `Around` が既定 で「向き を名指し しない」。型 が決める 向き
-/// （`Spiral` は回る / `Aimed` は狙う）を 上書き しない
+/// 撃つ 向き。`absolute` の 180 度 が 自機 の方向 で、0 度 が その 真裏
+/// `Around` が既定 で「向き を名指し しない」。型 が決める 向き を 上書き しない
 type Facing =
   | Around
   | Forward
   | Backward
   | Sideways
 
-/// 弾 の振る舞い。
-///
-/// `Plain` が既定。`BulletKinds`（何種類 出すか）とは 別 の軸 で、
-/// こちら は 1 発 が どう 飛ぶ か
+/// 弾 の振る舞い（1 発 が どう 飛ぶ か）。`BulletKinds`（何種類 出すか）とは 別 の軸
 type Motion =
   /// 撃った 速さ の まま 飛ぶ
   | Plain
@@ -37,11 +27,7 @@ type Motion =
   /// ミサイル と 言われた なら 狙う のが 本体
   | Missile
 
-/// 軸 の生値。`PatternSpec.create` に渡す 途中 の形 で、clamp を通って いない。
-///
-/// 公開 レコード なので `{ Axes.zero with Speed = 2.0 }` と書ける ——
-/// 軸 を足して も 既存 の呼び出し が壊れない。
-/// 閉じる のは `create` 1 か所 だけ で、そこ を通らない と `PatternSpec` に ならない
+/// 軸 の生値。`PatternSpec.create` に渡す 途中 の形 で、clamp を通って いない
 type Axes =
   { Kind: PatternKind
     Speed: float
@@ -63,18 +49,13 @@ type Axes =
     Motion: Motion
     KindConfidence: float }
 
-/// 弾幕 の仕様。`private` なので `PatternSpec.create` を通らず に作れない ——
-/// 公開 すると `{ spec with Speed = 99.0 }` が書けて clamp を抜ける。
-///
-/// 中 に `Axes` を そのまま 持つ。軸 を足す ときに 触る のは `Axes` だけ で、
-/// ここ の 読み口 は 1 行 も 増えない —— 前 は 軸 ごと に
-/// `member this.Speed = this.Speed_` を 書いて いた
+/// 弾幕 の仕様。`private` なので `PatternSpec.create` を通らず に作れない（公開 すると clamp を抜ける）
+/// 中 に `Axes` を そのまま 持つ ので、軸 を足す ときに 触る のは `Axes` だけ
 type PatternSpec =
   private
     { Axes_: Axes
-      /// `Bound.fit` が上界 を超えた ときに 入れる 係数（既定 1.0）。
-      /// 仕様 の中 に持つ —— 外 で掛ける と、上界 を計算 した 式 と
-      /// 実際 に出る 式 が割れる
+      /// `Bound.fit` が上界 を超えた ときに 入れる 係数（既定 1.0）
+      /// 外 で掛ける と、上界 を計算 した 式 と 実際 に出る 式 が割れる
       WaitScale_: float }
 
   member this.Kind = this.Axes_.Kind
@@ -92,9 +73,7 @@ type PatternSpec =
   member this.Aiming = this.Axes_.Aiming
   member this.Pause = this.Axes_.Pause
   member this.Parametrized = this.Axes_.Parametrized
-  /// 腕 の本数 を名指し する（「3way」）。0 は「名指し しない」で、
-  /// そのとき は `Symmetry` から 引く。`armsExpr` 1 か所 が読む ので、
-  /// 刻み（`armStep` / `spinExpr` / `curtainStep`）も 一緒 に追随 する
+  /// 腕 の本数 を名指し する（「3way」）。0 は「名指し しない」で、`Symmetry` から 引く
   member this.Ways = this.Axes_.Ways
   member this.Facing = this.Axes_.Facing
   member this.Motion = this.Axes_.Motion
@@ -109,9 +88,7 @@ module PatternSpec =
   /// 目盛り の外 に出た値 を戻す。呼ぶ側 が段階数 を守る 保証 は無い
   let private onScale (steps: int) (v: float) = max 0.0 (min (float steps - 1.0) v)
 
-  /// 腕 の本数 の上。これ を超えて 名指し されたら `Symmetry` に返す ——
-  /// 目 で 数えられる 範囲 を 超えたら「たくさん」と 同じ こと で、
-  /// 固定 の本数 に すると `$rank` が 1 本 も効かなく なる
+  /// 腕 の本数 の上。超えて 名指し されたら `Symmetry` に返す（固定 に すると `$rank` が効かなく なる）
   let [<Literal>] MAX_WAYS = 12
 
   /// 知らない 字 は `Around`（向き を名指し しない）
@@ -160,12 +137,8 @@ module PatternSpec =
       Motion = Plain
       KindConfidence = 0.0 }
 
-  /// 唯一 の入口。JSON を受け取らない —— 呼ぶ側 の都合 を持ち込まない。
-  ///
-  /// 受け取る のは 差分 を作る 関数。位置 でなく 名前 で渡す ので、
-  /// 同じ 型 の軸 が 10 個 並んで いて も 取り違え が 型 で止まる ——
-  /// 前 は 19 引数 のうち `float` が 10 個 連続 して いて、
-  /// 順 を間違えて も 通って いた
+  /// 唯一 の入口。JSON を受け取らない。受け取る のは 差分 を作る 関数 で、
+  /// 位置 でなく 名前 で渡す ので 同じ 型 の軸 の取り違え が 型 で止まる
   let create (f: Axes -> Axes) : PatternSpec =
     let a = f zero
     { Axes_ =

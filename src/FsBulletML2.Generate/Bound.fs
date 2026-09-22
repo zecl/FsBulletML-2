@@ -5,18 +5,11 @@ open FsBulletML2.Generate
 open FsBulletML2.Generate.Consts
 open FsBulletML2.Generate.Exprs
 
-/// 式 が見て いない ぶん の余裕。Core で 10 通り 走らせて 決めた（`BoundTests` に記録）。
-///
-/// 大きく する と 上限 を守る が、`fit` が `wait` を伸ばして 密度 が死ぬ ——
-/// 「速くて 避けにくい」と頼んだ のに スカスカ になる。
-///
-/// 1.15 まで 下げた ら 10 通り の 1 本 が 0.89 で破れた ので、1.3 に置く
+/// 式 が見て いない ぶん の余裕。大きく する と `fit` が `wait` を伸ばして 密度 が死ぬ
 let [<Literal>] SAFETY = 1.3
 
-/// 弾 が生きて いる コマ数。`wait 180` で消える のと、画面 から 出る のと、早い ほう。
-///
-/// 速い 弾 ほど 短命 —— 180 固定 で見積もる と 上界 が 3 倍 過大 になり、
-/// `fit` が `wait` を 7 倍 に伸ばして「速い が スカスカ」な弾幕 が出る（実機 で踏んだ）
+/// 弾 が生きて いる コマ数。`wait 180` で消える のと、画面 から 出る のと、早い ほう
+/// 180 固定 で見積もる と 速い 弾 の上界 が過大 になり、`fit` が `wait` を伸ばしすぎる
 let private lifeOf (d: PatternSpec) : float =
   // いちばん 遅い 弾 で見る —— 段 の子 は 親 より 遅い（`subSpeedExpr`）ので、
   // 親 の速度 だけ 見る と 短命 に見積もって 上界 が破れる
@@ -39,12 +32,8 @@ let perTurn (d: PatternSpec) : float =
   elif headIsArm d then arms
   else 1.0 + arms
 
-/// `$rank = 1.0` で評価 する。
-///
-///     (top の発射率 × Σ段 ごと の撒く数 の積 ＋ 層 の発射率) × 寿命
-///
-/// `repeat` の回数 は掛けない —— 発射 の回数 を増やす が 同じ だけ 時間 も 伸びる ので、
-/// 単位時間 あたり には効かない。掛けた とき 上界 5,100 万 発 が出た。
+/// `$rank = 1.0` で `(top の発射率 × Σ段 ごと の撒く数 の積 ＋ 層 の発射率) × 寿命`
+/// `repeat` の回数 は掛けない（発射 の回数 と 同じ だけ 時間 も 伸びる ので 単位時間 あたり には効かない）
 let aliveBound (d: PatternSpec) : float =
   let arms = evalAt 1.0 (armsExpr d)
   let perTurn = perTurn d
@@ -70,16 +59,12 @@ let aliveBound (d: PatternSpec) : float =
 
   let steady = (topRate * burst + layerRate) * lifeOf d
 
-  // `wait` が寿命 を超える と 発射率 で割る のが 無意味 になる ——
-  // 1 回 の塊 が丸ごと 同時 に生きる。`fit` が wait を 278 倍 にして も
-  // 実測 3,351 発 が減らなかった（予測 539）
+  // `wait` が寿命 を超える と 発射率 で割る のが 無意味 になる。1 回 の塊 が丸ごと 同時 に生きる
   let perBurst = perTurn * burst + arms * float (step d.Layers)
 
   max steady perBurst * SAFETY
 
-/// 越える なら まず `wait` を伸ばす —— 腕 や段 を減らす と 形 と個性 が変わる が、
-/// これ なら ゆっくり になる だけ で済む。
-///
+/// 越える なら まず `wait` を伸ばす。腕 や段 を減らす と 形 が変わる が、これ なら ゆっくり になる だけ
 /// `waitExpr` は `max 2` と 整数 への丸め が在る ので、入れた 後 に もう一度 測る。
 let private byWait (budget: float) (d: PatternSpec) : PatternSpec =
   let rec go (s: PatternSpec) (tries: int) =
@@ -93,12 +78,8 @@ let private byWait (budget: float) (d: PatternSpec) : PatternSpec =
 
   go d 12
 
-/// `wait` で絞りきれない なら 段 を 1 つ ずつ 落とす。
-///
-/// 1 回 の塊 は `wait` で減らない —— 全軸 最大 で wait を 278 倍 にして も
-/// 同時 3,351 発 のまま だった。上限 を破る より 段 を落とす
-/// 上限 は 引数。混ぜ と 散らし は 1 面 を分け合う ので、呼ぶ側 が 取り分 を渡す。
-/// 0 以下 は 1 に倒す —— 呼ぶ側 の割り算 で 0 になりうる
+/// `wait` で絞りきれない なら 段 を 1 つ ずつ 落とす（1 回 の塊 は `wait` で減らない）
+/// 上限 は 引数 で、呼ぶ側 が 取り分 を渡す。0 以下 は 1 に倒す（呼ぶ側 の割り算 で 0 になりうる）
 let fitTo (budget: float) (d: PatternSpec) : PatternSpec =
   let budget = max 1.0 budget
   let rec go (s: PatternSpec) =

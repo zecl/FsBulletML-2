@@ -36,8 +36,8 @@ type ShapeTests() =
 
   static let plain () = spec id
 
-  /// 段 の形 を見る 3 本 は 腕 を細く する —— 腕 が多い と 1 回 の塊 が上限 を越えて
-  /// `Bound.fit` が段 を落とし、**形 でなく 上限 の話 を測って しまう**
+  /// 段 の形 を見る 3 本 は 腕 を細く する。腕 が多い と 1 回 の塊 が上限 を越えて
+  /// `Bound.fit` が段 を落とし、形 でなく 上限 の話 を測って しまう
   static let thin cascade =
     spec (fun a -> { a with Symmetry = 0.0; Cascade = cascade })
 
@@ -51,8 +51,7 @@ type ShapeTests() =
   member _.``いちばん 深い 段 は撒かない``() =
     toXml (Generate.generate (thin 2.0)) |> should not' (haveSubstring "\"core3\"")
 
-  /// 定義 の数 だけ 数える と 中身 が空 の弾 が N + 1 個 出て いて も 通る
-  /// （`Cascade` の枝 を落とす 変異 が空振り した）。鎖 なら 定義 と 参照 で 2 回 ずつ 出る
+  /// 定義 の数 だけ 数える と 中身 が空 の弾 が N + 1 個 出て いて も 通る。鎖 なら 定義 と 参照 で 2 回 ずつ 出る
   [<Test>]
   member _.``段 が鎖 で繋がる``() =
     let x = toXml (Generate.generate (thin 2.0))
@@ -67,8 +66,7 @@ type ShapeTests() =
         toXml (Generate.generate (spec (fun a -> { a with Layers = float n })))
       countOf "<action label=\"top" x |> should equal (n + 1)
 
-  /// `Depth = N` で `repeat` が N + 2 本（波 1 ＋ 中間 N ＋ 腕 1）。
-  /// 「flat より 多い」だけ だと `nestRepeat` の `n <= 1` 変異 が通り抜けた
+  /// `Depth = N` で `repeat` が N + 2 本（波 1 ＋ 中間 N ＋ 腕 1）
   [<Test>]
   member _.``段 が入れ子``() =
     for n in 0 .. 2 do
@@ -95,7 +93,7 @@ type ShapeTests() =
     x |> should haveSubstring "$1"
     x |> should haveSubstring "$2"
 
-  /// `sequence` の速度 は波 を跨いで 累積 する —— 0.06 で弾 が 12 個 に減った
+  /// `sequence` の速度 は波 を跨いで 累積 する
   [<Test>]
   member _.``speedSeq は 0``() =
     let x =
@@ -128,13 +126,8 @@ type ShapeTests() =
     for m in Regex.Matches(x, @"<times>([^<]+)</times>") do
       evalAt 1.0 m.Groups.[1].Value |> should be (lessThanOrEqualTo (float Consts.MAX_REPEAT))
 
-  /// 幕 は 下向き（180 度）を中心 に した 帯 を 等間隔 に掃く。
-  ///
-  /// 頭 が毎波 帯 の左端 へ `absolute` で戻る ので、腕 の `sequence` が
-  /// 累積 しても 帯 は回り出さない。
-  ///
-  /// `$rand` で散らして いた とき 雨 にしか 見えなかった —— 幕 は
-  /// 同じ コマ の弾 が 1 本 の弧 を作る 形 なので、角度 が揃う 必要 が在る
+  /// 幕 は 下向き（180 度）を中心 に した 帯 を 等間隔 に掃く
+  /// 頭 が毎波 帯 の左端 へ `absolute` で戻る ので、腕 の `sequence` が 累積 しても 帯 は回り出さない
   [<Test>]
   member _.``幕 は帯 を等間隔 に掃く``() =
     let d = spec (fun a -> { a with Kind = Curtain; Density = 1.0 })
@@ -157,8 +150,7 @@ type ShapeTests() =
       toXml (Generate.generate (spec (fun a -> { a with Density = 1.0; Parametrized = true })))
     other |> should haveSubstring "label=\"arm\""
 
-  /// 軸 を 9 -> 15 に増やす 途中 で 3 回 続けて「型 には在る が 生成器 が読まない」を作った
-  /// （Layers / Depth / Kind / Aiming / Rhythm）。目 で確かめる のをやめて 数える
+  /// 「型 には在る が 生成器 が読まない」軸 を 数える
   [<Test>]
   member _.``全軸 が読まれる``() =
     let b = toXml (Generate.generate (plain ()))

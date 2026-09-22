@@ -1,7 +1,4 @@
-/// 仕様 から BulletML を組む。
-///
-/// 骨 を N 種類 持って 選ばせる 形 は採らない —— 同梱 の骨 は 78 種類 で
-/// 40 種類 が 1 本 だけ の長い裾 だが、軸 ごと に見れば 2〜4 値 に割れて、掛け算 が 78 になる。
+/// 仕様 から BulletML を組む。骨 を N 種類 持って 選ばせず、軸 ごと の値 の掛け算 で組む
 module FsBulletML2.Generate.Generate
 
 open FsBulletML2
@@ -15,19 +12,15 @@ let rec private nestRepeat (n: int) (times: string) (inner: Action list) : Actio
   if n <= 0 then inner
   else [ repeat times { yield! nestRepeat (n - 1) times inner } ]
 
-/// 撃つ 向き。`direction` の型 4 つ（`DTD.fs`）と 同じ 形。
-///
-/// CE の操作（`sequence` / `absolute` …）は 単独 では 値 に ならない ので、
-/// 向き を決める 規則 を ここ に落として、撃つ 形 は 1 か所 で書く
+/// 撃つ 向き。`direction` の型 4 つ（`DTD.fs`）と 同じ 形
+/// CE の操作 は 単独 では 値 に ならない ので、向き の規則 を ここ に落として 撃つ 形 は 1 か所 で書く
 type private Dir =
   | Seq of string
   | Abs of string
   | At of string
 
-/// 腕 の 1 発 の向き。`Kind` が型 を決める。
-///
-/// 腕 は どれ も 頭 から の `sequence`。`absolute` / `relative` / `aim` は 前 の弾 を見ない ので、
-/// 腕 に置く と n 発 が 1 つ の角 に重なる（放射 と扇 が {0, 45 x 8}、狙い が 157 x 8 だった）
+/// 腕 の 1 発 の向き。腕 は どれ も 頭 から の `sequence`
+/// `absolute` / `relative` / `aim` は 前 の弾 を見ない ので、腕 に置く と n 発 が 1 つ の角 に重なる
 let private armDir (d: PatternSpec) : Dir =
   match d.Kind with
   | Spiral -> Seq(armStep d)
@@ -37,12 +30,8 @@ let private armDir (d: PatternSpec) : Dir =
   // 幕 は 帯 を等間隔 に掃く。頭 が毎波 左端 へ戻る ので回り出さない
   | Curtain -> Seq(curtainStep d)
 
-/// 頭 の 1 発 の向き。`Spread` と `Radial` は 順 に意味 が在る ——
-/// 名指し（前 / 後ろ / 横）が 最優先、次 が 狙い、最後 が 型 の既定。
-/// 「後方 へ」と頼まれた のに 自機 を狙う と、頼み の逆 を向く。
-///
-/// `Aiming` だけ で決めて いた とき、`Spiral` でも 毎波 `absolute 0` に戻って いて、
-/// 同じ 向き の リング が重なる だけ だった —— 頼んだ 渦 が 渦 に見えない（実機 で踏んだ）
+/// 頭 の 1 発 の向き。`Spread` と `Radial` は 名指し（前 / 後ろ / 横）が 最優先、次 が 狙い、最後 が 型 の既定
+/// 「後方 へ」と頼まれた のに 自機 を狙う と、頼み の逆 を向く
 let private headDir (d: PatternSpec) : Dir =
   match d.Kind with
   // 毎波 少しずつ 回す。これ が渦 の正体 —— 名指し より 先 に見る
@@ -53,7 +42,7 @@ let private headDir (d: PatternSpec) : Dir =
   | Spread ->
     if facingGiven d then Abs(fanHead (facingExpr d) (spreadSpan d) d)
     elif d.Aiming then At(fanHead "0" (spreadSpan d) d)
-    // 撃つ側 の向き（`relative`）を中心 に していた とき、敵 は 0 度 なので 自機 と逆 の真上 へ開いて いた
+    // 撃つ側 の向き（`relative`）を中心 に すると、敵 は 0 度 なので 真上 へ開く
     else Abs(fanHead "180" (spreadSpan d) d)
   | Radial ->
     if facingGiven d then Abs(facingExpr d)
@@ -77,9 +66,7 @@ let private arms (d: PatternSpec) : Action list =
     | Abs e -> fire { absolute e; speed (speedExpr d); refBullet "core" [] }
     | At e -> fire { aim e; speed (speedExpr d); refBullet "core" [] }
 
-  // 幕 は `Parametrized` を通さない —— `arm` は 0 度 と 180 度 の対称 で組む ので、
-  // 下向き に絞った 帯 が 上下 に割れて 幕 でなくなる。
-  // 頼まれた 形 のほう を優先 する
+  // 幕 は `Parametrized` を通さない。`arm` の 0 度 と 180 度 の対称 で 帯 が上下 に割れる
   if d.Parametrized && d.Kind <> Curtain then
     [ head; actionRef "arm" [ "0"; "1" ]; actionRef "arm" [ "180"; "-1" ] ]
   elif headIsArm d then
@@ -87,10 +74,8 @@ let private arms (d: PatternSpec) : Action list =
   else
     [ head; repeat (armsExpr d) { one () } ]
 
-/// 段 ごと の弾（`core` -> `core1` -> `core2` -> `core3`）。
-///
-/// 自己再帰 に しない —— BulletML に深さ を止める 機構 が無い ので上界 が効かなくなる。
-/// 段数 だけ 別 の弾 を作る なら 展開 が有限 になる。
+/// 段 ごと の弾（`core` -> `core1` -> `core2` -> `core3`）
+/// 自己再帰 に しない。BulletML に深さ を止める 機構 が無い ので上界 が効かなくなる
 let private bullets (d: PatternSpec) : BulletmlElm list =
   [ for lv in 0 .. step d.Cascade do
       let isLast = lv = step d.Cascade
@@ -102,17 +87,13 @@ let private bullets (d: PatternSpec) : BulletmlElm list =
               wait "34"
               changeSpeed (speedExpr d) "40"
 
-            // 自機 を追う。`Aiming` を 頭 の向き で効かせる と `Spiral` の渦 が
-            // 止まる ので、弾 の側 で持つ —— 飛びながら 自機 の方 へ向き直る。
-            //
+            // 自機 を追う。頭 の向き で効かせる と `Spiral` の渦 が止まる ので、弾 の側 で持つ
             // 段 が無くて も 効く ように、撒く 枝 の外 に置く
             if d.Aiming then
               changeDirectionAim "0" "60"
 
-            // 1 発 が どう 飛ぶ か。`BulletKinds`（何種類 出すか）とは 別 の軸。
-            //
-            // どちら も 頭 の 1 段 目 に だけ 置く —— 段 の先 まで 引き継ぐ と、
-            // 割れた 破片 まで レーザー に なって 形 が消える
+            // 1 発 が どう 飛ぶ か。頭 の 1 段 目 に だけ 置く
+            // 段 の先 まで 引き継ぐ と、割れた 破片 まで レーザー に なって 形 が消える
             if lv = 0 then
               match d.Motion with
               | Laser ->

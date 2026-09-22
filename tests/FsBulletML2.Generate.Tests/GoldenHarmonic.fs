@@ -7,18 +7,8 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.Generate
 
-/// 花 が出す 字 を まるごと 固定 する。
-///
-/// `GoldenShape` は `Generate.generate`（5 つ の型）を見て いて、花 は 1 通り も 通らない。
-/// 収録 の ゴールデン（DanmakuLab 側）も family / kind / folds / ways しか 見て いない。
-///
-/// 赤 に なった ときは 2 通り —— 直し が 答え を変えた か、変える つもり の直し か。
-/// 後者 なら 指紋 を置き直して、何 を変えた かを commit に書く。
-///
-/// --- 較正（当てた変異 と、赤 になった 点）
-///
-///   STAR_INNER 0.382 -> 0.383        指紋 だけ
-///   firedArms の m -> m - 1          2 本 とも（上界 が変わって wait も動く）
+/// 花 が出す 字 を まるごと 固定 する（`GoldenShape` も 収録 の ゴールデン も 花 を 通らない）。
+/// 変える つもり の直し で 赤 なら、指紋 を置き直して 何 を変えた かを commit に書く
 [<TestFixture>]
 type GoldenHarmonic() =
 
