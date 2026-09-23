@@ -5,11 +5,8 @@ namespace FsBulletML2.LanguageService
 open System
 open System.Text
 
-/// 共有リンクの中身。サーバを持たない —— 本文そのものが URL に乗る。
-///
-/// 字にすると `<版>.<表記の Id>.<難度>.<種>.<base64url>`。
-/// fragment（`#` の後ろ）に置くのでサーバへは送られない。
-/// Bytes は圧縮された本文で、ここでは解かない（解くのはブラウザ側）。
+/// 共有リンクの中身。サーバを持たない。本文そのものが URL に乗る。
+/// `Bytes` はここでは解かない。解くのはブラウザ側。
 type ShareLink =
   { /// どの表記で書かれた本文か。本文だけだと開いた側が決められない
     Kind: SourceKind
@@ -25,12 +22,7 @@ type ShareLink =
 module ShareLink =
 
   /// 形の版。頭に置く。
-  ///
-  /// 置かないと、形を変えたときに古いリンクを黙って誤読する ——
-  /// 圧縮の形式を替えれば base64url は通るのに中身だけが化ける、が起きる。
-  /// 版が違えば「このリンクは読めない」と言って止まる。
-  ///
-  /// 2 で走らせ方（難度と種）が乗った。 版 1 のリンクは読めない
+  /// 無いと、形を変えたとき古いリンクを黙って誤読する。
   let version = "2"
 
   /// 難度は 100 倍 の整数で載る。上限
@@ -72,12 +64,8 @@ module ShareLink =
         let padded = s.Replace('-', '+').Replace('_', '/') + pad
         try Some(Convert.FromBase64String padded) with _ -> None
 
-  /// 数を 10 進 の字にする。`string` に任せない ——
-  /// runtime によって桁や記号が変わりうる（負は 0 に倒すので符号は出ない）
-  ///
-  /// `StringBuilder.Insert` を使わない。 Fable の library に口が無く、
-  /// .NET では通るのに焼いた JS だけが読み込みで落ちる
-  /// （突き合わせの門が捕まえた）。桁は多くて 9 個 なので、字を前へ足す
+  /// 数を 10 進 の字にする。`string` に任せない。
+  /// `StringBuilder.Insert` は使うな。Fable に口が無く、焼いた JS だけ落ちる。
   let private digits (n: int) =
     let n = max 0 n
     if n = 0 then "0"
@@ -105,10 +93,8 @@ module ShareLink =
       .Append(digits seed).Append(separator)
       .Append(toBase64Url bytes).ToString()
 
-  /// 字からリンクを戻す。読めないときは理由を返す ——
-  /// 黙って空にすると、人には「開いたのに何も起きない」に見える。
-  ///
-  /// 頭の `#` は在っても無くてもよい（`location.hash` は付けて返す）
+  /// 字からリンクを戻す。読めないときは理由を返す。空に黙らない。
+  /// 頭の `#` は在っても無くてもよい。
   let tryParse (fragment: string) : Result<ShareLink, string> =
     let s =
       if isNull fragment then ""
@@ -117,8 +103,7 @@ module ShareLink =
     if s.Length = 0 then Result.Error "共有リンクが空"
     else
       let parts = s.Split separator
-      // 版だけは形が違っても読む。 古いリンクに「形が違う」と出すと、
-      // 人には「壊れた」に見える —— 読めない理由は版であって形ではない
+      // 版だけは形が違っても読む。古いリンクに「形が違う」と出すな。
       let v = if parts.Length > 0 then parts.[0] else ""
       if v <> version then
         Result.Error(sprintf "このリンクは読めない（版 %s / いまは %s）" v version)
@@ -140,14 +125,8 @@ module ShareLink =
             | None -> Result.Error "共有リンクの中身が壊れている"
             | Some bytes -> Result.Ok { Kind = kind; Rank = rank; Seed = seed; Bytes = bytes }
 
-  /// 2 つ の runtime で同じ答えが返ることを見る口。
-  /// 組み立てはここ 1 か所。 node 側 と .NET 側 で別々に組むと、
-  /// 組み方のほうが食い違って「中身は同じなのに赤」になる。
-  ///
-  /// 渡された字を 2 通り に使う —— 読ませるのと、
-  /// 長さから決まったバイト列を作って往復させるの。
-  /// バイト列を表に書かないのは、`byte[]` を JSON に載せると
-  /// 表の側で 2 通り の書き方ができてしまうため
+  /// 2 runtime の突き合わせ口。組み立てはここ 1 か所。
+  /// バイト列を表に書かない。`byte[]` の JSON は 2 通り に書ける。
   let describe (fragment: string) : string =
     let sb = StringBuilder()
     let add (s: string) = sb.Append s |> ignore

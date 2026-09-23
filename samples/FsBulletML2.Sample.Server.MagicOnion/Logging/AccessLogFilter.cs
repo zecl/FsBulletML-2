@@ -9,12 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace FsBulletML2.Sample.Server.MagicOnion.Logging
 {
     /// <summary>
-    /// Hub の口 が呼ばれたことを出す。MagicOnion の filter。
-    ///
-    /// 降りるほう（<c>OnFrame</c>）はここを通らない。
-    /// filter が挟まるのは client から呼ばれた口 だけで、
-    /// サーバーから配るぶんは素通り ——
-    /// 配れているかは状況 の行（<see cref="StatusPrinter"/>）で見る。
+    /// Hub の口 が呼ばれたことを出す。
     /// </summary>
     public sealed class HubAccessLogFilter : IStreamingHubFilter
     {
@@ -71,8 +66,6 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
 
     /// <summary>
     /// 1 往復 の口（<c>IDanmakuService</c>）を出す。
-    /// こちらは間引かない —— 部屋 に入る前 に 1 度 呼ばれるだけなので、
-    /// 出しても流れない。
     /// </summary>
     public sealed class ServiceAccessLogFilter : IMagicOnionServiceFilter
     {

@@ -2,10 +2,8 @@ namespace FsBulletML2.LanguageService
 
 open FsBulletML2
 
-/// 表記ごとの「読む口」。`ISourceLanguage` の、host 側の相棒。
-///
-/// Fable 側に置けない —— 読む段は `Parser` を要り、器が Parser を
-/// 参照すると FParsec で焼けなくなる（v0.8 の実測）。
+/// 表記ごとの読む口。`ISourceLanguage` の host 側。
+/// Fable 側に置くな。Parser を器が参照すると FParsec で焼けなくなる。
 type ISourceReader =
   abstract Kind: SourceKind
   /// 読んで、載せる。載せるところは呼ぶ側が渡す ——
@@ -29,12 +27,8 @@ module SourceReader =
   let xml = ofParts SourceKind.Xml Diagnosis.apply XmlScan.tags
   let sxml = ofParts SourceKind.Sxml Diagnosis.applySxml SxmlScan.tags
 
-  /// F# の CE。v1.9 から `Tags` を返す。
-  ///
-  /// 表はここに書かない —— どの CE 名 が何番目 の文字列に名前を載せるかは
-  /// `Spec.ceLabels`、名前を載せる属性は語彙から引いた対（`References.pairs`）。
-  ///
-  /// 対が 1 組 も無ければ空を返す（語彙が引けていない印）
+  /// F# の CE。`Tags` を返す。表はここに書かない。
+  /// 名前の載せ方は `Spec.ceLabels` と語彙の対。対が無ければ空。
   let private ceTags (source: string) =
     match References.pairs |> Array.tryHead with
     | None -> []
@@ -49,13 +43,8 @@ module SourceReader =
   let fsharp = ofParts SourceKind.FSharpDsl Diagnosis.applyFsharp ceTags
   let fsb = ofParts SourceKind.Fsb Diagnosis.applyFsb FsbScan.tags
 
-  /// 読める表記。`SourceKind.all` と全部 揃った（v1.1）。
-  ///
-  /// 揃ったからといって、この 2 本 を 1 本 にしない —— あちらは「どの表記か」、
-  /// こちらは「読む口が在るか」で、次に表記を足すとき、また割れる。
-  ///
-  /// 並びは `SourceKind.all` と同じ。揃えておかないと、
-  /// 「どちらの並びを見た数か」で数え方が割れる
+  /// 読める表記。`SourceKind.all` と揃っても 1 本 にしない。
+  /// あちらはどの表記か、こちらは読む口が在るか。並びは同じ順。
   let all: ISourceReader list = [ xml; sxml; fsb; fsharp ]
 
   let tryFind (kind: SourceKind) = all |> List.tryFind (fun r -> r.Kind = kind)

@@ -6,10 +6,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// 定義の行の上に参照の数（v4.3）。
-///
-/// --- 「0 か所 から参照」の 97% は嘘になる
-///
-/// 同梱 176 本 の定義 767 個 を数えたら、参照が 0 の定義は 215 件。
+/// 参照 0 をそのまま出すと、根から走る定義まで「どこからも参照されていない」になる。
 [<TestFixture>]
 type Lenses() =
 
@@ -40,12 +37,7 @@ type Lenses() =
   </action>
 </bulletml>"""
 
-  // --- v4.8: F# の CE でも出す -----------------------------------------------
-  //
-  // v4.7 まで CE だけ空だった。理由は「`Refs.uses` が数えるのは参照側の
-  // 要素名で、CE では `actionRef` と打たない」と書いてあったが、
-  // 打たないのは字で、`FsharpScan.tags` が返す `TagName` は
-  // 語彙が引いた要素名そのもの。
+  // CE でも出す。打たないのは字で、`TagName` は語彙が引いた要素名。
   static let ce : SourceLanguage.ISourceLanguage =
     Languages.Fsharp.FsharpLanguage(fun () -> vocab) :> SourceLanguage.ISourceLanguage
 
@@ -134,20 +126,12 @@ type Lenses() =
         if l.Title = "根から走る" then entry <- entry + 1
         elif l.Title = "どこからも参照されていない" then dead <- dead + 1
         else used <- used + 1
-    // 版の頭で数えた 209 / 6 / 552
     entry |> should be (greaterThan 100)
     dead |> should be (lessThan 20)
     used |> should be (greaterThan 100)
     // 根から走るほうが、本当に呼ばれていないものより桁で多い
     entry |> should be (greaterThan (dead * 10))
 
-  // --- v4.8: CE の点 ---------------------------------------------------------
-  //
-  // 較正（当てた変異と、赤くなった点）
-  //
-  //   CE の `Lenses` を `[]` に戻す          赤 4（全部 CE の点。XML は緑のまま）
-  //   `Lookup.lenses` の札を `[]` に          赤 9（4 表記 に 1 本 で効いている印）
-  //   `isEntry` を `false` に                赤 4（CE の点も 1 つ 混じる）
   [<Test>]
   member _.``CE でも定義の行に出る``() =
     ce.Lenses ceSrc |> List.length |> should equal 3
@@ -166,12 +150,8 @@ type Lenses() =
     titles |> should contain ("top", "根から走る")
     titles |> should contain ("tsukawanai", "どこからも参照されていない")
 
-  /// いちばん強い点。 同梱 176 本 を CE と XML の両方 で書いて、
-  /// 名前と見出しの並びが一致することを見る ——
+  /// 同梱を CE と XML の両方で書いて、名前と見出しの並びが一致すること。
   /// 位置は表記ごとに違うが、数も文面も違わない。
-  ///
-  /// v4.8 の測定（`Refs.uses` を CE の札に当てて 176 / 176 揃う）を、
-  /// 本番の口（`ISourceLanguage.Lenses`）の上で数え直したもの。
   [<Test>]
   member _.``同梱 全部 で、CE と XML の Lens が一致する``() =
     let write (kind: SourceKind) (b: Bulletml) =

@@ -5,10 +5,8 @@ using Godot;
 namespace FsBulletML2.Sample.Godot.MagicOnion
 {
     /// <summary>
-    /// 自機。動くだけ。
-    ///
-    /// 元 の Unity sample は Awake で <c>BulletMLManager.Init</c> を呼び、
-    /// 自機 の弾 3 本 を <c>Runner.Load</c> で読んで Z で撃っていた。
+    /// 自機。
+    /// </summary>
     public sealed partial class Player : Sprite2D
     {
         /// <summary>盤面 の単位 / 秒。Unity 版 の speed 5（＝ 3.0 単位/秒）に合わせてある</summary>
@@ -20,12 +18,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
         public DanmakuClient Client { get; set; }
 
         /// <summary>
-        /// 最初 に置く場所。盤面 の値。 指していなければ盤面 の下 の真ん中。
-        ///
-        /// 当たり判定 が効いているか を測るための口。 headless では
-        /// 誰 も動かさないので、既定 の場所 だと被弾 が 0 のまま ——
-        /// 弾 の出どころ へ置いて数 が増えることで見る
-        /// （console client の <c>--player</c> と同じ）。
+        /// 最初 に置く場所。
         /// </summary>
         public Vector2? Start { get; set; }
 
@@ -82,12 +75,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
             {
                 placed = true;
 
-                // `--player` は縛りの外 へも置ける。 当たり判定 を測るとき は
-                // 弾 の出どころ（＝ 自機 が入れない側）へ置くので、
-                // ここ で clamp すると測りたい点 が取れない。
-                // 動かした瞬間 に縛り の中 へ戻る（`_Process` の Clamp）
-                // サーバーの既定（MinY + 0.8）に揃える。 ずらすと
-                // 自機 を狙う弾幕 の起動 が Unity と割れる
+                // `--player` は縛りの外 へも置ける。
                 Field = Start ?? new Vector2(
                     (info.MinX + info.MaxX) * 0.5f,
                     info.Space == SpaceDto.YUp ? info.MinY + 0.8f : info.MaxY - 0.8f);

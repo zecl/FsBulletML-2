@@ -3,12 +3,8 @@ using FsBulletML2.Sample.MagicOnion.Shared;
 namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
 {
     /// <summary>
-    /// 1 コマ ぶんの並びを作るもの。部屋 1 つ につき 1 個。
-    ///
-    /// この口 を割ってある理由。 配線（Hub と送信の輪）と
-    /// 弾幕エンジンは、別々に壊れる。混ぜて書くと、絵が出ないときに
-    /// どちらが悪いのか分からない ——
-    /// <see cref="FixedFrameSource"/> に差し替えて、まだ出なければ配線。
+    /// 1 コマ ぶんの並びを作るもの。
+    /// 配線（Hub と送信の輪）と 弾幕エンジンは、別々に壊れる。
     /// </summary>
     public interface IFrameSource
     {
@@ -30,10 +26,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
 
     /// <summary>
     /// 1 コマ 進めた結果。
-    ///
-    /// 当たりの数を並びと一緒に返す理由。 当たった弾はその場で
-    /// 並びから落ちるので、並びだけを見ても「消えた」としか分からない ——
-    /// 盤面の外へ出たのか、当たったのかが区別できない。
+    /// 当たった弾はその場で 並びから落ちるので、並びだけを見ても「消えた」としか分からない —— 盤面の外へ出たのか、当たったのかが区別できない。
     /// </summary>
     public readonly struct FrameSnapshot
     {

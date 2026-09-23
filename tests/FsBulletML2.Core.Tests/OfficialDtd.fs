@@ -8,10 +8,7 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2
 
-/// 公式 DTD と `Core/DTD.fs` を突き合わせる。（v2.4.1）
-///
-/// `DTD.fs` は doc コメントに `<!ELEMENT ...>` / `<!ATTLIST ...>` を写し、
-/// 既定値は `[<BulletmlDefault>]` で持っている。
+/// 公式 DTD と `Core/DTD.fs` を突き合わせる。
 [<TestFixture>]
 type OfficialDtd() =
 
@@ -71,9 +68,7 @@ type OfficialDtd() =
       unwrap (t.GetGenericArguments().[0])
     else t
 
-  /// 名前で型を探さない。 綴りを組み立てて探すと `bulletml/@type` だけ
-  /// 見つからない（あちらは `ShootingDirection` で規則から外れている）——
-  /// 「型が無い」と「名前が違う」が同じ顔になる。属性の欄から辿る
+  /// 名前で型を探さない。
   static let duCasesOf (elem: string) (attr: string) =
     let attrsName = string (Char.ToUpper elem.[0]) + elem.Substring 1 + "Attrs"
     let fieldName = elem + string (Char.ToUpper attr.[0]) + attr.Substring 1

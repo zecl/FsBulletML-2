@@ -4,11 +4,8 @@ using FsBulletML2.Sample.MagicOnion.Shared;
 namespace FsBulletML2.Sample.Godot.MagicOnion
 {
     /// <summary>
-    /// ゲームが見る面。ここは網 を 1 つ も知らない。
-    ///
-    /// Unity 版（`Assets/Scripts/Net/DanmakuState.cs`）と同じ役 で、
-    ///
-    /// 2 本 目 が要るようになったら、ここ が最初 に壊れる。
+    /// ゲームが見る面。網は知らない。2 本目が要るようになったら、ここが最初に壊れる。
+    /// </summary>
     public static class DanmakuState
     {
         /// <summary>入っている部屋 の決めごと。繋がるまで null</summary>
@@ -24,11 +21,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
         public static readonly Live<int> Bullets = new(0);
 
         /// <summary>
-        /// 描いた数 と、そのうち画面 の中 に居る数。
-        ///
-        /// <see cref="Bullets"/> と並べて出す。 絵 がまばら に見えたとき、
-        /// 「client が落とした」のか「重なっている」のか「盤面 の外 へ出ている」のか
-        /// を目 では割れない —— 3 通り とも同じ顔 をする。
+        /// まばらに見えたとき、落としたのか重なっているのか盤面の外なのか、目では割れない。
         /// </summary>
         public static readonly Live<int> Drawn = new(0);
 
@@ -52,11 +45,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
         public static readonly Live<string> Error = new("");
 
         /// <summary>
-        /// 降りてきた 1 コマ。主スレッド で流れる。
-        ///
-        /// 受け口（<c>OnFrame</c>）は別 のスレッド で呼ばれるので、そこから直 に
-        /// 流すと購読側 が Godot の API を触れない。
-        /// <see cref="DanmakuClient"/> が <c>_Process</c> で汲み直してから流す。
+        /// 主スレッドで流す。受け口は別スレッドなので、直に流すと Godot の API を触れない。
         /// </summary>
         public static readonly Stream<FrameDto> Frames = new();
 

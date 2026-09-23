@@ -1,15 +1,10 @@
 namespace FsBulletML2.MonoGame.Tests
 
-/// `FrontRun` の控え。別ファイルにしてある —— 本体（何を回すか）と
-/// 控え（何が出たか）を分けておくと、差分を見たときに
-/// 「手を入れたのか、出力が動いたのか」が 1 目 で分かる。
+/// `FrontRun` の控え。本体と分けて、手を入れたのか出力が動いたのかを分ける。
 module FrontRunGolden =
 
-  // 改行を揃えてから渡す。 控えは三重引用符でこのソースに埋まっているので、
-  // 改行はファイルの改行そのもの —— `.gitattributes` の `text=auto` で
-  // checkout した機械しだいで CRLF になる。生成側は `\n` に揃えてあるので、
-  // 揃えないと全行 が字面どおりなのに割れる（差が `\r` なので目で出ない）。
-  // 落ちるのは autocrlf が効く機械だけで、書いた人の手元は緑のまま
+  // 改行を揃えてから渡す。控えの三重引用符は checkout の改行のままになる。
+  // 生成側は `\n`。揃えないと字面が同じでも `\r` で割れる。autocrlf の機械だけで落ちる。
   let private normalize (s: string) = s.Replace("\r\n", "\n")
   let Expected = normalize """f00  E[e0 x=240.0000 y=100.0000 d=0.0000 s=0.0000 used=true]  EB[b0 x=240.4337 y=101.9524 d=2.9230 s=2.0000 used=true]  PB[]
 f01  E[e0 x=240.0000 y=100.0000 d=0.0000 s=0.0000 used=true]  EB[b0 x=240.7241 y=103.9312 d=2.9959 s=2.0000 used=true]  PB[]

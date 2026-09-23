@@ -1,10 +1,7 @@
 using System;
 
-// COMPILE-ONLY stub of Unity.Mathematics. Not a substitute for the Unity Editor.
-//
-// アセンブリ名が本物と一致していることが要。 1 本 に詰めると、焼いた dll が
-// 「この型は UnityEngine に在る」と主張したまま Unity へ渡り、CS7069 で落ちる。
-// 詳しい但し書きは src/UnityEngine.Stub/UnityEngine.cs の頭。
+// COMPILE-ONLY stub。Editor の代わりにはならない。
+// アセンブリ名は本物と一致させる。1 本に詰めると CS7069。詳しくは UnityEngine.cs の頭。
 namespace Unity.Mathematics
 {
     public struct float3

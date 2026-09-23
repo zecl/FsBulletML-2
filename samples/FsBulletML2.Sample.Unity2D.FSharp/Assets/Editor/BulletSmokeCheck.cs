@@ -5,12 +5,7 @@ using FsBulletML2.Sample.Unity2D.FSharp;
 
 /// <summary>
 /// 弾が出ることを機械に言わせる。
-///
-/// 走らせ方（Unity を開かずに済む）:
-///
-/// コールバックで渡す形なので、数えるだけの関数を渡せばエンティティを
-/// 作らずに回せる。ここで測りたいのはエンジンとの受け渡しであって、
-/// 描画やエンティティ管理ではない。
+/// </summary>
 public static class BulletSmokeCheck
 {
     /// <summary>rand と rank と自機の位置を固定する。動かすと数が走行ごとに変わる</summary>
@@ -116,9 +111,7 @@ public static class BulletSmokeCheck
         {
             BulletMLManager.Init(new FixedManager());
 
-            // 敵の弾幕。Enemy.GetBulletml の先頭と同じもの。
-            // BulletType を渡さない —— BulletSim の既定値が生きているかを
-            // ここで見る（渡してしまうと、既定が null でも通ってしまう）
+            // 敵の弾幕。
             var info = FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA;
             failures += Fire(
                 info.Name + "（BulletType は既定値のまま）",

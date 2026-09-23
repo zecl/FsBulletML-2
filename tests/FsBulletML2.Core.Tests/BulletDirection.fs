@@ -4,9 +4,6 @@ open System.Text.RegularExpressions
 open NUnit.Framework
 
 /// bullet 要素の中に書いた direction が、弾の向きに入るか。
-///
-/// ここは「正しい姿」ではなく「いまの姿」を記録している。
-/// 測った結果はこう。
 [<TestFixture>]
 type BulletDirection() =
 

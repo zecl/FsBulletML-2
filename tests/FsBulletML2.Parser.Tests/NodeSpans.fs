@@ -7,18 +7,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// ノードを字の上で光らせる範囲（v3.2 の直し）。
-///
-/// 色ごとに要る幅が違う。
-///
-///     黄（走っている場所）  名前だけ。再開点は 100% が `wait` で、葉
-///
-/// --- 何が壊れると赤くなるか
-///     開き札を `Stop` だけで切る    sxml / fsb で要素まるごとになる
-///     開き札を行末だけで切る        1 行 に詰めた xml で子まで染まる
-///     閉じ札の対を組まない          xml でも 1 か所 しか光らない
-///     対の戻し先をずらす            別の要素の閉じ札を指す
-/// どれも走行は変わらない。 光る幅が変わるだけなので、走らせても
-/// 試験も落ちない —— 目で見て「なんか広い」と思うしかなかった。
+/// 光る幅が変わるだけなので、走行も試験も落ちない。目で見て広いと思うしかなかった。
 [<TestFixture>]
 type NodeSpansTests() =
 
@@ -74,15 +63,8 @@ type NodeSpansTests() =
 
   [<Test>]
   member _.``開き札は名前より広くなる。xml の fire は札まるごと``() =
-    // 効いていることを数える。 上の試験は `>=` なので、範囲を名前と
-    // 同じに潰しても通る —— 広がったことは別に見る。
-    //
-    // 全件 では言えない。 飾りの量が表記で違う ——
-    //     xml    `<fire ...>`  必ず 2 字 以上 広い
-    //     sxml   `(fire`       `(` のぶん 1 字。属性が無ければそれだけ
-    //     fsb    `fire`        属性が無いと名前と同一。札の飾りが無い
-    // だから 3 表記 では「広い件数が 0 でない」を見て、
-    // xml だけ字で当てる（`<` で始まり `>` で終わる）
+    // 上の試験は `>=` なので、範囲を名前と同じに潰しても通る。広がったことは別に見る。
+    // fsb は属性が無いと名前と同一。3 表記では広い件数が 0 でないことだけを見る。
     let mutable ran = 0
     for (name, kind, tagsOf) in kinds do
       let mutable wider = 0
@@ -113,9 +95,7 @@ type NodeSpansTests() =
 
   [<Test>]
   member _.``閉じ札の対は xml だけで組める``() =
-    // 表記ごとに違うことを、ここで固定する。 sxml は括弧 1 組、
-    // fsb は字下げなので閉じ札を持たない（`TagHit.Closing` が常に false）——
-    // そこでは開き札と同じ範囲が入り、呼ぶ側が 1 枚 に畳む
+    // sxml は括弧 1 組、fsb は閉じ札を持たない。そこでは開き札と同じ範囲が入り、呼ぶ側が 1 枚に畳む。
     let paired (kind: SourceKind) (tagsOf: string -> TagHit list) =
       let mutable apart = 0
       let mutable same = 0
@@ -137,10 +117,7 @@ type NodeSpansTests() =
 
   [<Test>]
   member _.``閉じ札は、その要素の閉じ札を指す``() =
-    // 入れ子の同名を跨がない。 `fire` の中に `fire` が入る
-    // （撃たれた弾がまた撃つ）ので、手前の `</fire>` を掴むと近い側で
-    // 止まってしまう —— しかも掴んだ先も `</fire>` なので、
-    // 名前を見るだけでは赤くならない
+    // 入れ子の同名を跨がない。手前の `</fire>` を掴んでも名前は同じなので、名前だけでは赤くならない。
     let mutable nested = 0
     let mutable checked_ = 0
     for info in catalog do
@@ -162,9 +139,7 @@ type NodeSpansTests() =
 
   [<Test>]
   member _.``1 行 に詰めて書いても、開き札で止まる``() =
-    // 行末で切るだけでは足りない。 整形して書き出した字は札ごとに
-    // 改行が入るので、行末で切っても開き札で止まる —— 手で書いた字が
-    // その守りを外す。 同梱カタログには 1 件 も無い形なので、ここで作る
+    // 行末で切るだけでは足りない。整形した字は札ごとに改行がある。同梱には 1 件も無い形なので、ここで作る。
     let src = "<bulletml><action label=\"top\"><fire><direction>0</direction><speed>2</speed><bullet/></fire><wait>1</wait></action></bulletml>"
     let spans = Scan.nodeSpans src (XmlScan.tags src) names
     let tags = XmlScan.tags src |> List.filter (fun t -> not t.Closing && List.contains t.TagName names)
@@ -181,12 +156,8 @@ type NodeSpansTests() =
 
   [<Test>]
   member _.``閉じ忘れが在っても、名前が合う札に対を組む``() =
-    // 同梱カタログでは、この枝に当たらない。 書き出した字は入れ子が
-    // 正しいので、閉じ札が来たときスタックの最後がちょうどその要素 ——
-    // 名前を見なくても答えが合う（変異を当てて 5 本 とも緑 のままだった）。
-    //
-    // 守りが要るのは打っている途中。字を打ちながら光らせるので、
-    // 閉じていない札が普通に在る
+    // 同梱カタログではこの枝に当たらない。名前を見なくても答えが合う。
+    // 守りが要るのは打っている途中。閉じていない札が普通に在る。
     let src = "<bulletml><action label=\"top\"><fire><bullet></fire><wait>1</wait></action></bulletml>"
     let spans = Scan.nodeSpans src (XmlScan.tags src) names
     let tags = XmlScan.tags src |> List.filter (fun t -> not t.Closing && List.contains t.TagName names)

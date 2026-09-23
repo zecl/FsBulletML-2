@@ -9,11 +9,8 @@ using MagicOnion.Client;
 namespace FsBulletML2.Sample.Godot.MagicOnion
 {
     /// <summary>
-    /// サーバーと繋がっている 1 本。この面 が、この sample で唯一 網 を知る。
-    ///
-    /// 外 へ出すのは <see cref="DanmakuState"/> だけ。
-    /// 場面 の側 は この Node を 1 度 も探さない —— 購読していれば、
-    /// 繋がった瞬間 に値 が流れてくる。
+    /// サーバーと繋がっている 1 本。
+    /// </summary>
     public sealed partial class DanmakuClient : Node
     {
         /// <summary>h2c。証明書 は要らない</summary>
@@ -59,9 +56,8 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
         {
             try
             {
-                // h2c（暗号化しない HTTP/2）を通す。 既定 では http:// の
-                // HTTP/2 が閉じていて、繋ぎに行った瞬間 に落ちる
-                // （console client と同じ 1 行）
+                // h2c（暗号化しない HTTP/2）を通す。
+                // 既定 では http:// の HTTP/2 が閉じていて、繋ぎに行った瞬間 に落ちる （console client と同じ 1 行）
                 AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
                 channel = GrpcChannel.ForAddress(Host);
@@ -147,13 +143,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
         }
 
         /// <summary>
-        /// 自機 の位置 を送る。毎コマ 送る。
-        ///
-        /// <c>aim</c> が読むだけ なら間引けたが、この位置 は当たり判定 の
-        /// 入力 にもなった —— 間引くと、その間 に動いたぶん が判定 に映らない。
-        ///
-        /// 上り は 1 コマ 8 バイト ＝ 60 コマ毎秒 で 4 kbps。
-        /// 下り の 2.8 Mbps に対して測るまでもなく無視できる。
+        /// 自機 の位置 を送る。
         /// </summary>
         void SendPlayer()
         {
@@ -174,10 +164,8 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
         }
 
         /// <summary>
-        /// 自機 の弾 を撃つ。撃つのはサーバー。
+        /// 自機 の弾 を撃つ。
         /// ここ が渡すのは位置 だけ で、何発 出るかも どう飛ぶかも向こう が決める。
-        ///
-        /// 待たない。 撃てたかどうかは次 のコマ の並び に出る。
         /// </summary>
         public void Shoot(float x, float y)
         {
@@ -276,10 +264,8 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
         }
 
         /// <summary>
-        /// 降ってきたコマ を 1 つ だけ持つ。溜めない。
-        ///
-        /// 溜めると、描く側 が遅れたぶん だけ古いコマ を順 に描くことになり、
-        /// 遅れ が返ってこない。 いちばん新しい 1 つ を残して捨てる。
+        /// 降ってきたコマ を 1 つ だけ持つ。
+        /// いちばん新しい 1 つ を残して捨てる。
         /// </summary>
         sealed class Receiver : IDanmakuHubReceiver
         {
@@ -329,10 +315,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
 
                 Interlocked.Increment(ref dropped);
 
-                // 当たり は捨てられない。 位置 は「いま どこか」なので古いコマ を
-                // 落としてよいが、当たり は出来事 で、落とすとその 1 発 が
-                // 無かったことになる（サーバー側 で「撃ち」と「位置」を
-                // 別 に扱ったのと同じ分かれ目）。
+                // 当たり は捨てられない。
                 Interlocked.Add(ref pendingPlayerHits, previous.PlayerHits);
                 Interlocked.Add(ref pendingEnemyHits, previous.EnemyHits);
             }

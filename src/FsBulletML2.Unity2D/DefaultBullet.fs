@@ -22,13 +22,7 @@ type DefaultBullet (transform:Transform) as this =
   let front = Unity2DEnv () :> IFrontEnv
 
   /// 撃たれた弾の実体を作る。旧 GetNewBullet が呼んでいたもの。
-  ///
-  /// 既定は null を返す（サンプルの未実装）。旧はエンジンがここを
-  /// 呼び返して、null なら「撃たなかったこと」にして fire の累積
-  /// （SrcSpeed / SpeedInit）を巻き戻していた。新 API は撃つ弾を値で
-  /// 返しきるので、その巻き戻しは無い —— null のときは実体を作らずに
-  /// 進む。同梱サンプル 4 つ は全部 override しているので届かない経路で、
-  /// override し忘れた状態は弾が 1 発 も出ないので動くゲームでは観測できない。
+  /// 既定は null。null のときは実体を作らずに進む。
   abstract member GetBulletPrefubInstance: unit -> IDefaultBullet
   default this.GetBulletPrefubInstance () = defaultof<IDefaultBullet>
 
@@ -58,10 +52,7 @@ type DefaultBullet (transform:Transform) as this =
     member _.Finished = finished
 
     /// 弾幕を割り当てて根から始める。
-    ///
-    /// 根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。
-    /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
-    /// 立てておくこと（同梱の弾はどれも Awake で立てている）
+    /// BulletType と IsBullet はこれを呼ぶ前に立てておくこと。
     member _.SetScript (s) =
       finished <- false
       let me = self ()
@@ -107,11 +98,8 @@ type DefaultBullet (transform:Transform) as this =
       this.RunTask(FSharpFunc.ToAction2 apply)
 
 
-  /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ
-  ///
-  /// 実体が作れなければ、ここで捨てる。エンジンには何も返さない。
-  /// エンジンの側では撃った扱いのままで、fire の sequence の累積も進んでいる
-  /// （Frame.Spawned に入った時点で確定している）。
+  /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ。
+  /// 実体が作れなければここで捨てる。エンジンには何も返さない。
   member private this.Spawn (child: BulletRun) =
     let newBullet = this.GetBulletPrefubInstance ()
     if newBullet :> obj <> null then

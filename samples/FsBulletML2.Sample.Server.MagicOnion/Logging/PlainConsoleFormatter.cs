@@ -7,12 +7,7 @@ using Microsoft.Extensions.Logging.Console;
 namespace FsBulletML2.Sample.Server.MagicOnion.Logging
 {
     /// <summary>
-    /// Console へ 1 行 で出す形。眺めて分かることだけを残す。
-    ///
-    /// 素 の <c>SimpleConsole</c> は
-    /// <c>info: FsBulletML2.Sample.Server.MagicOnion.Rooms.Room[0]</c> を頭 に付ける。
-    /// 名前空間が長いので、行の半分 が置き場の名前 になって中身が読めない。
-    /// ここは「時刻 / 高さ / 短い名前 / 本文」の 4 つ だけにする。
+    /// Console へ 1 行 で出す形。
     /// </summary>
     public sealed class PlainConsoleFormatter : ConsoleFormatter
     {

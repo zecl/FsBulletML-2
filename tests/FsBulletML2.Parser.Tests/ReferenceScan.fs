@@ -8,17 +8,13 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.LanguageService
 
-/// 参照の欠けを、本文の字から全部 数える側の目盛り。
-///
-/// Core は最初の 1 件 で `raise` して止まり、位置も持たない。だから
-/// 「無い label」を全部 波線にするには本文の側から数えるしかなく、
-/// Core の判定をもう 1 本 書いていることになる。
+/// 参照の欠けを、本文の字から全部数える側の目盛り。
+/// Core は最初の 1 件で止まり、位置も持たない。本文の側から数えるしかない。
 [<TestFixture>]
 type ReferenceScan() =
 
-  /// `References` が見ているのと同じ形。閉じ札は落とす ——
-  /// `XmlScan.tags` は閉じ札も返すが、それを使うのはカーソルの居場所を
-  /// 出す側で、参照の欠けを数える側は開始札しか見ない
+  /// `References` が見ているのと同じ形。閉じ札は落とす。
+  /// 閉じ札を使うのはカーソルの居場所。欠けを数える側は開始札しか見ない。
   let openTags (src: string) = XmlScan.tags src |> List.filter (fun t -> not t.Closing)
 
   /// 字を数える 1 本 を渡す（v0.9）。 `References` は表記を知らなくなった ——

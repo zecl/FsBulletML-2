@@ -8,9 +8,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// 表記を書き分ける口の目盛り。
-///
-/// v1.3 まで、書けるのは XML だけだった。Playground が「表記を変えても本文は
-/// 触らない」と決めていたのは、決めたのではなく できなかったから。
+/// 「表記を変えても本文は触らない」は、できなかったことの言い換えだった。
 [<TestFixture>]
 type Transcode() =
 
@@ -78,14 +76,8 @@ type Transcode() =
 
   [<Test>]
   member _.``どの表記を通っても、そのあと XML を通して動かない``() =
-    // この版の本体。
-    //
-    // 素の値と比べない。 fsb は 1 回 目 で式の空白を落とすので、
-    // そこは必ず違う（違わなければ書けていない）。見たいのはその先 ——
-    // fsb が作った値を XML に通しても動かないなら、
-    // 2 つ の表記は同じものを指している。
-    //
-    // 4 表記 とも同じことが言えれば、表記を行き来しても中身が変わらない。
+    // 素の値と比べない。fsb は 1 回目で式の空白を落とすので、そこは必ず違う。
+    // 見たいのはその先。XML に通しても動かないこと。
     let bad =
       [ for kind in kinds do
           for info in catalog do
@@ -101,13 +93,8 @@ type Transcode() =
 
   [<Test>]
   member _.``名前の無い弾幕でも 4 表記 で往復する``() =
-    // 同梱カタログは全部 name つき（CE で書かれているので、根が名前を要る）。
-    // だがそれは本家の弾幕の姿ではない —— TestData の xml 173 本 は
-    // 1 本 も name を持っていない。
-    //
-    // カタログだけで測っていたとき、CE は名前の無い弾幕を書けなかった
-    // （`Dsl` の根が必ず名前を取る）。開いたファイルではほぼ必ず落ちる形で、
-    // ここを足して初めて出た。
+    // 同梱カタログは全部 name つき。本家の弾幕は name を持たない。
+    // カタログだけだと、名前の無い弾幕を書けない壊れが緑のまま残る。
     let root = Path.Combine(AppContext.BaseDirectory, "TestData", "xml")
     let files =
       if Directory.Exists root
@@ -153,9 +140,7 @@ type Transcode() =
 
   [<Test>]
   member _.``空白を落として 語がくっつく式は カタログに無い``() =
-    // `1 2` を `12` にすると意味が変わる。そういう式が在れば、この直しは嘘。
-    // 同梱カタログの本文 1,194 種類 で 0 件 だった（v1.4 の頭で測った）——
-    // 増えたらここが赤くなる
+    // `1 2` を `12` にすると意味が変わる。そういう式が在れば、空白を落とす直しは嘘。
     let fused =
       [ for info in catalog do
           let xml = SourceWriter.xml.Write info.Bulletml

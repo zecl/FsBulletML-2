@@ -3,11 +3,7 @@
 open System.Threading
 open NUnit.Framework
 
-/// 輪になった参照。展開を打ち止めているのは BulletmlRead.convertRefBulletmlIn。
-/// bullet と action の輪はそこで残し、走らせる側が 1 段ずつ解く。
-///
-/// withTimeout と 1MB スタックは、打ち止めに漏れがあったときと、
-/// 解いた段を積んでしまったときの保険。戻ってこなければ控えに出る。
+/// 輪になった参照。
 [<TestFixture>]
 type SelfReference() =
 
@@ -39,9 +35,7 @@ type SelfReference() =
 </action>""") 2)
     |> Golden.check "cycle-action-self"
 
-  /// wait を挟んだ action の自己参照。実物は [ESP_RADE]_..._izuna_fan.xml の fan。
-  /// 上の形は fire が無いので、回っていても軌跡に出ない。
-  /// こちらは 3 フレームごとに 1 発 出るので、輪が回っていることが読める
+  /// wait を挟んだ action の自己参照。
   [<Test>]
   member _.``action が wait を挟んで自分を actionRef する``() =
     withTimeout 5 (fun () ->
@@ -55,12 +49,7 @@ type SelfReference() =
 </action>""") 6)
     |> Golden.check "cycle-action-self-with-wait"
 
-  /// 2 段の輪は解いていない。展開時に落とす。
-  ///
-  /// 自分自身へ戻る輪は、解いた結果の並びの中に同じ actionRef がそのまま現れるので、
-  /// 同じ action の並びを差し替え続けられる。2 段の輪は解いた結果に別の action が
-  /// 挟まるので、差し替え先がフレームごとに 1 つ内側へ移り、呼び出しが深くなる。
-  /// コーパスに実例は無い（輪 8 個のうち action の輪は fan の自己参照 1 個だけ）
+  /// 2 段の輪は解いていない。
   [<Test>]
   member _.``2 つの action が互いを参照する``() =
     withTimeout 5 (fun () ->
@@ -85,9 +74,7 @@ type SelfReference() =
       "1000 フレーム走って落ちなかった")
     |> Golden.check "cycle-action-long-run"
 
-  /// 上は最小の輪だけ。実物の fan は fire と、輪でない actionRef を持つ。
-  /// 輪でない actionRef は解くと action として並びに入るので、そこも長く回して見る。
-  /// 撃った弾は vanish させて、測っているものが段の積み方だけになるようにしてある
+  /// 上は最小の輪だけ。
   [<Test>]
   member _.``実物の fan と同じ骨格を 1000 フレーム回しても落ちない``() =
     withTimeout 30 (fun () ->
@@ -154,9 +141,7 @@ type SelfReference() =
 </fire>""") 4)
     |> Golden.check "cycle-fire-self"
 
-  /// 種別をまたいで同じ action へ戻る輪。コーパスに実例 0 本。
-  /// 間に bullet が入るので fire が段を切る。解けるかもしれないが測っていない。
-  /// いまは展開時に落としている。この控えはその線引きを固定するもの
+  /// 種別をまたいで同じ action へ戻る輪。
   [<Test>]
   member _.``action から bullet を経由して同じ action へ戻る``() =
     withTimeout 5 (fun () ->

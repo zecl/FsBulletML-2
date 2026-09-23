@@ -7,10 +7,7 @@ open FsUnit
 open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
-/// 「無い参照をどう直すか」の目盛り。 直し方は 2 通り ——
-///
-///     綴りを直す    近い定義へ名前を書き換える（幅の在る範囲の置き換え）
-///     定義を作る    根の直下 に空の定義を挿す（幅 0 の範囲）
+/// 「無い参照をどう直すか」の目盛り。綴りを直すか、根の直下に空の定義を挿すか。
 [<TestFixture>]
 type QuickFix() =
 
@@ -176,12 +173,8 @@ type QuickFix() =
 
   [<Test>]
   member _.``4 表記 とも 当てた本文が字まで合う``() =
-    // 「参照が埋まった」だけでは足りない。 `References.missing` は入れ子を
-    // 見ないので、根の外へ挿しても・字下げを間違えても 0 件 になる
-    // （較正で 2 通り 踏んだ）。当てた本文そのものを見る。
-    //
-    // 閉じるものが行頭に在る形を通す。 1 行 に畳んだ本文だけだと、
-    // 「行の頭に挿す」枝を 1 度 も通らない
+    // 「参照が埋まった」だけでは足りない。入れ子を見ないので、根の外や字下げ違いでも 0 件になる。
+    // 閉じるものが行頭に在る形を通す。1 行に畳むと「行の頭に挿す」枝を通らない。
     let cases =
       [ xml, "<bulletml>\n    <actionRef label=\"top\"/>\n</bulletml>",
         "<bulletml>\n    <actionRef label=\"top\"/>\n    <action label=\"top\">\n    </action>\n</bulletml>"
@@ -197,9 +190,7 @@ type QuickFix() =
 
   [<Test>]
   member _.``作った定義を当てた本文が 読める``() =
-    // 数だけ見ていると出ない。 参照が埋まっても、その字が読めるとは
-    // 限らない —— F# の CE ではそこで落ちていた（`FsharpUsages`）。
-    // ここは残る 3 表記 を同じ形で当てる
+    // 数だけ見ていると出ない。参照が埋まっても、その字が読めるとは限らない。
     let cases =
       [ SourceKind.Xml, xml,
         "<bulletml type=\"vertical\" xmlns=\"http://www.asahi-net.or.jp/~cs8k-cyu/bulletml\">\n    <action label=\"top\"><actionRef label=\"loop\"/></action>\n</bulletml>"

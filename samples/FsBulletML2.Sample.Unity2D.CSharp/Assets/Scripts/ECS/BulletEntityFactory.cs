@@ -74,11 +74,7 @@ public static class BulletEntityFactory
     }
 
     /// <summary>
-    /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ。
-    ///
-    /// 弾幕は親と同じものを引き継ぐ。 引き継がないと、弾の中に残った
-    ///
-    /// Aim と同じ値を入れているのはこのため。片方だけ直すと軌跡が割れる。
+    /// 撃たれた弾を実体にする。
     /// </summary>
     public static BulletSim SpawnChild(BulletSim parent, BulletRun child)
     {

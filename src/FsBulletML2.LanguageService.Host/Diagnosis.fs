@@ -5,13 +5,7 @@ open System.Xml
 open FsBulletML2
 
 /// 読めなかった理由。
-///
-/// `Line = 0` は「位置が無い」の印。 波線を引くかどうかがこれで決まる。
-/// 1 以上 なら 1 起点 の行と桁で、そこに印を付けてよい。
-///
-/// `EndColumn = 0` は「終わりが分からない」の印。 引く側が行末まで伸ばす。
-/// 終わりが分かるのは、本文の字から数えた位置（参照の欠けなど）だけ ——
-/// `XmlException` は「そこから先が読めない」しか言わない。
+/// `Line = 0` は位置が無い。`EndColumn = 0` は終わりが分からない。混ぜるな。
 type Failure =
   { Line: int
     Column: int
@@ -19,17 +13,8 @@ type Failure =
     Message: string }
 
 /// Apply が落ちたときに、どこまで分かるかを分ける。
-///
-///     構文              XmlException / FParsec        行・桁 あり
-///     BulletML でない   tryRead… が None              位置なし
-///     木は組めない      BulletmlDTDViolationException 位置なし
-///     式                BulletmlDTDViolationException 位置なし
-///
-/// 位置が在るのは 1 層 目 だけ。 3 層 目 は label 名を本文から探せるが、
-/// 同じ label が 2 つ 在るときに嘘の場所を指すので、推定では引かない。
-///
-/// `輪` と `同じ label が 2 つ` と `top が無い` は、ここを素通りする ——
-/// 落ちるのは走行のほう。Apply では何も出ないのが正しい。
+/// 位置が在るのは構文の層だけ。同じ label を本文から推定して指すな。
+/// 輪と重複と top 無しはここを素通りする。落ちるのは走行。
 module Diagnosis =
 
   /// 位置なしの理由
@@ -40,10 +25,7 @@ module Diagnosis =
       Message = message }
 
   /// 例外を層に分ける。位置が在るのは `XmlException` だけ。
-  ///
-  /// 空文字を読ませると `XmlException` は `行 0 桁 0` を返す。
-  /// 0 のまま渡すと Monaco の範囲が壊れるので 1 に丸める ——
-  /// 位置なし（`Line = 0`）と混ざらないように、ここで分けきる。
+  /// 行 0 桁 0 は 1 に丸める。位置なし（`Line = 0`）と混ぜるな。
   let ofException (ex: exn) : Failure =
     match ex with
     | :? XmlException as x ->
@@ -54,13 +36,8 @@ module Diagnosis =
         Message = x.Message }
     | _ -> plain ex.Message
 
-  /// 読んで、載せる。載せるところは呼ぶ側が渡す ——
-  /// host は `Playfield` を作り、試験は `Runner.load` だけを通す。
-  /// どちらも同じ分け方を通るので、試験で当てた形が本番の形になる。
-  ///
-  /// 返りが `None` なら成功。
-  ///
-  /// XML の 1 本。 sxml は `applySxml`。束ねているのは `SourceReader`
+  /// 読んで、載せる。載せるところは呼ぶ側が渡す。`None` なら成功。
+  /// 試験と本番で分け方を分けるな。
   let apply (build: Bulletml -> unit) (xml: string) : Failure option =
     try
       match tryReadXmlString xml with
@@ -70,27 +47,15 @@ module Diagnosis =
         None
     with ex -> Some(ofException ex)
 
-  /// FParsec の文面は 5 行 ある —— `Error in Ln: ...`、本文の写し、
-  /// キャレットの絵、`Note:`、`Expecting:`。帯にも波線にも絵は要らないので、
-  /// 何を待っていたかを言う行だけ足す。
-  ///
-  /// 飾り。 位置が本体で、この行が取れなくても波線は同じところに出る ——
-  /// FParsec が文面を変えたら静かに落ちるだけ
+  /// FParsec の文面から、待っていたものを言う行だけ足す。
+  /// 飾り。取れなくても波線の位置は変わらない。
   let private expectation (message: string) =
     message.Split('\n')
     |> Array.map (fun l -> l.Trim())
     |> Array.tryFind (fun l -> l.StartsWith("Expecting:", StringComparison.Ordinal))
 
-  /// F# の CE を読んで、載せる。parse だけ（型検査しない）。
-  ///
-  /// 層の分かれ方は XML / sxml と同じ ——
-  ///
-  ///     F# の構文        FCS の診断              行・桁 あり
-  ///     CE として読めない  知らない名前・知らない形  行・桁 あり
-  ///     木は組めない      Core の例外              位置なし
-  ///
-  /// 2 層 目 にも位置が在るのが、ほかの表記と違うところ。
-  /// 歩いている最中に「どこで詰まったか」が分かるため。
+  /// F# の CE を読んで、載せる。parse だけ。型検査しない。
+  /// 知らない名前にも位置が在る。ほかの表記と違うところ。
   let applyFsharp (build: Bulletml -> unit) (source: string) : Failure option =
     try
       match FsharpCe.read source with
@@ -108,10 +73,8 @@ module Diagnosis =
         None
     with ex -> Some(ofException ex)
 
-  /// sxml を読んで、載せる。`tryReadSxmlString` を使わない。
-  ///
-  /// あちらは `Failure (_,_,_) -> None` で、FParsec が持っている位置を捨てている。
-  /// 口が在ることと、その口が要るものを返すことは別。
+  /// sxml を読んで、載せる。`tryReadSxmlString` は使うな。
+  /// あちらは FParsec の位置を捨てている。
   let applySxml (build: Bulletml -> unit) (sxml: string) : Failure option =
     try
       match Sxml.parse sxml with
@@ -136,9 +99,8 @@ module Diagnosis =
           None
     with ex -> Some(ofException ex)
 
-  /// インデント記法（fsb）を読んで、載せる。`tryReadFsbString` を使わない。
-  ///
-  /// あちらも `Failure (_,_,_) -> None` で位置を捨てている（sxml と同じ形）。
+  /// インデント記法（fsb）を読んで、載せる。`tryReadFsbString` は使うな。
+  /// あちらも位置を捨てている。
   let applyFsb (build: Bulletml -> unit) (fsb: string) : Failure option =
     try
       match Offside.parse fsb with

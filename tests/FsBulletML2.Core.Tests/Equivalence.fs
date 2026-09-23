@@ -6,16 +6,7 @@ open System.Text
 open NUnit.Framework
 open FsUnit
 
-/// 227 本の実物を突き合わせる橋。突き合わせる相手は 2 種類あり、
-/// 意味がまったく違う。
-///
-///   1. 「227 本を、公開 API と Step.step 直接呼びで突き合わせる」
-///
-/// 緑のまま中身の意味が入れ替わる。名前と実際に比べているものを、
-///
-/// "割れ 0 " を含み "一致 0 " を含まないので緑のまま通ってしまう。
-/// Ok / Ng / Skipped / Total を数として持たせ、呼ぶ側が実測した値そのものを
-/// 門にできるようにする
+/// 227 本の実物を突き合わせる橋。
 type BridgeReport =
   { Ok : int
     Ng : int
@@ -27,22 +18,10 @@ type BridgeReport =
 type Equivalence() =
 
   /// 走らせ方を 2 つ受け取り、227 本ぜんぶを突き合わせた報告を返す。
-  /// どちらも「いまのソースを実際に走らせる」関数であることが前提
-  /// （凍結データとの突き合わせには使わない。下の 2 番めの橋を参照）。
-  ///
-  /// 片方を先に評価して例外が飛ぶと、`let a = runA xml; let b = runB xml` の
-  ///
-  /// 落ちた」と「片方だけ落ちた」の区別がつかない（後者は退行そのもの
-  ///
-  ///   片方だけ例外     -> 割れ（片方が壊れた・片方だけ直った、のどちらもここ）
   static member RunBoth (runA: string -> string) (runB: string -> string) : BridgeReport =
     Equivalence.RunBothWith (fun _path xml -> runA xml) runB
 
-  /// 基準側（A）にパスも渡す形。中身は RunBoth と同じ。
-  ///
-  /// 同じ基準を複数の試験が使うとき、走行を 1 回 で済ませるため。
-  /// パスをキーにできるので、呼ぶ側が軌跡をキャッシュできる
-  /// （xml の中身をキーにすると 227 本 ぶんの文字列を毎回 ハッシュすることになる）。
+  /// 基準側（A）にパスも渡す形。
   static member RunBothWith (runA: string -> string -> string) (runB: string -> string) : BridgeReport =
     let samples = CorpusData.uniqueSamples ()
     let mutable ok, ng, skipped = 0, 0, 0
@@ -86,23 +65,12 @@ type Equivalence() =
     { Ok = ok; Ng = ng; Skipped = skipped; Total = List.length samples; Text = text }
 
   /// 例外の中身を、比べられて・表示もできる 1 行の文字列に畳む。
-  /// 凍結データ（tools/frozen-corpus/DumpFrozenCorpus.fs、4077ed6 側の
-  /// worktree で走らせたもの。使い方はそのファイルの先頭コメントに書いてある）
-  /// もまったく同じ式で例外を文字列化してある。式がずれると
-  /// 「同じ例外」の判定そのものがずれる
   static member RenderException (e: exn) =
     let rec inner (x: exn) = if isNull x.InnerException then x else inner x.InnerException
     let i = inner e
     sprintf "%s: %s" (i.GetType().Name) (i.Message.Replace("\r", "").Replace("\n", " "))
 
   /// 軌跡そのものではなく、名前・撃った数・生存数・指紋の 4 つに畳む。
-  /// 凍結データ（corpus-trace-varying-old-4077ed6.tsv）もこの畳み方で
-  /// 作ってある。畳み方がずれると指紋が一致するはずのものまで割れる。
-  ///
-  /// 軌跡をまるごと残さないのは大きさのため。凍結を作る際に試したところ、
-  /// times の大きい repeat が定数の $rand と違って早期に打ち切られず、
-  /// 5way.xml 1 本だけで 140 万行・100MB を超えた（Corpus.fs の
-  /// corpus-trace が指紋だけを控えに残しているのと同じ理由）
   static member private FoldTrace (t: string) =
     let lines = t.Split('\n')
     let fired = lines |> Array.filter (fun l -> l.Contains "  +b") |> Array.length
@@ -118,14 +86,7 @@ type Equivalence() =
       |> String.concat ""
     fired, alive, digest
 
-  /// 凍結データを読む。先頭は `#` で始まる由来の控え（元コミット・
-  /// 走らせたパラメータ・作った道具・読む側 —— この関数）で、そのあと
-  /// 1 行 1 本、タブ区切りで
-  ///   成功  名前 \t 撃った数 \t 生存数 \t 指紋
-  ///   例外  名前 \t ERROR \t 型名: メッセージ
-  ///
-  /// 作り直し方・踏んだ 2 つの罠は
-  /// tools/frozen-corpus/DumpFrozenCorpus.fs の先頭コメントに書いてある
+  /// 凍結データを読む。
   static member private LoadFrozenVarying () =
     let path =
       Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "..", "TestData", "trace",
@@ -142,14 +103,6 @@ type Equivalence() =
     |> Map.ofArray
 
   /// 公開 API だけで 227 本 が走り、Step.step 直接呼びと一致する。
-  ///
-  /// TraceApi は internal を 1 つも使わない（あちらの docstring 参照）ので、
-  /// これが緑ということは「フロントは公開の型だけで弾幕を走らせられる」
-  /// ということ。旧 API では 19 メンバ の `IBulletmlObject` を実装する必要があった。
-  ///
-  /// 定数の $rand なので「引く回数・引く順」の割れは見えない
-  /// （下のテストの docstring 参照）。回数の割れは下の橋（凍結した旧エンジン
-  /// との突き合わせ）が見る。
   [<Test>]
   member _.``227 本を、公開 API と Step.step 直接呼びで突き合わせると全部 一致する``() =
     let rand, rank, px, py = 0.5f, 0.5f, 30.0f, 100.0f
@@ -157,18 +110,13 @@ type Equivalence() =
     let direct (xml: string) = TraceNew.run (fun () -> rand) rank px py xml 60
     let report = Equivalence.RunBoth viaApi direct
     TestContext.WriteLine report.Text
-    // 部分文字列一致（"割れ 0 " を含み "一致 0 " を含まない）だけだと、220 本が
-    // 同じ例外へ吸われて「一致 3 / 割れ 0 / 比べられず 224」になっても
-    // 通ってしまう。実測した数そのものを門にする
+    // 部分文字列一致だけだと、220 本が同じ例外へ吸われても通ってしまう。実測した数を門にする。
     report.Total |> should equal 227
     report.Ok |> should equal 224
     report.Ng |> should equal 0
     report.Skipped |> should equal 3
 
   /// 定数の $rand（上のテスト）は「引く回数・引く順」の割れを見せない。
-  /// getValue は式の中身に関わらず env.Rand() を呼ぶが、FixedManager は
-  /// 何回・どの順で呼ばれても同じ値しか返さないので、引きが 1 つ 足りない・
-  /// 多い・入れ替わっているという不具合があっても軌跡の値には出ない。
   [<Test>]
   member _.``227 本を、凍結した旧エンジン（4077ed6）の軌跡と突き合わせると全部 一致する``() =
     let rank, px, py = 0.5f, 30.0f, 100.0f
@@ -228,9 +176,7 @@ type Equivalence() =
       sprintf "一致 %d / 割れ %d / 比べられず %d（母数 %d）\n%s%s"
         ok ng skipped (List.length samples) skippedBlock (diffs.ToString())
     TestContext.WriteLine report
-    // 部分文字列一致だけだと、220 本が同じ例外へ吸われて
-    // 「一致 3 / 割れ 0 / 比べられず 224」になっても通ってしまう
-    // （設計文書 5.4 参照）。実測した数そのものを門にする
+    // 部分文字列一致だけだと、220 本が同じ例外へ吸われても通ってしまう。実測した数を門にする。
     List.length samples |> should equal 227
     ok |> should equal 224
     ng |> should equal 0

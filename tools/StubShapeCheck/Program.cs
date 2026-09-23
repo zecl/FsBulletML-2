@@ -1,10 +1,4 @@
-// COMPILE-ONLY stub と、本物の Unity の dll を突き合わせる。
-//
-// 見るのは「呼び手の IL に焼き込まれるもの」だけ:
-//
-//     型が値型か参照型か
-//     メンバが field か property か method か
-//     method / ctor の signature（戻り型と引数型）
+// COMPILE-ONLY stub と本物の Unity dll を、呼び手の IL に焼き込まれる面だけで突き合わせる。
 using System.Reflection;
 using System.Text.Json;
 
@@ -39,8 +33,7 @@ if (editor is null || !Directory.Exists(editor))
 // この行は guard-stub-shape.ps1 が読む。探すところを 2 つ に増やさないため
 Console.WriteLine($"Unity Managed: {editor}");
 
-// repo の目印は slnx。自分の居場所から上る —— dotnet run でも、
-// 焼いた exe を直に叩いても同じところに着く
+// slnx を自分の居場所から上る。dotnet run でも焼いた exe でも同じところに着く。
 static string FindRepoRoot()
 {
     foreach (var start in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })

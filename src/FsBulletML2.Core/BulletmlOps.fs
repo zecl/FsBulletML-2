@@ -1,15 +1,6 @@
 namespace FsBulletML2
 
-/// BulletML の木の上の操作。BulletmlRead から切り出したもの。
-///
-/// 3 つ ある。
-///
-///     集める / 探す      collect / getAction / getFire / getBullet / tryFind*
-///     param を差し込む   substCommand / refAction / refFire / refBullet
-///     輪を 1 段 解く     resolveActionRef / expand* / convertRef*
-///
-/// 二重木を畳んでも、ここは丸ごと残った。 木が 1 つ になっても
-/// 「名前で引く」「実引数を入れる」「輪を 1 段 だけ解く」は要る。
+/// 木の上の操作。名前で引く、実引数を入れる、輪を 1 段だけ解く。木が 1 つでも要る。
 module internal BulletmlOps =
 
   let internal convertDirectionOption  = fun prams -> function
@@ -35,10 +26,7 @@ module internal BulletmlOps =
     | Some(Vertical(attrs,s)) -> Vertical(attrs, Param.replaceIn prams s) |> Some
     | None -> None
 
-  /// 木を隅々まで歩いて、名前の付いた要素を集める。
-  ///
-  /// 歩き方を 1 本 にして「拾うもの」だけを差し替える。
-  /// 拾う順は変えていない —— 自分を先に入れてから子へ降りる。
+  /// 名前の付いた要素を集める。拾う順は自分を先、それから子。順を変えるな。
   let private collect
       (fromAction: obj -> ActionAttrs * Action list -> 'a list)
       (fromFire: FireAttrs * Direction option * Speed option * BulletElm -> 'a list)
@@ -167,10 +155,7 @@ module internal BulletmlOps =
                            children |> List.map (substActionElm prams))
     | BulletElm.BulletRef (attrs, param) -> BulletElm.BulletRef (attrs, convertParam prams param)
 
-  // --- param を差し込んで作った物を、元の物と対にする -------------------------
-  //
-  // 覆いで、中身（*Core）は 1 行 も触っていない。
-  // 同じ物が返ったときは対にしない（vanish は singleton）。
+  // 覆い。中身（*Core）は触っていない。同じ物が返ったときは対にしない（vanish は singleton）。
 
   and private substCommand prams (c: Action) : Action =
     let r = substCommandCore prams c
@@ -182,11 +167,7 @@ module internal BulletmlOps =
     if NodeOrigin.enabled && not (obj.ReferenceEquals(r, a)) then NodeOrigin.pair (box r) (box a)
     r
 
-  /// 参照先の要素へ実引数を差し込む。種別ごとに 1 本 ずつ
-  /// （target と label の種別が揃っていることを型で言うため）。
-  ///
-  /// 名前の一致を確かめてから差し込む。呼ぶ側は `tryFind*` が返したものを
-  /// 渡すので必ず一致するが、確認は残す。
+  /// 参照先へ実引数を差し込む。種別ごとに 1 本。名前の確認は、必ず一致しても残す。
   let internal refAction (target: ActionElm) (label: ActionLabel) prams : ActionElm =
     let prams = prams |> Param.ofList
     match target with
@@ -208,15 +189,7 @@ module internal BulletmlOps =
       substBulletElm prams target
     | _ -> target
 
-  /// 参照を解いて木へ展開する。
-  ///
-  /// `lastAction` は「直近に展開した action の label」。
-  /// action の輪を残してよいのは、その輪が直近に展開した action 自身へ
-  /// 戻るときだけ（別の action を経由する輪は、走らせる側が 1 段ずつ解くと
-  /// 呼び出しがフレームごとに深くなる）。
-  ///
-  /// `actionRef` は「命令の位置」と「repeat / bullet の子の位置」の両方に出るので、
-  /// 解く判断だけをここへ出して両方から使う。
+  /// 参照を解く。輪を残してよいのは直近の action 自身へ戻るときだけ。別経由は呼び出しが毎フレーム深くなる。
   let rec private resolveActionRef visiting lastAction top (attrs: ActionRefAttrs) prams
       : ActionElm option =
     // None は「輪なので、そのまま残す」
@@ -275,10 +248,7 @@ module internal BulletmlOps =
       | Some expanded -> expanded
 
 
-  // --- 参照の解決で作った物を、元の物と対にする -----------------------------
-  //
-  // 覆いで、中身（*Core）は 1 行 も触っていない。
-  // 同じ物が返ったときは対にしない（`| None -> c` が該当）。
+  // 覆い。中身（*Core）は触っていない。同じ物が返ったときは対にしない（輪の `| None -> c`）。
 
   and private expandCommand visiting lastAction top (c: Action) : Action =
     let r = expandCommandCore visiting lastAction top c
@@ -326,11 +296,7 @@ module internal BulletmlOps =
   let internal convertRefActionElm (top: Bulletml) (a: ActionElm) : ActionElm =
     expandActionElm Set.empty None top a
 
-  /// 輪のために展開を止めた bulletRef を、走らせる側から 1 段だけ解く。
-  /// 中にまた同じ参照が残るので、次に撃たれたときに次の 1 段が解かれる。
-  ///
-  /// 解く前から自分の key を visiting に入れておくこと。 空から始めると
-  /// 解いた中身の同じ参照がもう 1 段 展開され、1 段 のつもりが 2 段 になる。
+  /// 止めた bulletRef を 1 段だけ解く。visiting を空から始めると、1 段のつもりが 2 段になる。
   let internal expandBulletRefOnce top (label: BulletLabel) prams : BulletElm option =
     match tryFindBullet top label with
     | Some bullet ->
@@ -340,11 +306,7 @@ module internal BulletmlOps =
       |> Some
     | None -> None
 
-  /// 輪のために展開を止めた actionRef を、走らせる側から 1 段だけ解く。
-  /// 中にまた同じ参照が残るので、そこへ届いたときに次の 1 段が解かれる。
-  ///
-  /// bulletRef と違って fire を挟まないので、2 段 解くと走らせる側の
-  /// 呼び出しが 1 フレームごとに深くなり、スタックを使い切る。
+  /// 止めた actionRef を 1 段だけ解く。2 段解くと毎フレーム呼び出しが深くなり、スタックを使い切る。
   let internal expandActionRefOnce top (label: ActionLabel) prams : ActionElm option =
     match tryFindAction top label with
     | Some action ->

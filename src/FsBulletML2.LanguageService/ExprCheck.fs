@@ -1,9 +1,5 @@
 /// 式が読めるかを字から見る（v4.1）。値は出さない。
-///
-/// 評価器を 2 本 持つと同じ式が 2 通り の値になり、どちらも単独では正しく見える。
-/// 文法は Core の写し。片方 だけ直した形が残るのは ExprParity が見る。
-/// 単項プラスは無い。指数表記も無い。
-/// Fable.Core に依存しない（host と ブラウザ側 の両方 で走る）。
+/// 評価器は足さない。片方 だけ直した形が残るのは ExprParity が見る。
 module FsBulletML2.LanguageService.ExprCheck
 
 open System
@@ -11,11 +7,7 @@ open System
 let private isDigit (c: char) = c >= '0' && c <= '9'
 
 /// `s` の `i` から `w` が始まっているか。
-///
-/// `String.CompareOrdinal` の 5 引数 版を使わない。 Core の `Expr.fs` は
-/// そちらで書いてあるが、Fable が焼いた JS では当たらなかった ——
-/// `guard-fable-parity` が拾った（.NET は `30-$rank*8` を読め、node は読めなかった）。
-/// F# の側は通り、build も門も出ず、焼いた JS だけが違う形
+/// `String.CompareOrdinal` の 5 引数 版は使うな。Fable の JS では当たらない。
 let private startsAt (s: string) (i: int) (w: string) =
   i + w.Length <= s.Length && s.Substring(i, w.Length) = w
 
@@ -108,12 +100,7 @@ let readable (s: string) : bool =
     | None -> false
 
 /// ただの数か（v4.4）。`30` / `1.5` / `-3` / `.5` は真。
-///
-/// 値を横に出す意味が無い側。 `<wait>30</wait>` の横に `= 30` を出しても
-/// 字が増えるだけ —— 出すのは畳んで初めて数になる式だけ。
-///
-/// `readable` と同じ読み手を通す。 別に数え直すと、
-/// 「読めないのに ただの数 と言う」形が作れてしまう
+/// 別に数え直すな。`readable` と同じ読み手を通す。
 let plainNumber (s: string) : bool =
   if isNull s then false
   else
@@ -125,11 +112,7 @@ let plainNumber (s: string) : bool =
     | None -> false
 
 /// どこまで読めたか（0 起点 の文字数）。読めるなら文字数そのもの。
-///
-/// 波線をここから引く —— 要素まるごとに引くと、
-/// `180+$rand*30` の 12 文字 が全部 赤くなって、どこが悪いか分からない。
-///
-/// `None` は「頭から読めない」（`abc` など）—— そのときは 0 を返す
+/// 波線はここから引く。要素まるごとにはしない。
 let readTo (s: string) : int =
   if isNull s then 0
   else

@@ -6,10 +6,8 @@ open Microsoft.FSharp.Reflection
 
 [<AutoOpen>]
 module DTD =
-  /// DU を「型名.腕名 中身」の字にする。`ToString` の override 専用 ——
-  /// 走行も trace も通らない。
-  ///
-  /// `inline` なのも `typeof<'T>` なのも Fable の都合（外すと Core ごと焼けなくなる）
+  /// DU を「型名.腕名 中身」の字にする。ToString 専用で、走行も trace も通らない。
+  /// inline と typeof<'T> は Fable の都合。外すと Core ごと焼けなくなる。
   let inline stringifyFullName (discriminatedUnion:'T) =
     if box discriminatedUnion = null  then
       nullArg  "discriminatedUnion"
@@ -37,18 +35,11 @@ module DTD =
         let tuple = FSharpValue.MakeTuple(elements, tupleType)
         sprintf "%s %A" typeName tuple
 
-  /// 文字列を数値式として読む。DU へ入れる入口はここ 1 本。
-  ///
-  /// 走行中に読み直さない —— 読むのはこの入口を通る 1 回だけ。
+  /// 文字列を数値式として読む。DU へ入れる入口はここ 1 本。走行中に読み直さない。
   let numExpr (s: string) : Expr.NumExpr = Expr.NumExpr.ofString s
 
-  /// 属性値の並びのうち、その属性を書かなかったときに走る腕に付ける。
-  ///
-  /// 置き場が型しか無い（AST には何も残らないので、字のコメントで書くと
-  /// どこからも引けず、実装がずれても赤くならない）。
-  ///
-  /// 1 つ の並びに付くのは 0 個 か 1 個。読むのは
-  /// `UnionCaseInfo.GetCustomAttributes`。
+  /// 属性を書かなかったときに走る腕に付ける。置き場が型しか無い。
+  /// 字のコメントに移すと、ずれても赤くならない。1 つの並びに 0 個か 1 個。
   [<AttributeUsage(AttributeTargets.All, AllowMultiple = false)>]
   type BulletmlDefaultAttribute() =
     inherit Attribute()
@@ -86,10 +77,7 @@ module DTD =
       List.iter f [1..param.Count]
       !result
 
-    /// 実引数を式へ入れる。文字で置き換えてから読み直す。
-    ///
-    /// 木の節として差し込むと優先順位が変わる（`"1+2"` を `"$1*3"` へ入れると
-    /// 文字なら 7、節なら 9）。同梱 227 本 のうち 50 本 が当たる。
+    /// 実引数を式へ入れる。文字で置き換えてから読み直す。節として差し込むと優先順位が変わる。
     let replaceIn (param: Map<string, string>) (e: Expr.NumExpr) : Expr.NumExpr =
       Expr.NumExpr.mapSource (fun t -> replace t param) e
 
@@ -142,12 +130,7 @@ module DTD =
     override t.ToString () = stringifyFullName t 
 
   type BulletmlAttrs = { bulletmlXmlns : string option; bulletmlType : ShootingDirection option; bulletmlName : string option; bulletmlDescription : string option }
-  /// 省いたときに走るのは vertical。 属性が無いとき Api が
-  /// BulletVertical を返す。
-  ///
-  /// `[<BulletmlDefault>]` が指すのは「省いたときに走る値」で、
-  /// DTD の既定値（`"none"`）ではない —— `Parser.Tests/AttributeDefaults.fs` が
-  /// 走りで固定している。札を動かすとあの点が赤くなる。
+  /// 省いたときに走るのは vertical。BulletmlDefault は DTD の "none" ではない。札を動かすと AttributeDefaults が赤くなる。
   and [<StructuredFormatDisplay("{ToStructuredDisplay}")>]ShootingDirection =
   | BulletNone
   | [<BulletmlDefault>] BulletVertical
@@ -159,13 +142,7 @@ module DTD =
     | Enemy
     | Player
 
-  /// 要素の名前。定義する側と参照する側で同じ型にしてある。
-  ///
-  ///   <action label="top">  と  <actionRef label="top">  は同じ ActionLabel
-  ///
-  /// 「fire の名前で action を探す」が型で組めなくなる。
-  /// 3 つ を 1 つ の型に `kind` フィールドで畳まないのも同じ筋 ——
-  /// 畳むと種別違いが実行時にしか分からない。
+  /// 要素の名前。定義側と参照側で同じ型。kind で 1 つに畳むと種別違いは実行時まで分からない。
   type ActionLabel = ActionLabel of string
   type FireLabel = FireLabel of string
   type BulletLabel = BulletLabel of string
@@ -177,10 +154,7 @@ module DTD =
   module BulletLabel =
     let text (BulletLabel s) = s
 
-  /// 展開中の参照。種別と名前の組。
-  ///
-  /// 型にすると、種別を書き忘れて別の種別と衝突する形が組めない。
-  /// F# の DU は構造で比較・整列できるので `Set` にそのまま入る。
+  /// 展開中の参照。種別を文字で足すと、書き忘れが別種と衝突する。
   type RefKey =
     | ActionKey of ActionLabel
     | FireKey of FireLabel
@@ -219,12 +193,7 @@ module DTD =
   /// <!ATTLIST bulletRef label CDATA #REQUIRED>
   type BulletRefAttrs = { bulletRefLabel : BulletLabel }
 
-  /// Innternal DSL
-  ///
-  /// 根。腕は bulletml 1 つ だけ。 子は位置ごとの型（BulletmlElm /
-  /// Action / ActionElm / BulletElm、下）に分かれている。
-  ///
-  /// エンジンが歩くのもこの木（`Rec*` という別の 5 つ は畳んだ）。
+  /// 根。腕は bulletml 1 つだけ。子は位置ごとの型に分かれている。
   [<StructuredFormatDisplay("{ToStructuredDisplay}")>]
   type Bulletml =
 /// BulletML DTD
@@ -289,14 +258,7 @@ module DTD =
     member private t.ToStructuredDisplay = t.ToString()
     override t.ToString () = stringifyFullName t
 
-  /// 弾幕を字にするときの受け口。
-  ///
-  /// 木を歩くのは 1 本（`BulletmlWriter.writeTo`）で、歩きは表記を知らない。
-  ///
-  /// その表記で書ける字かどうかは、受け口が知っている —— だから受け口は
-  /// その文法を読むパーサと同じところに置く（片方 だけ直すのを防ぐ）。
-  ///
-  /// 深さは受け口が自分で数える（fsb の字下げに要る）。
+  /// 弾幕を字にするときの受け口。歩きは表記を知らない。受け口はパーサと同じところに置く。
   type IBulletmlSink =
     /// 要素を開く
     abstract Start: name: string -> unit
@@ -306,8 +268,7 @@ module DTD =
     abstract Text: value: string -> unit
     /// いま開いている要素を閉じる
     abstract End: unit -> unit
-  /// BulletML を XML に書き戻す。member ではなく関数
-  /// （member だと Parser の `Bulletml.ToXmlString` と名前がぶつかって自分を呼ぶ）。
+  /// BulletML を XML に書き戻す。member にすると Parser の ToXmlString と名前がぶつかって自分を呼ぶ。
   module internal BulletmlXml =
     /// BulletML 書き込み
     let writeContentTo (sink: IBulletmlSink) (this: Bulletml) =

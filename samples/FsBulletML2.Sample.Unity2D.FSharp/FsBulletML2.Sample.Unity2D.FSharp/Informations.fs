@@ -7,12 +7,7 @@ open R3
 open FSharp.Control.R3
 open UnityEngine
 
-/// 窓 1 つ ぶんの測り。毎コマ ではなく、窓が閉じたときだけ作る。
-///
-/// fps は期間内のコマ数を期間で割った平均。
-/// 以前は 0.5 秒 に 1 回 `1f / Time.unscaledDeltaTime` を読んでいたが、
-/// あれはその瞬間の 1 コマ の長さであって平均ではない ——
-/// 長いコマがたまたま点に当たれば、そのまま低い数字が出る。
+/// 窓 1 つ ぶんの測り。
 [<Struct>]
 type FrameStats =
   { /// 窓の平均 fps
@@ -38,13 +33,7 @@ type Informations () =
   let mutable elapsed = 0.0f
   let mutable worstInWindow = 0.0f
 
-  /// 直近の窓の測り。ReactiveProperty にしてある。
-  ///
-  /// ただの Observable だと、`CombineLatest` は 4 本 すべてが 1 個 流すまで
-  /// 何も出さない —— 最初の窓が閉じるまで HUD が空になる。
-  /// ReactiveProperty は購読した瞬間に現在値を流すので、そこが埋まる。
-  /// 同梱の C# サンプルは `Observable.Return(初期値).Concat(...)` で
-  /// 同じことをしている
+  /// 直近の窓の測り。
   let statsRp = new ReactiveProperty<FrameStats>(FrameStats.Zero)
 
   [<DefaultValue>]val mutable public show : bool
@@ -52,11 +41,7 @@ type Informations () =
   /// 窓の長さ（秒）。0 以下 なら 0.5
   [<DefaultValue>]val mutable public intervalTime : float32
 
-  /// フレームレートの上限。0 以下 なら既定（60）を使う。
-  ///
-  /// 以前は 40 を直に書いていた。 意図した設計ではなく、そのまま残って
-  /// いただけだった。inspector から変えられるように欄にしてあるが、
-  /// シーンに保存されていなければ 0 になるので、そのときは既定へ落とす。
+  /// フレームレートの上限。
   [<DefaultValue>]val mutable public targetFps : int
 
   [<DefaultValue>]val mutable private enemy : Enemy
@@ -65,20 +50,12 @@ type Informations () =
   /// 既定の上限。ApplyCapOnPlay が Play の頭で使う
   static member DefaultTargetFps = 60
 
-  /// 上限の掛け方。vSync が先。
-  ///
-  /// vSyncCount が 1 以上 だと Unity は targetFrameRate を無視して画面の
-  /// リフレッシュレートに従う。品質設定によっては 1 なので、
-  /// 切らないと押さえられない（同梱の C# サンプルで実際に押さえられなかった）。
+  /// 上限の掛け方。
   static member ApplyCap (fps: int) =
     QualitySettings.vSyncCount <- 0
     Application.targetFrameRate <- fps
 
   /// Play に入った時点で上限を掛ける。
-  ///
-  /// Awake だけに任せると、シーンに Informations が居ることと
-  /// その Awake が先に走ることに依存する。どちらも外から見て分からないので、
-  /// シーンに何が居ようが効く場所へ出した。
   [<RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)>]
   static member ApplyCapOnPlay () =
     Informations.ApplyCap Informations.DefaultTargetFps
@@ -90,10 +67,6 @@ type Informations () =
     Informations.ApplyCap fps
 
     // ECS の下ごしらえを、シーンに確実に居るここからも起こす。
-    // BulletEcsBootstrap は [<RuntimeInitializeOnLoadMethod>] で自分を作るが、
-    // F# の static member に付けた属性を Unity が拾うかは自明でない。
-    //
-    // 呼ぶ側でも塞いでおく
     if Application.isPlaying then
       BulletEcsBootstrap.AutoCreate ()
     this.enemy <- UnityEngine.Object.FindAnyObjectByType<Enemy>()
@@ -101,11 +74,6 @@ type Informations () =
     this.useGUILayout <- false
 
   /// 表示の文を組む流れを 1 本 に畳む。
-  ///
-  /// `Observable.Interval` は使わない。 あれは `TimeProvider` に乗るので、
-  /// Unity では R3.Unity の `UnityTimeProvider` を渡さないとメインスレッドの
-  /// 外で発火する。このサンプルは R3.Unity を使えない（FrameTicker の
-  /// 但し書き）ので、窓の締めもコマの流れから数える。
   member this.Start () =
     if not Application.isPlaying then () else
     if isNull (box this.enemy) || isNull (box this.player) then () else
@@ -180,10 +148,8 @@ type Informations () =
 
   static member private FormatStatus (name: string, life: int, damage: int, s: FrameStats) : string =
     let sb = new StringBuilder();
-    // FPS。上限と vSync、いちばん長かったコマも並べて出す。
-    //
-    // 数だけだと「これしか出ない」と読める —— 上限に張り付いているのか、
-    // 届いていないのかが分からない（同梱の C# サンプルで実際に読み違えた）。
+    // FPS。
+    // 数だけだと「これしか出ない」と読める —— 上限に張り付いているのか、 届いていないのかが分からない（同梱の C# サンプルで実際に読み違えた）。
     let cap = Application.targetFrameRate
     let vsync = QualitySettings.vSyncCount
     sb.Append(String.Format("FPS:{0:F1}（上限 {1} / vSync {2}）最悪 {3:F1}ms\n",

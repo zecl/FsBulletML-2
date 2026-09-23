@@ -5,10 +5,8 @@ using UnityEditor.SceneManagement;
 
 /// <summary>
 /// Unity が何を見えていて、何が見えていないかを出す。
-///
-/// 「Project ウィンドウにシーンが出てこない」を追うための口。ファイルは
-/// 在るのに Unity が見ていない、という状態は外から区別できないので、
-/// AssetDatabase に訊く。
+/// ファイルは 在るのに Unity が見ていない、という状態は外から区別できないので、 AssetDatabase に訊く。
+/// </summary>
 public static class ProjectDiagnose
 {
     public static void Run()

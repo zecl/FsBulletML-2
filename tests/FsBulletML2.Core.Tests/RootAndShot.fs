@@ -6,15 +6,10 @@ open FsBulletML2
 open FsBulletML2.Domain
 
 /// `Runner.newRoot` と `Runner.newShot` が違うものを作ること。
-///
-/// 変異で穴が見つかって足した。 `newShot` の `IsBullet` を `false` に
-/// 落とす変異を入れても、598 本 が緑のまま通った。
 [<TestFixture>]
 type RootAndShot() =
 
   /// 1 コマ目 に撃って、2 コマ目 で全 top が終わる。
-  /// 撃つことが要る —— `HasFired` が立たないと `Retired` は
-  /// どちらでも false になり、2 つ を見分けられない
   let Xml = """<?xml version="1.0" ?>
 <bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
   <action label="top">
@@ -28,11 +23,8 @@ type RootAndShot() =
       Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
       Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
 
-  /// 全 top が終わるコマまで回して、そのコマの Frame と、
-  /// 走行ぜんぶで撃った数を返す。
-  ///
-  /// 撃つのは 1 コマ目 で、終わるのは後のコマ。締めのコマの `Spawned` は
-  /// 空なので、そこだけ見ると「撃っていない」と読めてしまう（1 度 やった）
+  /// 全 top が終わるコマまで回し、そのコマの Frame と、走行ぜんぶで撃った数を返す。
+  /// 締めのコマの Spawned は空なので、そこだけ見ると撃っていないと読める。
   let runToFinish (start: BulletRun) =
     let mutable run = start
     let mutable last = Runner.stepWith env run Motion.zero

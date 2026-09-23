@@ -6,10 +6,6 @@ open FsBulletML2
 open FsBulletML2.Domain
 
 /// Runner.stepWith が Runner.step（WithMotion 経由）と同じ答えを返すこと。
-///
-/// 出荷側は stepWith しか呼ばない（フロント 2 つ・ベンチ・TraceApi）ので、
-/// ここが無いと step のほうが誰にも確かめられなくなる。逆に、片方だけ直したら
-/// ここが割れる。
 [<TestFixture>]
 type StepWithEquiv() =
 

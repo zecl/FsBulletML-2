@@ -9,13 +9,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// F# の CE を読む口の目盛り。
-///
-/// --- 何を真とするか
-///
-/// 弾幕 176 本 は `FsBulletML2.Bullets.Dsl` に値として在る（F# コンパイラが
-/// 組んだもの）。同じ本文を `FsharpCe.read` に通して、同じ値になるかを見る。
-/// これは目盛りとしていちばん強い形 —— 期待値を手で書いていないので、
-/// 書き間違えようがない。 ずれたらこちらが間違っている。
+/// 正本はコンパイラが組んだ値。期待値を手で書くと、書き間違えが正本になる。
 [<TestFixture>]
 type FsharpCeCorpus() =
 
@@ -63,12 +57,8 @@ type FsharpCeCorpus() =
 
   [<Test>]
   member _.``読んだ値が、F# コンパイラの組んだ値と数まで一致する``() =
-    // 名前で引き当てない。 カタログの `Name` は CE の説明文字列で、
-    // 同じ説明の弾幕が 3 組 在る（`let` の名前は 179 本 すべて一意）。
-    // 名前を鍵にすると、その 3 組 が取り違わって「値が違う」に見える
-    // （最初それで 3 本 外した）。
-    //
-    // だから鍵を使わず、値の多重集合そのものを突き合わせる。
+    // 名前で引き当てない。説明文字列は重複する。鍵にすると取り違えて「値が違う」に見える。
+    // 値の多重集合そのものを突き合わせる。
     let parsed =
       [ for KeyValue (_, src) in sources.Value do
           match FsharpCe.read src with
@@ -119,12 +109,7 @@ type FsharpCeCorpus() =
 
   [<Test>]
   member _.``CE の口の形``() =
-    // v1.6 まで候補も空だった。「置ける場所が入れ子の型で決まるので、字の
-    // 数え方では出せない」と書いてあったが、入れ子の型は `{ }` の対で出せる
-    // （v1.9。詳しくは `FsharpComplete`）。
-    //
-    // 打った瞬間に出す字だけは無いまま —— XML の `<` や sxml の `(` に
-    // 当たるものが CE には無く、名前は語の頭から打つので Monaco が自分で出す
+    // 打った瞬間に出す字は無い。XML の `<` に当たるものが CE には無く、Monaco が語の頭から出す。
     let lang = Languages.Fsharp.FsharpLanguage(fun () -> vocab) :> SourceLanguage.ISourceLanguage
     lang.Kind |> should equal SourceKind.FSharpDsl
     lang.EditorLanguageId |> should equal "fsharp"

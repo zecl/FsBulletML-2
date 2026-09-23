@@ -6,9 +6,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// Apply が落ちたとき、どこまで分かるか。
-///
-/// 実際に流して数えた 4 層。位置が在るのは 1 層 目 だけで、
-/// 波線を引くかどうかがそれで決まる。
+/// 位置が在るのは 1 層 目 だけで、波線を引くかどうかがそれで決まる。
 [<TestFixture>]
 type DiagnosisLayers() =
 

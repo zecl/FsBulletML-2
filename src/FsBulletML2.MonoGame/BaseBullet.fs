@@ -46,10 +46,7 @@ type BaseBullet () as this =
     member _.Finished = finished
 
     /// 弾幕を割り当てて根から始める。
-    ///
-    /// 根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。
-    /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
-    /// 立てておくこと（同梱の弾はどれもコンストラクタで立てている）
+    /// BulletType と IsBullet はこれを呼ぶ前に立てておくこと。
     member this.SetScript (s) =
       finished <- false
       let self = this.self
@@ -75,10 +72,7 @@ type BaseBullet () as this =
 
 
   /// 撃たれた弾を実体にする。旧 GetNewBullet ＋ applySpawn の合わせ。
-  ///
-  /// 旧はエンジンが GetNewBullet を呼び返して、返ってきた実体へ位置・向き・
-  /// 速さを書き込んでいた。いまは Frame.Spawned で値として受け取るので、
-  /// フロントが自分の都合で実体を作って値を移すだけ
+  /// いまは Frame.Spawned の値を、フロントが自分で実体へ移す。
   member private this.Spawn (child: BulletRun) =
     let motion = child.Motion
     let newBullet = new BaseBullet() :> IBullet

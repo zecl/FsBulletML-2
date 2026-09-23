@@ -5,20 +5,6 @@ open FsUnit
 open FsBulletML2
 
 /// 同梱 の弾幕 から 仕掛け を抜く ところ。
-///
-/// 生成器 の型 は 5 つ しか 無く 骨格 が そこ で止まる。
-/// 同梱 には 本物 が在る ので、その中 の 動き を 借りる。
-///
-/// 同梱 224 通り から 186 個 抜けた（曲がる 96 / 加速 14 / 溜める 8 /
-/// 消える 42 / 流す 26）。
-///
-/// --- 較正（当てた変異 と、赤くなった点）
-///
-///   `motionOnly` の `Fire` を通す        撃つ 枝 は抜かない
-///   `kindOf` の順 を入れ替える           曲がる が 加速 より 先
-///   `find` を最初 の 1 つ に             長い ほう を採る
-///   `graft` を素通し に                  終点 に足さない
-///   `unlabel` を恒等 に                  名前 を落とす
 [<TestFixture>]
 type PartsBorrow() =
 
@@ -185,8 +171,6 @@ type PartsBorrow() =
     Parts.whereOfString "nowhere" |> should equal Parts.Leaf
 
   /// 参照（`actionRef`）は 弾いて いた のに、その 引数 だけ が 残って いた。
-  /// 抜いた 先 に 引数 が無い ので 値 が定まらない ——
-  /// 実機 で 借りた 枝 に `<wait>$1</wait>` が 入って いた
   [<Test>]
   member _.``引数 を持つ 枝 は抜かない``() =
     let parametrized =

@@ -80,14 +80,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
                 ref var b = ref bullets[i];
                 var at = space.ToScreen(in b, room);
 
-                // 向き を当てる。 弾 の絵 は 11x23 の縦長 で、先 が上 ——
-                // 回さないと全部 が真上 を向いたまま 横 へ飛ぶ。
-                //
-                // 口 の ToDir は「度」と書いてあるが、サーバーはエンジン の
-                // ラジアン をそのまま渡している。 FromDir の戻りはラジアン。
-                // DegToRad すると全部 真上 に潰れて、Unity と見え方が割れる。
-                // Godot は Y が下向き なので、正 の回転 が画面 で時計回り ——
-                // 裏返す必要 は無い。
+                // 向き を当てる。
                 float rot = Wire.FromDir(b.Dir);
 
                 // 0 = 敵 の弾 / 1 = 自機 の弾
@@ -103,9 +96,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
             enemy.End();
             player.End();
 
-            // 届いた数 と 描いた数 を並べて出す。 絵 がまばら に見えたとき、
-            // 「client が落とした」「重なっている」「盤面 の外 へ出ている」の
-            // 3 通り は目 では割れない
+            // 届いた数 と 描いた数 を並べて出す。
             DanmakuState.Drawn.Value = bullets.Length;
             DanmakuState.OnScreen.Value = visible;
         }
@@ -118,10 +109,6 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
 
         /// <summary>
         /// 同じ絵 の弾 をまとめて 1 枚 に。
-        ///
-        /// <c>InstanceCount</c> を毎コマ 動かさない。 あれ は確保 し直しなので、
-        /// 弾数 が上下 するたび に払うことになる —— 上限 を確保 して
-        /// <c>VisibleInstanceCount</c> で切る。足りなくなったら倍 にする（減らさない）。
         /// </summary>
         sealed class Layer
         {
@@ -171,12 +158,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
             public void Hide() => Node.Multimesh.VisibleInstanceCount = 0;
 
             /// <summary>
-            /// 足りなければ倍 にする。減らさない。
-            /// 弾数 は 1 秒 のうち に何度 も上下 するので、縮めると縮めた端 から
-            /// また確保 することになる。
-            ///
-            /// 上限 は「そのコマ の弾 全部」で取る。 敵 と自機 の割合 は
-            /// コマ ごとに動くので、片方 に寄ったときに足りなくなる形 を作らない。
+            /// 足りなければ倍 にする。
             /// </summary>
             void Grow(int need)
             {

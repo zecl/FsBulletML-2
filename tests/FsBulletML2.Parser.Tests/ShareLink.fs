@@ -5,14 +5,7 @@ open FsUnit
 open FsBulletML2.LanguageService
 
 /// 共有リンクの、.NET でも走る側。
-///
-/// 圧縮（`CompressionStream`）はブラウザにしか無いので、ここには来ない ——
-/// 当てているのは base64url と、版・表記の組み立て。
-/// そこを器に置いたから .NET で当てられる（置かなければ、`fable/` の中で
-/// ブラウザからしか触れない字になっていた）。
-///
-/// 圧縮を通した往復は `.github/scripts/guard-share-roundtrip.ps1`、
-/// 焼いた JS と答えが一致するかは `guard-fable-parity.ps1`。
+/// 圧縮はブラウザにしか無い。ここは base64url と、版・表記の組み立て。
 [<TestFixture>]
 type ShareLinkTests() =
 
@@ -45,9 +38,8 @@ type ShareLinkTests() =
 
   [<Test>]
   member _.``0 バイト はリンクにならない``() =
-    // `toBase64Url` が空を返し、`tryParse` はそれを中身が壊れていると読む。
-    // 圧縮を通せば 0 バイト にはならない（空の本文でも塊の印が出る）が、
-    // ここが黙って通ると「空のリンク」が作れてしまう
+    // `toBase64Url` が空を返し、`tryParse` は中身が壊れていると読む。
+    // ここが黙って通ると「空のリンク」が作れてしまう。
     ShareLink.toBase64Url [||] |> should equal ""
     ShareLink.tryFromBase64Url "" |> should equal None
     match ShareLink.tryParse(ShareLink.build SourceKind.Xml 50 7 [||]) with

@@ -59,8 +59,6 @@ module Dsl =
     Action.ActionRef ({ actionRefLabel = ActionLabel label }, ps)
 
   // ---- action 列 ----------------------------------------------------------
-  //
-  // `action { wait "1"; vanish }` の型は Action list。
   // finish を差し替えると、同じ書き方で Repeat / 根の Action / 入れ子 Action になる。
   type ActionBuilder<'T>(finish: Action list -> 'T) =
     member _.Yield(x: Action) : Action list = [x]
@@ -81,10 +79,8 @@ module Dsl =
   let nestAs name =
     ActionBuilder (fun xs -> Action.Action ({ actionLabel = Some (ActionLabel name) }, xs))
 
-  // DTD の repeat は `(times, (action | actionRef))`。子は 3 通り 書ける ——
+  // DTD の repeat は `(times, (action | actionRef))`。子は 3 通り。
   // label の無い action、label のある action、actionRef。
-  //
-  // `repeat "4" { wait "1"; fire { plain } }`
   let repeat times =
     ActionBuilder (fun xs -> Action.Repeat (Times (expr times), wrapAction None xs))
 
@@ -220,11 +216,8 @@ module Dsl =
   let accel term = AccelBuilder term
 
   // ---- bullet（direction? speed? (action|actionRef)*） --------------------
-  //
-  // fire の CustomOperation 名 `plain` とぶつからないよう、こちらは関数
-  // `bullet "label" { ... }`。中の action は `doActs (body { ... })`。
-  // Yield と CustomOperation を混ぜると F# が CE の翻訳を別物にするので、
-  // 子は custom op に閉じる。
+  // fire の `plain` とぶつからないよう、こちらは関数 `bullet`。
+  // Yield と CustomOperation を混ぜると CE の翻訳が別物になる。子は custom op に閉じる。
   type BulletSpec =
     { Label: BulletLabel option
       Dir: Direction option
@@ -280,7 +273,6 @@ module Dsl =
     BulletElm.BulletRef ({ bulletRefLabel = BulletLabel label }, ps)
 
   // ---- 根 bulletml (action | bullet | fire)* ------------------------------
-  //
   // xmlns / description は引数。CE の中は BulletmlElm を積むだけ。
   // 根で wait を Yield しようとすると型が合わない。
   type BulletmlBuilder(typ: ShootingDirection option, name: string option, xmlns: string option, desc: string option) =
@@ -301,11 +293,7 @@ module Dsl =
         elms)
 
   /// 属性を直に渡す一般形。短い入口で足りない組み合わせはこれで書く。
-  ///
-  /// DTD の bulletml は xmlns も type も #IMPLIED で、name はこのエンジンが
-  /// 足した属性（description も）。どれも省けるので組み合わせは 4 x 2 x 2 x 2。
-  /// 全部 に名前は付けない —— よく使う形だけ下に短い入口を置いて、
-  /// 残りはここを通す。
+  /// 全部に名前は付けない。よく使う形だけ短い入口を置く。
   let bulletmlOf typ name xmlns desc = BulletmlBuilder(typ, name, xmlns, desc)
 
   let vertical name = BulletmlBuilder(Some ShootingDirection.BulletVertical, Some name, None, None)
@@ -327,13 +315,8 @@ module Dsl =
 
   let untypedXmlns xmlns name = BulletmlBuilder(None, Some name, Some xmlns, None)
 
-  /// 名前を書かない根。本家の弾幕はこちらが普通 ——
-  /// `name` はこのエンジンが足した属性で、同梱の TestData 173 本 は
-  /// 1 本 も持っていない（v1.4 で数えた）。
-  ///
-  /// 上の短い入口が名前を要るので、名前を省いた弾幕は `bulletmlOf` でしか
-  /// 書けなかった —— あちらは option を直に渡す一般形で、CE の字としては
-  /// 人が読む物ではない。よく使う形なので短い入口を置く。
+  /// 名前を書かない根。本家の弾幕はこちらが普通。
+  /// `name` はこのエンジンが足した属性で、同梱は持っていない。
   let verticalAnon = BulletmlBuilder(Some ShootingDirection.BulletVertical, None, None, None)
   let horizontalAnon = BulletmlBuilder(Some ShootingDirection.BulletHorizontal, None, None, None)
   let noneAnon = BulletmlBuilder(Some ShootingDirection.BulletNone, None, None, None)
@@ -426,10 +409,7 @@ module Dsl =
       }
 
     /// type 属性を書かない側の見本。`fullSyntax` が書いていない腕を通す。
-    ///
-    /// DTD では direction / speed / horizontal / vertical のどれも type を
-    /// 省ける。省いた形は既定値（direction は aim、speed 系は absolute）と
-    /// 同じ意味だが別の値 —— 書き戻したときに type 属性が出ない。
+    /// 省いた形は既定値と同じ意味だが別の値。書き戻すと type 属性が出ない。
     let omittedTypes =
       untyped "type を書かない形" {
           defActionAnon {
@@ -471,11 +451,8 @@ module Dsl =
             top { vanish }
         } ]
 
-    /// direction / speed / horizontal / vertical の 型を全通り書く見本。
-    ///
-    /// DTD ではこの 4 つ がどれも type を省ける。省いた形は既定値
-    /// （direction は aim、他は absolute）と同じ意味だが 別の値 ——
-    /// 書き戻したときに type 属性が出ない。だから省略も 1 通り として数える。
+    /// direction / speed / horizontal / vertical の型を全通り書く見本。
+    /// 省いた形は既定と同じ意味だが別の値なので、省略も 1 通りとして数える。
     let allTypeVariants =
       vertical "型の全通り" {
           top {
@@ -519,12 +496,8 @@ module Dsl =
           }
       }
 
-    /// 中身が空の形。DTD はどれも 0 個 を許す ——
-    /// bulletml の `(bullet|fire|action)*`、action の `(...)*`、
-    /// bullet の `(action|actionRef)*`、accel の `horizontal? vertical?`。
-    ///
-    /// F# は完全に空の CE を書けないので `{ () }` と置く。
-    /// 実用の弾幕には出ないが、DTD が許す以上 CE でも書けなければならない。
+    /// 中身が空の形。DTD は 0 個を許す。F# は空の CE を書けないので `{ () }`。
+    /// 実用には出ないが、DTD が許す以上 CE でも書けなければならない。
     let emptyShapes =
       [ vertical "中身が空" { () }
         vertical "空の action" {

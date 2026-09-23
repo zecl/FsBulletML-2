@@ -1,17 +1,5 @@
 /// 同梱 の弾幕 から「仕掛け」を抜いて、別 の弾幕 の終点 に足す。
-///
-/// 生成器 の型 は 5 つ しか 無く、骨格 が そこ で止まる。
-/// 同梱 には 本物 の弾幕 が在る ので、その中 の 動き を 部品 として 借りる。
-///
-/// ## 抜く のは 自己完結 した 動き だけ
-///
-/// 撃つ 枝（`fire`）は 入れない —— `Combine.Inside` と同じ 掛け算 に なる。
-/// 外 を指す 参照（`actionRef` / `bulletRef`）も 入れない ——
-/// 抜いた 先 に その 名前 が無く、迷子 に なる。
-///
-/// 残る のは `changeDirection` / `changeSpeed` / `accel` / `wait` / `vanish` と、
-/// それ だけ を包む `repeat`。どれ も 弾 を増やさない ので、
-/// 足して も 同時数 は 変わらない
+/// 撃つ 枝 と 外 を指す 参照 は 入れない。残る 動き は 弾 を増やさない。
 module FsBulletML2.Parts
 
 open FsBulletML2
@@ -33,9 +21,7 @@ type Kind =
   | Drift
 
 /// 空 も `none` も 知らない 字 も `Idle`。
-///
-/// `Curve` に倒して いた とき、頼んで いない のに 全部 の弾幕 の終点 が曲がり、
-/// どれ も 同じ 骨格 に見えた
+/// `Curve` に倒す と、頼んで いない 弾幕 まで 曲がって 同じ 骨格 に見える。
 let ofString (s: string) : Kind =
   match s with
   | "curve" -> Curve
@@ -46,9 +32,7 @@ let ofString (s: string) : Kind =
   | _ -> Idle
 
 /// 仕掛け を どこ に仕込む か。
-///
-/// 終点 だけ に置く と、段 を持つ 弾幕 では 割れた あと の 破片 しか 動かない。
-/// どこ に置く か で 見え方 が まるで 変わる ので、jev に選ばせる
+/// 終点 だけ だと、段 を持つ 弾幕 では 割れた あと の 破片 しか 動かない。
 type Where =
   /// 終点 の弾 に、撃たれて すぐ
   | Leaf
@@ -74,14 +58,8 @@ let [<Literal>] MARK = "part"
 
 // --- 抜く -----------------------------------------------------------------
 
-/// 引数 への参照（`$1`）を持つ 字 か。
-///
-/// 参照（`actionRef`）は 弾いて いた のに、その 引数 だけ が 残って いた ——
-/// 抜いた 先 に 引数 が無い ので 値 が定まらない。
-/// 実測 で 借りた 枝 に `<wait>$1</wait>` が 入って いた。
-///
-/// 式 の AST に 引数 の腕 は 無い（`Param.replace` が 字 で置き換える）ので、
-/// 元 の字 を見る
+/// 引数 への参照（`$1`）を持つ 字 か。抜いた 先 に 引数 が無い。
+/// 式 の AST に 引数 の腕 は 無い ので、元 の字 を見る。
 let private hasParam (s: string) =
   let mutable found = false
   for i in 0 .. s.Length - 2 do
@@ -107,9 +85,7 @@ let private exprsOf (a: Action) : string list =
   | _ -> []
 
 /// 弾 を増やさない 動き だけ か。
-///
-/// `repeat` は 中身 が 同じ 条件 を満たす とき だけ 通す ——
-/// 中 に `fire` が在れば 掛け算 に なる
+/// `repeat` は 中身 が 同じ 条件 のとき だけ。中 の `fire` は 掛け算 に なる。
 let rec private motionOnly (xs: Action list) =
   not (List.isEmpty xs)
   && xs
@@ -204,9 +180,7 @@ let extract (bulletml: Bulletml) : (Kind * Action list) list =
   List.ofSeq found
 
 /// 何本 か の弾幕 から、その種類 の仕掛け を 1 つ 選ぶ。
-///
-/// いちばん 長い もの を採る —— 1 手 だけ の枝 は どの弾幕 にも在り、
-/// 借りて も 形 が変わらない
+/// いちばん 長い もの。1 手 だけ の枝 は 借りて も 形 が変わらない。
 let find (kind: Kind) (sources: Bulletml seq) : Action list option =
   sources
   |> Seq.collect extract
@@ -245,9 +219,7 @@ let private everyTop (branch: ActionElm) (e: BulletmlElm) : BulletmlElm =
   | BulletmlElm.Fire(attrs, d, s, b) -> BulletmlElm.Fire(attrs, d, s, everyBullet branch b)
 
 /// 弾 に仕掛け を足す。どこ に置く か は `Where`。
-///
-/// `Leaf` と `Late` の歩き方 は `Combine` と共通 —— 分けて 書く と、
-/// 片方 だけ 直した とき に どちら が正 か が言えなく なる
+/// `Leaf` と `Late` の歩き方 は `Combine` と共通。
 let graft (where: Where) (body: Action list) (target: Bulletml) : Bulletml =
   if List.isEmpty body then target
   else

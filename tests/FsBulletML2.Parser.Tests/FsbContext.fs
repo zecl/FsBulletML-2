@@ -7,9 +7,7 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.Languages.Fsb
 
 /// カーソルがどこに居るかの判定、fsb の側。`XmlContext` / `SxmlContext` と対。
-///
-/// 同じ問いを 3 本 目 の表記で当てる —— 答えの型は同じ（`Context`）で、
-/// 数え方だけが違う。
+/// 答えの型は同じで、数え方だけが違う。
 [<TestFixture>]
 type FsbContext() =
 
@@ -83,17 +81,13 @@ type FsbContext() =
 
   [<Test>]
   member _.``閉じ引用符の外は 本文ではない``() =
-    // 本文の範囲を閉じ引用符で切っていることを見る。
-    // ここは要素の行の上なので属性の場所として返る —— fsb の属性は本文より
-    // 前に書くので厳密には打てない位置だが、出るだけで害は無い
+    // 閉じ引用符の外。要素の行の上なので属性として返る。打てない位置だが、出るだけで害は無い。
     at "bulletml\n    wait:\"30\"|" |> should equal (InStartTag "wait")
 
   [<Test>]
   member _.``タブは字下げにならない``() =
-    // パーサと揃える。 `Offside.fs` の字下げは `pchar ' '` だけ。
-    // しかもタブの行はエラーにならず黙って捨てられる
-    // （`Offside.parse` は `eof` を要求していない。`FsbReader` が当てている）——
-    // ここで広く取ると、捨てられる行に補完だけが出る
+    // パーサと揃える。字下げは空白だけ。タブの行は黙って捨てられる。
+    // ここで広く取ると、捨てられる行に補完だけが出る。
     at "bulletml\n\taction\n\t\t|" |> should equal (InContent None)
 
   [<Test>]

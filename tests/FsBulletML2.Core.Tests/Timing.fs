@@ -4,9 +4,6 @@ open System.Text.RegularExpressions
 open NUnit.Framework
 
 /// wait が何フレーム効くかを、発射の間隔として固める。
-///
-/// ここは「正しい姿」ではなく「いまの姿」を記録している。
-/// 実装には次の 2 つの癖がある（測ったもの）。
 [<TestFixture>]
 type Timing() =
 

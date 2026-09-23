@@ -6,12 +6,8 @@ using Godot;
 namespace FsBulletML2.Sample.Godot.MagicOnion
 {
     /// <summary>
-    /// 数 を出して、弾幕 を選ばせる。網 を 1 つ も知らない。
-    ///
-    /// 見るのは <see cref="DanmakuState"/> だけ で、
-    ///
-    /// 別 の Node に分けると「出す側」と「選ぶ側」の 2 か所 に index が要る。
-    /// 頼む先 だけ を外（<see cref="Client"/>）に持つ。
+    /// 数 を出して、弾幕 を選ばせる。
+    /// </summary>
     public sealed partial class Hud : Control
     {
         public DanmakuClient Client { get; set; }
@@ -32,9 +28,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
             SetAnchorsPreset(LayoutPreset.FullRect);
             MouseFilter = MouseFilterEnum.Ignore;
 
-            // 端末 のフォント を借りる。 Godot の既定 フォント は
-            // 日本語 のグリフ を持たないので、字 が全部 豆腐 になる ——
-            // 同梱 すると sample に数 MB の font が付く。
+            // 端末 のフォント を借りる。
             // 並べた名前 は上 から順 に探されて、無ければ次 へ落ちる
             var font = new SystemFont
             {
@@ -44,10 +38,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
             stats = MakeLabel(font, 13);
             stats.Position = new Vector2(8, 6);
 
-            // アンカー で下 に貼らない。 `SetAnchorsPreset` は offset を
-            // 書き換えるので、後 から Position を書いても効かない（1 度 踏んだ
-            // —— 2 行 とも画面 の外 に居て、撮った 1 枚 で分かった）。
-            // 高さ から引いて置くほう が、読む人 にも位置 が見える
+            // アンカー で下 に貼らない。
             choice = MakeLabel(font, 13);
 
             help = MakeLabel(font, 11);
@@ -58,11 +49,8 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
             AddChild(choice);
             AddChild(help);
 
-            // 1 つ でも変われば書き直す。 別々 に書き分けると、
-            // 「どれ が最後 に書いたか」で行 が入れ替わる
-            // 部屋 が変わっても index は触らない。 Unity 版 と同じで、
-            // 番号 はこっち の持ち物。部屋 の名前 で合わせると、既定 の
-            // 「全方位弾」の位置 へ跳んで、1 番 から順 にならない
+            // 別々に書き分けると行が入れ替わる。部屋が変わっても index は触らない。
+            // 名前で合わせると、既定の位置へ跳ぶ。
             subs.Add(DanmakuState.Room.Subscribe(_ => Redraw()));
             subs.Add(DanmakuState.Frame.Subscribe(_ => Redraw()));
             subs.Add(DanmakuState.Bullets.Subscribe(_ => Redraw()));
@@ -106,11 +94,8 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
         }
 
         /// <summary>
-        /// Unity 版 と同じ。番号 はこっち が持つ。Enter は即 次。
-        ///
-        /// `_UnhandledInput` では Enter が届かない。 Hud は画面 いっぱい の
-        /// Control で、Godot の既定 では Enter が `ui_accept` として GUI が
-        /// 先に取る。矢印 と Z は Player が `_Process` で直に見ているのと同じ口。
+        /// Unity 版 と同じ。
+        /// `_UnhandledInput` では Enter が届かない。
         /// </summary>
         public override void _Process(double delta)
         {
@@ -175,9 +160,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
                 stats.Text = string.Join('\n',
                     room.Name,
                     $"進める {room.Fps} /秒・配る {room.Fps / Math.Max(1, room.SendEvery)} /秒   空間 {room.Space}",
-                    // 届いた数 と 描いた数 と 画面 の中 の数。 絵 がまばら に
-                    // 見えたとき、この 3 つ が揃っていれば落としてはいない
-                    // （重なっているか、盤面 の外 へ出ている）
+                    // 届いた数 と 描いた数 と 画面 の中 の数。
                     $"コマ {DanmakuState.Frame.Value}   弾 {DanmakuState.Bullets.Value}" +
                         $" 描 {DanmakuState.Drawn.Value} 画面 {DanmakuState.OnScreen.Value}",
                     // 「捨てた」と「来ていない」を分けて出す。

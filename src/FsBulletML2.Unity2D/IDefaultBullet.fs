@@ -3,13 +3,7 @@ open FsBulletML2
 open UnityEngine
 
 /// フロントの弾。IBulletmlObject を継承しない。
-///
-/// 旧はここが `inherit IBulletmlObject` していて、エンジンがフロントを
-/// 呼び返すための 19 メンバ を実装させられていた。新 API は値の受け渡し
-/// だけなので、ここに残るのはフロント自身が要るものだけ。
-///
-/// MonoGame 側の IBullet と同じ形にしてある。片方だけ直すと、同じ規約を
-/// 2 通り に書いた状態になって、あとから読む人がどちらが正かを判断できない。
+/// MonoGame の IBullet と同じ形。片方だけ直すと、どちらが正か言えなくなる。
 type IDefaultBullet =
   abstract Update : unit -> unit
   abstract Pos : Vector3 with get,set
@@ -24,11 +18,7 @@ type IDefaultBullet =
   abstract Used : bool with get,set
   abstract IsBullet : bool with get,set
   /// フロントの印。エンジンは見ない。
-  ///
-  /// 旧はエンジンが GetNewBullet の中で立てていて、Retired の判定に使って
-  /// いた。いまエンジン側の同じ概念は Body.HasFired が持つ（BulletRun の中）。
-  /// ここに残っているのは、同梱サンプルが「撃たれた弾を、使い終わったら
-  /// Destroy する」判定に自分で立てて自分で読んでいるため
+  /// 同梱サンプルが「使い終わったら Destroy」の判定に自分で立てて読んでいる。
   abstract BulletRoot : bool with get,set
   abstract BulletType : BulletType with get,set
   abstract ShootingDirection : ShootingDirection with get,set

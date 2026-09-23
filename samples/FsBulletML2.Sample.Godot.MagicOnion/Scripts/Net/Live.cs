@@ -5,9 +5,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
 {
     /// <summary>
     /// いまの値 を持っていて、変わったら知らせる箱。
-    /// Unity 版 の <c>R3.ReactiveProperty</c> の代役。
-    ///
-    /// （Unity 版 は実際 に 2 か所 持っていて、R3 に移して畳んでいる）。
+    /// </summary>
     public sealed class Live<T>
     {
         readonly List<Action<T>> listeners = new();
@@ -31,9 +29,8 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
         }
 
         /// <summary>
-        /// 変わったら呼ばれる。いまの値 が 1 回 先 に流れる。
-        /// 返る物 を捨てると解けなくなるので、Node の側 で持って
-        /// <c>_ExitTree</c> で <c>Dispose</c> する。
+        /// 変わったら呼ばれる。
+        /// 返る物 を捨てると解けなくなるので、Node の側 で持って <c>_ExitTree</c> で <c>Dispose</c> する。
         /// </summary>
         public IDisposable Subscribe(Action<T> onNext)
         {

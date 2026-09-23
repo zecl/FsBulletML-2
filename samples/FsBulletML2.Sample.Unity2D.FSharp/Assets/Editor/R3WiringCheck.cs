@@ -7,10 +7,7 @@ using FsBulletML2.Sample.Unity2D.FSharp;
 
 /// <summary>
 /// R3 の配線が生きているかを、Play せずに見る。
-///
-/// 走らせ方:
-///
-/// （R3.Unity の <c>Observable.EveryUpdate</c> だったら、この門は書けない）。
+/// </summary>
 public static class R3WiringCheck
 {
     public static void Run()
@@ -84,9 +81,6 @@ public static class R3WiringCheck
 
     /// <summary>
     /// 集約門から呼ぶときは Exit を抑える。
-    /// <see cref="EditorApplication.Exit"/> はプロセスを即座に終わらせるので、
-    /// 抑えないと 2 本 目 以降 が 1 度 も走らない。
-    /// 見よ <see cref="SampleChecks"/>。
     /// </summary>
     public static bool SuppressExit;
 

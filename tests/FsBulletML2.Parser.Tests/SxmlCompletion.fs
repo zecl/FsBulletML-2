@@ -7,10 +7,7 @@ open FsBulletML2.LanguageService.SourceLanguage
 open FsBulletML2.LanguageService.Languages.Sxml
 
 /// 候補と hover、sxml の側。 `XmlCompletion` / `HoverMarkdown` と対。
-///
-/// 語彙は XML と同じ `Vocabulary`（Core の DTD 由来）をそのまま渡す ——
-/// 表記が変わっても要素と属性は変わらない。 変わるのは書き方だけで、
-/// それがここで当てているもの。
+/// 語彙は XML と同じ。変わるのは書き方だけで、それがここで当てているもの。
 [<TestFixture>]
 type SxmlCompletion() =
 

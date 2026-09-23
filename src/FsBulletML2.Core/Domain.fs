@@ -2,39 +2,21 @@ namespace FsBulletML2
 
 module Domain =
 
-  /// [<Struct>] にしてある。 float32 が 2 つ だけで、位置・加速度・
-  /// 1 コマの差分と、弾 1 個 × 1 コマ ごとに何度も作られるところに居る。
-  /// 参照型のままだと弾の数に比例してヒープを踏む。
+  /// 位置・加速度・差分。参照型に戻すと弾の数に比例してヒープを踏む。
   [<Struct>]
   type Vec2 = { X : float32; Y : float32 }
 
-  /// 撃つ側の位置から見た狙いの向き。2 本 とも、その弾自身の位置が基準。
-  ///
-  /// 弾が自機のものなら `ToEnemy`、敵のものなら `ToPlayer` が使われる。
-  /// どちらを使うかはエンジンが決めるので、フロントは両方 入れて渡す。
-  ///
-  /// `SpawnAim` とは別の型にしてある。 値はどちらも float32 2 本 で、
-  /// 混ぜても計算は通ってしまうが、基準にしている位置が違う。
-  /// 取り違えると軌跡でしか見えないので、型で止める。
+  /// 撃つ側の位置から見た狙いの向き。フロントは ToPlayer と ToEnemy の両方を入れる。
+  /// SpawnAim と混ぜると計算は通るが、基準の位置が違い軌跡でしか見えない。
   [<Struct>]
   type Aim = { ToPlayer : float32; ToEnemy : float32 }
 
-  /// これから産まれる弾の位置から見た狙いの向き。`Aim` とは基準が違う。
-  ///
-  /// `<bullet><direction type="aim">` は撃たれた弾を基準にするので、
-  /// 撃つ側の `Aim` では答えが違う。産まれる弾がどこに出るかはフロントが
-  /// 決めていて Core からは分からないので、フロントがこの欄に入れて渡す。
+  /// 産まれる弾の位置から見た狙いの向き。direction type="aim" に撃つ側の Aim を使うと答えが違う。
   [<Struct>]
   type SpawnAim = { ToPlayer : float32; ToEnemy : float32 }
 
-  /// そのフレーム・その弾ぶんの環境。フレーム共通ではない。
-  ///
-  /// `Aim` は自機の位置だけでなくその弾自身の位置から決まるが、
-  /// 1 コマの中では撃つ側の位置が動かないので、値で持てる。
-  /// 最寄りの敵を探すのは呼ぶ側の仕事で、ここには結果だけ来る。
-  ///
-  /// [<Struct>] にしてある（1 走行で 17,820 回 組まれる）。
-  /// 中に関数（`Rand`）が居ても struct にできる。
+  /// そのフレーム・その弾の環境。フレーム共通ではない。
+  /// 参照型に戻すと組む回数だけヒープを踏む。関数を持っていても struct のままでよい。
   [<Struct>]
   type Env =
     { Rand : unit -> float32
@@ -42,11 +24,7 @@ module Domain =
       Aim : Aim
       Spawn : SpawnAim }
 
-  /// 実行位置。Script と同じ形の別の木。
-  ///
-  /// `started` は旧の first、`left` は term に当たる。
-  /// term をここで評価しない —— 旧が命令の初回に評価しており、
-  /// タイミングを変えると `$rand` を読む回数が変わって値が動く。
+  /// 実行位置。term をここで評価しない。タイミングを変えると $rand の回数が変わり値が動く。
   type internal Progress =
     | PAction      of done_: bool * loop: Action list option * children: Progress list
     | PWait        of started: bool * left: float32
@@ -61,10 +39,7 @@ module Domain =
   module Progress =
 
     /// Script から実行位置を組む。初期化の入口はこの 1 本だけ。
-    ///
-    /// 命令の 10 通りを漏れなく書く（`| _ -> PNoop` で受けない）。
-    /// 受けていたころ、そこに「本当に PNoop でよいもの」と
-    /// 「そもそも命令の位置に来ないもの」が混ざっていた。
+    /// `| _ -> PNoop` で受けると、来ない腕と PNoop でよい腕が混ざる。
     let rec internal initial (script: Action) : Progress =
       match script with
       | Action.Action (_, children) ->
@@ -99,13 +74,7 @@ module Domain =
     /// 毎コマ 動くので、静かではない
     | QBusy
 
-  /// この top が、これから何コマ 一定の割合で変わるか（v4.9.3）
-  ///
-  /// `accel` / `changeSpeed` が進行中 の弾は止まっていないので `Quiet` では
-  /// 拾えないが、毎コマ 同じ量 が足されるので先が読める。
-  ///
-  /// `changeDirection` は入らない。 `Dir` が動くと `sin dir` になり、
-  /// 一定の割合では変わらない。
+  /// 一定の割合で変わる先読み。changeDirection は入れない。Dir が動くと sin になり一定でなくなる。
   type internal Linear =
     /// 分からない（乗せない）
     | LNone
@@ -133,19 +102,14 @@ module Domain =
       IsBullet : bool
       /// 自分も子を撃ったか。旧の BulletRoot
       HasFired : bool
-      /// top* は 1 本ずつ独立に回る。スクリプト・実行位置・fire の累積を
-      /// 組で持つので、添字の対応が構造で保証される。
-      ///
-      /// 台本は top* の action。展開を止めた actionRef が残ることがあるので
-      /// `ActionElm`（action か actionRef）で持つ。
+      /// top* の台本・実行位置・fire の累積。ばらすと添字がずれる。actionRef が残るので ActionElm。
       Tops : (ActionElm * Progress * FireContext) list }
 
   type internal Effect =
     | Spawn of BulletState
     | Vanished
 
-  /// 1 コマの結果。`Delta` が差分であることを名前で言うのが要点で、
-  /// 呼ぶ側が足す規約が型に出ていなかったのが元の作りだった
+  /// 1 コマの結果。Delta は絶対座標ではない。呼ぶ側が足す。
   type internal StepResult =
     { State : BulletState
       Effects : Effect list

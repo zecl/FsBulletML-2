@@ -8,9 +8,6 @@ open FsBulletML2
 open FsBulletML2.Domain
 
 /// 新経路で、Trace と同じ書式の軌跡を作る。
-///
-/// 書式が違うと差分が全行に出て橋が使えない。Trace.fs の fmt と
-/// 出力の並びをそのまま写してある。
 module TraceNew =
 
   let private fmt (v: float32) =
@@ -50,11 +47,7 @@ module TraceNew =
         | _ -> false)
       |> List.map (BulletmlOps.convertRefActionElm rec')
 
-    // 根の Tops は Progress.initial では組めない。旧の toProcessable は
-    // 木を組む段で wait の term だけをその場で引く（BulletmlRead.fs の
-    // Action.Wait の腕、convertRecBulletmlEx から）。この段の Env は
-    //
-    // 同じ値になるようにしてある。片方だけ直すと橋が割れる）
+    // 根の Tops は Progress.initial では組めない。
     let origin = { X = 0.f; Y = 0.f }
     let spawnAim = aimDir px py origin
     let spawnEnemyAim = enemyAimDir origin
@@ -90,12 +83,7 @@ module TraceNew =
           let vanishedNow = r.Effects |> List.exists (fun e -> e = Vanished)
           let st = { r.State with Pos = { X = r.State.Pos.X + r.Delta.X
                                           Y = r.State.Pos.Y + r.Delta.Y } }
-          // Trace は Processed のとき task.Init(envOfGlobal o) を呼んで
-          // 回し直す。Original が None の task の Init は tasks を
-          // Init(env) で歩くだけで、これは Progress.initial ではなく
-          // Step.resetChild が写している（wait / changeDirection /
-          // changeSpeed を引き直す。ruling 5.6 / 5.3 参照）。
-          // 引き直しの Env は envOfGlobal と同じく、移動後の位置から組む
+          // 引き直しは Step.resetChild が写している。Env は移動後の位置から組む。
           let st =
             if r.Finished then
               let reinitEnv =
@@ -119,9 +107,6 @@ module TraceNew =
           if vanishedNow then sb.Append(" vanish") |> ignore
           sb.AppendLine() |> ignore
           // 撃たれた弾を並びへ足す。
-          //
-          // bullet 側の direction が aim 系のときも、stepFire が env.Spawn.ToPlayer
-          // で解決し終えている。ここで実体を見て仕上げる後処理は要らない
           for e in r.Effects do
             match e with
             | Spawn child -> all.Add { St = child; Alive = true; Vanished = 0; Id = all.Count }

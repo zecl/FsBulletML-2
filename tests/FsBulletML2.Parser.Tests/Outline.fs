@@ -6,15 +6,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// 本文の構造（v2.4）。アウトラインと折りたたみが読む木。
-///
-/// 深さそのものは `Depth.fs` が見ている。ここは範囲（`Line` .. `EndLine`）。
-///
-/// --- 版の頭で踏んだこと
-///
-/// （`guard-fable-parity`）は緑のまま。畳んで初めて見えた。
-///
-/// どれも `guard-fable-parity` は緑のまま（焼き直して確かめた。143 件 /
-/// 食い違い 0 件）—— 2 runtime は同じ 1 本 から焼かれるので、両側が同じに壊れる
+/// 深さは `Depth.fs`。ここは範囲。両 runtime は同じ 1 本から焼かれるので、両方同じに壊れる。
 [<TestFixture>]
 type Outline() =
 
@@ -83,9 +75,8 @@ type Outline() =
 
   [<Test>]
   member _.``終わりは自分の閉じ札の行``() =
-    // XML は答えを別の道で数えられる —— 開き札と閉じ札を突き合わせれば
-    // 範囲は一意に決まる。木の組み方とは別の数え方なので、当てる価値がある。
-    // （閉じ札を持たない 3 表記 には、この当て方が無い）
+    // XML は開き札と閉じ札で範囲が決まる。木の組み方とは別の数え方。
+    // 閉じ札を持たない 3 表記には、この当て方が無い。
     let broken =
       catalog
       |> List.choose (fun info ->
@@ -117,11 +108,8 @@ type Outline() =
 
   [<Test>]
   member _.``3 表記 とも、次の兄弟に食い込まない``() =
-    // 閉じ札を持たない 2 表記 に当たる唯一 の点。 上の点は XML にしか
-    // 当てられない（閉じ札が要る）ので、こちらが sxml と fsb の受け持ち。
-    //
-    // 「行を跨いで並んでいる兄弟」だけを見る —— 1 行 に並んでいる形は
-    // 終わりも始まりも同じ行 になるので、そこは重なりではない
+    // 閉じ札を持たない 2 表記に当たる唯一の点。上は XML にしか当てられない。
+    // 行を跨ぐ兄弟だけを見る。1 行に並ぶ形は重なりではない。
     let kinds =
       [ SourceKind.Xml, (XmlScan.tags: string -> TagHit list)
         SourceKind.Sxml, SxmlScan.tags
@@ -203,13 +191,6 @@ type Outline() =
     // `guard-fable-parity` が両側で突き合わせる口。形をここで固定する
     Outline.describe "<a><b/></a>" |> should equal "a@1-1, b@1-1"
 
-  // --- 囲む要素（v2.4.5）------------------------------------------------------
-  //
-  // 較正（当てた変異と、赤くなった点の数）——
-  //
-  //   `n.Line <= line` を `n.Line < line` に        4 点（節の先頭の行で自分が出ない）
-  //   `line <= n.EndLine` を `line < n.EndLine` に  4 点（節の最後の行で自分が出ない）
-  //   `sortByDescending` を `sortBy` に             7 点（内と外が逆になる）
   [<Test>]
   member _.``囲みは内から外へ``() =
     // 5 行 目 は `<speed>2</speed>`。囲みは speed -> fire -> action -> bulletml

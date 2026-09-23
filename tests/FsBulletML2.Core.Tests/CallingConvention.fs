@@ -5,17 +5,6 @@ open System.Text.RegularExpressions
 open NUnit.Framework
 
 /// 1 コマ進める呼び出しが返すものを、呼ぶ側がどう使っているかを固める。
-///
-/// 返るのは 差分（そのフレームの移動量）で、呼ぶ側が座標に足す。
-/// 3 で見つけたとおり、絶対値を返す枝に届くと座標が膨らむ。膨らむ量は
-/// 呼ぶ側の係数しだいで、同梱では MonoGame が 1 倍、Unity2D が 1/100。
-///
-/// Core を直したときにフロントで壊れることを、他に測る手が無い。
-///
-/// 前提を書いて残すほうを採った。 控えにファイル名だけの行が出ていたら、
-///
-/// ここは緑のまま。守る対象の 1 つ が網の外に在ることを承知で置いている
-/// （移す前も、あちらの速い道は差分を配列に持つ形で網に当たっていなかった）。
 [<TestFixture>]
 type CallingConvention() =
 
@@ -42,13 +31,7 @@ type CallingConvention() =
     p.Substring(repoRoot.Length).Replace('\\', '/').TrimStart('/')
 
   /// 1 コマ進める呼び出しと、返り値を座標へ入れる行。
-  ///
-  ///   Runner.step / stepWith    → Frame.Delta.X / .Y
-  ///
-  /// 入口の名前で当てる網は、入口が増えるたびに漏れる。 三度 踏んだ ——
-  /// 新 API を足したとき、Obsolete の説明文に当たったとき、そして
-  /// `Runner.step` → `Runner.stepWith` に移したとき（`\b` が効いて
-  /// stepWith に当たらず、控えから 2 行 消えた）。
+  /// `\b` で `Runner.step` を止めると stepWith に当たらず、控えから行が消える。
   let callsRun = Regex(@"Runner\.[Ss]tep")
   let usesResult = Regex(@"result\.[XY]\b|\.Delta\.[XY]\b")
   /// `self.X <- self.X + ...` / `self.X = self.X + ...` の形（足しているか代入か）
@@ -68,22 +51,11 @@ type CallingConvention() =
 
     let read = files |> List.map (fun f -> relative f, File.ReadAllLines f)
 
-    // コメントだけの行は外す。この門が見たいのは呼び出しで、散文の中の
-    // 言及ではない。 網は文字で当てるので、「Runner.step に渡す」と
-    // 書いた doc コメントにも当たり、説明を書き足しただけで控えが割れる
-    // （実際に割れた）。
-    //
-    // 外して安全なのは、`//` で始まる行が F# でも C# でも定義上 呼び出しに
-    // ならないため。行の途中から始まるコメントは外していない ——
-    // そこは同じ行に呼び出しが在りうるので、狭めると本物を落とす。
+    // コメントだけの行は外す。見たいのは呼び出しで、散文ではない。
+    // 行の途中から始まるコメントは外していない。狭めると、同じ行の呼び出しを落とす。
     let isCommentOnly (l: string) = l.Trim().StartsWith "//"
 
-    // 属性だけの行も外す。同じ理由（呼び出しではなく、書かれた説明）。
-    //
-    // 二度 踏んだ。1 度目 は doc コメント、2 度目 は
-    // [<System.Obsolete("新 API（Runner.step）へ移してください…")>] の
-    // 説明文が網に当たった。非推奨の案内には、移り先の名前を書くのが
-    // 当たり前なので、移り先を網にした瞬間に必ずぶつかる。
+    // 属性だけの行も外す。
     let isAttributeOnly (l: string) =
       let t = l.Trim()
       t.StartsWith "[<" && t.EndsWith ">]"
@@ -107,8 +79,6 @@ type CallingConvention() =
         yield "係数と Y の符号はフロントごとに違う（MonoGame は 1 倍、Unity2D は 1/100 で Y を反転）。"
         yield "MagicOnion の サーバーは Unity2D と同じ —— **空間 を決めて配るのがサーバー**なので、換算 もそちら側 に在る。"
         yield ""
-        // この網はこの repo しか見ない。 面（Playground）が Danmaku Lab へ
-        // 出たので、守る対象の 1 つ が網の外に在る
         yield "**面（Playground）は Danmaku Lab へ出た**（v5.4）。あちらの Playfield.fs も"
         yield "同じ規約で足すが、**この網はこの repo しか見ない** ——"
         yield "向こうが規約を破っても、ここは緑のまま。"

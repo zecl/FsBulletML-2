@@ -4,14 +4,8 @@ open System.Collections.Generic
 open FsBulletML2
 open FsBulletML2.Front
 
-/// このフロントが `FsBulletML2.Front` の口に答えるところ。
-///
-/// 式そのものはここに無い。 aim 4 本 は `Aiming.toward` の
-/// `Space` 違いで、Unity2D の同じ関数と 1 ビット しか違わなかった
-///
-/// 結論だけが正しくて理由が嘘だった。
-/// 弾 1 個 につき 1 個 作る。 狙う相手を覚えるのは弾ごとで、
-/// 使い回すと別の弾が選んだ相手を引き継いでしまう。
+/// このフロントが `FsBulletML2.Front` の口に答えるところ。式そのものはここに無い。
+/// 弾 1 個 につき 1 個 作る。使い回すと別の弾が選んだ相手を引き継ぐ。
 [<Sealed>]
 type MonoGameEnv() =
 

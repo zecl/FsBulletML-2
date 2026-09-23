@@ -6,11 +6,6 @@ open System.Threading
 open NUnit.Framework
 
 /// 式の評価がカルチャに影響されるか。
-///
-/// もとの読みは旧の評価器（`Util.fs` の `TryParse.eval`）に立てたもの ——
-///   XPath の number() で計算 -> 文字列化 -> Single.Parse(ev)
-///
-/// が、当てる先は消えていない —— いまの道にも字と数の行き来が 2 か所 在る。
 [<TestFixture>]
 type Culture() =
 
@@ -130,11 +125,6 @@ type Culture() =
     |> Golden.check "culture-which-value"
 
   /// $rand / $rank を式へ埋める経路もカルチャ依存か。
-  /// rand.ToString() にカルチャを渡していないので de-DE では 0,5 が式に入るはず、
-  /// というのが読み（未実測の読みとして立てたもの）。
-  ///
-  /// どこで落ちるかが要点。 上流の ToString("F10") で先に落ちるなら
-  /// wait と同じメッセージになるし、$rand のほうが先なら 0,5 が出るはず。
   [<Test>]
   member _.``rand と rank の置換はカルチャ依存か``() =
     let probe expr =
@@ -186,11 +176,6 @@ type Culture() =
     |> Golden.check "culture-rand-isolated"
 
   /// 直す前は fr-FR だけ FormatException で、de-DE は XPathException だった。
-  /// 理由は推論のまま残り、直したあとは再現しないので測れない。
-  /// せめて材料として、4 カルチャの数の書き方を控えに残す。
-  ///
-  /// 不変カルチャへ寄せた実装が正しい理由も、この表で読める ——
-  /// 小数点が 2 通り、桁区切りが 3 通りあり、BulletML の文書は . 固定
   [<Test>]
   member _.``カルチャごとの数の書き方``() =
     let esc (s: string) =

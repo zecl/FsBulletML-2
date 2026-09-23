@@ -9,10 +9,8 @@ using MagicOnion.Client;
 namespace FsBulletML2.Sample.Client.MagicOnion
 {
     /// <summary>
-    /// 数えるだけの client。絵 は出さない。
-    ///
-    /// これが在る理由は 2 つ。
-    /// 1 つ 目 は、Unity を立てずに配線を確かめられること。
+    /// 数えるだけの client。
+    /// </summary>
     static class Program
     {
         static async Task<int> Main(string[] args)
@@ -127,10 +125,6 @@ namespace FsBulletML2.Sample.Client.MagicOnion
 
         /// <summary>
         /// 降ってきたコマを数える。
-        ///
-        /// 「何コマ 来たか」だけでは足りない。 番号の飛びと、
-        /// 弾数 の山 と中央値 まで出す —— 帯域 を概算するとき
-        /// （ロードマップ E1.x の測ること 2）に要るのが後者だから。
         /// </summary>
         sealed class Receiver : IDanmakuHubReceiver
         {
@@ -245,10 +239,7 @@ namespace FsBulletML2.Sample.Client.MagicOnion
 
                 Console.WriteLine("当たり 敵へ {0} 発 / 自機へ {1} 発", hitEnemy, hitPlayer);
 
-                // 概算 は出さない。 弾 1 発 のバイト数 を固定で掛けるやり方は、
-                // 量子化 で 1 発 の大きさ を変えても 1 ビット も動かない ——
-                // 締めた効果 を測れない物差しを並べると、効いたように読める。
-                // 実測 はサーバー側 の --measure-bytes が焼いた長さ で出す
+                // 概算 は出さない。
                 if (snapshot.Length < want)
                 {
                     Console.Error.WriteLine("{0} コマ 欲しかったが {1} コマ", want, snapshot.Length);

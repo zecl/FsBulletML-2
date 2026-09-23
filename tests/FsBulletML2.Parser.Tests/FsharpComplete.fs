@@ -7,11 +7,7 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
 /// F# の CE で、その場所に置ける名前を出せるか。
-///
-/// v1.6 まで空だった。理由は「置ける場所が入れ子の型で決まるので、字の
-/// 数え方では出せない」と書いてあったが、入れ子の型は `{ }` の対で出せる。
-///
-/// 手で書くと 107 行 になり、DSL が動くと黙って古びる。
+/// 手で書くと DSL が動いたとき黙って古びる。入れ子は `{ }` の対で出す。
 [<TestFixture>]
 type FsharpComplete() =
 
@@ -110,9 +106,7 @@ type FsharpComplete() =
   [<Test>]
   member _.``同じ綴りが 2 つ の意味を持つ``() =
     // `vertical` は根の builder でもあり、`accel` の中の操作でもある。
-    // `{ }` の手前 に在るのだから開く側を採る —— 採らないと、
-    // `vertical "名" { }` で書かれた弾幕の中で候補が 1 つ も出ない
-    // （コーパスの点で踏んだ）
+    // `{ }` の手前は開く側。採らないと、その弾幕の中で候補が 1 つも出ない。
     vocab.CePlaces
     |> List.filter (fun p -> p.Name = "vertical")
     |> List.length
@@ -157,9 +151,8 @@ type FsharpComplete() =
             while e + 1 < src.Length && isIdent src.[e + 1] do
               e <- e + 1
             let w = src.Substring(s, e - s + 1)
-            // 文字列とコメントの中は数えない。 弾幕の名前に `aim` や
-            // `accel` が入っていることは在る —— `wordAt` は器の 1 本 で、
-            // 文字列の中では `None` を返す
+            // 文字列とコメントの中は数えない。名前に `aim` が入ることが在る。
+            // `wordAt` は文字列の中では `None` を返す。
             let outside = FsharpScan.wordAt src s = Some w
             if outside && known.Contains w && not (notCe.Contains w) then
               checked' <- checked' + 1

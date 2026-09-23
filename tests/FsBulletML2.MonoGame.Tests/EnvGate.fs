@@ -8,11 +8,7 @@ open FsBulletML2.Front
 open FsBulletML2.MonoGame
 
 /// このフロントが `Env` を組むところの門。
-///
-/// 同梱フロントに門が 1 つ も無かった。 旧 API を廃止すると
-/// フロント 2 つ が唯一の公開 API 利用者になるので、ここが空なのは穴。
-///
-/// オブジェクト式には member val を書けないので型にしてある
+/// オブジェクト式には member val を書けないので型にしてある。
 type private StubBullet(x: float32, y: float32) =
   let mutable pos = Microsoft.Xna.Framework.Vector2(x, y)
   interface IBullet with
@@ -106,13 +102,7 @@ type EnvGate() =
     [ env.Aim.ToPlayer; env.Aim.ToEnemy; env.Spawn.ToPlayer; env.Spawn.ToEnemy ]
     |> List.distinct |> List.length |> should equal 4
 
-  /// aim を読まないコマの Env。
-  ///
-  /// 以前は同じ形が 3 か所 に在って、値が揃うことを門にしていた。
-  /// `Runner.load` が `Env` を取らなくなって 2 か所 になり、
-  /// `FsBulletML2.Front` に吸われて 1 か所 になった。
-  /// 検証をどこかへ移したのではなく、見張る対象が消えた。
-  /// いま見るのは「aim 4 本 が 0 で、乱数とランクは素通し」だけ
+  /// aim を読まないコマの Env。aim 4 本 が 0 で、乱数とランクは素通し。
   [<Test>]
   member _.``aim を読まない Env は aim 4 本 が 0``() =
     let e = FrontEnv.noAim (front ())
@@ -132,14 +122,8 @@ type EnvGate() =
     env.Aim.ToEnemy |> should equal 0.0f
     env.Spawn.ToEnemy |> should equal 0.0f
 
-  /// 産まれる弾の相手は覚えない。 このフロントは弾を原点に作るので、
-  /// 産まれる弾から見た相手は「原点にいちばん近い敵」で、撃った側が
-  /// 覚えている相手とは別になりうる。
-  ///
-  /// 変異で穴が見つかって足した。 `TrySpawnTargetFrom` を
-  /// 覚えるほう（`TryFrom`）に差し替える変異を入れても、598 本 が緑のまま
-  /// 通った —— 門の敵の並びが「どちらから見ても同じ相手」だったため。
-  /// ここは撃った側に近い敵と、原点に近い敵を別に置く。
+  /// 産まれる弾の相手は覚えない。原点に作るので、撃った側の相手とは別になりうる。
+  /// 敵の並びが同じ相手だと、覚えるほうへ差し替えても緑のまま通る。
   [<Test>]
   member _.``産まれる弾の相手は、撃った側が覚えている相手とは別になりうる``() =
     // 弾は (10, 20)。E1 はそこに近く、E2 は原点に近い

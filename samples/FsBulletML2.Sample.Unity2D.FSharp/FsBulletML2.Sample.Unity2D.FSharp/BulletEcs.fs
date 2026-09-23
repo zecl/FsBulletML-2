@@ -23,10 +23,7 @@ type BulletTag =
   val mutable Radius : float32
   interface IComponentData
 
-/// 走らせる側から見た「いまの場面」。シーンに 1 つ しかない位置を置く場所。
-///
-/// 毎コマ FindAnyObjectByType を呼ぶと弾の数だけ探索が走るので、
-/// Bootstrap が 1 回 だけ入れる。
+/// 毎コマ `FindAnyObjectByType` しない。Bootstrap が 1 回 入れる。
 [<AbstractClass; Sealed>]
 type BulletEcsRuntime private () =
   static member val PlayerTransform : Transform = null with get, set
@@ -35,16 +32,10 @@ type BulletEcsRuntime private () =
   static member val EnemyRadius = 0.25f with get, set
 
 /// この ECS の弾が `FsBulletML2.Front` の口に答えるところ。
-///
-/// 旧は `FsBulletML2.Unity2D.DefaultBullet` が組んでいたが、あれは
-/// `Transform` を持つ GameObject 前提。ECS の弾は Transform を持たない
-/// （位置は float で持ち、描画のときだけ `LocalTransform` へ写す）ので、
-/// ここで答え直す。
 [<Sealed>]
 type EcsEnv() =
 
-  /// `Env.Rand` に入れる関数値。1 個 だけ作って使い回す。
-  /// 中身はグローバル（BulletMLManager）を読むだけなので、いつ作っても同じ。
+  /// `Env.Rand` に入れる関数値。
   /// 毎コマ 作ると弾数 × コマ数 だけヒープを踏む
   static let randFunc : unit -> float32 = fun () -> BulletMLManager.GetRandom()
 
@@ -78,20 +69,12 @@ module EcsFront =
   /// 撃った弾は撃った側と同じ場所に作る（SpawnChild が親の位置を渡す）
   let origin = SpawnOrigin.AtShooter
 
-/// Entity 1 個 ぶんの弾。Transform を持たない（位置は float）。
-///
-/// 旧は GameObject 1 個 ＋ `DefaultBullet` だった。ECS では
-/// 描画も当たり判定も別の仕組みが持つので、ここに残るのは
-/// 物理量と、走らせている弾幕（Script）とその実行位置（Run）だけ。
+/// Entity 1 個 ぶんの弾。
 [<Sealed>]
 type BulletSim () =
 
-  /// この弾から見た世界。弾 1 個 につき 1 個（口の約束に合わせる）。
-  ///
-  /// `IFrontEnv` でなく `EcsEnv` のまま持つ。 この型は managed component
-  /// なので、Unity の TypeManager が中を辿って Entity 参照を探す。
+  /// この弾から見た世界。
   /// interface や非 sealed の class が居ると「判断できない」と警告が出る。
-  /// upcast は使うところで書く（IL では何も起きない）
   let front = EcsEnv ()
 
   member val Entity = Entity.Null with get, set
@@ -110,9 +93,8 @@ type BulletSim () =
   /// 自分も子を撃ったか。旧 BulletRoot。フロントの印で、エンジンは見ない
   member val BulletRoot = false with get, set
 
-  /// 敵の弾か自機の弾か。既定値を入れておくこと。
-  /// F# の判別共用体は参照型なので、既定が 0 ではなく null になりうる
-  /// （C# サンプルで実際に踏んで NullReferenceException になった）
+  /// 敵の弾か自機の弾か。
+  /// F# の判別共用体は参照型なので、既定が 0 ではなく null になりうる （C# サンプルで実際に踏んで NullReferenceException になった）
   member val BulletType = BulletType.Enemy with get, set
   member val ShootingDirection = ShootingDirection.BulletVertical with get, set
 
@@ -129,10 +111,6 @@ type BulletSim () =
   interface IComponentData
 
   /// 弾幕を割り当てて根から始める。
-  ///
-  /// 根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。
-  /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
-  /// 立てておくこと（Spawn が Init の前後で両方 立てている）
   member this.SetScript (script: BulletmlScript) =
     this.Finished <- false
     this.Run <-
@@ -163,11 +141,7 @@ type BulletSim () =
   member this.Vanish () = this.Used <- false
 
 
-  /// 1 コマ 進める。座標は差分を足す（`Frame.Delta` は差分で、絶対値ではない）。
-  ///
-  /// 撃たれた弾は `spawn` へ渡す。旧はエンジンが `GetNewBullet` を呼び返して
-  /// 実体を要求していたが、いまは値で受け取るのでフロントが自分の都合で
-  /// 実体を作る（弾プールが尽きたら捨ててよい）。
+  /// 1 コマ 進める。
   member this.Step (spawn: Action<BulletSim, BulletRun>) =
     match this.Run with
     | None -> ()

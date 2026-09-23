@@ -123,20 +123,12 @@ module Offside =
     parse input
 
   // --- 書く ----------------------------------------------------------------
-  //
-  // 読む口と同じファイルに置く。 通せる字を決めているのは上の
-  // `pBodyValue` / `pattrValue` / `ptagName` で、書く側が別のところに居ると、
-  // 文法を直したときに置いていかれる —— 読めるものは読めるままなので気づかない。
-  //
-  // 本文に通せる字。上の `pBodyValue` と対。 片方 を直したらこちらも直す
+  // 読む口と同じファイルに置く。文法を直したときに書く側が置いていかれる。
+  // 本文に通せる字。上の `pBodyValue` と対。片方を直したらこちらも直す。
   let private bodyOk (c: char) =
     System.Char.IsLetterOrDigit c || "()$+-*/.%".IndexOf c >= 0
 
   /// インデント記法の受け口。
-  ///
-  ///     name attr="値"
-  ///         子
-  ///
   /// XML の側が出す `90 * $rand` はそのままでは書けない。
   type private FsbSink() =
     let sb = StringBuilder()

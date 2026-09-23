@@ -1,10 +1,7 @@
 using System;
 
-// COMPILE-ONLY stub of Unity.Transforms. Not a substitute for the Unity Editor.
-//
-// アセンブリ名が本物と一致していることが要。 1 本 に詰めると、焼いた dll が
-// 「この型は UnityEngine に在る」と主張したまま Unity へ渡り、CS7069 で落ちる。
-// 詳しい但し書きは src/UnityEngine.Stub/UnityEngine.cs の頭。
+// COMPILE-ONLY stub。Editor の代わりにはならない。
+// アセンブリ名は本物と一致させる。1 本に詰めると CS7069。詳しくは UnityEngine.cs の頭。
 namespace Unity.Transforms
 {
     public struct LocalTransform : Unity.Entities.IComponentData
@@ -20,9 +17,7 @@ namespace Unity.Transforms
     }
 
     /// <summary>
-    /// Entities Graphics が実際に見る行列。
-    /// 本物は <see cref="LocalTransform"/> から TransformSystemGroup が作るが、
-    /// このサンプルは System を持てないので自分で書く（BulletEcsDriver）。
+    /// Entities Graphics が見る行列。このサンプルは System を持てないので自分で書く。
     /// </summary>
     public struct LocalToWorld : Unity.Entities.IComponentData
     {
@@ -30,9 +25,7 @@ namespace Unity.Transforms
     }
 
     /// <summary>
-    /// 上の LocalToWorld を作る本物の System。印としてしか使わない
-    /// —— C# サンプルが `[UpdateBefore(typeof(TransformSystemGroup))]` で
-    /// 順を指定するために型の名前だけ要る
+    /// LocalToWorld を作る本物の System。印としてしか使わない。型の名前だけ要る。
     /// </summary>
     public partial class TransformSystemGroup : Unity.Entities.SystemBase { }
 }

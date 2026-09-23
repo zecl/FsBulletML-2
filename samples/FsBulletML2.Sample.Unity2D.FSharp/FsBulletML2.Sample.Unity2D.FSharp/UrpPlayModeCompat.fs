@@ -6,11 +6,6 @@ open UnityEngine.Rendering
 open UnityEngine.Rendering.Universal
 
 /// URP に移したあと、GameObject の見た目が出るようにする安全網。
-///
-/// このサンプルは長く Built-in パイプラインで作られていて、シーンの
-/// マテリアルもカメラも Built-in の前提のまま。URP へ切り替えると
-///
-/// 片方だけ直すと、2 つ のサンプルで見た目が違うことになる。
 [<AbstractClass; Sealed>]
 type UrpPlayModeCompat private () =
 
@@ -70,8 +65,6 @@ type UrpPlayModeCompat private () =
     mat.enableInstancing <- true
 
   /// カメラを URP が描ける形にする。
-  /// 1 台目 を Base、残りを Overlay として積む —— URP は Base が無いと
-  /// 何も描かない
   static member private EnsureCameras () =
     let cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include)
     let main =
@@ -133,9 +126,6 @@ type UrpPlayModeCompat private () =
       go.transform.rotation <- Quaternion.Euler(50.0f, -30.0f, 0.0f)
 
   /// Built-in のシェーダを使っている材質を URP の Unlit へ差し替える。
-  ///
-  /// 共有材質ではなく instance を書き換える（`r.materials`）——
-  /// 共有を触ると資産そのものが変わってしまう
   static member private UpgradeSceneRenderers () =
     let unlit = UrpPlayModeCompat.FindUrpUnlit ()
     let particle = UrpPlayModeCompat.FindUrpParticleUnlit ()

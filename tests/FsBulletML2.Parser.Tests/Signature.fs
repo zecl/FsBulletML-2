@@ -6,12 +6,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// 参照が渡す引数の形（v4.5）。
-///
-/// --- 食い違いは正しい弾幕にも在る
-///
-/// 版の頭で数えた ——
-///
-/// `Refs.maxParamIn` の但し書きに、残す理由ごと書いた。
+/// 食い違いは正しい弾幕にも在る。残す理由は `Refs.maxParamIn` の但し書き。
 [<TestFixture>]
 type Signature() =
 
@@ -72,9 +67,8 @@ type Signature() =
 </bulletml>"""
     (Refs.arity pairs only (XmlScan.tags only) |> List.head).Takes |> should equal 0
 
-  /// 最大であって、最後ではない。 大きいほうが先に出てくる本文で当てる ——
-  /// 「最後を取る」に変えても、`$1` -> `$2` の並びでは同じ答えになる
-  /// （較正で 0 点 だったので足した）
+  /// 最大であって、最後ではない。大きいほうが先に出てくる本文で当てる。
+  /// 「最後を取る」に変えても、`$1` から `$2` の並びでは同じ答えになる。
   [<Test>]
   member _.``大きいほうが先に出てきても最大を取る``() =
     let back = """<?xml version="1.0" ?>

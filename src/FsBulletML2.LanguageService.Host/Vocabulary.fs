@@ -11,11 +11,8 @@ open FsBulletML2
 type VocabAttr =
   { Name: string
     Values: string[]
-    /// 書かなかったときに走る値。`Core` の腕に付いた `[<BulletmlDefault>]` から。
-    ///
-    /// 1 個 に絞らず並びで持つ。 reflection は 2 個 でも返せるので、
-    /// 型で 1 個 に潰すとその壊れが「先頭を採る」で消える。
-    /// `Values` が空でないとき 1 個 であることは門が見る
+    /// 書かなかったときに走る値。`[<BulletmlDefault>]` から。
+    /// 1 個 に絞らず並びで持つ。型で潰すと「先頭を採る」で壊れが消える。
     Defaults: string[]
     /// この属性の `<!ATTLIST ...>` 行。表を持たない —— 型から組む
     Dtd: string
@@ -35,16 +32,12 @@ type VocabElement =
     /// hover に出す散文（`Spec.fs`）
     Spec: string }
 
-/// BulletML の語彙。正本は `Core/DTD.fs` の型だけ。
-///
-/// あちらは DTD をそのまま DU にしたもので、「どの要素の中に何が置けるか」は
-/// 腕の並びそのもの。ここはそれを reflection で読むだけで、表を持たない ——
-///
-/// 腕が消えて語彙が空になる。空は呼ぶ側が赤にする。
+/// BulletML の語彙。正本は `Core/DTD.fs` の型だけ。表を持たない。
+/// 腕が消えて空になったら、呼ぶ側が赤にする。
 module Vocabulary =
 
-  /// 散文の引き先。無ければ空で、足りていないことは門が見る
-  /// （`SpecCoverage`。ここで落とすと、表を直す前に何も動かなくなる）
+  /// 散文の引き先。無ければ空。足りないことは門が見る。
+  /// ここで落とすと、表を直す前に何も動かなくなる。
   let private specOf (table: (string * string) list) =
     let d = dict table
     fun (key: string) ->
@@ -77,8 +70,7 @@ module Vocabulary =
   let private isAttrs (t: Type) = FSharpType.IsRecord t && t.Name.EndsWith "Attrs"
 
   /// 全部の腕が同じ語で始まっていたら、その語を落とす。
-  /// 切れ目は大文字（語の途中で切ると `ertical` のような字が出る）。
-  /// 1 つでも残りが空になる並びなら落とさない
+  /// 切れ目は大文字。語の途中で切ると `ertical` のような字が出る。
   let private stripCommonPrefix (names: string[]) =
     if names.Length < 2 then names
     else
@@ -93,8 +85,8 @@ module Vocabulary =
       then names |> Array.map (fun s -> s.Substring cut)
       else names
 
-  /// option / list を 1 段 だけ 剥がして、多重度の印を返す。
-  /// `unwrap` は全部 剥がすので、多重度がここで消える
+  /// option / list を 1 段 だけ剥がして、多重度の印を返す。
+  /// `unwrap` で全部 剥がすな。多重度が消える。
   let private occurs (t: Type) =
     if t.IsGenericType then
       let d = t.GetGenericTypeDefinition()
@@ -112,8 +104,7 @@ module Vocabulary =
       else camel t.Name
     else camel t.Name
 
-  /// `<!ELEMENT ...>` の中身。腕の field の並びがそのまま順序、
-  /// option / list がそのまま多重度、多腕 DU がそのまま選択になる
+  /// `<!ELEMENT ...>` の中身。腕の並びが順序、option / list が多重度。
   let private contentModel (fields: Type[]) =
     let parts =
       [ for f in fields do
@@ -143,15 +134,12 @@ module Vocabulary =
           else p.Name
         let vt = unwrap p.PropertyType
         let cases = if FSharpType.IsUnion vt then FSharpType.GetUnionCases vt else [||]
-        // 腕が 1 本 の DU は「値の並び」ではない（ActionLabel など）。
-        // 札は並びでない相手にも読む —— 読まないと「自由記述に既定が付いた」を
-        // 見る門が、当たる先を持たない
+        // 腕が 1 本 の DU にも札を読む。読まないと既定の門が当たる先を持たない。
         let values =
           if cases.Length > 1
           then cases |> Array.map (fun c -> c.Name) |> stripCommonPrefix |> Array.map camel
           else [||]
-        // 既定は「腕の位置」で引く。名前をもう一度 変換すると
-        // stripCommonPrefix の結果とずれる余地ができる
+        // 既定は腕の位置で引く。名前をもう一度変換するな。
         let defaults =
           cases
           |> Array.mapi (fun i c -> i, c)
@@ -177,9 +165,8 @@ module Vocabulary =
             values
             |> Array.map (fun v -> v, attrValueSpec (sprintf "%s/@%s=%s" elementName name v)) })
 
-  /// 木を歩いて、腕ごとに「要素名 -> 腕の持ち物」を集める。
-  /// 同じ腕が 2 か所 に出る（`Action` は BulletmlElm / Action / ActionElm に居る）
-  /// が、持ち物は同じなので上書きしても変わらない
+  /// 木を歩いて、腕ごとに要素名から持ち物を集める。
+  /// 同じ腕が 2 か所 に出ても持ち物は同じ。上書きしてよい。
   let rec private collect (t: Type) (seen: HashSet<Type>) (acc: Dictionary<string, Type[]>) =
     if FSharpType.IsUnion t && seen.Add t then
       for c in FSharpType.GetUnionCases t do
@@ -214,8 +201,7 @@ module Vocabulary =
     collect typeof<Bulletml> (HashSet<Type>()) acc
     acc
     |> Seq.map (fun kv -> describe kv.Key kv.Value)
-    // `Params = string list` は腕を持たないので木から出てこない。
-    // DTD は `<!ELEMENT param (#PCDATA)>` なので、中身を取る要素として足す
+    // `param` は腕を持たないので木から出てこない。中身を取る要素として足す。
     |> Seq.append
          [ { Name = "param"
              Children = [||]
@@ -226,23 +212,11 @@ module Vocabulary =
     |> Seq.sortBy (fun e -> e.Name)
     |> Seq.toArray
 
-  /// 式の中で使える字。DU からは引けない —— `$rand` / `$rank` という綴りは
-  /// 読む側（`Expr` の parser）が文字で持っていて、木の腕の名前
-  /// （`Rand` / `Rank`）とは別物。ここは短い表にする。
-  ///
-  /// 代わりに「Parser が本当に読める字か」を試験で当てる
-  /// （`Expr.NumExpr.ofString` に通して、`Invalid` でなく
-  /// `NeedRand` / `NeedRank` が立つこと）。綴りが動けば赤になる。
+  /// 式の中で使える字。DU からは引けない。`$rand` は腕の名前 `Rand` とは別。
+  /// 短い表にする。綴りが動いたら試験が赤になる。
   let expressions = [| "$rand"; "$rank" |]
 
-  // --- F# の CE を「どこに置けるか」 -----------------------------------------
-  //
-  // 入れ物の種類。要素ではない。
-  //
-  // v1.9 の頭で数えて分かったこと —— `repeat` の中に置けるものは
-  //
-  // 綴りは要素名と重ならないものを使う（器へ渡すので、要素名を
-  // そのまま流すと線を越える）。
+  // 入れ物は要素ではない。綴りを要素名と重ねるな。器へ流すと線を越える。
   [<Literal>]
   let private SlotOuter = "outer"
 
@@ -262,11 +236,8 @@ module Vocabulary =
   [<Literal>]
   let private SlotAccel = "push"
 
-  /// 型の名前 -> 入れ物。表はこの 1 か所 だけ（残りは reflection）。
-  ///
-  /// `ActionBuilder<'T>` のような builder は「`{ }` を開く」側で、
-  /// 置ける先は `'T` のほう —— `body` は `ActionElm` を返すので
-  /// `bullet` の中、`nest` は `Action` を返すので `action` の中。
+  /// 型の名前から入れ物。表はこの 1 か所 だけ。
+  /// builder の置ける先は `'T`。開く側と置く側を取り違えるな。
   let private slotOfType (name: string) =
     match name with
     | "BulletmlElm" -> Some SlotRoot
@@ -289,23 +260,13 @@ module Vocabulary =
   let rec private resultOf (t: Type) : Type =
     if t.Name.StartsWith "FSharpFunc" then resultOf (t.GetGenericArguments().[1]) else t
 
-  /// 根から走る定義の名前の頭。
-  ///
-  /// Core の `Api.fs` が持っている綴り。 あちらは top* の並びを
-  /// `label.StartsWith "top"` で選んでいて、そこが真。
-  ///
-  /// Core を変えたときに黙って割れる。
+  /// 根から走る定義の名前の頭。綴りは Core の `Api.fs` が真。
+  /// 器へ書き写すな。Core を変えたときに黙って割れる。
   [<Literal>]
   let topPrefix = "top"
 
-  /// CE の名前が「どこに置けて」「何を開くか」。表ではなく `Dsl` から引く。
-  ///
-  /// v1.9 の頭で reflection を測ったら、`ActionBuilder` と `BulletmlBuilder` の
-  /// CustomOperation は 0 個 だった —— あの 2 つ の中身は module の
-  /// 公開 `let` で、`[<CustomOperation>]` では引けない。
-  /// だから両方 を舐める。
-  ///
-  ///     (CE の名前, 置ける入れ物, 開く `{ }` の種類。開かないなら空)
+  /// CE の名前がどこに置けて何を開くか。表ではなく `Dsl` から引く。
+  /// `ActionBuilder` の中身は `[<CustomOperation>]` では引けない。公開 `let` も舐める。
   let cePlaces : (string * string * string)[] =
     let asm = typeof<FsBulletML2.Dsl.BulletmlBuilder>.Assembly
     let dslModule = asm.GetTypes() |> Array.find (fun t -> t.FullName = "FsBulletML2.Dsl")
@@ -326,9 +287,7 @@ module Vocabulary =
              | Some s when s = SlotRoot -> Some SlotOuter
              // accel は `{ }` を開くが、それ自身は action の中に置く
              | Some s when s = SlotAccel -> Some SlotAction
-             // ほかの builder は `'T` の中に置ける ——
-             // `body` は `ActionElm` を返すので bullet の中、
-             // `nest` は `Action` を返すので action の中
+             // ほかの builder は `'T` の中に置ける。開く側と置く側は別。
              | Some _ when r.IsGenericType ->
                r.GetGenericArguments() |> Array.tryHead |> Option.bind (fun a -> slotOfType a.Name)
              | Some _ -> None
@@ -363,7 +322,7 @@ module Vocabulary =
     sb.ToString()
 
   /// 起動時に 1 回 だけ JS へ渡す形。毎キー呼ばない。
-  /// 手で組むのは、F# のレコードを serializer に任せると版で形が動くから
+  /// 手で組む。serializer に任せると版で形が動く。
   let toJson () =
     let sb = StringBuilder()
     let str (s: string) = sb.Append('"').Append(escape s).Append('"') |> ignore
@@ -429,8 +388,7 @@ module Vocabulary =
         sb.Append ",\"value\":" |> ignore
         str value
         sb.Append '}' |> ignore)
-    // CE の名前が載せる label。 上の `ce` と別の表（`Spec.ceLabels`）——
-    // あちらは「作る要素」で、こちらは「名前を決めるか、使うか」
+    // label は `ce` と別の表。作る要素と、名前が付く要素は違う。
     sb.Append "],\"ceLabels\":[" |> ignore
     Spec.ceLabels
     |> List.iteri (fun i (name, element, labelArg, fixedName, root) ->
@@ -458,13 +416,10 @@ module Vocabulary =
         sb.Append ",\"opens\":" |> ignore
         str opens
         sb.Append '}' |> ignore)
-    // 根から走る定義の名前の頭。綴りは Core が持っている ——
-    // 器に書き写すと、あちらを変えたときに黙って割れる（Semantics の但し書き）
-    // 根から走る定義の名前の頭。綴りは Core が持っている
+    // 根の名前の頭。綴りは Core。器に書き写すな。
     sb.Append "],\"topPrefix\":" |> ignore
     str topPrefix
-    // 雛形（v2.6）。骨は要素名の木なので、器に書くと
-    // 「ブラウザ側に要素名を書かない」線を越える —— 語彙と同じ経路で渡す
+    // 雛形。骨は要素名の木。器に書かず、語彙と同じ経路で渡す。
     sb.Append ",\"frames\":[" |> ignore
     let rec writeFrame (f: SourceLanguage.Frame) =
       sb.Append "{\"element\":" |> ignore

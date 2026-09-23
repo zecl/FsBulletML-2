@@ -6,14 +6,6 @@ open FsBulletML2
 open FsBulletML2.Domain
 
 /// Api.fs の Runner の但し書きに書いてある最小例を、そのまま動かす門。
-///
-/// あの例はコメントなのでコンパイルされない。実際、段階 4 で Runner.load に
-/// rootEnv が増えたとき、例だけが古い形（引数 1 つ）のまま残っていた。
-///
-/// 「他が緑のまま自分だけ赤くなる」形にはならない。 API の形が変われば、
-/// ここも他の呼び出し側も一緒にコンパイルエラーになる。狙いは網ではなく
-/// 同期の強制 —— 他を直すときにここも直すことになり、そのとき Api.fs の
-/// 例も一緒に直る（ここと例は同じ形・同じ順で書いてある）。
 [<TestFixture>]
 type ApiUsageExample() =
 
@@ -32,9 +24,7 @@ type ApiUsageExample() =
     let rand () = 0.5f
     let rank = 0.5f
 
-    // 読む段（弾幕 1 本 につき 1 回）。Env は取らない ——
-    // この段が読むのは乱数とランクだけで、aim は撃つ弾ごとの位置が
-    // まだ無いので読まれない
+    // 読む段（弾幕 1 本 につき 1 回）。
     let script = Runner.load rand rank (readXmlString Xml)
     let mutable run = Runner.newRoot BulletType.Enemy script
 
@@ -42,7 +32,6 @@ type ApiUsageExample() =
     let spawned = ResizeArray<BulletRun>()
     let mutable vanished = false
 
-    // 毎コマ
     for _ in 1 .. 3 do
       let env =
         { Rand = rand; Rank = rank

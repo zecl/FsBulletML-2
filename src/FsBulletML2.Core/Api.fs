@@ -2,13 +2,8 @@ namespace FsBulletML2
 
 open FsBulletML2.Domain
 
-/// 弾の物理量。フロントが持ち、毎コマ渡して毎コマ受け取る。
-///
-/// 数だけ。 弾の立場（どちらを狙うか / 撃たれた弾か / 自分も撃ったか）は
-/// エンジンが持っていて、ここには出てこない。
-///
-/// 前のコマの答えをそのまま返す必要はなく、フロントが自分で動かした結果を
-/// 入れてよい（画面外へ弾いた、親の位置へ移した、など）。
+/// 弾の物理量。数だけを持ち、立場はエンジン側に置く。
+/// 前のコマの答えをそのまま返さなくてよい。フロントが動かした結果を入れてよい。
 [<Struct>]
 type Motion =
   { Pos : Vec2
@@ -24,9 +19,7 @@ module Motion =
       Dir = 0.0f
       Accel = { X = 0.0f; Y = 0.0f } }
 
-/// 読み込んだ弾幕。中身は不透明。
-///
-/// 1 本 の弾幕につき 1 個 作って、そこから出た弾全部で使い回す。
+/// 読み込んだ弾幕。中身は不透明。1 本につき 1 個作り、出た弾全部で使い回す。
 [<Sealed>]
 type BulletmlScript internal (resolvers: Step.Resolvers,
                               shootingDirection: ShootingDirection,
@@ -39,10 +32,7 @@ type BulletmlScript internal (resolvers: Step.Resolvers,
 
   member internal _.RootState = rootState
 
-/// 1 体の実行状態。中身は不透明。
-///
-/// フロントは受け取って持ち歩き、次のコマでそのまま返す。
-/// 物理量だけは `Motion` / `WithMotion` で出し入れできる。
+/// 1 体の実行状態。中身は不透明。物理量だけ Motion / WithMotion で出し入れする。
 [<Struct>]
 type BulletRun internal (script: BulletmlScript, state: BulletState) =
 
@@ -51,16 +41,7 @@ type BulletRun internal (script: BulletmlScript, state: BulletState) =
   /// 走らせている弾幕。撃たれた弾は親のものを引き継ぐ。
   member _.Script = script
 
-  /// 走らせる台本が 1 本 も無い。このコマは aim を読まない。
-  ///
-  /// フロントは `Env` を組む前にここを見て、読まれないと分かっている aim を
-  /// 計算しないで済む。
-  ///
-  ///   let env =
-  ///     if run.HasNoScript then { Rand = r; Rank = k
-  ///                               Aim = { ToPlayer = 0.0f; ToEnemy = 0.0f }
-  ///                               Spawn = { ToPlayer = 0.0f; ToEnemy = 0.0f } }
-  ///     else 本物の aim を組む
+  /// 台本が 1 本も無い。このコマは aim を読まない。Env を組む前に見てよい。
   member _.HasNoScript = List.isEmpty state.Tops
 
   member _.Motion : Motion =
@@ -69,12 +50,8 @@ type BulletRun internal (script: BulletmlScript, state: BulletState) =
       Dir = state.Dir
       Accel = state.Accel }
 
-  /// この弾の 1 コマ の差分が、もう変わらないなら その値。
-  /// 台本が残っているなら `ValueNone`（v4.9.1）。
-  ///
-  /// 呼ぶ側の約束 —— `Motion` の `Speed` / `Dir` / `Accel` を外から
-  /// 書き換えないこと。 書き換えるフロントは、この値を使ってはいけない。
-  /// `Pos` は足す先なので関係ない。
+  /// 1 コマの差分がもう変わらないならその値。台本が残っていれば ValueNone。
+  /// Speed / Dir / Accel を外から書き換えたら使ってはいけない。Pos は関係ない。
   member _.ConstantDelta : Vec2 voption =
     if List.isEmpty state.Tops then
       let speed = float state.Speed
@@ -84,14 +61,8 @@ type BulletRun internal (script: BulletmlScript, state: BulletState) =
           Y = state.Accel.Y + float32 (-System.Math.Cos dir * speed) }
     else ValueNone
 
-  /// あと何コマ、この弾は何も起こさないか。 0 なら「分からない」（v4.9.2）。
-  ///
-  /// 呼ぶ側の約束 —— `ConstantDelta` と同じく `Motion` を外から
-  /// 書き換えないこと。 差分はここで組み直さないので、値は呼ぶ側が持っている
-  /// `Frame.Delta` を使う。
-  ///
-  /// `Finished` が立ったコマ には使えない（そのコマ は `restart` を通すので、
-  /// 走り直した後の top は別物になる）。
+  /// あと何コマ何も起こさないか。0 は分からない。
+  /// Motion を外から書き換えたら使ってはいけない。Finished のコマには使えない。
   member _.QuietFrames : int =
     if List.isEmpty state.Tops then 0
     else
@@ -103,14 +74,8 @@ type BulletRun internal (script: BulletmlScript, state: BulletState) =
         | QNone | QBusy -> all <- false
       if all && m >= 1.0f then int m else 0
 
-  /// あと何コマ 一定の割合で変わるかと、その 1 コマ 分 の増分（v4.9.3）。
-  /// `ValueNone` なら分からない。
-  ///
-  /// 返るのは `(コマ数, Speed に足す量, Accel.X に足す量, Accel.Y に足す量)`。
-  /// 差分の式はここで返さない —— 呼ぶ側が `Step.fs` の出口と同じ式を
-  /// 毎コマ 計算する（同じにするからビット で一致する）。
-  ///
-  /// `Dir` は動かない。 動く形はここへ来ない。
+  /// (残りコマ, Speed の増分, Accel.X の増分, Accel.Y の増分)。ValueNone は分からない。
+  /// 差分の式は返さない。呼ぶ側が Step の出口と同じ式を毎コマ計算しないとビットがずれる。
   member _.LinearPlan : struct (int * float32 * float32 * float32) voption =
     match state.Tops with
     | [ (_, prog, _) ] ->
@@ -119,9 +84,7 @@ type BulletRun internal (script: BulletmlScript, state: BulletState) =
         | LNone -> ValueNone
     | _ -> ValueNone
 
-  /// 線形の n コマ を飛ばした後の姿（v4.9.3）。
-  ///
-  /// `LinearPlan` が返した数より大きい n を渡さないこと。
+  /// 線形の n コマを飛ばした姿。LinearPlan より大きい n を渡さないこと。
   member _.SkipLinear (n: int) : BulletRun =
     if n <= 0 then BulletRun(script, state)
     else
@@ -146,22 +109,14 @@ type BulletRun internal (script: BulletmlScript, state: BulletState) =
           | LNone -> BulletRun(script, state)
       | _ -> BulletRun(script, state)
 
-  /// 静かな n コマ を飛ばした後の姿。（v4.9.2）
-  ///
-  /// 速い道はエンジンを呼ばないので、飛ばしたあいだ `wait` が減らない。
-  /// 速い道へ入れるときに 1 度 だけ通して、先に消化しておく。
-  ///
-  /// `QuietFrames` が返した数より大きい n を渡さないこと。
-  /// `wait` の残りが負に回って、その弾だけ早く動き出す。
+  /// 静かな n コマを飛ばした姿。速い道は wait を減らさないので、入れる前にここを 1 度通す。
+  /// QuietFrames より大きい n を渡すと、残りが負に回ってその弾だけ早く動き出す。
   member _.SkipQuiet (n: int) : BulletRun =
     if n <= 0 then BulletRun(script, state)
     else
       BulletRun(script, { state with Tops = state.Tops |> List.map (fun (a, p, fc) -> a, Step.skipQuiet n p, fc) })
 
-  /// この弾の立場。根を作るときに決まり、撃たれた弾は親から継ぐ。
-  ///
-  /// エンジンが持っていて、あとから差し替える口は無い。
-  /// aim をどちらへ向けるかがこれで決まる。
+  /// この弾の立場。根を作るときに決まり、撃たれた弾は親から継ぐ。あとから差し替えない。
   member _.Kind : BulletType = state.Kind
 
   /// 物理量を差し替える。台本と実行位置はそのまま持ち越す
@@ -173,20 +128,15 @@ type BulletRun internal (script: BulletmlScript, state: BulletState) =
           Dir = m.Dir
           Accel = m.Accel })
 
-/// 1 コマの結果。
-///
-/// [<Struct>] にしてある（弾 1 個 × 1 コマ ごとに必ず 1 個 出るので、
-/// 参照型だと弾数に比例してヒープを踏む）。
+/// 1 コマの結果。参照型に戻すと弾数に比例してヒープを踏む。
 [<Struct>]
 type Frame =
   { /// 次のコマへ持ち越す実行状態
     Run : BulletRun
     /// 座標の差分。呼ぶ側が足す。絶対値ではない
     Delta : Vec2
-    /// このコマで撃たれた弾。このコマでは回さない（産まれた弾は次のコマから回る）
-    ///
-    /// フロントが「撃つのを断る」口は無い。 弾プールが尽きても、エンジンは
-    /// 撃った弾を値で返しきる。捨てるかどうかはフロントの仕事。
+    /// このコマで撃たれた弾。このコマでは回さない。
+    /// 撃つのを断る口は無い。捨てるかどうかはフロントの仕事。
     Spawned : BulletRun list
     /// vanish された。フロントはこの弾を消す
     Vanished : bool
@@ -196,31 +146,7 @@ type Frame =
     /// 旧の Used <- false
     Retired : bool }
 
-/// 走らせる入口。これが Core の顔。
-///
-/// フロントが値を渡して値を受け取るだけで、呼び返しが無い。
-///
-///   // 読む段（弾幕 1 本 につき 1 回）。Env は取らない
-///   let script = Runner.load rand rank (readXmlString xml)
-///   let mutable run = Runner.newRoot BulletType.Enemy script
-///
-///   // 毎コマ
-///   let env =
-///     { Rand = rand; Rank = rank
-///       Aim = { ToPlayer = ...; ToEnemy = ... }
-///       Spawn = { ToPlayer = ...; ToEnemy = ... } }
-///   let f = Runner.stepWith env run { run.Motion with Pos = myPos }
-///   myPos <- myPos + f.Delta
-///   run <- f.Run
-///   for child in f.Spawned do ...
-///
-/// この例は tests/FsBulletML2.Core.Tests/ApiUsageExample.fs で実際に動かして
-/// ある。 ここはコメントなのでコンパイルされない ——
-/// 例を直したらあちらも、あちらが赤くなったらここも。
-/// 畳みの前後を同じ順で歩いて対にする。
-///
-/// 揃わない枝は黙って降りない（対が 1 つ 欠けるだけで、走行は変わらない）。
-/// 同じ物のときは対にしない（vanish は singleton なので畳んでも同じ物が返る）。
+/// 畳みの前後を同じ順で対にする。揃わない枝は降りない。同じ物は対にしない。
 module private FoldOrigin =
 
   let private link (a: obj) (b: obj) =
@@ -247,7 +173,7 @@ module private FoldOrigin =
           List.iter2 elm xs ys
       | _ -> ()
     let top (a: BulletmlElm) (b: BulletmlElm) =
-      // 根の要素も対にする。 子だけ降りると鎖がここで止まる（1.00% が戻れない）
+      // 根の要素も対にする。子だけ降りると鎖がここで止まる。
       link (box a) (box b)
       match a, b with
       | BulletmlElm.Bullet (_, _, _, xs), BulletmlElm.Bullet (_, _, _, ys) when xs.Length = ys.Length ->
@@ -262,13 +188,8 @@ module private FoldOrigin =
 
 module Runner =
 
-  /// 弾幕を読む。1 本 につき 1 回。
-  ///
-  /// 乱数とランクを受け取るのは、木を組む段が wait の term をその場で
-  /// 引くため。 引く回数と順が乱数の並びを決める。
-  ///
-  /// `Env` は取らない。 この段が読むのは `Rand` と `Rank` だけで、
-  /// aim 4 本 は撃つ弾ごとの位置がまだ無いので読まれない。
+  /// 弾幕を読む。1 本につき 1 回。乱数とランクを省くと wait の term がグローバルから引かれる。
+  /// Env は取らない。この段は aim を読まない。
   [<CompiledName "Load">]
   let load (rand: unit -> float32) (rank: float32) (bulletml: Bulletml) : BulletmlScript =
     // 木を組む段のための Env。aim は読まれないので 0 でよい
@@ -313,28 +234,19 @@ module Runner =
           |> List.map (fun s -> s, Step.rootProgressActionElm rootEnv s, FireContext.zero) }
     BulletmlScript (resolvers, shootingDirection, rootState)
 
-  /// 根の実行状態。撃たれた弾ではないもの（敵そのもの、自機そのもの）。
-  ///
-  /// `kind` は狙う先を決める —— `Player` なら敵を、`Enemy` なら自機を狙う。
-  /// ここで 1 回 だけ決まる。 撃たれた弾は親から継ぐ。
+  /// 撃たれた弾ではない根。Player は敵を、Enemy は自機を狙う。
+  /// kind はここで 1 回だけ決まる。撃たれた弾は親から継ぐ。
   [<CompiledName "NewRoot">]
   let newRoot (kind: BulletType) (script: BulletmlScript) : BulletRun =
     BulletRun (script, { script.RootState with Kind = kind; IsBullet = false })
 
-  /// 撃たれた弾として根から始める。自機が撃つ弾がこれ ——
-  /// エンジンから産まれたのではなく、フロントが 1 発目 として起こす。
-  ///
-  /// `newRoot` との違いは `Frame.Retired` だけ。
+  /// 撃たれた弾として根から始める。newRoot との違いは Frame.Retired だけ。
   [<CompiledName "NewShot">]
   let newShot (kind: BulletType) (script: BulletmlScript) : BulletRun =
     BulletRun (script, { script.RootState with Kind = kind; IsBullet = true })
 
-  /// 全 top が終わった弾を、最初から走らせ直す。旧の task.Init(env)。
-  ///
-  /// Core からは自動で呼ばない。 走らせ直すかどうかはフロントの決めごと。
-  ///
-  /// 走らせ直しは wait / changeDirection / changeSpeed の term を引き直す
-  /// （accel は引かない）ので、呼ぶか呼ばないかで乱数の並びが変わる。
+  /// 全 top が終わった弾を最初から走らせ直す。Core からは自動で呼ばない。
+  /// 呼ぶと wait / changeDirection / changeSpeed の term を引き直すので、乱数の並びが変わる。
   [<CompiledName "Restart">]
   let restart (env: Env) (run: BulletRun) : BulletRun =
     let st = run.State
@@ -351,8 +263,7 @@ module Runner =
     for effect in r.Effects do
       match effect with
       | Vanished -> vanished <- true
-      // 撃たれた弾は親の弾幕を引き継ぐ。 引き継がないと、弾の中に残った
-      // bulletRef / actionRef を誰も解けない
+      // 撃たれた弾は親の弾幕を引き継ぐ。引き継がないと bulletRef / actionRef を誰も解けない。
       | Spawn child -> spawned <- BulletRun (script, child) :: spawned
     { Run = BulletRun (script, r.State)
       Delta = r.Delta
@@ -366,10 +277,7 @@ module Runner =
     let script = run.Script
     toFrame script (Step.step script.Resolvers env run.State)
 
-  /// 物理量を入れ替えてから 1 コマ進める。フロントはふつうこちらを使う。
-  ///
-  /// `step script env (run.WithMotion motion)` と答えは同じだが、中間の
-  /// BulletRun を作らない —— 弾の数に比例するので、弾幕では効く。
+  /// 物理量を入れ替えてから 1 コマ進める。WithMotion 経由だと弾の数だけ中間の BulletRun が出る。
   [<CompiledName "StepWith">]
   let stepWith (env: Env) (run: BulletRun) (m: Motion) : Frame =
     let script = run.Script

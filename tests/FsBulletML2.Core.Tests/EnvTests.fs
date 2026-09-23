@@ -4,12 +4,7 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2.Domain
 
-/// Env はレコード 1 行で作れること。17 メンバの Fake を書かずに済むことが要点。
-///
-/// 「グローバルと弾から組んだ Env」を見ていた 2 本 は、ここから出した。
-/// あれは `BulletRunner.envOfGlobal`（旧 API）に対する門だったが、測って
-/// いたのは同梱フロント（MonoGame）の規約だった ——
-///     Y の符号    -(py - y)。Unity2D は反転しない（座標系が逆）
+/// Env はレコード 1 行で作れること。
 [<TestFixture>]
 type EnvTests() =
 

@@ -10,11 +10,8 @@ public class Informations : MonoBehaviour
     public bool showInEditor = false;
 
     /// <summary>
-    /// フレームレートの上限。-1 で無制限。
-    ///
-    /// 以前は 40 だった。 意図した設計ではなく、そのまま残っていた
-    /// だけだった。いちど 外して実力を見たら 60 では収まらない量が出たので、
-    /// 60 で頭を押さえることにした（弾幕の見た目を一定にするため）。
+    /// フレームレートの上限。
+    /// </summary>
     public int targetFps = DefaultTargetFps;
 
     /// <summary>既定の上限。<see cref="ApplyCapOnPlay"/> が Play の頭で使う</summary>
@@ -22,9 +19,7 @@ public class Informations : MonoBehaviour
 
     /// <summary>
     /// Play に入った時点で上限を掛ける。
-    ///
-    /// これを <c>Informations.Awake</c> だけに任せると、シーンに
-    /// Informations が居ることとその Awake が先に走ることに依存する。
+    /// </summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void ApplyCapOnPlay()
     {
@@ -32,11 +27,7 @@ public class Informations : MonoBehaviour
     }
 
     /// <summary>
-    /// 上限の掛け方。vSync が先。
-    ///
-    /// vSyncCount が 1 以上 だと Unity は targetFrameRate を無視して画面の
-    /// リフレッシュレートに従う。品質設定「Good」では 1 なので、
-    /// 切らないと 60 に押さえられない（実際に押さえられなかった）。
+    /// 上限の掛け方。
     /// </summary>
     static void ApplyCap(int fps)
     {
@@ -48,13 +39,7 @@ public class Informations : MonoBehaviour
     private Player player;
     private readonly ReactiveProperty<string> StatusTextRp = new("");
 
-    // fps を数えるための控え。Update で毎コマ 数える。
-    //
-    // 前は 0.5 秒 に 1 回 `1f / Time.unscaledDeltaTime` を読んでいた。あれは
-    // その瞬間の 1 コマ の長さであって平均ではない。1 コマ でも長いものが
-    // サンプリング点に当たれば、そのまま低い数字が出る ——
-    // 「40 前後しか出ない」の「前後」は、その振れ幅を見ていた可能性がある。
-    // ここは期間内のコマ数を数えて割る（本当の平均）。
+    // fps を数えるための控え。
     int frames;
     float elapsed;
     /// 直近 0.5 秒 の平均 fps
@@ -178,14 +163,6 @@ public class Informations : MonoBehaviour
     {
         var sb = new StringBuilder();
         // 上限と、いちばん長かったコマも並べて出す。
-        //
-        // 数だけだと「これしか出ない」と読める —— 上限に張り付いているのか、
-        // 届いていないのかが分からない。さらに平均だけだと、たまに 1 コマ
-        // 引っかかる形（GC やアセットの読み込み）が消える。
-        //
-        // 読み方: 平均が上限どおりで最悪も予算内なら、出るべきものは出ている。
-        // 平均が低いなら継続的に重い。平均は出ていて最悪だけ大きいなら、
-        // どこかで 1 コマ だけ止まっている
         var cap = Application.targetFrameRate;
         var vsync = QualitySettings.vSyncCount;
         sb.Append(string.Format("FPS:{0:F1}（上限 {1} / vSync {2}）最悪 {3:F1}ms\n",

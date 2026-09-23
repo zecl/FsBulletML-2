@@ -1,12 +1,7 @@
 namespace FsBulletML2.LanguageService
 
-/// hover に出す散文。この repo で唯一、語彙の表を手で書くところ。
-///
-/// DTD の行は語彙から組める。既定値は Core の札から引ける。
-/// 散文だけは型から出てこない。
-///
-/// 既定値をここに書かない（`Vocabulary` の `Defaults` から出る）。
-/// 門が見るのは「在ること」だけ（足りないだけでなく余りも赤）。
+/// hover に出す散文。語彙の表を手で書くのはここだけ。
+/// 既定値はここに書かない。散文だけは型から出てこない。
 module Spec =
 
   /// 要素 1 つ につき 1 〜 2 文。何をするか、と、省いたときどうなるか
@@ -115,17 +110,15 @@ module Spec =
       "vertical/@type",
       "縦向きの加速度の決め方。" ]
 
-  /// `horizontal` と `vertical` は、値の意味が同じ。字を 2 度 書かない ——
-  /// 別々に書くと片方 だけ直る。要素の散文（横／縦）のほうは違うので分けてある
+  /// `horizontal` と `vertical` は値の意味が同じ。字を 2 度 書かない。
+  /// 要素の散文は横と縦で違うので、そちらは分ける。
   let private accelAxis (axis: string) =
     [ axis + "/@type=absolute", "その加速度にする。"
       axis + "/@type=relative", "いまの加速度からの差。term で割る。"
       axis + "/@type=sequence", "毎フレーム 足す量。term で割らない。" ]
 
   /// 属性値。鍵は `要素/@属性=値`。
-  ///
-  /// 同じ綴りでも型が違えば計算が違う（`absolute` は direction では
-  /// 画面の絶対角、speed ではその速さ、accel ではその加速度）。別々に書く。
+  /// 同じ綴りでも型が違えば計算が違う。別々に書く。
   let attrValues : (string * string) list =
     [ "direction/@type=aim", "自機のいる向きを 0 として測る。"
       "direction/@type=absolute", "画面の絶対角。上が 0 度。"
@@ -256,8 +249,7 @@ module Spec =
 
       // --- accel の中 -------------------------------------------------------
       //
-      // `horizontal` と `vertical` は上にも在る。 あちらは根の型で、
-      // こちらは accel の中の要素。同じ綴りで別のもの
+      // `horizontal` と `vertical` は上にも在る。あちらは根、こちらは accel。
       "accel", "accel", "", ""
       "horizontal", "horizontal", "", ""
       "horizontalAbs", "horizontal", "", ""
@@ -274,8 +266,8 @@ module Spec =
       "verticalSeq", "vertical", "", ""
       "verticalSeq", "vertical", "type", "sequence" ]
 
-  /// CE の名前が載せる label。ce は「何を作るか」、こちらは「名前を決めるか、使うか」。
-  /// 名前を持たない CE 名は書かない。書かないことが印。過不足は SpecCoverage が見る。
+  /// CE の名前が載せる label。ce は作る要素、こちらは名前の付け方。
+  /// 名前を持たない CE 名は書かない。書かないことが印。
   let ceLabels : (string * string * int * string * bool) list =
     [ // --- 名前を決める側 ---------------------------------------------------
       "top", "action", -1, "top", true

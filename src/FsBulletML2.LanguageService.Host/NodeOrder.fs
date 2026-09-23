@@ -5,10 +5,7 @@ open Microsoft.FSharp.Reflection
 open FsBulletML2
 
 /// 読んだ木のノードと、字の札を順番で結ぶ。
-///
-/// 木は字の位置を持たないので、位置ではなく順番でしか言えない。
-/// 名前の表を書かない —— 落とすべき名前を並べると、DTD に要素が増えたときに
-/// ここだけが古びて、黙って添字がずれる。 引くのはノードになる腕（型そのもの）。
+/// 名前の表を書かない。DTD に要素が増えると添字がずれる。
 module NodeOrder =
 
   let private camel (s: string) =
@@ -18,13 +15,8 @@ module NodeOrder =
   let private armsOf (t: Type) =
     FSharpType.GetUnionCases t |> Array.map (fun c -> camel c.Name)
 
-  /// 木のノードになる要素名。`Progress` が平行に組まれる腕と同じ集合。
-  ///
-  /// `BulletmlOps.collect` は使えない —— あちらは名前の付いた要素だけを拾い、
-  /// `repeat` / `wait` / `vanish` を落とす。
-  ///
-  /// 並びは名前の順に揃える（呼ぶ側が中身で見分けられるように）。
-  /// reflection なので `PublishTrimmed` は false のまま —— 空は呼ぶ側が赤にする
+  /// 木のノードになる要素名。`Progress` と同じ腕。
+  /// `BulletmlOps.collect` は使うな。`repeat` / `wait` / `vanish` を落とす。
   let names : string[] =
     [| typeof<Bulletml>; typeof<BulletmlElm>; typeof<Action>
        typeof<ActionElm>; typeof<BulletElm> |]
@@ -33,13 +25,7 @@ module NodeOrder =
     |> Array.sort
 
   /// 読んだ木を書いてある順に歩いて、(要素名, ノード) を並べる。
-  ///
-  /// 名前は腕から引く（`names` と同じ規則）—— 綴りを書くと、
-  /// 歩きと `names` が別の綴りを持てるようになる。
-  ///
-  /// ノードは `box` で渡す。受け取る側は参照を鍵にする ——
-  /// 走行から戻ってきたノードが並びの何番目 かは、参照でしか引けない
-  /// （中身が同じ別のノードが在る）
+  /// 名前は腕から引く。綴りを書くな。ノードは `box`。中身が同じ別ノードが在る。
   let walk (root: Bulletml) : ResizeArray<string * obj> =
     let out = ResizeArray<string * obj>()
     let add (ty: Type) (o: obj) =

@@ -113,11 +113,7 @@ type Refs() =
 </action>"""
     |> fun x -> TraceRun.std x 8 |> Golden.check "bullet-fires-bullet"
 
-  /// 同じ label が 2 つあるとどちらが走るか。これは「いまはこうなる」の控えで、
-  /// 「こうあるべき」ではない。DTD は label の一意性を要求していない。
-  ///
-  /// tryFindAction / tryFindFire / tryFindBullet は 3 つとも List.tryFind
-  /// （3 つとも List.tryFind）なので、最初に見つかったものを返す。
+  /// 同じ label が 2 つあるとどちらが走るか。
   [<Test>]
   member _.``同じ label が 2 つあるとき、いまはどちらが走るか``() =
     bml """<action label="top">
@@ -137,13 +133,7 @@ type Refs() =
       + "\n前の dup なら d=0.000 s=1.000、後ろの dup なら d=1.571 s=9.000"
     |> Golden.check "now-duplicate-label-first-wins"
 
-  /// 上は兄弟に 2 つ置いた形。リポジトリに実在するのは入れ子のほう。
-  ///
-  ///   tests/TestData/xml/bulletRef/elements/success/bulletRef-param-nothing.xml
-  ///   tests/TestData/xml/fireRef/elements/success/fireRef-param-nothing.xml
-  ///     どちらも <action label="top"> の中に <action label="top">
-  /// この 2 本を使っているのは XmlParse.fs と OtherParse.fs のパース経路だけで、
-  /// どちらの `top` が走るかは既存の 346 件が 1 件も見ていない。
+  /// 上は兄弟に 2 つ置いた形。
   [<Test>]
   member _.``同じ label が入れ子のとき、いまはどちらが走るか``() =
     bml """<action label="top">

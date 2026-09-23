@@ -8,11 +8,7 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
 /// 同じ名前がどこに書いてあるか（rename の材料）の目盛り。
-///
-/// --- 表記を知らない側に在る
-///
-/// 中身は `Languages/Lookup.fs` の `UsagesAt` 1 本 で、要るのは
-/// `TokenAt`（いま何の上に居るか）と `Tags`（本文に何が在るか）だけ。
+/// 中身は `UsagesAt` 1 本。要るのは `TokenAt` と `Tags` だけ。
 [<TestFixture>]
 type Usages() =
 
@@ -185,9 +181,8 @@ type Usages() =
 
   [<Test>]
   member _.``走る先の対が host の波線と一致する``() =
-    // `Refs.pairs` に 1 本 しか無いことを、2 つ の入口から確かめる。
-    // 割れると「波線は出るのに rename は当たらない」になり、
-    // どちらも単独では正しく見える
+    // `Refs.pairs` に 1 本しか無いことを、2 つの入口から確かめる。
+    // 割れると「波線は出るのに rename は当たらない」。どちらも単独では正しく見える。
     let fromVocab =
       Refs.pairs (vocab.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
     fromVocab |> should equal (List.ofArray References.pairs)

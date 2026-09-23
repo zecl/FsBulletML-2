@@ -6,11 +6,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
 {
     /// <summary>
     /// 配ったコマの実際の長さを数える。
-    ///
-    /// なぜ要るか。 状況 の行 はこれまで「弾 1 発 20.0 バイト」の
-    /// 概算 で Mbps を出していた。締めた効果 を測るには足りない ——
-    /// 量子化 は 1 発 の大きさ を動かすので、固定の係数 を掛けている限り
-    /// 数字 が 1 ビット も動かない。
+    /// </summary>
     public sealed class WireMeter
     {
         long bytes;

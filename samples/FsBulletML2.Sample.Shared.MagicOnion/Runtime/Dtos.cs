@@ -3,14 +3,7 @@ using MessagePack;
 namespace FsBulletML2.Sample.MagicOnion.Shared
 {
     /// <summary>
-    /// 弾 1 発。この struct が、client が知ってよいものの全部。
-    ///
-    /// BulletML の語（<c>changeDirection</c> / <c>accel</c> / <c>term</c>）は
-    /// 1 つ も出てこない。出した瞬間に client が運動則を持つことになり、
-    /// サーバーと 2 か所 に同じものが在る形になる。
-    ///
-    /// 位置は <see cref="RoomInfo"/> が宣言した空間の値で、
-    /// client はそれを描く座標へ移すだけ。掛ける係数を client が決めない。
+    /// 弾 1 発。
     /// </summary>
     [MessagePackObject]
     public struct BulletDto
@@ -20,16 +13,7 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
         [Key(0)] public int Id;
 
         /// <summary>
-        /// 盤面 を 0..65535 に割った位置。float ではない。
-        ///
-        /// float32 は MessagePack で 5 バイト固定（0xca ＋ 4）。
-        /// ushort は 3 バイト で乗るので、x / y / 向き の 3 本 で
-        /// 弾 1 発 が 19.9 -> 13.8 バイト（実測。<c>--measure-wire</c>）。
-        ///
-        /// 刻み は盤面 4.8 x 6.4 に対して 0.0001 未満。
-        /// 描く前 に <see cref="Wire"/> で戻す —— 戻す式 は
-        /// <see cref="RoomInfo"/> の盤面 から決まるので、client は
-        /// 相変わらず物理量 を持たない。
+        /// 盤面 を 0..65535 に割った位置。
         /// </summary>
         [Key(1)] public ushort X;
         [Key(2)] public ushort Y;
@@ -42,10 +26,7 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
     }
 
     /// <summary>
-    /// 1 コマ ぶん。形 A（毎コマ の並び）——
-    /// いま在る弾 全部 を毎回 送る。差分ではない。
-    ///
-    /// 差分にするのは E1.5（帯域を締める段）で、先に測ってから。
+    /// 1 コマ ぶん。
     /// </summary>
     [MessagePackObject]
     public class FrameDto
@@ -56,12 +37,7 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
         [Key(1)] public BulletDto[] Bullets { get; set; }
 
         /// <summary>
-        /// このコマで自機に当たった弾の数。当たり判定 はサーバーが持つ。
-        ///
-        /// 当たった弾はその場で並びから消えるので、
-        /// 「同じ弾を 2 回 数えた」が起きない ——
-        /// client 側 で判定していたときは、重なっているあいだ毎コマ 数えないように
-        /// 「もう数えた弾」を覚えておく必要があった。
+        /// このコマで自機に当たった弾の数。
         /// </summary>
         [Key(2)] public ushort PlayerHits { get; set; }
 
@@ -70,11 +46,8 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
     }
 
     /// <summary>
-    /// 配る形 と 描く値 のあいだ の換算。両側 が同じこれを使う。
-    ///
-    /// 2 か所 に書かない。 丸め方 が 1 ビット でもずれると、
-    /// 弾が半 ピクセル ずれた場所 に出る —— ビルドは通るし落ちもしないので、
-    /// 目 でしか分からない類 の割れ方 になる。
+    /// 配る形 と 描く値 のあいだ の換算。
+    /// 丸め方 が 1 ビット でもずれると、 弾が半 ピクセル ずれた場所 に出る —— ビルドは通るし落ちもしないので、 目 でしか分からない類 の割れ方 になる。
     /// </summary>
     public static class Wire
     {
@@ -113,11 +86,6 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
 
     /// <summary>
     /// 部屋に入ったときに 1 度 だけ返るもの。
-    ///
-    /// ここに空間の決めごとを載せる理由。 弾の向きを決める式（aim）は
-    /// 座標系の上で計算されるので、サーバーと client が別の空間を持つと
-    /// 軌跡が割れる。サーバーが自分の空間で走らせ、その名前を配る。
-    /// client がやるのは描くときの変換だけで、物理量には触らない。
     /// </summary>
     [MessagePackObject]
     public class RoomInfo
@@ -140,12 +108,8 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
         [Key(8)] public float OriginY { get; set; }
 
         /// <summary>
-        /// 何コマ に 1 回 配るか。1 なら毎コマ。
-        ///
-        /// これを配らないと、client は間引きと抜けを見分けられない。
-        /// <see cref="FrameDto.Frame"/> はコマ番号（＝時刻）のままなので、
-        /// 2 なら 1, 3, 5… と飛ぶ —— 配らなければ、client は全部 を
-        /// 「落ちた」と数えることになる。
+        /// 何コマ に 1 回 配るか。
+        /// 2 なら 1, 3, 5… と飛ぶ —— 配らなければ、client は全部 を 「落ちた」と数えることになる。
         /// </summary>
         [Key(9)] public int SendEvery { get; set; } = 1;
     }

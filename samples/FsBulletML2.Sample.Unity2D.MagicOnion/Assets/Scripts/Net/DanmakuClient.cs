@@ -9,15 +9,9 @@ using R3;
 using UnityEngine;
 
 /// <summary>
-/// サーバーと繋がっている 1 本。この面 が、このサンプルで唯一 網 を知る。
-///
-/// 外 へ出すのは <see cref="DanmakuState"/>（R3）だけ。
-///
-/// 2 か所 在ったのを、それで畳んだ。
-/// 寿命 は UniTask で締める。 元 は <c>async void</c> だったので、
-/// 落ちても誰も気づかず、component が壊れても走り続けた。
-/// いまは <c>destroyCancellationToken</c> を通してあるので、
-/// 場面 を抜けた時点で待ちが解ける。
+/// サーバーと繋がっている 1 本。
+/// 元 は <c>async void</c> だったので、 落ちても誰も気づかず、component が壊れても走り続けた。
+/// </summary>
 public sealed class DanmakuClient : MonoBehaviour
 {
     public static DanmakuClient Instance { get; private set; }
@@ -51,28 +45,21 @@ public sealed class DanmakuClient : MonoBehaviour
 
     void Start()
     {
-        // `async void` にしない。 落ちても誰も気づかず、
-        // component が壊れても走り続ける。UniTask なら
-        // destroyCancellationToken で解けて、例外 も Forget が拾う
+        // `async void` にしない。
+        // 落ちても誰も気づかず、 component が壊れても走り続ける。
         ConnectAsync(destroyCancellationToken).Forget();
     }
 
     /// <summary>
     /// 受けたコマ を主スレッド へ汲み直す。
-    ///
-    /// ここは R3 の <c>EveryUpdate</c> に置き換えない。
-    /// あれは PlayerLoop の別の点 に刺さるので、ECS の system
-    /// （<c>BulletSimulationSystem</c>）との前後 が動きうる ——
-    /// 弾を並べるのが描く側 より後 になると 1 コマ 遅れる。
+    /// </summary>
     void Update() => Pump();
 
     async UniTaskVoid ConnectAsync(CancellationToken token)
     {
         try
         {
-            // h2c。 証明書 を要求すると動かし方が 1 段 増える。
-            // YetAnotherHttpHandler が要るのは、Unity の素 の HttpClient が
-            // HTTP/2 を喋れないから（プラットフォームによっては喋るが、揃わない）
+            // h2c。
             var handler = new YetAnotherHttpHandler { Http2Only = true };
             channel = GrpcChannel.ForAddress(Host, new GrpcChannelOptions { HttpHandler = handler });
 
@@ -165,11 +152,8 @@ public sealed class DanmakuClient : MonoBehaviour
     }
 
     /// <summary>
-    /// 自機 の位置を送る。毎コマ 送る。
-    ///
-    /// <c>aim</c> が読むだけなら 3 コマ に 1 回 でも見え方は変わらなかったが、
-    /// この位置は当たり判定 の入力 にもなった。
-    /// 間引くと、その間に動いたぶんが判定 に映らない。
+    /// 自機 の位置を送る。
+    /// </summary>
     void SendPlayer()
     {
         var player = BulletEcsRuntime.Player;
@@ -186,21 +170,13 @@ public sealed class DanmakuClient : MonoBehaviour
         sendCountdown = Mathf.Max(1, PlayerSendInterval);
 
         var p = player.transform.position;
-        // 待たない。 待つと自機 の動きが往復 の遅れに引きずられる。
-        // `_ =` ではなく Forget —— 落ちたときに UniTask が拾って出す
-        // `ValueTask` には Forget が生えていない。 MagicOnion の口 は ValueTask を
-        // 返すので、UniTask へ移してから投げっぱなしにする（`_ =` と違って、
-        // 落ちたら UniTaskScheduler が拾って出す）
+        // 待たない。
+        // `_ =` ではなく Forget —— 落ちたときに UniTask が拾って出す `ValueTask` には Forget が生えていない。
         hub.SetPlayerAsync(p.x, p.y).AsUniTask().Forget();
     }
 
     /// <summary>
     /// 敵 を、サーバーが言った弾の出どころ へ置く。
-    ///
-    /// 逆をやらない。 場面 に置いてある敵 の位置をサーバーへ教える形にすると、
-    /// client が 2 人 居たときにどちらの言い分を採るかが決まらない。
-    /// サーバーが空間 を決めるほうへ揃える。
-    ///
     /// 置かないと、弾の出どころ と敵 の絵 がずれる（0.4 ずれていた）。
     /// </summary>
     static void PlaceEnemy(RoomInfo room)
@@ -216,10 +192,8 @@ public sealed class DanmakuClient : MonoBehaviour
     }
 
     /// <summary>
-    /// 自機 の弾 を撃つ。撃つのはサーバー。
+    /// 自機 の弾 を撃つ。
     /// ここが渡すのは位置だけで、何発 出るかも どう飛ぶかも向こうが決める。
-    ///
-    /// 待たない。 撃てたかどうかは次のコマの並びに出る。
     /// </summary>
     public void Shoot(float x, float y)
     {
@@ -303,10 +277,8 @@ public sealed class DanmakuClient : MonoBehaviour
     }
 
     /// <summary>
-    /// 降ってきたコマを 1 つ だけ持つ。溜めない。
-    ///
-    /// 溜めると、描く側 が遅れたぶんだけ古いコマを順に描くことになり、
-    /// 遅れが返ってこない。 いちばん新しい 1 つ を残して捨てる。
+    /// 降ってきたコマを 1 つ だけ持つ。
+    /// いちばん新しい 1 つ を残して捨てる。
     /// </summary>
     sealed class Receiver : IDanmakuHubReceiver
     {
@@ -326,10 +298,7 @@ public sealed class DanmakuClient : MonoBehaviour
 
             Interlocked.Increment(ref dropped);
 
-            // 当たりは捨てられない。 位置は「いまどこか」なので古いコマを
-            // 落としてよいが、当たりは出来事で、落とすとその 1 発 が
-            // 無かったことになる（サーバー側 で「撃ち」と「位置」を
-            // 別 に扱ったのと同じ分かれ目）。
+            // 当たりは捨てられない。
             Interlocked.Add(ref pendingPlayerHits, previous.PlayerHits);
             Interlocked.Add(ref pendingEnemyHits, previous.EnemyHits);
         }

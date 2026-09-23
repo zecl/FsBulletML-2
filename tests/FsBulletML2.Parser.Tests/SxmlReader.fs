@@ -8,13 +8,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// sxml を読む口の目盛り。
-///
-/// --- なぜ 2 本 目 を書いているのか
-///
-/// `Parser` には `tryReadSxmlString` が既に在る。それでも `Diagnosis` は
-/// 使っていない —— あちらは
-///     | Failure (_,_,_) -> None
-/// で、FParsec が持っている行と桁を捨てている。 波線を引くにはそれが要る。
+/// `tryReadSxmlString` は行と桁を捨てる。波線を引くにはそれが要る。
 [<TestFixture>]
 type SxmlReader() =
 
@@ -133,17 +127,13 @@ type SxmlReader() =
 
   [<Test>]
   member _.``知らない字は 断る``() =
-    // v1.1 で全部 揃ったが、2 つ の並びを 1 本 にはしない ——
-    // 次の表記を足すとき、また割れる（読めない状態を必ず通る）。
-    // 人へ見せる口は `ApplySource` の側（`未対応: …`）に残してある
+    // 2 つの並びを 1 本にはしない。次の表記を足すとき、また割れる。
     (SourceKind.tryParse "nope").IsNone |> should be True
 
   [<Test>]
   member _.``拡張子は 表記ごとに違い、id から導けない``() =
-    // `"." + Id` で作れる形に見える。 3 つ までは合うが F# の CE だけ
-    // ずれる（id は `fsharp`、拡張子は `.fsx`）—— 導く形にすると
-    // そこだけ静かに嘘になる。ブラウザ側の Open が名前で表記を決めるので、
-    // 嘘だと「開いたのに読めない」になる
+    // `"." + Id` に見える。F# の CE だけずれる（id は `fsharp`、拡張子は `.fsx`）。
+    // 導くと「開いたのに読めない」になる。
     SourceKind.all |> List.map (fun k -> k.FileExtension)
     |> should equal [ ".xml"; ".sxml"; ".fsb"; ".fsx" ]
     SourceKind.all |> List.map (fun k -> k.FileExtension) |> List.distinct |> List.length

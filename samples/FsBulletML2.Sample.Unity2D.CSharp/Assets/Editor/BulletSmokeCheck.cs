@@ -5,14 +5,7 @@ using FsBulletML2;
 
 /// <summary>
 /// 弾が出ることを機械に言わせる。
-///
-/// 走らせ方（Unity を開かずに済む）:
-///
-/// コールバックで渡す形なので、数えるだけの関数を渡せばエンティティを
-///
-/// 較正した。 既存が緑のまま、この門だけが赤くなる変異:
-///
-/// 同じ門で当て直したときに、緑のまま通ることに気づいた。
+/// </summary>
 public static class BulletSmokeCheck
 {
     /// <summary>rand と rank と自機の位置を固定する。動かすと数が走行ごとに変わる</summary>
@@ -79,9 +72,8 @@ public static class BulletSmokeCheck
             }
         }
 
-        // エンジンが 1 コマ に何 ms 使うか。 描画も ECS も通さない値なので、
-        // 「FPS が出ない」の出どころがエンジンかどうかを割るのに使う。
-        // 60 FPS の予算は 16.7 ms、40 FPS なら 25 ms
+        // エンジンが 1 コマ に何 ms 使うか。
+        // 描画も ECS も通さない値なので、 「FPS が出ない」の出どころがエンジンかどうかを割るのに使う。
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var laps = 0;
         for (int frame = 0; frame < 60; frame++)

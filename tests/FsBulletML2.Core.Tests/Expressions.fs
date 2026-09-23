@@ -36,9 +36,7 @@ module Expressions =
     if m.Success then sprintf "d=%s s=%s" m.Groups.[1].Value m.Groups.[2].Value
     else "撃っていない"
 
-/// 式の評価。Util の TryParse は internal なので直接は呼べないが、
-/// getValue 経由で <speed> に式を書けば届く。
-/// 本体に InternalsVisibleTo を足さずに測るため、この形にしてある。
+/// 式の評価。
 [<TestFixture>]
 type Expressions() =
 
@@ -86,9 +84,7 @@ type Expressions() =
     |> String.concat "\n"
     |> Golden.check "expr-rand-rank"
 
-  /// getValue は残った $ を 0 に潰す。その正規表現が `\$d*` になっていて、
-  /// `\$\d*` のつもりだったように見える。`$1` が丸ごと消えるのか、
-  /// `$` だけ消えて `01` になるのかで結果が変わるので測る。
+  /// getValue は残った $ を 0 に潰す。
   [<Test>]
   member _.``参照の外に書いた 未解決の パラメータ``() =
     [ "$1"      // 丸ごと 0 になれば 0、$ だけなら 01 = 1
@@ -109,14 +105,7 @@ type Expressions() =
       (Expressions.firstBullet Expressions.fullParams)
     |> Golden.check "expr-short-params"
 
-  /// 4 の当てる先を実物で見る。samples 227 本のうち、
-  /// ref に渡す param が参照先の使う $N に足りないのは 2 本（静的に数えた）。
-  ///
-  /// どちらも `<actionRef label="impl:30"></actionRef>` のように param を 1 つも渡さず、
-  /// 参照先が `<direction>$2</direction>` `<speed>$1</speed>` を使う。
-  ///
-  /// 7 で「当てる先が在ること」と「値が動くこと」を別に測らずに踏んだので、
-  /// ここは先に実物の値を控えにする
+  /// 4 の当てる先を実物で見る。
   [<Test>]
   member _.``実物 2 本の 未解決の パラメータ``() =
     let names = [ "[Bulletsmorph]_kunekune_plus_homing.xml"; "[Bulletsmorph]_satoru4.xml" ]

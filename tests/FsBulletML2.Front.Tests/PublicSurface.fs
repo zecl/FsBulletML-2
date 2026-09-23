@@ -8,9 +8,7 @@ open FsUnit
 open FsBulletML2.Front
 
 /// `FsBulletML2.Front` の公開面に `seq<_>`（`IEnumerable<_>`）が出ないこと。
-///
-/// 但し書きではなく門にしてある。 「`seq` を毎コマ 列挙すると列挙子が
-/// 40 B / 回 出る」は測ってあるが、但し書きは次に口を足す人には届かない。
+/// 但し書きではなく門。次に口を足す人には但し書きが届かない。
 [<TestFixture>]
 type PublicSurface() =
 

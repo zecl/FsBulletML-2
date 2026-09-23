@@ -3,9 +3,6 @@ namespace FsBulletML2.Core.Tests
 open NUnit.Framework
 
 /// 中身の無い BulletML を食わせたときにどうなるか。
-///
-/// 旧 API の `run` の戻り値を測っていた 2 本 は消した。
-/// あれは「`run` が X / Y を差分ではなく絶対値で返す枝に本当に入れるのか」
 [<TestFixture>]
 type Degenerate() =
 

@@ -3,13 +3,7 @@ namespace FsBulletML2
 open System
 open System.Globalization
 
-/// BulletML の数値式を、文字列でなく木で持つ。
-///
-/// 意味論は XPath 1.0 の数値式（精度は double、最後に float32 へ丸める）——
-/// 旧の `getValueByXPath` に 1 ビット も違わない値を返すのが目標で、速さはその次。
-///
-/// 旧の評価器は Core に無い（`System.Xml.XPath` を引くと Fable で焼けなくなる）。
-/// 突き合わせの相手は `tests/FsBulletML2.Core.Tests/XPathOracle.fs`。
+/// 数値式の木。XPath 1.0 に 1 ビットも違わないのが先。旧評価器は Core に置くな。
 module Expr =
 
   /// 式の木。値は double で持つ（XPath 1.0 の数値が double のため）
@@ -25,16 +19,12 @@ module Expr =
     | Mul of Node * Node
     | Div of Node * Node
     | Mod of Node * Node
-    /// 読めなかった式。旧は XPath の number() が NaN を返すので、それに合わせる。
-    /// 例外にしない —— 例外にすると、いま静かに NaN で進んでいる台本が落ちる
+    /// 読めなかった式。例外にせず NaN。例外にすると静かに進んでいる台本が落ちる。
     | Invalid
 
   // ---- 読む ----
 
-  /// `getValueByXPath` が置き換える順を写す（`$rand` -> `$rank` -> `$` + 数字）。
-  ///
-  /// 順が要るのは Replace が部分一致だから —— `"$random"` は `"$rand"` が
-  /// 先に当たって `"0.5om"` になる（旧がそうなっている）。
+  /// `$rand` `$rank` `$数字` の順。順を変えると `$random` が別の字になる。
   let private tryVar (s: string) (i: int) =
     if i + 5 <= s.Length && String.CompareOrdinal(s, i, "$rand", 0, 5) = 0 then Some (Rand, i + 5)
     elif i + 5 <= s.Length && String.CompareOrdinal(s, i, "$rank", 0, 5) = 0 then Some (Rank, i + 5)
@@ -45,8 +35,7 @@ module Expr =
       Some (Num 0.0, j)
     else None
 
-  /// 数値リテラル。XPath 1.0 の Number は  digits ('.' digits?)?  |  '.' digits
-  /// 指数表記は無い（旧が number() に投げているので、ここも受けない）
+  /// 数値リテラル。指数表記は受けない（旧の number() に無い）。
   let private tryNumber (s: string) (i: int) =
     let start = i
     let mutable j = i
@@ -72,12 +61,7 @@ module Expr =
     while j < s.Length && Char.IsWhiteSpace s.[j] do j <- j + 1
     j
 
-  /// 再帰下降。XPath 1.0 の優先順位に合わせる。
-  ///
-  ///   expr    := term (('+' | '-') term)*
-  ///   term    := unary (('*' | '/' | '%') unary)*
-  ///   unary   := '-' unary | primary
-  ///   primary := number | '$rand' | '$rank' | '$' digits* | '(' expr ')'
+  /// 再帰下降。XPath 1.0 の優先順位。単項プラスは受けない。
   let rec private parseExpr (s: string) (i: int) : (Node * int) option =
     match parseTerm s (skipWs s i) with
     | None -> None
@@ -153,11 +137,7 @@ module Expr =
 
   // ---- 評価する ----
 
-  /// float32 を、`getValueByXPath` と同じ道筋で double にする。
-  ///
-  /// そのまま widen しない —— 旧は float32 の `ToString` を式へ埋め、
-  /// XPath がその文字列を double として読むので、1e-9 ずれて
-  /// float32 に戻したときの最後の 1 ビットが違う。
+  /// float32 を ToString 経由で double にする。そのまま widen すると最後の 1 ビットがずれる。
   let private widen (v: float32) : double =
     if Single.IsNaN v || Single.IsInfinity v then Double.NaN
     else
@@ -166,8 +146,7 @@ module Expr =
       | true, d -> d
       | _ -> Double.NaN
 
-  /// 木が $rand / $rank を使うか。使わないなら widen を通らずに済む
-  /// （実物の式の 61% は数値リテラルだけ）
+  /// 木が $rand / $rank を使うか。評価のたびに歩くと木にした意味が無くなる。
   let rec private uses (node: Node) =
     match node with
     | Rand -> true, false
@@ -182,8 +161,7 @@ module Expr =
   let usesRand (node: Node) = fst (uses node)
   let usesRank (node: Node) = snd (uses node)
 
-  /// 引いた乱数と rank を渡して計算する。double で計算するのは
-  /// XPath 1.0 の数値が double だから。途中で float32 へ落とすと桁がずれる
+  /// double で計算する。途中で float32 へ落とすと桁がずれる。
   let rec private evalWith (randValue: double) (rank: double) (node: Node) : double =
     match node with
     | Num v -> v
@@ -197,12 +175,7 @@ module Expr =
     | Mod (a, b) -> evalWith randValue rank a % evalWith randValue rank b
     | Invalid -> Double.NaN
 
-  /// `getValueByXPath` と同じ型で返す。
-  ///
-  /// 乱数は 1 回 の評価につき 1 回 だけ引く。`$rand` が何個 あっても、
-  /// 1 個 も無くても、必ず 1 回（同じ式の中の `$rand` は全部 同じ値）。
-  /// 引く回数は乱数の並びを進めるので、ここを写し違えると 227 本 の軌跡が
-  /// 丸ごとずれる。
+  /// 乱数は評価 1 回につき 1 回だけ引く。回数を変えると軌跡がずれる。
   let eval (rand: unit -> float32) (rank: float32) (node: Node) : float32 =
     // 引く回数を合わせるため、値を使わなくても必ず 1 回 引く
     let r = rand ()
@@ -219,22 +192,14 @@ module Expr =
 
   // ---- 木を持ち回るための入れ物 ----
 
-  /// 数値式。元の文字列と、それを読んだ木の組。
-  ///
-  /// 文字列を捨てない。 参照の実引数は `Param.replace` が「文字の置き換え」で
-  /// 入れていて、置き換えは優先順位を変える（`"1+2"` を `"$1*3"` へ入れると
-  /// `1+2*3 = 7`。木の上で節として差し込むと `(1+2)*3 = 9`）。
-  /// 同梱 227 本 のうち 50 本 が当たる。
-  ///
-  /// 読むのは「文字列が決まった時点」で 1 回。走行中は木を評価するだけ。
+  /// 数値式。文字列を捨てない。木で差し込むと実引数の優先順位が変わる。
   [<CustomEquality; NoComparison>]
   type NumExpr =
     { /// もとの文字列。Param.replace と、XML へ書き戻すときに要る
       Source : string
       /// Source を読んだ木
       Ast : Node
-      /// この式が $rand を使うか。読んだときに 1 回 数える
-      /// （評価のたびに木を歩くと、木にした意味が無くなる）
+      /// この式が $rand を使うか。読んだときに 1 回数える。評価のたびに歩くと木にした意味が無くなる。
       NeedRand : bool
       /// この式が $rank を使うか
       NeedRank : bool }
@@ -248,8 +213,7 @@ module Expr =
     override this.GetHashCode () = if isNull this.Source then 0 else this.Source.GetHashCode()
 
   module NumExpr =
-    /// 文字列から作る唯一の入口。ここを通さずに作れないので、
-    /// 「読んでいない式」が木の中に紛れ込まない。
+    /// 文字列から作る唯一の入口。通さないと読んでいない式が木に紛れる。
     let ofString (s: string) : NumExpr =
       let ast = parse s
       let needRand, needRank = uses ast
@@ -257,10 +221,7 @@ module Expr =
 
     let text (e: NumExpr) = e.Source
 
-    /// 読めた式か。 読めなかった節（`Invalid`）が 1 つ でも在れば false。
-    ///
-    /// 走行は読めない式を NaN で素通りさせるが、定数を畳む段は昔から
-    /// 落ちていた（`Diagnosis` の 4 層 目）。XPath を外したので同じ線をここで引く。
+    /// 読めた式か。走行は NaN で素通りするが、畳む段は落ちる。線を消すと読めない定数が通る。
     let isReadable (e: NumExpr) : bool =
       let rec ok node =
         match node with
@@ -270,8 +231,7 @@ module Expr =
         | Add (a, b) | Sub (a, b) | Mul (a, b) | Div (a, b) | Mod (a, b) -> ok a && ok b
       ok e.Ast
 
-    /// 走行中の入口。木を歩くのは計算のときだけで、
-    /// $rand / $rank を使うかは読んだときに決まっている
+    /// 走行中の入口。$rand / $rank を使うかは読んだときに決まっている。
     let eval (rand: unit -> float32) (rank: float32) (e: NumExpr) : float32 =
       // 引く回数を合わせるため、値を使わなくても必ず 1 回 引く
       let r = rand ()
@@ -284,5 +244,5 @@ module Expr =
       let kd = if e.NeedRank then widen rank else 0.0
       float32 (evalWith rd kd e.Ast)
 
-    /// 文字を置き換えてから読み直す。Param.replace の置き換え関数を受け取る
+    /// 文字を置き換えてから読み直す。木のまま差し替えない。
     let mapSource (f: string -> string) (e: NumExpr) : NumExpr = ofString (f e.Source)

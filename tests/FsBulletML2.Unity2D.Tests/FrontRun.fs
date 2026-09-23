@@ -8,10 +8,7 @@ open FsBulletML2
 open FsBulletML2.Unity2D
 
 /// 撃たれた弾の実体。`GetBulletPrefubInstance` を差し替えるためだけの派生。
-///
-/// サンプルはここで prefab を実体化するが、この門は Unity を起こさないので
-/// `Transform` の stub を 1 個 作るだけ。産まれた弾は静的な籠へ入れて、
-/// 回す側が拾う（Unity では prefab の Awake が Manager へ入れる）。
+/// Unity は起こさない。産まれた弾は静的な籠へ入れ、回す側が拾う。
 type TestBullet(t: Transform) =
   inherit DefaultBullet(t)
 
@@ -26,11 +23,8 @@ type TestBullet(t: Transform) =
     TestBullet.Born.Add b
     b
 
-/// このフロントを実際に回して、軌跡を凍らせる門。
-///
-/// MonoGame 側の同名の門と対。こちらでしか通らないものは
-///
-///     座標の係数と符号（1/100 で縮め、Y は反転する）
+/// このフロントを実際に回して、軌跡を凍らせる門。MonoGame 側と対。
+/// こちらは 1/100 で縮め、Y は反転する。均すと全弾幕の軌跡が割れる。
 [<TestFixture>]
 [<NonParallelizable>]
 type FrontRun() =
@@ -84,10 +78,7 @@ type FrontRun() =
     sprintf "f%02d  [%s]" i one
 
   /// 根の敵を 1 体 置いて 12 コマ 回す。
-  ///
-  /// Unity は MonoBehaviour.Update が駆動するので、Manager に
-  /// まとめて回す口が無い。ここは生きている弾を自分で回して、
-  /// 使い終わったものを落とす（サンプルの `Update` と同じ形）。
+  /// Manager にまとめて回す口が無いので、生きている弾を自分で回して落とす。
   let run () =
     let script = Runner.load loadRand (loadRank ()) (readXmlString Xml)
     TestBullet.Born.Clear()

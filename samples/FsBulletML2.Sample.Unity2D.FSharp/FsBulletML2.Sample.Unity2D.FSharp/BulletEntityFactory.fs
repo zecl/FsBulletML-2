@@ -10,10 +10,6 @@ open UnityEngine.Rendering
 open FsBulletML2
 
 /// 弾の Entity を作る・消す。
-///
-/// 描画は Entities Graphics。 弾ごとに mesh と material を持たせず、
-/// `RenderMeshArray` に 2 組（敵・自機）だけ入れて index で指す。
-/// これで同じ material の弾がインスタンシングでまとめて描かれる。
 [<AbstractClass; Sealed>]
 type BulletEntityFactory private () =
 
@@ -176,14 +172,7 @@ type BulletEntityFactory private () =
     sim.SetScript(script)
     sim
 
-  /// 撃たれた弾を実体にする。旧 GetBulletPrefubInstance ＋ Spawn の合わせ。
-  ///
-  /// 弾幕は親と同じものを引き継ぐ。 引き継がないと、弾の中に残った
-  /// bulletRef / actionRef を誰も解けない。実行位置はエンジンが
-  /// `Frame.Spawned` で渡してきたものをそのまま使う。
-  ///
-  /// 産まれる位置は撃った側と同じ。 EcsFront.origin が AtShooter で、Spawn に Aim と
-  /// 同じ値を入れているのはこのため。片方だけ直すと軌跡が割れる。
+  /// 撃たれた弾を実体にする。
   static member SpawnChild (parent: BulletSim, child: BulletRun) =
     let sim = BulletEntityFactory.Spawn(parent.Kind, parent.X, parent.Y, false)
     // 弾幕は親と同じものを引き継ぐ。引き継ぎ忘れる書き方がもう無い

@@ -5,12 +5,7 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.Domain
 
-/// final review 2: 根の accel は、木を組む段の placeholder が
-/// first = false（term = 1.f）であり、根の弾は Init を一度も通らない
-/// （設計文書 5.3「走らせ直す」）ので、この first = false のまま
-/// 最初のフレームへ入る。changeDirection / changeSpeed は placeholder が
-/// first = true なので、Init を経ないまま入っても「まだ評価前」と一致するが、
-/// accel だけは「もう評価済み」を意味する逆の初期状態を持つ。
+/// 根の accel は、木を組む段の placeholder が first = false のまま最初のフレームへ入る。
 [<TestFixture>]
 type RootAccel() =
 
@@ -29,11 +24,7 @@ type RootAccel() =
       HasFired = false
       Tops = tops }
 
-  // 4077ed6 の accelCommand を first = false で読んだときの結果
-  // （設計文書 5.3 に書いた手計算）。horizontal absolute 2、vertical
-  // absolute 1、term 5 と書いてあっても、木を組む段の placeholder
-  // term = 1.f が Init されるまで残るので、term も horizontal / vertical も
-  // 一度も読まれない
+  // 木を組む段の placeholder は term = 1.f のまま残る。horizontal / vertical も読まれない。
   let accelScript =
     Action.Accel (
       Some (Horizontal (Some { horizontalType = HorizontalType.Absolute }, numExpr "2")),
@@ -84,19 +75,11 @@ type RootAccel() =
     let r3 = Step.step noResolvers env r2.State
     r3.Delta |> should equal { X = 0.0f; Y = 0.0f }
 
-  /// 較正: rootProgress の Accel の腕を外す（Progress.initial に戻す）と
-  /// どうなるかを、同じテストファイルの中で実際に組んで見せる。
-  /// 上のテストが緑のまま、こちらだけが割れた値を返すことで、
-  /// 「直さなければ何が起きていたか」を数値で残す。
-  ///
-  /// 現物のレビューで確かめた HEAD の数（f00 x=0.400 y=0.200、
-  /// f01 x=1.200 y=0.600、f02 x=2.400 y=1.200）と一致する
+  /// 較正: Accel の腕を外すと、上のテストは緑のまま、こちらだけが割れる。
   [<Test>]
   member _.``較正: Progress.initial のままだと、根の accel が本物の加速度になる``() =
     let top = ActionElm.Action ({ actionLabel = Some (ActionLabel "top") }, [ accelScript; Action.Wait (numExpr "20") ])
-    // rootProgress の代わりに Progress.initial で組む。accel は
-    // PAccel (false, 0, 0, 0) になり、first = true（まだ評価前）と
-    // 同じ扱いで最初のフレームに本当に評価される
+    // rootProgress の代わりに Progress.initial で組む。
     let buggyProgress = Progress.initialActionElm top
     let st0 = stateWith [ top, buggyProgress, FireContext.zero ]
     let r1 = Step.step noResolvers env st0

@@ -87,13 +87,7 @@ type StepFire() =
     | [ Spawn b ] -> b.Dir |> should (equalWithin 0.0001) env.Aim.ToPlayer
     | _ -> Assert.Fail (sprintf "Spawn 1 つのはずが %A" w)
 
-  /// final review 3: <bullet><direction type="aim"> は、fire 側の aim
-  /// （撃った側の位置に依る env.Aim.ToPlayer）とは別の値になるはずなので、
-  /// この時点（stepFire の中）では解決できない。旧 createTask は
-  /// GetNewBullet() が返す、まだ位置を持たない新しい弾オブジェクトの
-  /// GetAimDir() を読んでいたが、stepFire の時点では撃たれた弾の
-  /// 実オブジェクトがまだ存在しない（Spawn は値で、実体は旧なら
-  /// `BulletRunner.applySpawn` が newBullet として後で作っていた。
+  /// bullet 側の aim は、stepFire の中では解決できない。
   [<Test>]
   member _.``bullet 側の aim は、産まれる弾の位置から見た向きで解決する``() =
     let script =
@@ -103,8 +97,6 @@ type StepFire() =
     match w with
     | [ Spawn b ] ->
         // 30 度 = π/6 に env.Spawn.ToPlayer（3.0）が足された値。
-        // 撃った側の env.Aim.ToPlayer（1.0）を混ぜていれば約 1.524 になるので、
-        // 取り違えるとここで割れる
         b.Dir |> should (equalWithin 0.0001) (Step.calcDir (env.Spawn.ToPlayer + float32 (System.Math.PI / 6.0)))
     | _ -> Assert.Fail (sprintf "Spawn 1 つのはずが %A" w)
 
@@ -149,13 +141,6 @@ type StepFire() =
     | _ -> Assert.Fail (sprintf "Spawn 1 つのはずが %A" w)
 
   /// final review 5: 5 つめの draw site（設計文書 5.3 参照）。
-  ///
-  /// 旧 expandBulletRefOnce は、解決した
-  /// 瞬間に bullet 本体の中の wait をまとめて引いていた。この直後、
-  /// createTask の bulletElm.Init(env) に当たる resetChild がもう一度
-  /// 同じ wait を引き直す（1 回めの値は上書きされて捨てられるが、消費は
-  /// 残る）ので、bulletRef で解決したときは合計 2 回。resetChild だけなら
-  /// 1 回のはず——bulletRef の解決そのものがもう 1 回ぶんの乱数を消費する
   [<Test>]
   member _.``bulletRef を解いた瞬間にも、bullet 本体の中の wait を先に引く（resetChild と合わせて 2 回）``() =
     let target =
@@ -183,9 +168,6 @@ type StepFire() =
   [<Test>]
   member _.``撃つ側が Player なら、direction を省くと Aim.ToEnemy になる``() =
     // aim = if self.Kind = Player then Aim.ToEnemy else Aim.ToPlayer。
-    // 与えられたテストは Kind = Enemy 固定で ToPlayer 側しか通らないので、
-    // 逆の枝（Player 側）もここで踏む。踏まないと ToPlayer と ToEnemy を
-    // 取り違えても気づけない
     let playerState = { state with Kind = BulletType.Player }
     let script = Action.Fire ({ fireLabel = None }, None, None, bullet None None)
     let _, _, w = Sim.run env playerState (stepFire noResolvers script (PFire false) FireContext.zero)
@@ -195,11 +177,7 @@ type StepFire() =
 
   [<Test>]
   member _.``fire は、撃たれた弾の action の中身の getValue も先に引く``() =
-    // 旧の createTask は bulletElm.Init(env) を先頭で呼び、Wait /
-    // ChangeDirection / ChangeSpeed を Action / Repeat / Fire / Bullet を
-    // 辿って先に引く。ここを Progress.initial で
-    // 組むと、この分の乱数消費が丸ごと消えて、fire の直後から乱数列が
-    // ずれてしまう。
+    // Progress.initial で組むと乱数消費が消え、fire の直後から乱数列がずれる。
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let bulletBody =
@@ -214,12 +192,7 @@ type StepFire() =
 
   [<Test>]
   member _.``bullet の speed は、$rand を含まない定数式でも旧と同じく 2 回 getValue を読む``() =
-    // getValue は式の中身に関わらず env.Rand () を無条件に呼ぶ（TryParse.eval に
-    // 渡す前に呼ぶ）。旧は bullet 側の speed をこの式のまま 2 回読んでいる
-    // （createTask 相当と、fireCommand 相当）。
-    // 1 回めの結果は 2 回めの書き込みで必ず上書きされて使われないが、
-    // getValue の呼び出しそのものは残るので、"9" のような $rand を含まない
-    // 定数式でも消してはいけない
+    // getValue は式の中身に関わらず env.Rand () を呼ぶ。定数式でも呼び出しは消さない。
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let script =
@@ -230,14 +203,8 @@ type StepFire() =
 
   [<Test>]
   member _.``撃つ側の SrcSpeed は、latch が立つまでは bullet 側の速さを引き継ぎ、fire 側の値は読まれない``() =
-    // <fire><speed type="absolute">2</speed><bullet><speed type="absolute">5</speed></bullet></fire>
-    // <fire><speed type="sequence">0</speed><bullet/></fire>
-    //
-    // 1 発め: fc.SpeedInit（撃つ側の top ごとの latch）がまだ false で、
-    // bullet 側に speed が書いてあるので、bullet の速さ (5) をそのまま
-    // SrcSpeed に採用して latch を立てる。fire 側の speed "2" は
-    // getValue すら呼ばれない（bullet 側が勝つ、の 1 段深いところにある
-    // 旧の fireCommand の癖）
+    // 1 発めは latch が立つまで、bullet 側の速さ (5) を SrcSpeed にする。
+    // その間、fire 側の speed は getValue すら呼ばれない。
     let mutable draws = 0
     let counting = { env with Rand = fun () -> draws <- draws + 1; 0.5f }
     let script1 =

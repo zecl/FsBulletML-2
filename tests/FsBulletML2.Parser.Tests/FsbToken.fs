@@ -5,9 +5,7 @@ open FsUnit
 open FsBulletML2.LanguageService
 
 /// カーソルの下に在るものの判定、fsb の側。`XmlToken` / `SxmlToken` と対。
-///
-/// hover が引く。指すのはカーソルの位置に在る 1 文字で、
-/// そこが何でもなければ何も浮かない。
+/// hover が引く。何でもなければ何も浮かない。
 [<TestFixture>]
 type FsbToken() =
 

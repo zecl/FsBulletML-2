@@ -1,7 +1,5 @@
 /// 語彙を引いて候補と hover を出す 1 本。表記を知らない。
-///
-/// 割れ目は `Shape` に挙げたものだけで、残りは全部 共通 ——
-/// 語彙の引き方も、根をどう見つけるかも、hover に何を並べるかも、表記の話ではなかった。
+/// 割れ目は `Shape` だけ。残りを表記ごとに分けない。
 module FsBulletML2.LanguageService.Languages.Lookup
 
 open FsBulletML2.LanguageService
@@ -16,26 +14,18 @@ type Shape =
     ContextAt: string -> int -> Context
     TokenAt: string -> int -> Token
     /// 本文の中の要素を全部。カーソルを見ない側。
-    ///
-    /// 表記ごとの 1 本 は `XxxScan.tags`。 host 側の `ISourceReader.Tags` が
-    /// 同じものを指している —— 波線と rename が同じ数え方を見る
+    /// `XxxScan.tags` と host の `Tags` は同じものを指す。分けると波線と rename がずれる。
     Tags: string -> TagHit list
-    /// 式が書ける要素の中身（v4.1）。受け取るのは `#PCDATA` を取る要素名。
-    ///
-    /// 要素名は渡してもらう（正本は語彙の `Text` -> Core の DTD。
-    /// 器に表を書くと、DTD が動いたとき黙って古びる）
+    /// 式が書ける要素の中身（v4.1）。要素名は渡してもらう。
+    /// 器に表を書くと、DTD が動いたとき古びる。
     Texts: string -> string list -> TextHit list
     /// 属性を入れるときの字。`$0` がカーソルの置き場
     AttrSnippet: string -> string
     /// 雛形をその表記の字にする（v2.6）。字下げは 0 段 から。
-    ///
-    /// `SourceWriter` と 2 か所 になるので、門で突き合わせる
-    /// （`FrameWrite.Tests`）—— 片方 だけ直すのを止める
+    /// `SourceWriter` と 2 か所。片方 だけ直すと `FrameWrite.Tests` が落ちる。
     WriteFrame: Frame -> string
     /// 属性を入れるとき、手前 何文字 を置き換えるか。
-    ///
-    /// XML は名前のぶんだけ。sxml は手前の `(` も食う（食わないと
-    /// `((label "…")` になる）—— 何が語かを知っているのは表記のほう。
+    /// sxml は手前の `(` も食う。食わないと `((label "…")` になる。
     AttrReplace: string -> int -> int
     /// hover の見出し（要素）。その表記の書き方で
     ElementTitle: string -> string
@@ -45,14 +35,9 @@ type Shape =
     /// 返すのは (挿す位置, 入れる字)。字下げは本文から測る。
     DefinitionAt: string -> string -> string -> string -> (int * string) option }
 
-/// hover に出す markdown を組む 1 本。`Token` から先は表記を知らない。
-///
-/// DTD の行は必ずコードフェンスに入れる。 markdown は `<` をタグとして食うので、
-/// 素で渡すと `<!ELEMENT ...>` が丸ごと消える —— 消えても hover は浮くので、
-/// 目でも試験でも「出ていない」には見えない。
-///
-/// 見出しだけ呼ぶ側が決める（組み立てを表記ごとに持つと、
-/// 同じ語彙から出た同じ hover が表記の差に見える）
+/// hover の markdown。`Token` から先は表記を知らない。
+/// DTD の行はコードフェンスへ。素だと `<` が食われ、消えても hover は浮く。
+/// 見出しだけ呼ぶ側が決める。組み立てを表記ごとに持たない。
 let hover (v: Vocab) (title: Token -> string) (token: Token) : string option =
   let element name = v.Elements |> List.tryFind (fun e -> e.Name = name)
   let attribute el at =
@@ -81,13 +66,7 @@ let hover (v: Vocab) (title: Token -> string) (token: Token) : string option =
               block spec []))
 
 /// 同じ名前が本文のどこに書いてあるか。表記を知らない 1 本。
-///
-/// 要るのは `token` と `tags` の 2 つ だけ（3 表記 で対象の数が完全に
-/// 一致することを測ってからこの形にした）。
-///
-/// 走る先の対は語彙から引く（`Refs.pairs`）。host 側の波線と同じ 1 本。
-///
-/// 定義側からも参照側からも引ける（片方 だけだと「参照からしか直せない」）
+/// 走る先は `Refs.pairs`。定義側と参照側の両方から引く。
 let usages (v: Vocab) (tags: string -> TagHit list) (source: string) (token: Token) : Usage list =
   match token with
   | AttrValue (element, attr, value) ->
@@ -99,7 +78,6 @@ let usages (v: Vocab) (tags: string -> TagHit list) (source: string) (token: Tok
     | [] -> []
     | _ ->
       let names = related |> List.collect (fun (r, d, _) -> [ r; d ]) |> Set.ofList
-      // 定義側の要素名。 参照側と重ならないことは測ってある
       let defs = related |> List.map (fun (_, d, _) -> d) |> Set.ofList
       tags source
       // 閉じ札を数えない。 XML だけが返すもので、属性を持たない
@@ -116,13 +94,9 @@ let usages (v: Vocab) (tags: string -> TagHit list) (source: string) (token: Tok
              IsDefinition = defs.Contains tagName })
   | _ -> []
 
-/// カーソルの下の「無い参照」を、どう直せるか。表記を知らない 1 本。
-///
-/// 波線に紐づけない。 本文から数え直す —— 紐づけると
-/// Apply の直後の窓でしか出ない。
-///
-/// 近さは 1 まで（候補が 2 個 以上 在る弾幕でも距離 1 以内 が
-/// ちょうど 1 個 に絞れた。23 / 23）。作れない表記は `None` を返す。
+/// カーソルの下の無い参照を、どう直せるか。表記を知らない 1 本。
+/// 波線に紐づけない。本文から数え直す。紐づけると Apply の直後しか出ない。
+/// 近さは 1 まで。作れない表記は `None`。
 let fixes
   (v: Vocab)
   (tags: string -> TagHit list)
@@ -134,8 +108,7 @@ let fixes
   let pairs =
     Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
   Refs.missing pairs (tags source)
-  // カーソルがその名前の上に在るものだけ。本文の全部 を出さない ——
-  // 直すのはいま見ているところで、他所の分は他所で押す
+  // カーソルがその名前の上だけ。本文の全部 は出さない。
   |> List.filter (fun m -> offset >= m.Hit.ValueStart && offset <= m.Hit.ValueStop)
   |> List.collect (fun m ->
        let renames =
@@ -147,9 +120,7 @@ let fixes
                 Column = m.Hit.Column
                 EndColumn = m.Hit.EndColumn
                 Text = d })
-       // 綴りの直しが在っても出す。 近い名前が在ることと、
-       // その名前を使いたいことは別 —— 打ち間違いではなく
-       // 「まだ書いていない」ことのほうが多い
+       // 綴りの直しが在っても「定義を作る」は出す。近い名前と使いたい名前は別。
        let create =
          match definitionAt source m.DefName m.AttrName m.Hit.Value with
          | None -> []
@@ -163,8 +134,8 @@ let fixes
                Text = text } ]
        renames @ create)
 
-/// 定義の行の上に出す字（v4.3）。表記を知らない 1 本（CE もここを通る ——
-/// 中に置いたままだと「参照 0 か所」の文面が 2 通り に割れる）。
+/// 定義の行の上に出す字（v4.3）。表記を知らない 1 本。
+/// CE もここを通す。中に戻すと「参照 0 か所」の文面が割れる。
 let lenses (v: Vocab) (tags: string -> TagHit list) (source: string) : Lens list =
   let pairs =
     Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
@@ -187,11 +158,8 @@ let lenses (v: Vocab) (tags: string -> TagHit list) (source: string) : Lens list
 /// このクラスが host を知らないので、次の表記も同じ形で書ける
 type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
 
-  // 直前の 1 本 だけ覚える（v4.9）—— Monaco は 1 打鍵 で全部 の provider を
-  // 同じ本文で呼ぶ。本文が変われば捨てる。
-  //
-  // 覚えるのが 1 つ なので、2 つ の欄を行き来すると毎回 数え直す ——
-  // 答えは変わらない（速いか遅いかだけ）
+  // 直前の 1 本 だけ覚える。本文が変われば捨てる。
+  // 欄を行き来すると数え直す。答えは変わらない。
   let mutable tagSource: string = null
   let mutable tagCache: TagHit list = []
 
@@ -206,10 +174,8 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
   let exprElementNames (v: Vocab) =
     v.Elements |> List.filter (fun e -> e.Text) |> List.map (fun e -> e.Name)
 
-  // 名前の並びも鍵に入れる。この守りは冗長で、較正で 0 点。それでも残す ——
-  // 覚える口 が正しいのは「鍵が同じなら答えも同じ」だからで、`Texts` は
-  // 名前の並びにも依る（3 つ 目 の呼ぶ側が別の並びを渡した日に、
-  // 答えが古いまま返る）
+  // 名前の並びも鍵に入れる。冗長だが残す。
+  // `Texts` は並びにも依る。別の並びを渡すと古い答えが返る。
   let mutable textSource: string = null
   let mutable textNames: string list = []
   let mutable textCache: TextHit list = []
@@ -229,8 +195,7 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
     let plain = Completion.plain (Scan.nameLenBefore source offset)
     match shape.ContextAt source offset with
     | InContent None ->
-      // 根の外。名前を書かない —— 根は「誰の子にもなっていない要素」で引ける
-      // （書くと、この段だけが BulletML を知っていることになる）
+      // 根の外。名前を書かない。根は誰の子でもない要素で引ける。
       let elements = (vocabulary ()).Elements
       let children = elements |> List.collect (fun e -> e.Children) |> Set.ofList
       elements
@@ -241,8 +206,7 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
       | None -> []
       | Some e ->
         let children = e.Children |> List.map plain
-        // 雛形（v2.6）。要素名の候補の前 に出す —— 書き始めで止まるのは
-        // 「何が置けるか」ではなく「どう書くか」のほう
+        // 雛形は要素名の前 に出す。書き始めは「どう書くか」で止まる。
         let frames =
           (vocabulary ()).Frames
           |> List.filter (fun s -> List.contains parent s.In)
@@ -252,7 +216,6 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
                  Snippet = true
                  IsFrame = true
                  Replace = Scan.nameLenBefore source offset })
-        // #PCDATA を取る要素の中では式も書ける
         if not e.Text then frames @ children
         else
           let exprLen = Scan.exprLenBefore source offset
@@ -261,8 +224,7 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
       match find element with
       | None -> []
       | Some e ->
-        // 値まで入れて、引用符の中へカーソルを置く。
-        // 名前だけ入れると、必ず手で数文字 足すことになる
+        // 値まで入れて、引用符の中へカーソルを置く。名前だけだと手で足すことになる。
         let replace = shape.AttrReplace source offset
         e.Attrs
         |> List.map (fun a ->
@@ -280,9 +242,7 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
         | None -> []
 
   /// 見出しは表記ごと。`Token` から先は `Lookup.hover` の 1 本。
-  ///
-  /// 属性の見出しだけ表記に依らない —— `fire/@label` は道しるべであって、
-  /// その表記で打つ字ではない
+  /// 属性の見出しだけ表記に依らない。`fire/@label` は道しるべであって打つ字ではない。
   member private _.Title(token: Token) =
     match token with
     | Element name -> shape.ElementTitle name
@@ -304,9 +264,7 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
     fixes (vocabulary ()) tagsOf shape.DefinitionAt shape.ElementTitle source offset
 
   /// 定義の行の上に出す字（v4.3）。中身は `Lookup.lenses` の 1 本。
-  ///
-  /// `Semantics.UnusedDefinition`（v2.3 の青い波線）と同じ材料を見ている ——
-  /// 別々 に数えてどちらも同じ 6 件を指した。
+  /// `Semantics.UnusedDefinition` と同じ材料。別々に数えるな。
   member _.LensesIn(source: string) : Lens list =
     lenses (vocabulary ()) tagsOf source
 
@@ -314,8 +272,7 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
   member _.HintsIn(source: string) : ExprSpot list =
     let v = vocabulary ()
     let names = exprElementNames v
-    // 絞ってから行桁へ直す（1 つ ずつ `lineColumn` を呼ぶと
-    // 本文を出す先の数ぶん 走る。71 個 の本で 1.08 ms）
+    // 絞ってから行桁へ直す。1 つ ずつ `lineColumn` すると本文を何度も走る。
     let kept =
       textsOf source names
       |> List.choose (fun h ->
@@ -323,8 +280,7 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
            if t = "" then None
            elif not (ExprCheck.readable t) then None
            elif ExprCheck.plainNumber t then None
-           // `$rand` を含む式は出さない（毎回 変わるので、字の横に
-           // 固定の数を出すと嘘になる。同梱 6,042 件 のうち 349 件）
+           // `$rand` を含む式は出さない。毎回変わるので、横の固定値は嘘になる。
            elif t.Contains "$rand" then None
            else Some (h.TagName, t, h.Stop))
     let places = Scan.lineColumnsAscending source (kept |> List.map (fun (_, _, stop) -> stop))
@@ -346,7 +302,6 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
     for i in 0 .. tags.Length - 1 do
       let t = tags.[i]
       if not t.Closing && pairs |> List.exists (fun (refName, _, _) -> refName = t.TagName) then
-        // 中身の終わり。その札より深くない札が次に出てくるところ
         let mutable k = i + 1
         while k < tags.Length && tags.[k].Depth > t.Depth do k <- k + 1
         let until = if k < tags.Length then tags.[k].Start else source.Length
@@ -361,10 +316,7 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
       let label =
         t.Attrs |> List.tryPick (fun a -> if a.AttrName = attrName then Some a.Value else None)
       let label = defaultArg label ""
-      // その参照が渡している引数の並び（直下 だけ）。
-      //
-      // 引数の要素名を書かない（正本は Core の DTD。書くと器に要素の表が
-      // 1 つ 増えて `guard-playground-boundaries` が拾う。実際に拾われた）
+      // 引数の要素名を書かない。書くと器に表が増えて `guard-playground-boundaries` が拾う。
       let argNames =
         v.Elements
         |> List.tryFind (fun e -> e.Name = t.TagName)
@@ -377,7 +329,6 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
       while k < tags.Length && tags.[k].Depth > t.Depth do
         let u = tags.[k]
         if not u.Closing && List.contains u.TagName argNames && u.Depth = t.Depth + 1 then
-          // その引数の中身の終わり
           let mutable m = k + 1
           while m < tags.Length && tags.[m].Depth > u.Depth do m <- m + 1
           let uEnd = if m < tags.Length then tags.[m].Start else stop
@@ -413,19 +364,17 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
     let v = vocabulary ()
     let pairs =
       Refs.pairs (v.Elements |> List.map (fun e -> e.Name, e.Attrs |> List.map (fun a -> a.Name)))
-    // 式（v4.1）。別の 1 本（材料が `TextHit` で、`TagHit` ではない）
+    // 式は別の 1 本。材料は `TextHit` で `TagHit` ではない。
     let exprNames = exprElementNames v
     let expr = Semantics.exprFindings source (textsOf source exprNames)
-    // 並べ直す。 2 本 から来るので、混ぜたら本文の順に戻す ——
-    // `NoEntryPoint` だけは本文全体の話なので先頭 に残す
+    // 混ぜたら本文の順。`NoEntryPoint` だけ先頭に残す。
     let sem = Semantics.findings pairs v.TopPrefix (tagsOf source)
     match sem with
     | first :: rest when first.Kind = Semantics.NoEntryPoint ->
         first :: (rest @ expr |> List.sortBy (fun f -> f.Line, f.Column))
     | _ -> sem @ expr |> List.sortBy (fun f -> f.Line, f.Column)
 
-  /// 本文の構造（v2.4）。中身は `Outline.build` の 1 本（表記を知らない）——
-  /// 入れ子は `TagHit.Depth` が持っていて、数え方はそれぞれの Scan に閉じている。
+  /// 本文の構造（v2.4）。中身は `Outline.build`。表記を知らない。
   member _.OutlineOf(source: string) : Outline.Node list =
     let v = vocabulary ()
     let detailAttr =
@@ -433,8 +382,7 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
       |> List.tryHead
       |> Option.map (fun (_, _, attr) -> attr)
       |> Option.defaultValue ""
-    // `Scan.lineColumn` を渡さない（v4.9）—— 札 1 つ につき 2 回 引くので、
-    // 本文を札の数だけ走り直すことになる（焼いた JS で 40 ms 出た）
+    // `Scan.lineColumn` を渡さない。札ごとに引くと本文を札の数だけ走る。
     Outline.build detailAttr (Scan.lineColumnLookup source) (tagsOf source)
 
   interface ISourceLanguage with
@@ -450,7 +398,6 @@ type VocabularyLanguage(shape: Shape, vocabulary: unit -> Vocab) =
     member this.Fixes source offset = this.FixesAt(source, offset)
     member this.Findings source = this.FindingsIn source
     member this.Outline source = this.OutlineOf source
-    /// 3 表記 とも同じ 1 本。 数え方（札）は表記ごとだが、
-    /// 「開き札のうちノードになるものの k 番目」は表記に依らない
+    /// 3 表記 とも同じ 1 本。k 番目は表記に依らない。
     member _.NodeSpans source nodes =
       Scan.nodeSpans source (tagsOf source) nodes

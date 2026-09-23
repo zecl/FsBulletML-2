@@ -8,11 +8,7 @@ using BulletType = FsBulletML2.DTD.BulletType;
 
 /// <summary>
 /// GameObject 側の弾。
-///
-/// 旧 API（Processable.IBulletmlObject）の実装をやめた。
-/// 旧はエンジンが GetAimDir / GetNewBullet などを呼び返すので 19 メンバ を
-/// 実装させられていた。新 API は値の受け渡しだけなので、残るのは
-/// フロント自身が要るものだけ。
+/// </summary>
 public abstract class BaseBullet : MonoBehaviour
 {
     [SerializeField]
@@ -36,9 +32,8 @@ public abstract class BaseBullet : MonoBehaviour
     public BulletmlScript Script => Run.HasValue ? Run.Value.Script : null;
 
     /// <summary>
-    /// この弾 1 体 の実行位置。台本が無いあいだは null。
-    /// <c>BulletRun</c> は値型なので既定値を作れてしまう。Nullable で
-    /// 「まだ持っていない」と区別する。
+    /// この弾 1 体 の実行位置。
+    /// Nullable で 「まだ持っていない」と区別する。
     /// </summary>
     public BulletRun? Run { get; private set; }
 
@@ -51,12 +46,7 @@ public abstract class BaseBullet : MonoBehaviour
     public bool BulletRoot { get; set; }
 
     /// <summary>
-    /// 敵の弾か自機の弾か。既定値を入れておくこと。
-    ///
-    /// F# の判別共用体は参照型なので、既定は 0 ではなく null。
-    /// 入れ忘れたまま Runner.StepWith に渡すと、エンジンが match した
-    /// ところで NullReferenceException になる。コンパイルは通るので、
-    /// 走らせるまで出ない（実際に踏んだ。BulletSmokeCheck が見つけた）。
+    /// 敵の弾か自機の弾か。
     /// </summary>
     public BulletType BulletType { get; set; } = BulletType.Enemy;
 
@@ -85,11 +75,7 @@ public abstract class BaseBullet : MonoBehaviour
     }
 
     /// <summary>
-    /// 弾幕を割り当てる。根から始めるときは <paramref name="run"/> を null にする。
-    ///
-    /// 根の立場（狙う先と、撃たれた弾か）はここで 1 回 だけ決まる。
-    /// Core へは毎コマ渡らないので、BulletType と IsBullet はこれを呼ぶ前に
-    /// 立てておくこと（同梱の弾はどれもコンストラクタか Awake で立てている）。
+    /// 弾幕を割り当てる。
     /// </summary>
     public void SetScript(BulletmlScript script)
     {
@@ -121,14 +107,8 @@ public abstract class BaseBullet : MonoBehaviour
 
         var rn = Run.Value;
         ShootingDirection = Script.ShootingDirection;
-        // 物理量はフロントが持っている。毎コマ入れ直す（旧 stateOfBullet）。
-        //
-        // 名前付き引数で書く。 F# 側は `{ rn.Motion with Pos = ... }` と
-        // 欄の名前で書けるが、C# にレコードの with が無いのでコンストラクタを
-        // 並べることになり、float が 2 本 並ぶ speed / dir が位置ずれしても
-        // 通ってしまう。 名前を書けば位置ずれはコンパイルで落ちる
-        // （綴り違いで較正済み）。ただし値そのものを取り違えた場合は
-        // 落ちない —— `speed: Dir` は名前が正しいので通る。
+        // 物理量はフロントが持っている。
+        // F# 側は `{ rn.Motion with Pos = ... }` と 欄の名前で書けるが、C# にレコードの with が無いのでコンストラクタを 並べることになり、float が 2 本 並ぶ speed / dir が位置ずれしても 通ってしまう。
         var motion = new FsBulletML2.Motion(
             pos: new FsBulletML2.Domain.Vec2(X, Y),
             speed: Speed,

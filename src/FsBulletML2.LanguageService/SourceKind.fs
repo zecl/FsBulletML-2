@@ -6,12 +6,7 @@ open System
 open System.Text
 
 /// どの表記で書かれているか。
-///
-/// 同じ字が 2 か所 に書いてあった —— 片方 だけ変えても build も試験も落ちない。
-/// ここに 1 本 置いて、両方 が引く。
-///
-/// 読める / 読めないは持たない。 持つと次の表記を足した瞬間にまた割れる。
-/// `Fable.Core` に依存しない（host と ブラウザ側 の両方 で compile される）。
+/// 読める / 読めないは持たない。持つと次の表記を足した瞬間に割れる。
 type SourceKind =
   /// BulletML の XML
   | Xml
@@ -31,9 +26,8 @@ type SourceKind =
     | Fsb -> "fsb"
     | FSharpDsl -> "fsharp"
 
-  /// 開いたファイルの拡張子。`Id` から作らない —— 3 つ までは同じ字だが
-  /// F# の CE は `.fsx` で、そこだけ静かにずれる（`Id` は `"fsharp"`）。
-  /// 導ける形に見えるものほど、外れたときに誰も見ない
+  /// 開いたファイルの拡張子。`Id` から作らない。
+  /// F# の CE は `.fsx`。`Id` の `"fsharp"` とはずれる。
   member this.FileExtension =
     match this with
     | Xml -> ".xml"
@@ -53,9 +47,7 @@ module SourceKind =
     if isNull id then None
     else all |> List.tryFind (fun k -> String.Equals(k.Id, id, StringComparison.Ordinal))
 
-  /// 2 つ の runtime で同じ答えが返ることを見る口。
-  /// 組み立てはここ 1 か所。 node 側 と .NET 側 で別々に組むと、
-  /// 組み方のほうが食い違って「中身は同じなのに赤」になる
+  /// 2 runtime で同じ答えが返る口。組み立てはここ 1 か所。
   let describe (id: string) : string =
     let sb = StringBuilder()
     let add (s: string) = sb.Append s |> ignore

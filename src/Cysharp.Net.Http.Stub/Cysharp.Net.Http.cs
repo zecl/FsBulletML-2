@@ -3,15 +3,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-// COMPILE-ONLY stub of YetAnotherHttpHandler. Not a substitute for the real package.
-//
-// 本物は Unity 向けにしか配られていない（Cysharp/YetAnotherHttpHandler。
-// UPM で入れる）。Unity の素 の HttpClient は HTTP/2 を喋らないので、
-// gRPC を通すのにこれが要る。
-//
-// ここは compile を通すためだけの空実装で、走らせるものではない。
-// アセンブリ名が本物と一致していることが要（詳しくは
-// src/UnityEngine.Stub/UnityEngine.cs の頭）。
+// COMPILE-ONLY stub。走らせるものではない。
+// 本物は Unity 向けにしか配られていない。gRPC の HTTP/2 に要る。
 namespace Cysharp.Net.Http
 {
     /// <summary>Unity で HTTP/2 を喋る handler。ここは空</summary>

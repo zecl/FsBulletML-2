@@ -7,12 +7,8 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 open FsBulletML2.LanguageService.Languages.Xml
 
-/// 候補づくりを機械で回す。 ブラウザでも当てられるが、そこは CI では
-/// 動かない（背面タブは rAF も layout も止まる）ので、ここが唯一の道。
-///
-/// 語彙は `Vocabulary`（Core の DTD 由来）をそのまま渡す。JSON は経由しない ——
-/// 通しているのは「語彙 -> 候補」の道だけ。 JSON の往復は別で、
-/// 形が食い違えば候補が 0 になり起動時に赤が出る。
+/// 候補づくりを機械で回す。ブラウザは CI では動かないので、ここが唯一の道。
+/// JSON は経由しない。形が食い違えば候補が 0 になり、起動時に赤が出る。
 [<TestFixture>]
 type XmlCompletion() =
 

@@ -38,12 +38,6 @@ type FsBulletML2SampleGame () as this =
                                        |> List.iter (fun (font, msg, v, c) -> x.DrawString(font, msg, v, c))
 
   /// `<bulletml type>` を画面に出すための言い換え。
-  ///
-  /// いまは届いた値をそのまま出しているだけ。未設定は DU なので 0 ではなく
-  /// null になりうるので、そこも見えるようにしてある。
-  ///
-  /// TODO: この値で描画や初期角度を変えるかは未決定。ライブラリ側で意味を決めるか、
-  ///       ゲーム側で決めるかも、まだ決まっていない。
   let scrollLabel (d: FsBulletML2.DTD.ShootingDirection) =
     if isNull (box d) then "(未設定)"
     else
@@ -73,11 +67,6 @@ type FsBulletML2SampleGame () as this =
     |> Seq.item this.enemyIndex
     |> fun bullet ->
         // 木を組んで、wait の term をここで引いておく下ごしらえ。
-        // 旧は BulletmlTask().Init(env) が同じ仕事をしていた。
-        //
-        // 木を組む段が読むのは Rand と Rank だけ。だから Env を渡さない
-        // —— 渡す欄が無いので、狙いの向きを何にするか迷う余地も無い。
-        // ここは敵の実体を作る前で、向きを問い合わせる相手がまだ居ない
         bullet.Script (loadRand, loadRank ()) |> ignore
         enemyDefaultPos, (bullet.Name, bullet)
 

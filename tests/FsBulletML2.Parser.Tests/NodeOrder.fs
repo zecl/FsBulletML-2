@@ -7,15 +7,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// 読んだ木のノードと札を順番で結ぶ（v3.1 の段 4）。
-///
-/// 木は字の位置を持たないので、「このノードは字のどこか」は順番でしか
-/// 言えない。v2.9 で測ってある（5b / 5c。3 表記 で 176 / 176、F# の CE は
-///
-/// --- 何が壊れると赤くなるか
-///
-///     `names` が腕とずれる    落とす名前が変わって、添字が黙ってずれる
-/// どれも走行は変わらない。 光る場所がずれるだけなので、目にも出ない
-/// （字は在るし、印も出る。ただ 1 つ 隣を指す）。
+/// 木は字の位置を持たない。添字がずれると、走行は変わらず隣を光らせる。
 [<TestFixture>]
 type NodeOrderTests() =
 
@@ -88,14 +80,8 @@ type NodeOrderTests() =
 
   [<Test>]
   member _.``並びに 2 度 出るのは vanish と bullet だけ``() =
-    // 添字で引くので、参照が 2 度 出るノードは引けない。
-    // 2 通り の理由で起きる ——
-    //
-    //     vanish   引数なしの腕は singleton。同じ物が何度でも返る
-    //     bullet   CE の木だけ。 同梱カタログは空の `bullet` を共有していて、
-    //              XML へ書いて読み直すと別の物になる
-    // どちらも段 3 の再開点には来ない（`stop` に渡ってくるのは
-    // `action` / `wait` / `repeat` の 3 腕 だけ。段 3 で 989,269 件 数えた）。
+    // 添字で引くので、参照が 2 度出るノードは引けない。
+    // vanish は singleton。bullet は CE の空共有。どちらも再開点には来ない。
     let ceNames, ceBooks = dupsOf (catalog |> List.map (fun i -> i.Bulletml))
     // 0 件 を緑にしない。 重なりが 1 件 も無ければ、この試験は何も見ていない
     ceBooks |> should be (greaterThan 0)
@@ -105,9 +91,8 @@ type NodeOrderTests() =
 
   [<Test>]
   member _.``XML から読み直すと重なるのは vanish だけ``() =
-    // Playground は 2 通り の木を走らせる —— プルダウンで選ぶと CE の木、
-    // Apply すると字から読んだ木。共有の度合いが違うので、片方 で測った
-    // 「一意だ」をもう片方 へ広げない
+    // Playground は CE の木と、字から読んだ木の 2 通り。共有の度合いが違う。
+    // 片方で測った「一意だ」をもう片方へ広げない。
     let read =
       catalog
       |> List.choose (fun i ->

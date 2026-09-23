@@ -69,11 +69,8 @@ type StepTop() =
     let r = Step.step noResolvers env st
     r.Retired |> should equal false
 
-  /// Sim.bind は r2.Emit >> r1.Emit で合成する（Sim.fs 参照）ので、複数 top を
-  /// 畳むときも並び順を取り違えやすい。前の top の効果が後ろの top より先に
-  /// 出ることを、種類の違う 2 つの効果（Spawn と Vanished）で確かめる。
-  /// 同じ効果 2 つ（例えば Vanish を 2 本）では、逆順に足しても結果の並びが
-  /// 偶然一致してしまい、この門は働かない
+  /// 前の top の効果が後ろより先に出ることを、Spawn と Vanished で確かめる。
+  /// 同じ効果 2 つでは逆順でも結果が一致し、この門は働かない。
   [<Test>]
   member _.``複数 top の効果は、top の並び順のまま出る``() =
     let bullet = BulletElm.Bullet ({ bulletLabel = None }, None, None, [])
@@ -84,11 +81,7 @@ type StepTop() =
     | [ Spawn _; Vanished ] -> ()
     | other -> Assert.Fail (sprintf "top の並び順で出るはずが %A" other)
 
-  /// ここまでの 6 本はどれも Step.step を 1 回しか呼ばない。fold が
-  /// 返す Progress / FireContext を Tops へ書き戻さず、コマの前の値を
-  /// そのまま積み直しても、1 回しか呼ばないテストにはその違いが出ない
-  /// （書き戻し先を誰も読み返さないため）。前のコマの `r.State` を
-  /// 実際に次の `Step.step` へ渡して、初めて書き戻しの有無が見える。
+  /// ここまでの 6 本はどれも Step.step を 1 回しか呼ばない。
   [<Test>]
   member _.``Progress は次のコマへ持ち越される: wait は 2 コマ目で終わる``() =
     let t = top [ Action.Wait (numExpr "1") ]
@@ -97,11 +90,7 @@ type StepTop() =
     let r2 = Step.step noResolvers env r1.State
     r2.Finished |> should equal true
 
-  /// FireContext（SrcSpeed の積み上がりと SpeedInit の掛け金）も同じ
-  /// Tops のスロットへ持ち越る。1 発め（bullet 側の絶対値 5 を、掛け金が
-  /// まだ立っていないので latch として採用）と 2 発め（fire 側の
-  ///
-  /// どちらか片方でも欠けると 8 にはならない
+  /// FireContext（SrcSpeed と SpeedInit）も同じ Tops のスロットへ持ち越る。
   [<Test>]
   member _.``FireContext は次のコマへ持ち越される: 2 発めの sequence は 1 発めの速さに積む``() =
     let bullet d s = BulletElm.Bullet ({ bulletLabel = None }, d, s, [])
@@ -123,11 +112,7 @@ type StepTop() =
     | [ Spawn b2 ] -> b2.Speed |> should (equalWithin 0.0001) 8.0f
     | other -> Assert.Fail (sprintf "2 発めの Spawn のはずが %A" other)
 
-  /// final review 1: 実物で踏んだ形（top* から辿れる repeat の times=9999）を
-  /// Step.step 経由（公開 API の `Runner.step` が実際に呼ぶのと同じ関数）で
-  /// 1 コマ回す。
-  /// StepCommands.fs の門は stepRepeat を直接見ているが、ここは top* の
-  /// 走査（action → command → repeat）を経由しても壊れないことを確かめる
+  /// times=9999 の repeat を、Step.step 経由で 1 コマ回す。
   [<Test>]
   member _.``top 直下の repeat 9999 も、1 コマで走り切って StackOverflow しない``() =
     let bullet = BulletElm.Bullet ({ bulletLabel = None }, None, None, [])
@@ -142,12 +127,7 @@ type StepTop() =
     r.Effects |> List.length |> should equal 9999
     r.Finished |> should equal true
 
-  /// 落とした `BulletRunner.run` は「生きている top が 1 本 も無いコマ」で
-  /// aim 4 本 を組まずに 0 で済ませていた（`BulletRunner.envWithoutAim`）。
-  /// いまは同じ役を `BulletRun.HasNoScript` が担う。その前提 ——
-  ///
-  /// 同じファイルの他の門は緑のままだった（top が生きているコマを見ている
-  /// ので、そちらは両方の env で同じだけずれる）。
+  /// 生きている top が無いコマは aim を組まない。生きているコマを見る門は緑のままだった。
   [<Test>]
   member _.``終わった top しか無いコマは、aim を読まない``() =
     let poisoned =

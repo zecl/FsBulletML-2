@@ -3,10 +3,7 @@ open FsBulletML2
 open FsBulletML2.Dsl
 
 /// BulletML 公式配布（bulletml0_21）のサンプル。
-///
-/// `All.bullets`（同梱 176 本）には混ぜない —— あちらは
-/// 白い弾幕くん由来の集合で、そこに測った数（$rank を使う 173 本 /
-/// 狙いを使う 103 本 / 横画面 9 本 …）が全部 紐づいている。
+/// `All.bullets`（同梱）には混ぜない。測った数が別の集合に紐づく。
 [<RequireQualifiedAccess>]
 module Official =
 

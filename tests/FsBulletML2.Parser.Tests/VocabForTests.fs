@@ -4,14 +4,7 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
 /// 試験が言語モジュールへ渡す語彙。1 本。
-///
-/// 本番はブラウザが `Vocabulary.toJson()` を受け取って組む（器の `Vocab`）。
-/// 試験は WASM を挟まないので、host の `Vocabulary.elements` から同じ形へ
-/// 落とす —— その落とし方はどの表記でも同じなので、ここに 1 本 置く。
-///
-/// v1.1 まで `XmlCompletion` / `SxmlCompletion` / `FsbCompletion` に
-/// 字まで同じものが 3 つ 在った（並べてハッシュを取ったら一致した）。
-/// 4 つ 目 を足す前に畳んである。
+/// 表記ごとに写すと、片方だけ古びる。落とし方はどの表記でも同じ。
 [<AutoOpen>]
 module VocabForTests =
 
