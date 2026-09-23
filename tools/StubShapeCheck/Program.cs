@@ -30,7 +30,7 @@ if (editor is null || !Directory.Exists(editor))
     Console.WriteLine("  UNITY_HUB_EDITOR_PATH（Hub の Editor 置き場）で渡せる");
     return 2;
 }
-// この行は guard-stub-shape.ps1 が読む。探すところを 2 つ に増やさないため
+// 使った Managed の置き場。探すところを 2 つに増やさないため
 Console.WriteLine($"Unity Managed: {editor}");
 
 // slnx を自分の居場所から上る。dotnet run でも焼いた exe でも同じところに着く。

@@ -5,7 +5,7 @@
     <!-- 門の材料で、配る物ではない。**slnx には載せる** ——
          載せないと CI が 1 度 も build しないので、.NET 側で壊れても緑のまま
          （`guard-slnx.ps1` がそれを見ている）。置き場を `tools/` にしたのは
-         `StubShapeCheck`（`guard-stub-shape.ps1` の材料）と同じ立場だから -->
+         `StubShapeCheck` と同じ立場だから -->
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <!--
