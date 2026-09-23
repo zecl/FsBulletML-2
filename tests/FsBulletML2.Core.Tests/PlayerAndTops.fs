@@ -4,14 +4,6 @@ open NUnit.Framework
 open FsBulletML2
 
 /// ここまでの控えが 1 度も通っていなかった 2 つ。
-///
-///   BulletType.Player の分岐（createTask / fireCommand / changeDirection の aim 側）
-///     こちらの弾はずっと Enemy だった。Player だと aim の相手が変わる
-///
-///   label が "top" で始まる action が複数あるとき（convertBulletmlTask の taskActions）
-///     StartsWith("top") で拾うので top / top1 / top2 が全部 task になる
-/// NonParallelizable は外した。global（BulletMLManager）を触らなくなった
-/// ので、逐次でなければならない理由が無い
 [<TestFixture>]
 type PlayerAndTops() =
 
@@ -34,13 +26,7 @@ type PlayerAndTops() =
     |> Array.map (fun l -> l.Trim())
     |> String.concat "\n"
 
-  /// 根の弾を Player にして回す。Trace.run / TraceApi.run は根を敵で組む
-  /// （Api.load の RootState が BulletType.Enemy 固定）ので、ここだけ別口。
-  ///
-  /// 旧は IBulletmlObject を自前で組んでゲームループを回していた。
-  /// 新 API では根の Body の Kind を差し替えるだけで足りる
-  /// —— 撃たれた弾の種別は Core が親から継ぐ。
-  /// 自機 (30,100)。敵は FakeEnemy が (-40,-60) に置いている
+  /// 根の弾を Player にして回す。
   let runAsPlayer (xml: string) (frames: int) =
     TraceApi.runSpawnedAs BulletType.Player (fun () -> 0.5f) 0.5f 30.0f 100.0f xml frames
 
@@ -88,13 +74,6 @@ type PlayerAndTops() =
     |> runOr 3 |> firedBullets |> Golden.check "multiple-top"
 
   /// 上で top / top1 / top2 のうち top しか撃たなかった。
-  /// run は tasks を順に回すが、wait が Stop を返した時点で残りを見ない
-  /// （`BulletRunner.run` の while が `not stop` で抜けていた）ので、
-  /// 先頭の wait が後ろの top を塞いでいる、というのが読み。確かめる。
-  ///
-  /// そのあと 9 で直した。いまは Stop / Continue をこの段で握り潰し、
-  /// 終わった task の数だけ数えるので、後ろの top* も同じフレームで回る。
-  /// この doc は「直す前にどう読んだか」の記録で、控えは直したあとの姿。
   [<Test>]
   member _.``先頭の top の wait が、後ろの top を塞いでいるか``() =
     let withWait = bml """<action label="top">

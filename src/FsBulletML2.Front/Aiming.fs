@@ -1,19 +1,13 @@
 namespace FsBulletML2.Front
 
 /// 画面の Y がどちらを向いているか。
-///
-/// enum にしてある。 F# の判別共用体は C# から見ると既定が null で
-/// （0 ではない）、型は合うのでコンパイルは通り、走らせて初めて落ちる。
-/// C# のフロントが `default(Space)` を作る道が在るので enum。
+/// F# の判別共用体は C# から既定が null なので、enum。
 type Space =
   | YDown = 0
   | YUp = 1
 
-/// これから産まれる弾を、どこに作るか。
-///
-/// 狙いの式の基準点になる。同梱の 2 つ で違う ——
-/// MonoGame は位置を入れずに作るので原点、Unity2D は撃った側と同じ場所。
-/// 片方だけ直すと軌跡が割れる。
+/// これから産まれる弾を、どこに作るか。狙いの式の基準点。
+/// 同梱の 2 つ で違う。片方だけ直すと軌跡が割れる。
 type SpawnOrigin =
   /// 原点 (0, 0) に作る
   | AtOrigin = 0
@@ -24,9 +18,7 @@ type SpawnOrigin =
 module Aiming =
 
   /// `(fx, fy)` から `(tx, ty)` を狙う向き。
-  ///
-  /// 同梱の 2 つ のフロントは、この式の `space` 違いだった。
-  /// MonoGame は画面座標で Y が下向き（`YDown`）、Unity2D は上向き（`YUp`）。
+  /// 同梱の 2 つ は、この式の `space` 違いだった。
   [<CompiledName "Toward">]
   let toward (space: Space) (fx: float32) (fy: float32) (tx: float32) (ty: float32) : float32 =
     let dy = ty - fy

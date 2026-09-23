@@ -3,8 +3,6 @@
 open NUnit.Framework
 
 /// fire の direction / speed を省いたとき、bullet と action の組み合わせ。
-/// DTD は <!ELEMENT fire (direction?, speed?, (bullet | bulletRef))> なので
-/// direction も speed も省ける。省いたときに何を引き継ぐかが要点。
 [<TestFixture>]
 type FireShapes() =
 
@@ -155,11 +153,6 @@ type FireShapes() =
     |> runOr 3 |> Golden.check "missing-label"
 
   /// bullet 直下の speed type を createTask が見ているか。
-  ///
-  /// 直す前は attrs を束縛して 1 度も読まず、型を無視して代入していた
-  /// （direction は同じ関数の 20 行 上で 4 分岐している）。
-  /// 実物の当てる先は air_elemental の <bullet label="spiral"> 1 個だけなので、
-  /// ここは組み立てた BulletML で 3 つの type を並べて固定する
   [<Test>]
   member _.``bullet 直下の speed type を見ているか``() =
     // root は速さ 0 なので、root から撃つと relative の差が出ない（7 で踏んだ形）。
@@ -191,13 +184,6 @@ type FireShapes() =
     |> Golden.check "bullet-speed-type"
 
   /// 7（speed type="relative"）の当てる先 7 本を、実物で全部 回す。
-  ///
-  /// 組み立てた BulletML の控えは 2 本あったが、実物には 1 本も無かった。
-  /// corpus-smoke は「撃ったか」しか数えないので、速さの変化はそこに映らない
-  /// （門が覆っていない先を「変わらない」と読んでいた）。
-  ///
-  /// 撃った弾の速さだけを集める。当てる先が在ることと、値が動くことは別なので、
-  /// ここは「7 本を回すと何が出るか」を固定する
   [<Test>]
   member _.``実物 7 本の speed relative``() =
     let names =

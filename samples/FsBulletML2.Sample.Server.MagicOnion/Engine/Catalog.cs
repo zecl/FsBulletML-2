@@ -7,11 +7,8 @@ using FsBulletML2.Bullets.Dsl;
 namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 {
     /// <summary>
-    /// 走らせられる弾幕の一覧。同梱の 176 本 をそのまま引く。
-    ///
-    /// 名前で引く表 を自分で書かない。 書くと、弾幕が増えたときに
-    /// 片方 だけ古びる（この repo が何度も踏んでいる形）。
-    /// 出どころは <c>All.bullets</c> 1 か所。
+    /// 走らせられる弾幕の一覧。
+    /// 書くと、弾幕が増えたときに 片方 だけ古びる（この repo が何度も踏んでいる形）。
     /// </summary>
     public static class Catalog
     {
@@ -42,13 +39,9 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         public static BulletmlInfo At(int index) => Items[index];
 
         /// <summary>
-        /// 名前で引く。無ければ既定。
-        ///
-        /// 引き方が 3 通り 在る。 一覧の名前は日本語の説明文
-        ///
-        /// 「無かった」を黙って既定にすり替える。 サンプルなので
-        /// 繋がらないより出るほうを採るが、返した名前 は <c>RoomInfo</c> に
-        /// 載せる —— 何を走らせているかは client 側 で読める。
+        /// 名前で引く。
+        /// 一覧の名前は日本語の説明文 「無かった」を黙って既定にすり替える。
+        /// </summary>
         public static BulletmlInfo Resolve(string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -79,11 +72,6 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 
         /// <summary>
         /// 既定 の弾幕。
-        ///
-        /// 一覧の頭 ではなく、名指し。 頭 を採ると、弾幕が 1 本
-        /// 増えただけで既定 が変わる（並びは生成物なので、順 は約束されていない）。
-        /// 一覧が空 のときは落とす —— 弾幕 0 本 のサーバーは、
-        /// 静かに立つほうが困る。
         /// </summary>
         public static BulletmlInfo Default { get; } = ResolveDefault();
 

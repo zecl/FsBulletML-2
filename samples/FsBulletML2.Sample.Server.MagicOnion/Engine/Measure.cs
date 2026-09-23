@@ -6,11 +6,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 {
     /// <summary>
     /// 同梱弾幕 を 1 本 ずつ走らせて、1 コマ あたりの弾数を数える。
-    ///
-    /// 網 を通さない。 通すと 176 本 × 実時間 で 15 分 かかるうえ、
-    /// 測っているものに送信の値段 が混ざる。ここで欲しいのは
-    /// 「弾が何発 出るか」だけなので、<see cref="EngineFrameSource"/> を
-    /// その場で回す。
+    /// </summary>
     public static class Measure
     {
         public static int Run(int frames, int seed, int top)
@@ -73,10 +69,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 
         /// <summary>
         /// 1 コマ ぶんを MessagePack で焼いて、長さ を数える。
-        ///
-        /// MagicOnion が実際に流す長さ とは少しずれる（Hub の
-        /// 呼び出し 1 件 ぶんの包み が外 に付く）。ここで見たいのは
-        /// 「弾 1 発 が何バイト で乗るか」なので、包み は勘定に入れない。
+        /// MagicOnion が実際に流す長さ とは少しずれる（Hub の 呼び出し 1 件 ぶんの包み が外 に付く）。
         /// </summary>
         static void MeasureBytes(string name, int frames, int seed)
         {

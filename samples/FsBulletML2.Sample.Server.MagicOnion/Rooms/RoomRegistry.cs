@@ -10,11 +10,8 @@ using Microsoft.Extensions.Logging;
 namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
 {
     /// <summary>
-    /// 走っている部屋 の台帳。サーバーに 1 つ（singleton）。
-    ///
-    /// 部屋 を 2 つ 同時に走らせられることが、この帯 の山場（E1.4）。
-    /// 同梱のフロント 4 本 は <c>BulletMLManager</c>（static mutable）から
-    /// 乱数・ランク・自機 を引いていて、あれを通すと部屋 が混ざる。
+    /// 走っている部屋 の台帳。
+    /// </summary>
     public sealed class RoomRegistry : IAsyncDisposable
     {
         readonly Dictionary<string, Room> rooms = new Dictionary<string, Room>(StringComparer.Ordinal);
@@ -34,10 +31,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         }
 
         /// <summary>
-        /// 部屋 に入る。無ければ建てる。
-        ///
-        /// 建てると同時に走り始める。 「入った人が居るのに止まっている」
-        /// 状態を作らない —— その状態は client からは配線の故障と見分けが付かない。
+        /// 部屋 に入る。
         /// </summary>
         public async ValueTask<Room> EnterAsync(
             string key, JoinRequest request, IGroup<IDanmakuHubReceiver> group)

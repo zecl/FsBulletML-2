@@ -7,10 +7,7 @@ open FsBulletML2.LanguageService.SourceLanguage
 open FsBulletML2.LanguageService.Languages.Fsb
 
 /// 候補と hover、fsb の側。 `XmlCompletion` / `SxmlCompletion` と対。
-///
-/// 語彙は XML / sxml と同じ `Vocabulary`（Core の DTD 由来）をそのまま渡す ——
-/// 表記が変わっても要素と属性は変わらない。 変わるのは書き方だけで、
-/// それがここで当てているもの。
+/// 語彙は XML / sxml と同じ。変わるのは書き方だけで、それがここで当てているもの。
 [<TestFixture>]
 type FsbCompletion() =
 

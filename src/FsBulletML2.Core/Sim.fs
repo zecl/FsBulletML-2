@@ -2,35 +2,22 @@ namespace FsBulletML2
 
 open FsBulletML2.Domain
 
-/// 1 コマ進めるあいだの、途中の結果。
-///
-/// `Effects` でなく `Emit`（関数）なのは、中身が差分リストだから。
-/// bind のたびに `@` で繋ぐと O(n^2) になるので、最後に 1 回だけ空リストに当てて潰す。
-///
-/// [<Struct>] にしてある（Sim を 1 段 進めるたびに必ず 1 個 出る。
-/// homing laser は 1 走行で bind が 26,999 回）。
+/// 1 コマの途中結果。効果をリストで繋ぐと二乗になる。参照型に戻すと bind の回数だけヒープを踏む。
 [<Struct>]
 type internal SimResult<'a> =
   { Value : 'a
     State : BulletState
-    /// 効果を積む関数。積むものが無いときは ValueNone。
-    ///
-    /// 以前は `id` を入れていたが、bind は合成のたびに新しい関数を作る ——
-    /// 効果を積むのは `emit` / `emitMany` だけなので、大半の bind が
-    /// `id >> id` という何もしない関数を 1 個 作っていた。
+    /// 積むものが無いときは ValueNone。id を入れると bind のたびに空の関数ができる。
     Emit : (Effect list -> Effect list) voption }
 
-/// 環境を読み、弾の状態を持ち回り、効果を書く。
-/// 包みを持たない（DU にすると InlineIfLambda が届かない）。
+/// 環境を読み、状態を持ち回り、効果を書く。単一ケースの DU にすると InlineIfLambda が届かない。
 type internal Sim<'a> = Env -> BulletState -> SimResult<'a>
 
 module Sim =
 
   let internal ret x : Sim<'a> = fun _ st -> { Value = x; State = st; Emit = ValueNone }
 
-  /// inline + InlineIfLambda。 展開すると `f` の本体が外側の
-  /// `fun env st -> ...` の中に埋まるので、bind 1 回 につき出ていた
-  /// クロージャが 2 個 から 1 個 になる。
+  /// inline + InlineIfLambda。外すと bind 1 回 につきクロージャが 1 個 増える。
   let inline internal bind ([<InlineIfLambda>] f: 'a -> Sim<'b>) (m: Sim<'a>) : Sim<'b> =
     fun env st ->
       let r1 = m env st
@@ -51,8 +38,7 @@ module Sim =
   let internal emit (e: Effect) : Sim<unit> =
     fun _ st -> { Value = (); State = st; Emit = ValueSome (fun rest -> e :: rest) }
 
-  /// emit の複数版。1 個ずつ `Sim.bind` で繋ぐと繋ぐ数だけ bind が積み重なり、
-  /// 要素数ぶんスタックが伸びる（repeat の周のような手続き的なループ）。
+  /// まとめて積む。1 個ずつ bind すると repeat の周のぶんスタックが伸びる。
   let internal emitMany (es: Effect list) : Sim<unit> =
     fun _ st -> { Value = (); State = st; Emit = ValueSome (fun rest -> es @ rest) }
 
@@ -62,8 +48,7 @@ module Sim =
     let effects = match r.Emit with ValueNone -> [] | ValueSome f -> f []
     r.Value, r.State, effects
 
-/// メソッドを inline にしてある。 `Sim.bind` を inline にしても、CE が
-/// 通るのはこのビルダのメソッドなので、ここが非 inline だとそこで展開が止まる。
+/// メソッドを inline にしてある。非 inline だと Sim.bind の展開がここで止まる。
 type internal SimBuilder() =
   member inline _.Return x = Sim.ret x
   member inline _.ReturnFrom (m: Sim<'a>) = m
@@ -83,13 +68,7 @@ type internal SimBuilder() =
   member this.While (guard, body) =
     if guard () then Sim.bind (fun () -> this.While (guard, body)) (body ()) else Sim.ret ()
 
-/// テストから CE を書くための入口。SimBuilder と inline 属性だけが違う。
-///
-/// テストのアセンブリからは inline なメンバを展開できない。
-/// ここで 1 枚 包み、展開を Core の中で済ませる。
-///
-/// メンバは 1 つ も独自の中身を持たず、全部 `SimBuilder` へ委譲する ——
-/// だから意味論は本番と同じ道を通る。
+/// テスト用。inline を展開できないテスト側のため、中身は SimBuilder へ委譲するだけ。
 type internal SimBuilderForTests() =
   let b = SimBuilder()
   member _.Return x = b.Return x

@@ -7,10 +7,7 @@ using FsBulletML2.Sample.Unity2D.FSharp;
 
 /// <summary>
 /// 敵が実際に弾を撃つところまでを、Play せずに見る。
-///
-/// 走らせ方:
-///
-/// <c>Start</c> で購読を張り忘れても、条件を書き違えても、あちらは緑のまま。
+/// </summary>
 public static class EnemyShootCheck
 {
     /// <summary>

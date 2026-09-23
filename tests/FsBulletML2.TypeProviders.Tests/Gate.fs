@@ -4,17 +4,8 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2.TypeProviders
 
-/// 型プロバイダが型プロバイダとして働くかを見る門。
-///
-/// 本体（src/FsBulletML2.TypeProviders）が sln に入っていて確かめられるのは
-/// 「ビルドが通る」ことだけで、生成した型が使えるかを見ている門は無かった。
-///
-///     置いたとき        FS1108 24 件 / FS0039 12 件
-///     SDK を 8.11.0 へ  FS1108 0 件。かわりに FS3033 が 16 件
-///
-/// 段が 2 つ あった。 型が解決できない段（FS1108。同梱 SDK が
-///
-/// を直したら、次に設計時に依存アセンブリを読めない段（FS3033。
+/// 型プロバイダが、生成した型を使えるところまで働くか。
+/// ビルドが通るだけでは、その段は見えない。
 module Docs =
 
   [<Literal>]
@@ -37,12 +28,8 @@ module Docs =
             direction:"0"
             bullet"""
 
-/// 型プロバイダは 6 本。出す型は 8 通り。全部 ここに載せる。
-///
-///     BulletML<s>              BulletMLTypeProvider          既定は Style.Xml
-///     BulletML<s, Style.Sxml>  同上
-///
-/// 直すと使う側が壊れるので、いまは現状のまま門に載せて、ずれを型で固定しておく。
+/// 型プロバイダは 6 本。出す型は 8 通り。
+/// 名前が SXML で中身が fsb のずれは、直すと使う側が壊れるので現状のまま固定する。
 module Generated =
 
   type ViaStyleXml  = BulletML<Docs.Xml>

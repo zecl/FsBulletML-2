@@ -6,9 +6,7 @@ open FsBulletML2
 open FsBulletML2.MonoGame
 
 /// このフロントを実際に回して、軌跡を凍らせる門。
-///
-/// `EnvGate` はこのフロントが組む `Env` の値だけを見ていて、
-/// 組んだあと何をするかは 1 行 も見ていなかった。 見ていないもの:
+/// `EnvGate` は組んだ `Env` の値だけを見て、組んだあとを見ていない。
 [<TestFixture>]
 [<NonParallelizable>]
 type FrontRun() =
@@ -90,8 +88,6 @@ type FrontRun() =
     Manager.removeAll ()
 
   /// 控えは目で読んでから入れた。
-  /// f00 で 1 発 目、f03 で 2 発 目、f06 で top が終わって走らせ直し、
-  /// 子は 4 コマ かけて向きが 180 度 へ寄っていく
   [<Test>]
   member _.``フロントを 12 コマ 回した軌跡が控えと同じ``() =
     let expected = FrontRunGolden.Expected

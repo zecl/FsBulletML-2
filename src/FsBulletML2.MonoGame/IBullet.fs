@@ -3,11 +3,7 @@ open FsBulletML2
 open Microsoft.Xna.Framework
 
 /// フロントの弾。IBulletmlObject を継承しない。
-///
-/// 旧はここが `inherit IBulletmlObject` していて、エンジンがフロントを
-/// 呼び返すための 19 メンバ（GetNewBullet / Vanish / Init / Task / Used /
-///
-/// 「いつ呼ばれるか」を知らないと実装が書けない。
+/// 新 API は値の受け渡しだけ。ここに残るのはフロント自身が要るものだけ。
 type IBullet =
   abstract Update : unit -> unit
   abstract Pos : Vector2 with get,set
@@ -24,10 +20,8 @@ type IBullet =
   abstract ShootingDirection : ShootingDirection with get,set
   abstract Init : unit -> unit
   abstract Vanish : unit -> unit
-  /// 弾幕を割り当てる。根から始めるときは run を None にする
-  /// （Runner.newRoot が使われる）。撃たれた弾には、親が Frame.Spawned で
-  /// 受け取った BulletRun をそのまま渡す
-  /// 根から始める。実行状態は Core に作らせる
+  /// 弾幕を割り当てる。根から始めるときは run を None にする。
+  /// 撃たれた弾には、親が Frame.Spawned で受け取った BulletRun を渡す。
   abstract SetScript : BulletmlScript option -> unit
   /// 撃たれた弾を、エンジンから受け取った実行状態で始める。
   /// 弾幕を渡す口が無い —— 実行状態が親のものを持っている
@@ -39,12 +33,7 @@ type IBullet =
   abstract Finished : bool with get
 
 /// 弾幕を読む段に渡すもの。Env ではない。
-///
-/// `Runner.load` が要るのは乱数とランクの 2 つ だけ（木を組む段が wait の
-/// term をその場で引く）。何を渡すかはフロントの決めごとなので Core には
-/// 置かない —— 置くとまたグローバルから引く形に戻る。
-///
-/// この同梱フロントは旧と同じく BulletMLManager から取る。
+/// 乱数とランクだけ。何を渡すかはフロントの決めごとなので Core には置かない。
 [<AutoOpen>]
 module BulletmlLoad =
 

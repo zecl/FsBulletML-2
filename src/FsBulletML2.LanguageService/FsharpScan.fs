@@ -1,10 +1,7 @@
 namespace FsBulletML2.LanguageService
 
 /// F# の CE の字を数える 1 本。ほかの 3 本 とは返すものが違う。
-///
-/// `XmlScan` / `SxmlScan` / `FsbScan` は「要素・属性・属性値」を返すが、
-/// CE にはその形が無い —— 打つのは要素名ではなく DSL の名前で、
-/// 属性に当たるものは引数と CustomOperation に散っている。
+/// 打つのは要素名ではなく DSL の名前。
 module FsharpScan =
 
   let private isIdent (c: char) =
@@ -15,12 +12,7 @@ module FsharpScan =
     || c = '\''
 
   /// 字の位置ごとに「そこが本文か」。文字列とコメントの中は false。
-  ///
-  /// `wait "aim"` の `aim` は値であって CE の名前ではない ——
-  /// 数えないと、弾幕の名前に入った語で hover が浮く。
-  ///
-  /// 見るのは 4 つ —— `//` 行コメント、`(* *)`（入れ子を数える）、
-  /// `"..."`（`\` で逃がす。閉じていなければ行末で切る）、`"""..."""`。
+  /// 文字列の中を名前に数えるな。弾幕の名前で hover が浮く。
   let private outside (src: string) : bool[] =
     let n = src.Length
     let ok = Array.zeroCreate<bool> n
@@ -59,8 +51,7 @@ module FsharpScan =
             elif src.[i] = '"' then
               i <- i + 1
               fin <- true
-            // 閉じていない行文字列は行末で切る。残り全部 を飲まない ——
-            // 飲むと、打っている途中に本文の後ろが丸ごと消える
+            // 閉じていない行文字列は行末で切る。残り全部 を飲むな。
             elif src.[i] = '\n' then fin <- true
             else i <- i + 1
       else
@@ -69,11 +60,7 @@ module FsharpScan =
     ok
 
   /// カーソルの下に在る名前。何の上でもなければ `None`。
-  ///
-  /// 数から始まる語は名前ではない（`1` や `2u` は識別子にならない）。
-  ///
-  /// 本文の外は丸めない。 末尾へ寄せると、範囲外の位置でも最後の語が
-  /// 返って「そこに在る」ことになる —— そこには字が無い
+  /// 範囲外を末尾へ寄せるな。字が無い場所で最後の語が返る。
   let wordAt (src: string) (offset: int) : string option =
     if isNull src || src.Length = 0 then None
     elif offset < 0 || offset >= src.Length then None
@@ -95,12 +82,8 @@ module FsharpScan =
   /// その位置を含む行と桁（1 起点）。`Scan.lineColumn` の 1 本 を引く
   let private lineColumn (src: string) (offset: int) = Scan.lineColumn src offset
 
-  /// 名前を載せている CE の並び。ほかの 3 表記 と同じ `TagHit` を返す。
-  ///
-  /// v1.6 まで、この表記だけ `Tags` が空だった。「CE には要素名が無いから」
-  /// と書いてあったが、無いのは要素名であって名前ではない ——
-  /// `defAction "x"` の `x` は `<action label="x">` の `x` そのもので、
-  /// 数え方が違うだけだった。
+  /// 名前を載せている CE の並び。ほかの 3 表記 と同じ `TagHit`。
+  /// 空にするな。無いのは要素名であって名前ではない。
   let tags
     (labels: (string * string * int * string)[])
     (attrName: string)
@@ -110,9 +93,7 @@ module FsharpScan =
     else
       let n = src.Length
       let ok = outside src
-      // `outside` は引用符ごと false にする（コメントも同じ側に居る）。
-      // だから塊の頭の字で見分けて、両端の引用符を落とす。
-      // 返すのは (値, 値の始まり, 値の終わり, 塊の次)
+      // `outside` は引用符ごと false。頭の字で見分けて、両端の引用符を落とす。
       let readString (from: int) =
         let mutable e = from
         while e < n && not ok.[e] do
@@ -122,9 +103,7 @@ module FsharpScan =
         src.Substring(vs, ve - vs), vs, ve, e
       let hits = ResizeArray<TagHit>()
       let mutable i = 0
-      // 入れ子の深さ（v2.4）。`{ }` の積み —— blockAt と同じ数え方で、
-      // あちらは名前を積み、こちらは数だけ数える。
-      // `}` が多すぎる本文（打っている途中）では 0 で止める
+      // 深さは `{ }` の数。`}` が多すぎても 0 で止める。負にしない。
       let mutable depth = 0
       while i < n do
         if ok.[i] && src.[i] = '{' then depth <- depth + 1
@@ -139,8 +118,7 @@ module FsharpScan =
           | Some (_, element, labelArg, fixedName) ->
             let attrs =
               if labelArg < 0 then
-                // 引数を取らない（`top`）。位置は名前そのもの ——
-                // 名前を書き換える先が無いので、rename はここを指す
+                // 引数を取らない名前。位置は名前そのもの。書き換え先が無い。
                 let struct (line, col) = lineColumn src s
                 [ { AttrName = attrName
                     Value = fixedName
@@ -198,8 +176,7 @@ module FsharpScan =
                   Stop = e + 1
                   NameStart = s
                   NameStop = e + 1
-                  // 名前は自分が開く `{` の手前 に在る。 だから
-                  // その名前の深さは、いま開いている段そのもの
+                  // 名前は自分が開く `{` の手前。深さはいま開いている段。
                   Depth = depth }
           | None -> ()
           i <- e + 1
@@ -207,10 +184,7 @@ module FsharpScan =
       List.ofSeq hits
 
   /// いちばん外の `{ }` が閉じる位置（0 起点）。閉じていなければ `None`。
-  ///
-  /// ほかの 3 表記 の「根の閉じ札 / 閉じ括弧」に当たるもの ——
-  /// 打っている途中の本文はふつうに閉じていないので、そこで場所を
-  /// 決め打つと本文の外に出る。
+  /// 閉じていない本文に場所を決め打つと、本文の外に出る。
   let blockEnd (src: string) : int option =
     if isNull src || src.Length = 0 then None
     else
@@ -227,15 +201,7 @@ module FsharpScan =
       at
 
   /// カーソルがどの `{ }` の中に居るか。返すのはその `{` の手前 の名前。
-  ///
-  /// まだどこにも入っていなければ `None`（根の builder を打つところ）。
-  ///
-  /// v1.9 の頭で測った —— 同梱 176 本 を焼いて `{` を 3259 個 数え、
-  /// 手前 に名前が無かったものは 0 個。 入れ子はいちばん深いもので 12 段。
-  /// FCS は要らない（あちらは host にしか無く、補完はブラウザ側）。
-  ///
-  /// `}` が多すぎる本文（打っている途中）では、積みが空になったところで
-  /// `None` に戻る —— 負に潜らせない。
+  /// どこにも入っていなければ `None`。`}` が多すぎても負にしない。
   let blockAt (src: string) (offset: int) : string option =
     if isNull src || src.Length = 0 then None
     else
@@ -251,8 +217,7 @@ module FsharpScan =
           let mutable e = i
           while e + 1 < src.Length && ok.[e + 1] && isIdent src.[e + 1] do
             e <- e + 1
-          // カーソルの下の語は数えない。 打っている途中の名前が
-          // 「いま開いている入れ物」になってしまう
+          // カーソルの下の語は数えない。打っている途中が入れ物になる。
           if e + 1 <= at then last <- src.Substring(s, e - s + 1)
           i <- min at (e + 1)
         else
@@ -262,10 +227,8 @@ module FsharpScan =
           i <- i + 1
       if stack.Count = 0 then None else Some stack.[stack.Count - 1]
 
-  /// 根のブロックの直下 に在る行の字下げ。無ければ書き手と同じ 4。
-  ///
-  /// 本文から測るのはほかの 3 表記 と同じ理由 ——
-  /// 書き手が 4 で焼いても、人が 2 で書き直していることは在る。
+  /// 根のブロックの直下 の字下げ。無ければ 4。
+  /// 本文から測る。書き手の 4 を人が 2 にしていることは在る。
   let rootChildIndent (src: string) : int =
     if isNull src || src.Length = 0 then 4
     else
@@ -283,11 +246,8 @@ module FsharpScan =
       | Some n when n > 0 -> n
       | _ -> 4
 
-  /// 2 つ の runtime で同じ答えが返ることを見る口。
-  /// 組み立てはここ 1 か所（`Scan.describe` と同じ理由）。
-  ///
-  /// 本文の何文字 が「文字列・コメントの外」かも出す ——
-  /// カーソル 1 点 だけだと、数え方がずれても当たった点でしか出ない
+  /// 2 runtime の突き合わせ口。組み立てはここ 1 か所。
+  /// 文字列の外の文字数も出す。1 点 だけだとずれが隠れる。
   let describe (src: string) (cursor: int) : string =
     let outsideCount =
       if isNull src || src.Length = 0 then 0
@@ -298,11 +258,8 @@ module FsharpScan =
       | None -> "nothing"
     word + " outside=" + string outsideCount + " len=" + string (if isNull src then 0 else src.Length)
 
-  /// 名前の数え方を突き合わせる口。表は引数で来る ——
-  /// 器に要素名を書けないので、ここで表を作ることはできない（門が見ている）。
-  ///
-  /// 配列で受ける。 F# の list は焼くと連結リストになり、
-  /// 表から素の配列を渡す道が無くなる
+  /// 名前の数え方を突き合わせる口。表は引数。ここで表を作るな。
+  /// 配列で受ける。list は焼くと連結リストになり、素の配列を渡せなくなる。
   let describeTags
     (labels: (string * string * int * string)[])
     (attrName: string)
@@ -339,9 +296,8 @@ module FsharpScan =
     add (string (rootChildIndent src))
     sb.ToString()
 
-  /// 「いまどの `{ }` の中に居るか」を突き合わせる口。
-  /// 本文の全部 の位置で数える —— カーソル 1 点 だけだと、
-  /// 数え方がずれても当たった点でしか出ない
+  /// どの `{ }` の中かを突き合わせる口。
+  /// 全部 の位置で数える。1 点 だけだとずれが隠れる。
   let describeBlocks (src: string) : string =
     if isNull src then "len=0"
     else

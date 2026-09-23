@@ -8,11 +8,7 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
 /// F# の CE でも、名前がどこに書いてあるかを引けるか。
-///
-/// v1.6 まで、この表記だけ `Usages` も `Fixes` も空だった。
-/// 理由は「CE には要素名が無いから」と書いてあったが、無いのは要素名で
-/// あって名前ではない —— `defAction "x"` の `x` は `<action label="x">` の
-/// `x` そのもので、数え方が違うだけだった。
+/// 無いのは要素名であって名前ではない。`defAction "x"` の `x` は label そのもの。
 [<TestFixture>]
 type FsharpUsages() =
 
@@ -147,9 +143,7 @@ type FsharpUsages() =
 
   [<Test>]
   member _.``作った定義を当てた本文が 読める``() =
-    // 数だけ見ていると出ない。 参照が埋まっても、その字が読めるとは
-    // 限らない —— CE は `{ }` の中に何か要るので、空の定義は読めない
-    // （ブラウザで Apply して初めて出た）
+    // 数だけ見ていると出ない。参照が埋まっても、空の定義は `{ }` の中が要るので読めない。
     let src = "let x =\n  vertical \"n\" {\n    top {\n      actionRef \"loop\" []\n    }\n  }\n"
     match fsharp.Fixes src (src.IndexOf "\"loop\"" + 2) |> List.filter (fun f -> f.EndColumn = f.Column) with
     | [ f ] ->

@@ -31,9 +31,8 @@ public static class EcsCostCheck
 
             var em = world.EntityManager;
 
-            // 描画コンポーネントも付ける。 Configure を通さないと
-            // RenderMeshUtility.AddComponents が飛ばされ、本番より軽い数が出る。
-            // sprite は null でよい（既定の四角が使われる）
+            // 描画コンポーネントも付ける。
+            // Configure を通さないと RenderMeshUtility.AddComponents が飛ばされ、本番より軽い数が出る。
             BulletEntityFactory.Configure(null, null);
 
             // --- 1. 生成 ---
@@ -99,9 +98,8 @@ public static class EcsCostCheck
                 Bullets, spawnMs, spawnMs / Bullets,
                 updateMsPerFrame, destroyMs, destroyMs / Bullets));
 
-            // 1 発 の値だけでは「効くか」が分からない。 1 コマ に何発 撃つかを
-            // 掛けて、60 fps の予算に対する割合で出す。10Way は 60 コマ で 600 発
-            // ＝ 平均 10 発/コマ（ピークはもっと）
+            // 1 発 の値だけでは「効くか」が分からない。
+            // 1 コマ に何発 撃つかを 掛けて、60 fps の予算に対する割合で出す。
             var perFrameSpawn = spawnMs / Bullets * 10.0;
             Debug.Log(string.Format(
                 "[EcsCostCheck] 1 コマ に 10 発 撃つとして: 生成 {0:F3} ms + 更新 {1:F3} ms"

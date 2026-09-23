@@ -8,13 +8,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
 {
     /// <summary>
     /// 場面 を組んで、引数 を配る。
-    ///
-    /// 場面（`.tscn`）に並べない。 Unity 版 も同じ形 で、あちら は
-    /// 「場面 を 1 行 も触っていない」と書いてある —— 組み方 がコード に在ると、
-    /// 何 が何 を見ているか を読む場所 が 1 か所 になる。
-    /// ## 測る口 を持っている
-    /// <code>
-    /// --frames &lt;n&gt;   n コマ 受けたら数 を出して終わる（headless で回せる）
+    /// </summary>
     public sealed partial class Main : Node2D
     {
         DanmakuClient client;
@@ -118,11 +112,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
         }
 
         /// <summary>
-        /// 数 を出して終わる。console client と同じ 2 行。
-        ///
-        /// 「何コマ 来たか」だけ では足りない。 番号 の飛び と、
-        /// 弾数 の山 と中央値 まで出す —— 揃えてあるので、
-        /// 同じ種・同じ弾幕 なら console client と突き合わせられる。
+        /// 数 を出して終わる。
         /// </summary>
         void Finish()
         {
@@ -157,11 +147,8 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
         }
 
         /// <summary>
-        /// <c>x,y</c> を読む。読めなければ null（既定 の置き場 へ落ちる）。
-        ///
-        /// <c>InvariantCulture</c> で読む。 端末 の地方設定 が
-        /// 小数点 に <c>,</c> を使う国 だと、区切り と小数点 が同じ字 になる
-        /// —— そこ で割れると「なぜか 2 点目 が取れない」になる。
+        /// <c>x,y</c> を読む。
+        /// 読めなければ null（既定 の置き場 へ落ちる）。
         /// </summary>
         static Vector2? ParsePoint(string text)
         {

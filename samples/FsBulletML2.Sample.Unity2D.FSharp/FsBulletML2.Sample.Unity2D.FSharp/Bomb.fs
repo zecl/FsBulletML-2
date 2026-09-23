@@ -2,13 +2,7 @@
 
 open UnityEngine
 
-/// 爆発の見た目。
-///
-/// GameObject を作らない。 旧はここで `InstanceManager.InstantiatePrefab`
-/// を呼んでプールから取っていた。そのプールは起動時に `cacheSize` ぶんの
-/// `bomb0` `bomb1` ... を作るので、1 発 も撃たないうちから場に並ぶ。
-/// `Bomb` をこの形にして初めて、プールから外せる
-/// （`ObjectData.IsBulletPrefab` の但し書き）。
+/// 見た目だけ。プールは作らない。`InstanceManager` から外してある。
 [<AbstractClass; Sealed>]
 type Bomb private () =
 

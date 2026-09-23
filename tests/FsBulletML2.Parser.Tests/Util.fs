@@ -5,8 +5,7 @@ open NUnit.Framework
 
 [<AutoOpen>]
 module Test =
-  /// Original tests used Windows paths relative to bin/Debug (../../../TestData/...).
-  /// Resolve to TestData copied next to the test assembly, with a source-tree fallback.
+  /// TestData は試験アセンブリの隣。無ければソース木へ戻す。
   let resolveTestPath (p: string) =
     let normalized = p.Replace('\\', '/')
     let prefix = "../../../TestData/"
@@ -43,7 +42,7 @@ module Test =
   let and' p list = testCase p @ list
   let (&>) list p = and' p list
 
-  /// NUnit 3 dropped TestCaseData.Throws. Stash the expected exception for withExpectedException.
+  /// 期待する例外はプロパティへしまって、withExpectedException で見る。
   let throws (exceptionType:System.Type) (list:TestCaseData list) =
     match list with
     | [] -> invalidArg "list" "対象のテーストデータがありません。"

@@ -8,12 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace FsBulletML2.Sample.Server.MagicOnion.Hubs
 {
     /// <summary>
-    /// 口 の実装。ここは配線しか持たない ——
-    /// 弾幕は <see cref="Room"/> が、部屋 の出入りは <see cref="RoomRegistry"/> が持つ。
-    ///
-    /// Hub は接続 1 本 につき 1 個 作られて、切れたら捨てられる。
-    /// 状態を置くと、再接続で消える。置いてよいのは
-    /// 「この接続がどの部屋 に居るか」だけ。
+    /// 口 の実装。
     /// </summary>
     public sealed class DanmakuHub : StreamingHubBase<IDanmakuHub, IDanmakuHubReceiver>, IDanmakuHub
     {

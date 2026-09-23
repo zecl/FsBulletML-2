@@ -7,28 +7,15 @@ open FsUnit
 open FsBulletML2
 
 /// CE と DU カタログが同じ木になることを 1 個 ずつ突き合わせる門。
-///
-/// 人が書くのは `FsBulletML2.Bullets.Dsl`（CE）のほう。
-/// `FsBulletML2.Bullets`（DU を直に組んだカタログ）は、その値を写した
-///
-/// それでも置いてあるのは、生成器が黙って壊れる形があるため —— 実際、
-///
-///   2. 名前の集合が一致するか（片方にしか無いものが無いか）
+/// 赤になるのは生成器が壊れたときだけ。弾幕が正しいことは守らない。
 [<TestFixture>]
 type BulletsEquivalence() =
 
-  /// 参照を残すための錨。
-  ///
-  /// このテストはアセンブリをリフレクションで走査するが、コンパイラは
-  /// 1 つ も型を使っていない参照を出力に残さない。 残らないと
-  /// 実行時にそのアセンブリが読み込まれず、走査が 0 件 になる。
-  /// 片側ずつ 1 個 だけ直に触っておく。
+  /// 参照を残すための錨。型を使わない参照は出力に残らず、走査が 0 件 になる。
   static let anchorPlain = FsBulletML2.Bullets.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
   static let anchorDsl = FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
 
-  /// 両側のアセンブリに在る弾幕の数。176 個 が同梱の BulletmlInfo、
-  /// 17 個 が公式配布のサンプル（v2.4.1 で足した。`All.official`）、
-  /// 3 個 が Bulletml 直（Player.fs の 3 本 は createBulletmlInfo を通していない）
+  /// 両側のアセンブリに在る弾幕の数。片側だけ減ると、空の突き合わせが緑になる。
   [<Literal>]
   static let Expected = 196
 

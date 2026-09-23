@@ -44,10 +44,7 @@ type Player () =
   member this.Y with get () = this.transform.position.y
                  and set (v) = this.transform.position <- Vector3(this.transform.position.x, v, this.transform.position.z)
 
-  /// 毎コマ の仕事を 4 本 の流れに割る。旧は 1 つ の Update に畳んであった。
-  ///
-  /// 割ると、それぞれの条件が `filter` に出る —— 旧は入力が 0 のコマでも
-  /// 座標を計算し直していて、止めているのか動かしているのかが字から読めなかった。
+  /// 毎コマ の仕事を 4 本 の流れに割る。
   member this.Start () =
     let update = FrameTicker.Frames
 
@@ -65,8 +62,6 @@ type Player () =
         this.Shoot2WayRightBullet ())
 
     // 3. ホーミングは 61 コマ に 1 回 だけ。
-    //    旧は counter を自分で数えていた —— 毎コマ +1 して 61 で 0 に戻し、
-    //    61 のコマだけ撃つ形。通し番号で同じ間隔になる
     update
     |> Observable.mapi (fun i _ -> i)
     |> Observable.filter (fun i -> i % 61 = 60 && Input.GetKey KeyCode.Z)
@@ -105,11 +100,8 @@ type Player () =
   member this.ShootHomingBullet () =
     this.Fire this.transform.position this.hommingTask
 
-  /// 敵弾が当たった。当たり判定は BulletEcsDriver がやる ——
-  /// ECS の弾は Collider2D を持たないので、OnTriggerEnter2D は届かない。
-  ///
-  /// 爆風はここで出さない。 ダメージを増やすだけで、
-  /// 出すのは `Start` の 4 番（`damageRp` の購読）
+  /// 敵弾が当たった。
+  /// 当たり判定は BulletEcsDriver がやる —— ECS の弾は Collider2D を持たないので、OnTriggerEnter2D は届かない。
   member this.HitByEnemyBullet () =
     damageRp.Value <- damageRp.Value + 1
 

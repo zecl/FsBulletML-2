@@ -6,14 +6,8 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 open FsBulletML2.LanguageService.Languages.Xml
 
-/// hover が返す markdown の字。
-///
-/// Monaco を通さずに当てる。ブラウザでしか見られないのは「浮く位置・幅・
-/// 改行の入り方」で、中身は .NET で全部 当てられる。
-///
-/// 6 通り とも、素が緑のまま自分だけ赤くなる。
-/// フェンスを外す変異は 3 点 を赤にする —— markdown が `<` を食うので、
-/// DTD の行がどこからも見えなくなる。
+/// hover が返す markdown の字。Monaco を通さずに当てる。
+/// フェンスを外すと markdown が `<` を食い、DTD の行がどこからも見えなくなる。
 [<TestFixture>]
 type HoverMarkdown() =
 

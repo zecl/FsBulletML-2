@@ -8,13 +8,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// fsb を読む口の目盛り。 `SxmlReader` と対。
-///
-/// --- なぜ 2 本 目 を書いているのか
-///
-/// `Parser` には `tryReadFsbString` が既に在る。それでも `Diagnosis` は
-/// 使っていない —— あちらは
-///     | Failure (_,_,_) -> None
-/// で、FParsec が持っている行と桁を捨てている。 波線を引くにはそれが要る。
+/// `tryReadFsbString` は行と桁を捨てる。波線を引くにはそれが要る。
 [<TestFixture>]
 type FsbReader() =
 
@@ -119,15 +113,8 @@ type FsbReader() =
 
   [<Test>]
   member _.``読める形が 途中で終わっていても通る``() =
-    // `Offside.parse` は `eof` を要求していない。 根の要素を読み終えた
-    // ところで止まり、残りを黙って捨てる。
-    //
-    // タブで字下げした行がその形 —— エラーにならず、子が 1 つ も付かない。
-    // 補完の側（`FsbScan`）がタブを字下げに数えないのは、これに揃えたから
-    // （`FsbContext` の「タブは字下げにならない」）。
-    //
-    // ここを直すのは Parser の仕事で、この版の範囲ではない。
-    // 黙って捨てていることを、字で残しておく
+    // `Offside.parse` は `eof` を要求しない。根を読み終えたところで止まり、残りを捨てる。
+    // タブの行はエラーにならず子が付かない。補完がタブを字下げに数えないのはこれに揃えたから。
     let mutable loaded = None
     SourceReader.fsb.Apply (fun b -> loaded <- Some b) "bulletml\n\taction label=\"top\""
     |> should equal None

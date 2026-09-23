@@ -45,10 +45,7 @@ public static class BulletEntityFactory
     }
 
     /// <summary>
-    /// 番号 から実体 を引く表。コマをまたいで同じ弾を同じ実体 に当てる。
-    ///
-    /// 表 を持たずに毎コマ 作り直すこともできる（並びが丸ごと来るので）が、
-    /// そうすると弾が毎コマ 生まれ直して、補間 も当たり判定 の連続性 も無くなる。
+    /// 番号 から実体 を引く表。
     /// </summary>
     static readonly Dictionary<int, Entity> _byId = new Dictionary<int, Entity>();
 
@@ -57,10 +54,7 @@ public static class BulletEntityFactory
 
     /// <summary>
     /// サーバーから届いた 1 コマ を、いまの実体 に当てる。
-    ///
-    /// 並びに出てこなかった弾は消す。 サーバーは「いま在る弾 全部」を
-    /// 毎回 送ってくるので、居なくなったことは出てこないことでしか分からない
-    /// （消えた合図 は送られてこない）。
+    /// </summary>
     public static void Apply(BulletDto[] bullets, RoomInfo room)
     {
         var world = World.DefaultGameObjectInjectionWorld;
@@ -181,9 +175,8 @@ public static class BulletEntityFactory
     }
 
     /// <summary>
-    /// 実体 を消す。番号 の表 からも引く。
-    /// 引き忘れると、同じ番号 の弾が次に来たときに「もう居る」と読んで
-    /// 絵 が二度と出ない（実体 は消えているのに表 には残っている）。
+    /// 実体 を消す。
+    /// 引き忘れると、同じ番号 の弾が次に来たときに「もう居る」と読んで 絵 が二度と出ない（実体 は消えているのに表 には残っている）。
     /// </summary>
     public static void Destroy(Entity entity)
     {

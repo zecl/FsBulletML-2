@@ -9,14 +9,6 @@ open FsBulletML2.Domain
 open FsBulletML2.Eval
 
 /// 式を文字列でなく木で持つ `Expr` が、`getValueByXPath` と同じ値を返すか。
-///
-/// これは新しい機能の試験ではなく、置き換えてよいかの門である。
-/// 木にするのは走行時間の 27〜61% を占める XPath 評価を外すためだが、
-/// 値が 1 つでも違えば 227 本 の軌跡がずれる。だから
-/// 「速くなったか」ではなく「同じか」だけを見る。
-///
-/// 当てる先は実物。samples の 227 本 から式を全部 抜いて、
-/// 旧と新しい木の両方に同じものを食わせて突き合わせる。
 module internal ExprCorpus =
 
   /// 式が入る要素。DTD の #PCDATA がここに来る
@@ -30,9 +22,6 @@ module internal ExprCorpus =
     doc
 
   /// samples から式を全部 集めて、重複を潰す。
-  /// エンジンを通さず生の XML から採るのは、突き合わせの片側を
-  /// エンジンから独立させるため（同じ道具で両側を作ると、
-  /// 道具が間違っていても一致してしまう）
   let all : Lazy<string list> =
     lazy (
       CorpusData.uniqueSamples ()
@@ -84,10 +73,6 @@ module internal ExprCorpus =
     else BitConverter.SingleToInt32Bits a = BitConverter.SingleToInt32Bits b
 
   /// 振る値。
-  ///
-  /// 1e-4 未満は入れない。 getValueByXPath はその値の ToString が
-  /// "1E-07" のような指数表記になると XPathException で落ちるので、
-  /// 値を突き合わせようがない。その穴は別の試験で名指しにしてある
   let cases =
     [ 0.0f, 0.0f
       0.5f, 0.5f
@@ -152,10 +137,6 @@ type ExprTests() =
       Assert.Fail(sprintf "%d 通りで値が違います（先頭 40 件）:\n%s" diffs.Count head)
 
   /// 実引数を仮引数へ「文字で」差し込んだ形も突き合わせる。
-  ///
-  /// 置き換えは Param.replace が文字でやるので、差し込んだあとの文字列は
-  /// もとの式のどれでもない形になる。そこを試さないと、実際に走る形の
-  /// 半分しか見ていないことになる
   [<Test>]
   member _.``実引数を差し込んだ形でも getValueByXPath と同じ値になる``() =
     let users = ExprCorpus.paramUsers.Value
@@ -206,20 +187,13 @@ type ExprTests() =
       let head = diffs |> Seq.truncate 40 |> String.concat "\n"
       Assert.Fail(sprintf "%d 通りで値が違います（先頭 40 件）:\n%s" diffs.Count head)
 
-  /// 校正点。 上の 2 つが緑なのは「木が正しい」からなのか、
-  /// 「突き合わせが何も見ていない」からなのかを分ける。
-  ///
-  /// わざと優先順位を間違えた評価器（左から順に計算する）を同じ式に当てて、
-  /// 十分な数が赤くなることを確かめる。ここで赤が出ないなら、
-  /// 実物の式に優先順位が効く形が無いということなので、上の緑は
-  /// 優先順位について何も言っていない
+  /// 校正点。
   [<Test>]
   member _.``突き合わせは優先順位の間違いを拾える``() =
     // 左から順に計算する（* と + を区別しない）壊れた評価器
     let rec leftToRight (randValue: double) (rank: double) (node: Expr.Node) : double =
       // 木はもう優先順位どおりに組まれているので、木を壊すのではなく
-      // 「掛け算を足し算として読む」形で崩す。目的は、突き合わせが
-      // 値の違いを拾えることの確認であって、特定の壊し方の再現ではない
+      // 「掛け算を足し算として読む」形で崩す。
       match node with
       | Expr.Num v -> v
       | Expr.Rand -> randValue
@@ -248,15 +222,7 @@ type ExprTests() =
     Assert.That(caught, Is.GreaterThan 300,
                 sprintf "壊した評価器が %d 種 でしか赤くなりません。突き合わせが違いを拾えていない疑いがあります" caught)
 
-  /// 見つけた穴 1。 $rand / $rank が 1e-4 未満だと、旧は落ちる。
-  ///
-  /// float32 の ToString が "1E-07" のような指数表記を吐き、xpathNumber の
-  /// 「+ - * の前後に空白を入れる」置き換えがそれを "1E - 07" に割るため。
-  /// $rand は [0,1) の一様乱数なので、実際の乱数を使うと 1 万 回 に 1 回 ほど
-  /// 踏む。同梱の FixedManager は 0.5 しか返さないので控えでは出ない。
-  ///
-  /// この試験は「旧が落ちること」を固定する。直したら赤くなるので、
-  /// そのとき控えと一緒に直すこと
+  /// 見つけた穴 1。
   [<Test>]
   member _.``小さい rand rank で getValueByXPath は落ちる``() =
     let small = [ 0.0001f; 0.00001f; 0.0000001f; 1e-20f ]
@@ -276,11 +242,7 @@ type ExprTests() =
       let got = Expr.evalWithValues 0.5f v (Expr.parse s)
       Assert.That(Single.IsNaN got, Is.False, sprintf "rank=%g で木が NaN になっています" v)
 
-  /// 見つけた穴 2。 読めない式で旧は例外、木は NaN。
-  ///
-  /// number(abc) は XPath ではノード集合の検査になって落ちる。
-  /// 木は Invalid にして NaN を返す。落とすほうへ寄せると、いま静かに
-  /// 進んでいる台本が落ちる可能性があるので寄せない
+  /// 見つけた穴 2。
   [<Test>]
   member _.``読めない式は 旧が例外 木は NaN``() =
     let env = ExprCorpus.envOf 0.5f 0.5f
@@ -345,13 +307,7 @@ type ExprTests() =
     Assert.That(draws.Count, Is.EqualTo 1, "$rand が 2 個 でも 1 回 だけ引くこと")
     Assert.That(float v, Is.EqualTo(0.0).Within(1e-9), "同じ式の中の $rand は同じ値になること")
 
-  /// 読む費用は 1 回きり。走行中は木を評価するだけ、という形になっているか。
-  /// 数そのものは置かない（台で動く）。桁だけ見る。
-  ///
-  /// 計測器を挟むと落ちる。 カバレッジ収集の下で 9.1 倍 まで下がって
-  /// 赤くなった（下限は 10 倍）。両側が同じだけ遅くなるわけではないので、
-  /// 区分を付けて外せるようにしてある ——
-  /// `dotnet test --filter "TestCategory!=Timing"`
+  /// 読む費用は 1 回きり。
   [<Test>]
   [<Category("Timing")>]
   member _.``木の評価は getValueByXPath より桁で速い``() =

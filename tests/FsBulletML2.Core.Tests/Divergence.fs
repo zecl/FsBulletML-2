@@ -5,10 +5,7 @@ open FsUnit
 
 module Divergence =
 
-  /// 行に割る。Trace.fs の出力は末尾が必ず改行なので、そのまま Split すると
-  /// 末尾に空行が 1 つ増える。長さの違う軌跡を比べたとき、その空行が相手の
-  /// 実在する行とかち合って「行なし」より先に食い違い扱いされてしまうので、
-  /// 割る前に末尾の改行 1 つぶんだけ落とす。
+  /// 末尾の改行を 1 つ落としてから割る。残すと空行が相手の行とかち合い、「行なし」より先に食い違いになる。
   let private lines (s: string) : string[] =
     let normalized = s.Replace("\r\n", "\n")
     let trimmed = if normalized.EndsWith "\n" then normalized.Substring(0, normalized.Length - 1) else normalized
@@ -32,9 +29,6 @@ module Divergence =
     found
 
 /// 2 つの軌跡を比べて、最初に食い違った場所を出す。
-///
-/// 指紋だけだと「違う」しか言えない。橋が割れたときに 60 フレーム × 227 本 の
-/// 中から人が探すことになるので、フレームと行を指すところまでを道具にする。
 [<TestFixture>]
 type Divergence() =
 

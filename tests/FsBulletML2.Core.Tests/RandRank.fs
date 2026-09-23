@@ -2,12 +2,7 @@ namespace FsBulletML2.Core.Tests
 
 open NUnit.Framework
 
-/// $rand と $rank。値そのものは走らせる側が `Env` に載せて渡すので、
-/// ここで見るのは「その値が式のどこに、どう入るか」。
-///
-/// NonParallelizable は外した。 旧は `BulletMLManager`（static mutable）を
-/// SetUp で差し替えていたので逐次でしか走らせられなかったが、いまは
-/// `TraceRun.withRandRank` が引数で受け取る。触るグローバルが 1 つ も無い。
+/// $rand と $rank。
 [<TestFixture>]
 type RandRank() =
 

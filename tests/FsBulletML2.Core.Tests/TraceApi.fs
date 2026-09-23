@@ -8,11 +8,7 @@ open FsBulletML2
 open FsBulletML2.Domain
 
 /// 公開 API（Runner / BulletmlScript / BulletRun / Body / Frame / Env）だけで、
-/// Trace と同じ書式の軌跡を作る。旧経路と一致するかを見るのがここの仕事。
-///
-/// 「internal を使っていない」はここでは強制されない。
-/// このアセンブリは InternalsVisibleTo に入っているので、うっかり
-/// BulletState や Progress を触ってもコンパイラは通してしまう。
+/// Trace と同じ書式の軌跡を作る。
 module TraceApi =
 
   let private fmt (v: float32) =
@@ -35,10 +31,6 @@ module TraceApi =
       Id : int }
 
   /// `run` の、走行の途中で rank や自機の位置を動かせる形。
-  ///
-  /// 旧の `Trace.runWith` は走行の途中で `BulletMLManager`（グローバル）を
-  /// 差し替えていた。新 API はフロントが毎コマ `Env` を渡す形なので、
-  /// 値を読む口を関数にするだけで足りる —— 差し替えるグローバルが要らない。
   let runDetailed (rootKind: BulletType) (onFrame: int -> unit)
                   (rand: unit -> float32) (rank: unit -> float32)
                   (px: unit -> float32) (py: unit -> float32)
@@ -82,9 +74,7 @@ module TraceApi =
           // 物理量はフロントが持っている。毎コマ入れ直す（旧の stateOfBullet）。
           // 種別はもう渡らない —— 根は newRoot で、撃たれた弾は親から継ぐ
           let motion = { b.Run.Motion with Pos = { X = b.X; Y = b.Y } }
-          // 同梱フロントと同じ skip をここでも通す。 通さないと、この橋は
-          // 本番と違う経路を見ることになり、skip の条件が間違っていても
-          // 227 本 が緑のまま通ってしまう（BulletRun.HasNoScript の但し書き）
+          // 同梱フロントと同じ skip をここでも通す。
           let env = if b.Run.HasNoScript then noAimEnv () else envAt b.X b.Y
           let f = Runner.stepWith env b.Run motion
           b.X <- f.Run.Motion.Pos.X + f.Delta.X
@@ -125,13 +115,6 @@ module TraceApi =
     runDetailed BulletType.Enemy onFrame rand rank px py xml frames |> fst
 
   /// 根の種別を変えて回し、産まれた弾だけを産まれた順に出す。
-  ///
-  /// 標準の軌跡には種別の列が無いので別口にしてある。`run` は根を敵で
-  /// 組む（`runWithParams` が `BulletType.Enemy` を渡す）ので、
-  /// Player を見る試験はここを通る。
-  ///
-  /// 書式は旧の `PlayerAndTops.runAsPlayer` をそのまま写す。違うと控えが
-  /// 全行 動いて、移植が正しいかを読めなくなる
   let runSpawnedAs (kind: BulletType) (rand: unit -> float32) (rank: float32)
                    (px: float32) (py: float32) (xml: string) (frames: int) : string =
     let _, runs =
@@ -142,10 +125,7 @@ module TraceApi =
     |> String.concat "\n"
     |> fun s -> if s = "" then s else s + "\n"
 
-  /// 値を動かさない走行。runDetailed の薄い包み。
-  ///
-  /// 橋 227 本 と Golden の大半がここを通る。 包みにしたあとも
-  /// 出力が 1 バイト も動かないことは、それらが緑であることで押さえている
+  /// 値を動かさない走行。
   let run (rand: unit -> float32) (rank: float32) (px: float32) (py: float32)
           (xml: string) (frames: int) : string =
     runWithParams ignore rand (fun () -> rank) (fun () -> px) (fun () -> py) xml frames

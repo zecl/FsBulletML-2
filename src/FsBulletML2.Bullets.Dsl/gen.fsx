@@ -1,21 +1,7 @@
-// **人が書くのは CE のほう**（このディレクトリの *.fs）。
-// この道具は、その値を読んで 2 つ を焼く。
-//
-//   samples/FsBulletML2.Bullets/*.fs   DU で直に組んだカタログ（突き合わせ門の相手）
-//   src/FsBulletML2.Bullets.Dsl/All.fs   全弾幕の一覧
-//
-// **値から起こす。** CE のソースを構文解析するのではなく、焼いたアセンブリから
-// Bulletml の値を取り出して印字する。木の形だけが入力なので、書き方
-// （改行やインデント）に左右されない。
-//
-// CE のソースからは **namespace / module / 値の名前 / doc コメント**だけ拾う。
-// これらは値に残っていないため。
-//
-// 焼き直し:
+// 人が書くのは CE（このディレクトリの *.fs）。値から DU カタログと All.fs を焼く。
+// 焼き直したら tests/FsBulletML2.Dsl.Tests を回す。
 //     dotnet build src/FsBulletML2.Bullets.Dsl -c Release
 //     dotnet fsi src/FsBulletML2.Bullets.Dsl/gen.fsx
-//
-// **焼き直したら必ず tests/FsBulletML2.Dsl.Tests を回すこと。**
 
 #r @"bin\Release\net10.0\FsBulletML2.Core.dll"
 #r @"bin\Release\net10.0\FsBulletML2.Dsl.dll"
@@ -32,10 +18,8 @@ let dslDir = Path.Combine(repo, @"src\FsBulletML2.Bullets.Dsl")
 let duDir = Path.Combine(repo, @"samples\FsBulletML2.Bullets")
 let dslDll = Path.Combine(dslDir, @"bin\Release\net10.0\FsBulletML2.Bullets.Dsl.dll")
 
-/// F# の文字列リテラルにする。
-///
-/// **制御文字は字ではなく名前で書く。** 式の中に改行を含む弾幕があり
-/// （Original.time_twist の speed）、そのまま埋めるとリテラルが複数行 になる。
+/// F# の文字列リテラルにする。制御文字は字ではなく名前で書く。
+/// 式に改行を含む弾幕がある（Original.time_twist の speed）。そのまま埋めると複数行になる。
 let q (s: string) =
   let b = StringBuilder()
   b.Append('"') |> ignore
@@ -125,13 +109,8 @@ let bulletLabel (a: BulletAttrs) =
   | Some (BulletLabel n) -> sprintf "{bulletLabel = Some (BulletLabel %s)}" (q n)
 
 // ---- 木を行のリストで出す ---------------------------------------------------
-//
-// 深い入れ子を 1 行 に畳むと Original.fs が数千 文字 の行になる。
-// リストは
-//     [
-//       elm
-//     ]
-// の形にして、要素ごとに改行する。**読みやすさより、行が伸びないこと。**
+// 深い入れ子を 1 行に畳むと行が数千文字になる（Original.fs）。
+// リストは要素ごとに改行する。読みやすさより、行が伸びないこと。
 
 let ind (lines: string list) = lines |> List.map (fun l -> "  " + l)
 
@@ -279,7 +258,7 @@ let valueOf (ns: string) (modName: string) (name: string) =
 // ---- 生成 -------------------------------------------------------------------
 
 let duHeader =
-  [ "// **このファイルは生成物。手で直すと次の焼き直しで消える。**"
+  [ "// このファイルは生成物。手で直すと次の焼き直しで消える。"
     "//"
     "// 人が書くのは src/FsBulletML2.Bullets.Dsl（CE）のほう。ここは"
     "// その値を DU で直に組んだ形へ写したもので、突き合わせ門の相手として置いてある。"
@@ -314,9 +293,7 @@ let generateDu (p: Parsed) =
 let generateAll (bundled: string list) (official: string list) =
   let out = StringBuilder()
   let w (s: string) = out.Append(s).Append('\n') |> ignore
-  w "// **このファイルは生成物。手で直すと次の焼き直しで消える。**"
-  w "//"
-  w "// 焼き直し:"
+  w "// 生成物。手で直すと次の焼き直しで消える。"
   w "//     dotnet build src/FsBulletML2.Bullets.Dsl -c Release"
   w "//     dotnet fsi src/FsBulletML2.Bullets.Dsl/gen.fsx"
   w ""
@@ -332,14 +309,12 @@ let generateAll (bundled: string list) (official: string list) =
         let head = if i = 0 then "    [ " else "      "
         w (head + n))
     w "    ]"
-  w (sprintf "  /// 同梱の弾幕 %d 個。**PlayerBullet の 3 本 は Bulletml を直に持つので入らない**" bundled.Length)
-  w "  ///"
-  w "  /// **公式配布のサンプルは入らない**（下の official）—— 出自が違う集合を"
-  w "  /// 混ぜると、この数に紐づいた測定が何の集合の話か分からなくなる"
+  w (sprintf "  /// 同梱の弾幕 %d 個。PlayerBullet の 3 本は Bulletml を直に持つので入らない。" bundled.Length)
+  w "  /// 公式配布は混ぜない。出自が違うと、この数に紐づいた測定がどの集合か分からなくなる。"
   w "  let bullets : BulletmlInfo list ="
   emit bundled
   w ""
-  w (sprintf "  /// BulletML 公式配布（bulletml0_21）のサンプル %d 個。**同梱とは別の集合**" official.Length)
+  w (sprintf "  /// BulletML 公式配布（bulletml0_21）のサンプル %d 個。同梱とは別の集合" official.Length)
   w "  ///"
   w "  /// v2.4.1 で足した。template.xml は入っていない（雛形なので）"
   w "  let official : BulletmlInfo list ="
@@ -362,8 +337,7 @@ for f in files do
     (generateDu p).Replace("\n", "\r\n"),
     UTF8Encoding(false))
   let shortNs = p.Namespace.Substring("FsBulletML2.Bullets.Dsl.".Length)
-  // **公式配布のサンプルは別の一覧へ。** 混ぜると、同梱 176 本 に紐づいた
-  // 測定（$rank を使う 173 本 …）が何の集合の話か分からなくなる
+  // 公式配布のサンプルは別の一覧へ。混ぜると、同梱に紐づいた測定がどの集合か分からなくなる
   let sink = if p.ModuleName = "Official" then officialInfos else allInfos
   for e in p.Entries do
     match valueOf p.Namespace p.ModuleName e.Name with

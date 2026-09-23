@@ -7,30 +7,19 @@ open System.Text
 // 型が同じファイルに在るうちは勝っていたので、移して初めて出る形
 open FsBulletML2.LanguageService
 
-/// XML の字を数える 1 本。
-///
-/// 前は 2 本 在った —— 補完のための `contextAt`（Fable 側、カーソルの手前だけ）と、
-/// 波線のための `tags`（host 側、全タグを位置つき）。同じ罠
-///
-/// 2 か所 で踏むので 1 本 にした。
+/// XML の字を数える 1 本。補完と波線で分けない。
 module XmlScan =
 
   let private isSpace c = c = ' ' || c = '\t' || c = '\r' || c = '\n'
 
   /// タグを頭から全部 拾う。木は組まない。
-  ///
-  /// 引用符の中は名前も `>` も数えない —— 属性値に `>` を書ける。
-  ///
-  /// 閉じ札も拾う。 参照の欠けを数えるだけなら開始札で足りるが、
-  /// カーソルの居場所を出すには「いま開いている要素」が要る。
+  /// 引用符の中は名前も `>` も数えるな。閉じ札も拾う。居場所に要る。
   let tags (src: string) : TagHit list =
     let hits = ResizeArray<TagHit>()
     let mutable i = 0
     let mutable line = 1
     let mutable lineStart = 0
-    // 入れ子の深さ（v2.4）。開始札で増やし、閉じ札で減らす ——
-    // XML はここが真で、包含（`Start`..`Stop`）では出せない
-    // （`Stop` は開始札の `>` なので、子を覆わない）
+    // 深さは開始札と閉じ札。`Stop` は開始札の `>` なので、包含では子を覆わない。
     let mutable depth = 0
     // 1 起点 の桁。行頭からの差に 1 を足す
     let col p = p - lineStart + 1
@@ -85,9 +74,7 @@ module XmlScan =
                 let vLine = line
                 let vCol = col i
                 while i < src.Length && src.[i] <> quote do advance ()
-                // 閉じ引用符が無いまま本文が尽きた。この属性は捨てて、
-                // タグはそこで打ち切る —— 手前まで拾った属性は位置が
-                // 本文と合っているので残す
+                // 閉じ引用符が無い属性は捨てる。手前まで拾った属性は残す。
                 if i >= src.Length then stop <- src.Length
                 else
                   attrs.Add
@@ -104,11 +91,7 @@ module XmlScan =
                   advance () // 閉じ引用符
           else advance ()
         if name <> "" then
-          // 入れ子の深さ（v2.4）。閉じ札は開いていた側と同じ数にする ——
-          // `</action>` は `<action>` と同じ深さに在るものとして読む。
-          //
-          // 閉じすぎても負にしない。 本文は打っている途中なので、
-          // 閉じ札だけが先に在る形が普通に起きる
+          // 閉じ札は開いていた側と同じ深さ。閉じすぎても負にしない。
           if closing then depth <- max 0 (depth - 1)
           hits.Add
             { TagName = name
@@ -156,10 +139,7 @@ module XmlScan =
         if quote <> '\000' then Some(InAttrValue(name, lastAttr)) else Some(InStartTag name)
 
   /// カーソルの居場所を出す。
-  ///
-  /// カーソルより後ろのタグは札に効かせない。 効かせると後ろの閉じ札まで
-  /// 札を下ろしてしまい、どこに居ても「根」に見える（属性の補完は当たり、
-  /// 本文の補完だけ静かに外れる）
+  /// カーソルより後ろのタグは札に効かせるな。どこに居ても根に見える。
   let contextAt (src: string) (offset: int) : Context =
     let cursor = max 0 (min offset src.Length)
     let all = tags src
@@ -172,8 +152,7 @@ module XmlScan =
         elif t.Stop < cursor then
           if t.Closing then
             (if stack.Count > 0 then stack.RemoveAt(stack.Count - 1))
-          // 自己閉じは積まない。 積むと `<bullet/>` から先が
-          // ずっと bullet の中に居ることになる
+          // 自己閉じは積まない。積むとそこから先がずっと中に居る。
           elif not t.SelfClosing then stack.Add t.TagName
     let content () = InContent(if stack.Count > 0 then Some stack.[stack.Count - 1] else None)
     match inside with
@@ -184,10 +163,7 @@ module XmlScan =
       | None -> content ()
 
   /// カーソルの下に在るものを出す。hover が引く。
-  ///
-  /// `contextAt` とは向きが違う。 あちらは「そこで何を打てるか」なので
-  /// 手前だけを見て、名前を打っている途中なら本文扱いにする。こちらは
-  /// 「いま何の上に居るか」なので、語の途中でもその語を返す。
+  /// `contextAt` と逆。語の途中でもその語を返す。
   let tokenAt (src: string) (offset: int) : Token =
     let p = max 0 (min offset (src.Length - 1))
     if src.Length = 0 then Nothing
@@ -211,12 +187,7 @@ module XmlScan =
                   (Scan.nameLenBefore src cursor) (Scan.exprLenBefore src cursor)
 
   /// 式が書ける要素の中身（v4.1）。札のあいだ の字。
-  ///
-  /// 開始札の `>` の次から、次の `<` まで。 子を持つ要素は
-  /// そこが空白だけになるので、呼ぶ側が捨てる（空は返さない）。
-  ///
-  /// 拾う要素名は呼ぶ側が渡す。器に表を書かない ——
-  /// 正本は語彙の `Text`（`#PCDATA` を取るか）で、それは Core の DTD から来る
+  /// 拾う要素名は呼ぶ側が渡す。器に表を書かない。
   let texts (src: string) (names: string list) : TextHit list =
     tags src
     |> List.choose (fun t ->

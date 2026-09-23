@@ -5,16 +5,8 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2
 
-/// 読む口 12 本 の門。中身の parser ではなく、その手前の糊を見る。
-///
-/// `Sxml.parse` と `Offside.parse` は 346 本 が隅々まで叩いているが、
-/// それを木へ繋ぐ `Bulletml.readSxml` / `readFsb` などは 1 本 も通って
-/// いなかった（カバレッジで Parser.fs が 21%）。ここは 12 本 が
-///     read*     読めなければ例外
-///     tryRead*  読めなければ None
-/// のどちらに繋がっているか、そして 3 つ の書式が同じ木に着くかを決める層で、
-/// 繋ぎ間違えても型は通る（`readSxmlString` が `tryBulletmlFromXmlNode` を
-/// 呼んでいても、Some を剥がす行が 1 つ 変わるだけ）。
+/// 読む口 12 本の門。中身の parser ではなく、その手前の糊を見る。
+/// 繋ぎ間違えても型は通る。`read*` は例外、`tryRead*` は None。
 [<TestFixture>]
 type ReadEntryPoints() =
 
@@ -99,12 +91,8 @@ type ReadEntryPoints() =
     Bulletml.ReadFsb (path "fsb") |> should equal xml
     Bulletml.TryReadFsb (path "fsb") |> should equal (Some xml)
 
-  /// 書き出しの往復。
-  ///
-  /// 完全に戻るのは ForTest のほうだけ。 `ToXmlString` は `foldConstants`
-  /// を通すので数値リテラルが F10 で書き直され、`NumExpr` は元の文字まで
-  /// 持つので木が変わる。戻らないことも門にする —— どちらを使うかを
-  /// 取り違えると、往復の意味が変わるので。
+  /// 書き出しの往復。完全に戻るのは ForTest だけ。
+  /// `ToXmlString` は定数を畳むので木が変わる。取り違えると往復の意味が変わる。
   [<Test>]
   member _.``往復で完全に戻るのは ForTest のほう``() =
     let xml = Bulletml.readXmlString (text "xml")

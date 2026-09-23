@@ -4,20 +4,12 @@ open System
 // `Attribute` が `System.Attribute` に負ける。理由は `XmlScan.fs` の同じ行
 open FsBulletML2.LanguageService
 
-/// インデント記法（fsb）の字を数える 1 本。 XML 側と同じ型を返す。
-///
-/// 数える形はこれだけ ——
-///
-///     name attr="値" attr="値"
-///
-/// そこで読むのをやめて、残りを黙って捨てる（v1.1 の頭で測った）。
+/// インデント記法（fsb）の字を数える 1 本。XML 側と同じ型を返す。
+/// 数えるのは `name attr="値"` まで。残りを黙って捨てる。
 module FsbScan =
 
-  /// 要素 1 つ ＝ 行 1 本。`TagHit` に、行と字下げを足したもの。
-  ///
-  /// 参照を数える側は `TagHit` だけで足りる（表記を知らない）。
-  /// カーソルの居場所を出すには「どの行に居るか」と「その行の字下げ」が
-  /// 要るので、そこだけこちらが持つ。
+  /// 要素 1 つ ＝ 行 1 本。行と字下げはカーソルの居場所用。
+  /// 参照を数える側には `TagHit` だけ渡す。
   type Row =
     { Hit: TagHit
       /// 行頭の空白の数。入れ子はこれだけで決まる
@@ -32,31 +24,17 @@ module FsbScan =
       BodyStop: int }
 
   /// 名前に使える字。`Scan.isNameChar` より狭い。
-  ///
-  /// あちらは `:` も `-` も `.` も通すが、fsb では `:` が本文の区切りで、
-  /// 通すと `direction:` が丸ごと 1 つ の名前になる。
-  ///
-  /// `Scan.nameLenBefore`（補完が手前 何文字 を置き換えるか）は
-  /// あちらのまま。 置き換えの幅は「いま打っている語」で、
-  /// そこは表記をまたいで同じ —— 名前の切り方とは別の問い
+  /// `:` を通すと `direction:` が 1 つの名前になる。置き換え幅はあちらと別。
   let private isName (c: char) = Char.IsLetterOrDigit c || c = '_'
 
   /// 行を頭から全部 拾う。木は組まない。
-  ///
-  /// 閉じ引用符が無い値も捨てない。 捨てると `label="` まで打った時点で
-  /// 属性値の候補が静かに出なくなる（sxml 側と同じ理由）。
-  /// 閉じていない値は「行末まで」になる。
+  /// 閉じ引用符が無い値も捨てるな。候補が静かに消える。
   let rows (src: string) : Row list =
     let out = ResizeArray<Row>()
     let n = src.Length
     let mutable i = 0
     let mutable line = 1
-    // 入れ子の深さ（v2.4）。字下げの幅を決め打たない ——
-    // 書き手は 2 でも 4 でも書ける。開いている段の字下げを積んでおいて、
-    // 同じか浅い段を落としてから数える。
-    //
-    // `Stop` が行末なので、包含では木にならない（測った。全部 兄弟に見える）。
-    // fsb の入れ子はここにしか無い
+    // 字下げの幅は決め打たない。`Stop` は行末なので、包含では木にならない。
     let indents = ResizeArray<int>()
     while i <= n do
       let lineStart = i
@@ -157,13 +135,8 @@ module FsbScan =
     while k > 0 && src.[k - 1] <> '\n' do k <- k - 1
     k
 
-  /// カーソルの居場所を出す。
-  ///
-  /// 名前を打っている途中は本文扱い（`    fir|`）。XML 側の `<act|` と
-  /// 同じで、そこで出したいのは要素の候補。
-  ///
-  /// 親は字下げで探す。 自分より上に在る行のうち、
-  /// 字下げが自分より浅い最後の行がいちばん内側の親。
+  /// カーソルの居場所を出す。名前の途中は本文扱い。
+  /// 親は、自分より浅い最後の行。
   let contextAt (src: string) (offset: int) : Context =
     let cursor = max 0 (min offset src.Length)
     let all = rows src
@@ -183,11 +156,7 @@ module FsbScan =
         match here with
         | Some r -> r.Indent
         | None ->
-          // 空行と、名前がまだ無い行。打った空白の数がそのまま字下げ。
-          //
-          // カーソルまでの文字数ではない —— タブで字下げした行がそれだと
-          // 「深いところに居る」ことになって、上の要素の中身の候補が出る。
-          // 数えるのは空白だけ（`rows` の字下げと同じ規則）
+          // 空行の字下げは空白の数。カーソルまでの文字数で数えるな。タブが深くなる。
           let mutable k = lineStart
           while k < cursor && src.[k] = ' ' do k <- k + 1
           k - lineStart
@@ -198,12 +167,7 @@ module FsbScan =
       |> InContent
 
   /// カーソルの下に在るものを出す。hover が引く。
-  ///
-  /// 指すのはカーソルの位置に在る 1 文字。だから
-  ///
-  ///   字下げの空白 / `=` / 引用符そのものの上   何でもない
-  ///   要素名の最初の字と最後の字               その要素
-  ///   本文（`:"…"` の中）                      何でもない（XML の #PCDATA と同じ）
+  /// 指すのはその 1 文字。空白も `=` も引用符も本文も何でもない。
   let tokenAt (src: string) (offset: int) : Token =
     if src.Length = 0 then Nothing
     else
@@ -228,12 +192,7 @@ module FsbScan =
                   (Scan.nameLenBefore src cursor) (Scan.exprLenBefore src cursor)
 
   /// 式が書ける要素の中身（v4.1）。`:` のあとの引用符。
-  ///
-  ///     wait:"30-$rank*8"
-  ///     direction type="absolute":"180+$rand*30"
-  ///
-  /// 属性は `=` で、中身は `:`。 引用符の中に入っているあいだは
-  /// どちらも数えない —— 値に `:` を書ける
+  /// 属性は `=`、中身は `:`。引用符の中ではどちらも数えるな。
   let texts (src: string) (names: string list) : TextHit list =
     tags src
     |> List.choose (fun t ->

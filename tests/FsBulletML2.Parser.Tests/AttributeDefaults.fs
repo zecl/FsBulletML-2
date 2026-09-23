@@ -7,11 +7,7 @@ open FsBulletML2.Domain
 open FsBulletML2.LanguageService
 
 /// 属性を書かなかったときに走る値が、Core のマーカーと合っているか。
-///
-/// 既定は AST に残らない。読む段は属性が無ければ Attrs ごと None にするので、
-/// 値が決まるのは Step / Api の fall-through（`| None -> aim` の形）。
-///
-/// 「省いた == 既定」だけなら緑のまま通っていた。
+/// 既定は AST に残らない。「省いた == 既定」だけなら緑のまま通る。
 [<TestFixture>]
 type AttributeDefaults() =
 
@@ -27,19 +23,14 @@ type AttributeDefaults() =
   static let wrap (body: string) =
     sprintf "<bulletml xmlns=\"%s\">%s</bulletml>" Ns body
 
-  /// accel は撃った弾の中に置く。 根の top に直に置くと 2 コマ の no-op に
-  /// なる（`Step.rootProgress` の但し書き。根は Init を通らないので、
-  /// accel の placeholder が「もう評価済み」のまま最初のコマへ入る）。
-  /// 根に置いたままだと、どの値を書いても走りが変わらない
+  /// accel は撃った弾の中に置く。根の top に直に置くと 2 コマ の no-op になる。
+  /// 根に置いたままだと、どの値を書いても走りが変わらない。
   static let accelIn (axis: string) (attr: string) =
     sprintf "<action label=\"top\"><fire><speed>1</speed><bullet><action><accel><%s%s>2</%s><term>4</term></accel><wait>8</wait></action></bullet></fire><wait>9</wait></action>"
       axis attr axis
 
   /// 属性のところだけ差し替えられる弾幕。渡すのは ` type=\"aim\"` のような字か、空。
-  ///
-  /// どの形も「その属性が効く」ように組んである。 効かない形にすると
-  /// 逆向きの点（札でない値で走りが変わる）が空振りする ——
-  ///   speed      根の速さが 0 なので relative と absolute が同じ値になる。
+  /// 効かない形にすると、札でない値で走りが変わる点が空振りする。
   static let templates : ((string * string) * (string -> string)) list =
     [ ("bulletml", "type"),
         (fun attr ->
@@ -60,9 +51,7 @@ type AttributeDefaults() =
         (fun attr -> wrap (accelIn "vertical" attr)) ]
 
   /// 走らせて、外から見えるものを字にする。
-  ///
-  /// `ShootingDirection` も混ぜる。 bulletml/@type は弾の動きに出ない ——
-  /// フロントへ渡すだけの値なので、動きだけ見ていると常に一致して緑になる
+  /// bulletml/@type は弾の動きに出ない。動きだけ見ていると常に一致して緑になる。
   static let observe (src: string) =
     match tryReadXmlString src with
     | None -> failwithf "読めなかった: %s" src

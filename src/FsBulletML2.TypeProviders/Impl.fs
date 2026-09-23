@@ -17,14 +17,8 @@ module Impl =
   let asm = Assembly.GetExecutingAssembly()
   let ns = typeof<Style>.Namespace
 
-  /// 生成する型のプロパティの型。ここで 1 回 だけ解いて配る。
-  ///
-  /// FsBulletML2.DTD には同名の型とモジュールが居て（DU の Bulletml と、
-  /// readXmlString などを持つ Bulletml モジュール）、書く場所によって
-  /// typeof<Bulletml> がモジュールのほうへ解ける。そうなると生成した型の
-  /// プロパティ型が FsBulletML2.DTD.Bulletml.Bulletml という在りもしない名前で
-  /// 焼かれ、使う側が FS1109 で落ちる（型プロバイダ自身のビルドは通るので、
-  /// 門を通すまで気づけない）。
+  /// 生成する型のプロパティの型。ここで 1 回だけ解いて配る。
+  /// `typeof<Bulletml>` がモジュール側へ解けると FS1109 で焼かれる。
   let bulletmlType = typeof<Bulletml>
   let createProvidedTypeDefinition ns =
     ProvidedTypeDefinition(asm, ns, "BulletML", Some (typeof<obj>), hideObjectMethods = true, isErased = true)
@@ -83,8 +77,3 @@ module Impl =
           docText)
         instanceProp))
 
-  // Was: probe for FsBulletML2.Core/FParsec/FsBulletML2.Parser under a NuGet packages.config-style
-  // "packages\<id>.<version>\lib\<tf>" layout, keyed off "net40"/"net45" via #if NET40/NET45 (an
-  // ifdef that nothing defines any more - a latent, always-broken build target under this
-  // project's later configurations). There is no packages.config in this repo; dependencies are
-  // resolved through ProjectReference/PackageReference instead.

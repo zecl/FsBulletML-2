@@ -5,11 +5,6 @@ open FsUnit
 open FsBulletML2
 
 /// 公開の読み取り口が「読めなかった」をどう返すか。
-///
-/// NotCommand を型から出したときに書き換えた門。
-/// 以前ここには「読めなかったを NotCommand という値で返す」「try なのに
-///
-/// この 4 本 だけが赤くなり、残り 566 本 は緑のままだった。
 [<TestFixture>]
 type PublicParseBoundary() =
 
@@ -57,17 +52,8 @@ type PublicParseBoundary() =
     let (Bulletml (_, elms)) = readXmlString xml
     elms |> should be Empty
 
-  /// bulletml の子になれるのは bullet / fire / action だけ
-  /// （`<!ELEMENT bulletml (bullet | fire | action)*>`）。
-  ///
-  /// 落とし方が 2 通り あって、それが線引きそのもの。
-  ///
-  ///     そもそも命令でない（direction / speed …）          黙って落とす
+  /// bulletml の子になれるのは bullet / fire / action だけ。
   /// この 2 本 が無いと、位置の検査は誰にも見られていなかった。
-  /// 以前は actionRef-label-nothing.xml がここを踏んでいたが、あの門の名前は
-  /// 「label が無い」で、bulletml の直下に actionRef を置いていたせいで
-  /// 名前どおりのことを測っていなかった（兄弟の fireRef / bulletRef は
-  /// action の中に置いてある）。あちらは action の中へ移した。
   [<TestCase("wait", "<wait>1</wait>")>]
   [<TestCase("repeat", "<repeat><times>1</times><action><wait>1</wait></action></repeat>")>]
   [<TestCase("actionRef", """<actionRef label="top"/>""")>]

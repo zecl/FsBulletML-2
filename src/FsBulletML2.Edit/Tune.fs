@@ -1,38 +1,5 @@
 /// 手書き の弾幕 を、その場 で 少し 変える。
-///
-/// `Generate` は仕様 から 弾幕 を作る 片道 の道 で、
-/// 手書き の弾幕 から 仕様 は 引き直せない。同梱 も 投稿 も 手書き なので、
-/// あちら を振る には 木 の上 で 直に 書き換える しか ない。
-///
-/// つまみ は 2 種類 に分かれる。
-///
-///     数 を振る    式 に倍率 を掛ける。要素 は 1 つ も増えない
-///     形 を足す    層 や 段 を 1 つ 足す。要素 が増える
-///
-/// ## 数 を振る 側 —— 掛け直す。積み重ねない
-///
-/// `(元) * 1.25` を もう 1 段 振る とき、`((元) * 1.25) * 1.25` にせず
-/// `(元) * 1.5625` にする。10 回 押した 先 で 字 が読めなく なる のと、
-/// 上げて 下げた ときに 元 の字 へ 戻れなく なる のを 避ける ため。
-///
-/// ## 形 を足す 側 —— 印 を付けて 外せる ようにする
-///
-/// 足した もの が どれ か 分からない と、外す とき に 元々 在った 要素 まで
-/// 削る。足す 要素 に `label` を付けて、外す 側 は その印 だけ を見る。
-///
-/// ## 弾数 の上界 を持たない
-///
-/// `Generate` は `Bound.fit` で 同時 900 発 に抑える が、こちら は抑えない ——
-/// 付け忘れ ではなく、そう決めた。
-///
-/// あちら は 言葉 から 作る ので、頼んだ 人 が 出る 数 を知らない。
-/// こちら は 目 の前 の弾幕 を 1 段 ずつ 動かす 道具 で、
-/// 出た 数 は 面 の HUD に そのまま 出て いて、押し戻せば 戻る。
-/// 判断 する 材料 が 揃って いる ところ で 機械 が切る と、
-/// 「濃い 弾幕 を作る」が できなく なる。
-///
-/// 止める のは 段数 だけ（`MAX_STEPS` と 段 の 3 段）——
-/// あれ は 1 回 の押し が どこ まで 効く か の話 で、上界 ではない
+/// 数 を振る 側 は 式 に倍率 を掛け直す。形 を足す 側 は 印 を付けて 外せる。
 module FsBulletML2.Tune
 
 open System
@@ -65,9 +32,7 @@ type Knob =
   | AddSplit
   | DropSplit
   /// 終点 の弾 に 寿命 を付ける / 外す。
-  ///
-  /// `Sparser`（待ち を伸ばす）では 1 回 の塊 が減らない ——
-  /// wait を 278 倍 にして も 同時 3,351 発 のまま だった（`Bound`）
+  /// `Sparser`（待ち を伸ばす）では 1 回 の塊 が減らない。
   | Thinner
   | Thicker
   /// いちばん 深い 段 を 黙らせる / 戻す。
@@ -77,9 +42,7 @@ type Knob =
   | Unhush
 
 /// 軸 の名 から 上げ と 下げ の対 を引く。
-///
-/// 押す 側（目盛り）と 頼む 側（AI が返す 段数）が 同じ 表 を引く ——
-/// 2 か所 に書く と、軸 を足した ときに 片方 だけ 直した 版 が残る
+/// 押す 側 と 頼む 側 が 同じ 表。2 か所 に書く と 片方 だけ 残る。
 let axis (name: string) : (Knob * Knob) option =
   match name with
   | "speed" -> Some(Faster, Slower)
@@ -99,9 +62,7 @@ let axis (name: string) : (Knob * Knob) option =
 let private STRUCTURAL = [ "split"; "layer" ]
 
 /// 振る 順。形 を足す 側 が先、減らす 側 が後。
-///
-/// 寿命 は 終点 の弾 に乗る ので、先 に乗せる と 足した 段 が 消えない。
-/// 黙らせる のも 数 を振った 後 —— 先 に包む と `times 0` に 倍率 が掛かる
+/// 寿命 を先 に乗せ ないと 足した 段 が消える。先 に黙らせる と `times 0` に 倍率 が掛かる。
 let order (name: string) =
   if List.contains name STRUCTURAL then 0
   elif name = "hush" then 2
@@ -120,9 +81,7 @@ let private fmt (v: float) =
   s
 
 /// `(中身) * 1.25` の形 なら 中身 と 倍率 に割る。
-///
-/// 開き 括弧 が その閉じ 括弧 で閉じる ことを 数えて 確かめる ——
-/// `(a) * (b) * 2` の頭 の括弧 を拾う と、別 の式 を中身 と読む
+/// 開き 括弧 が その閉じ で閉じる ことを 数える。頭 の括弧 だけ 拾う と 別 の式 を読む。
 let private split (s: string) : (string * float) option =
   if s.Length < 2 || s.[0] <> '(' then None
   else
@@ -261,9 +220,7 @@ let private mapTop knob (e: BulletmlElm) : BulletmlElm =
   | BulletmlElm.Action(attrs, xs) -> BulletmlElm.Action(attrs, List.map (mapAction knob) xs)
 
 // --- 形 を足す 側 --------------------------------------------------------
-//
-// 足す 要素 に 印 を付ける。外す 側 は その印 だけ を見る ので、
-// 元々 在った 層 や 段 を 巻き込まない
+// 足す 要素 に 印 を付ける。外す 側 は その印 だけ を見る。
 
 /// 足した 段 の印。`<action label="...">` に置く
 let [<Literal>] SPLIT_MARK = "tuned-split"
@@ -389,10 +346,7 @@ and private splitElm depth (e: ActionElm) : ActionElm =
   | ActionElm.ActionRef _ -> e
 
 /// 根 の直下 の `<bullet label="...">` も 終点 になりうる。
-///
-/// 撃つ のが `<bulletRef>` の弾幕 —— 同梱 の多く が そう —— は、
-/// 終点 が 撃つ 場所 でなく 定義 の側 に在る。
-/// `BulletElm.BulletRef` を辿らない ので、ここ で見ない と 1 段 も 足せない
+/// `<bulletRef>` を辿らない ので、ここ で見ない と 1 段 も 足せない。
 let private splitTop depth (e: BulletmlElm) : BulletmlElm =
   match e with
   | BulletmlElm.Bullet(attrs, d, s, xs) ->
@@ -408,11 +362,8 @@ let private addSplit (bulletml: Bulletml) =
   match bulletml with
   | Bulletml(attrs, elms) -> Bulletml(attrs, List.map (splitTop 0) elms)
 
-/// 弾 の中 から 印 を 1 つ 外す。中 に もっと 深い 印 が在れば そちら が先 ——
-/// 外側 から 消す と 中 の段 ごと 消える。
-///
-/// 撃つ 場所 の弾（`BulletElm`）と 定義 の弾（`BulletmlElm`）で 同じ 仕事 をする。
-/// 片方 だけ 書く と、`<bulletRef>` で撃つ 弾幕 が 外せなく なる
+/// 弾 の中 から 印 を 1 つ 外す。中 に もっと 深い 印 が在れば そちら が先。
+/// 外側 から 消す と 中 の段 ごと 消える。`<bulletRef>` の定義 側 も 同じ 手。
 let rec private dropInside (xs: ActionElm list) : ActionElm list * bool =
   let mutable hit = false
   let ys =
@@ -491,9 +442,7 @@ let private husk (n: int) (inner: Action) =
     [ Action.Repeat(Times(num "0"), ActionElm.Action({ actionLabel = None }, [ inner ])) ])
 
 /// 根 から 何段 目 の `fire` か。黙らせた 枝 の中 は 数えない。
-///
-/// `actionRef` / `bulletRef` で段 を作る 弾幕 は 1 しか 返らない ——
-/// 参照 の先 を 辿らない ので、あちら には 効かない
+/// `actionRef` / `bulletRef` の先 は 辿らない ので、あちら には 効かない。
 let rec private deepest (d: int) (a: Action) : int =
   if isHushed a then 0
   else
@@ -543,9 +492,7 @@ let private hushTop target n (e: BulletmlElm) =
     BulletmlElm.Fire(attrs, d, s, hushInBullet target n 1 b)
 
 /// 印 の数 を数える。次 の段数 と、外す 先 を決める。
-///
-/// 印 の中 へも 降りる —— 2 段 目 の包み は 1 段 目 を 内側 に含む ので、
-/// 外側 で止める と 数 が 1 つ 足りず、外す 先 が ずれる
+/// 印 の中 へも 降りる。外側 で止める と 数 が 1 つ 足りず、外す 先 が ずれる。
 let private hushCount (bulletml: Bulletml) =
   let mutable n = 0
   let rec inAction (a: Action) =
@@ -670,9 +617,7 @@ let private thin (k: float) (bulletml: Bulletml) =
   | Bulletml(attrs, elms) -> Bulletml(attrs, List.map (Combine.atLeafTop (thinLeaf k)) elms)
 
 /// 1 段 振った 弾幕 を返す。
-///
-/// 数 を振る つまみ は 要素 を 1 つ も増やさない。
-/// 形 を足す つまみ は 印 付き の要素 を 1 つ 足す / 外す
+/// 数 を振る つまみ は 要素 を増やさない。形 を足す つまみ は 印 付き を 1 つ 足す / 外す。
 let apply (knob: Knob) (bulletml: Bulletml) : Bulletml =
   match knob with
   | AddLayer -> addLayer bulletml
@@ -687,13 +632,8 @@ let apply (knob: Knob) (bulletml: Bulletml) : Bulletml =
     match bulletml with
     | Bulletml(attrs, elms) -> Bulletml(attrs, List.map (mapTop knob) elms)
 
-/// 軸 と 段数 の組 を まとめて 当てる。段数 が正 なら 上げ、負 なら 下げ。
-///
-/// 1 回 の呼び出し で 当てる —— 軸 ごと に 往復 を 割る と、
-/// 途中 で落ちた とき 中途半端 な形 で止まる。
-///
-/// 知らない 軸 は 黙って 飛ばす。段数 は 上限 で止める ——
-/// 頼んだ 相手 が どんな 数 を返して も、当てる 数 は ここ が決める
+/// 軸 と 段数 を 1 回 で 当てる。途中 で落ちる と 中途半端 な形 で止まる。
+/// 知らない 軸 は 飛ばす。段数 の上限 は ここ（`MAX_STEPS`）。
 let [<Literal>] MAX_STEPS = 4
 
 let applySteps (steps: (string * int) list) (bulletml: Bulletml) : Bulletml =

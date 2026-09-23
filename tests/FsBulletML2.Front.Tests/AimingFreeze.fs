@@ -5,12 +5,8 @@ open NUnit.Framework
 open FsUnit
 open FsBulletML2.Front
 
-/// `Aiming.toward` が、同梱の 2 つ のフロントが持っていた式と
-/// float32 のビットまで同じ答えを返すこと。
-///
-/// この 2 本 は「座標系が違うから Core へ畳めない」と書かれていた。
-/// 並べたら 1 つ の式の 1 パラメータ違いだったので畳んだ。
-/// その根拠をここで凍らせる —— 畳んだ側を直したら、こちらが赤くなる。
+/// `Aiming.toward` が、同梱の 2 つ のフロントが持っていた式と float32 のビットまで同じ答えを返すこと。
+/// 畳んだ側を直したら、こちらが赤くなる。
 [<TestFixture>]
 type AimingFreeze() =
 

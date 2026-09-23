@@ -89,21 +89,14 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         public const float MaxY = 0f;
 
         /// <summary>
-        /// 敵の居場所。弾はここから出る。
-        ///
-        /// 値は Unity サンプルの場面 に置いてある enemy prefab の位置。
-        /// サーバーが決めて <c>RoomInfo</c> で配り、client が敵 をそこへ置く ——
-        /// 逆にすると、弾の出どころ と敵の絵 がずれる（実際に 0.4 ずれていた）。
+        /// 敵の居場所。
+        /// サーバーが決めて <c>RoomInfo</c> で配り、client が敵 をそこへ置く —— 逆にすると、弾の出どころ と敵の絵 がずれる（実際に 0.4 ずれていた）。
         /// </summary>
         public const float OriginX = 2.41f;
         public const float OriginY = -0.8f;
 
         /// <summary>
-        /// 当たり判定 の大きさ。判定 はサーバーが持つので、
-        /// 半径 もサーバーが決める。
-        ///
-        /// 値は Unity サンプルの絵 の大きさから採ってある
-        /// （<c>BulletEcsBootstrap</c> が sprite の bounds を読んでいた）。
+        /// 当たり判定 の大きさ。
         /// 写した側 が古びるので、絵 を替えたらここも替える。
         /// </summary>
         public const float BulletRadius = 0.1f;

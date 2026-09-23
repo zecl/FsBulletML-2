@@ -3,13 +3,9 @@ using FsBulletML2.Sample.MagicOnion.Shared;
 using R3;
 
 /// <summary>
-/// ゲームが見る面。ここは網 を 1 つ も知らない。
-///
-/// なぜ static に置くか。 これまで場面 の側 は
-///
-/// が 2 か所 に在った。建つ順 が外から見えないのが理由 だったので、
-///
-/// 2 本 目 が要るようになったら、ここが最初に壊れる。
+/// ゲームが見る面。
+/// 建つ順 が外から見えないのが理由 だったので、 2 本 目 が要るようになったら、ここが最初に壊れる。
+/// </summary>
 public static class DanmakuState
 {
     /// <summary>入っている部屋 の決めごと。繋がるまで null</summary>
@@ -33,11 +29,7 @@ public static class DanmakuState
     public static readonly ReactiveProperty<bool> Connected = new(false);
 
     /// <summary>
-    /// 降りてきた 1 コマ。主スレッド で流れる。
-    ///
-    /// 受け口（<c>OnFrame</c>）は別のスレッドで呼ばれるので、そこから直に
-    /// 流すと購読側 が Unity の API を触れない。<see cref="DanmakuClient"/> が
-    /// <c>Update</c> で汲み直してから流す。
+    /// 降りてきた 1 コマ。
     /// </summary>
     public static Observable<FrameDto> Frames => frames;
 

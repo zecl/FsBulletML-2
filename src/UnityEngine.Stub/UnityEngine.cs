@@ -1,9 +1,7 @@
 using System;
 
-// COMPILE-ONLY stub of UnityEngine and the Unity packages the samples use.
-//
-// これは Editor の代わりにはならない。 型と面の形を写しただけで、
-// エンティティは 1 つ も作られないし、何も描かれない。
+// COMPILE-ONLY stub。Editor の代わりにはならない。
+// 型と面の形を写しただけで、エンティティは作られないし、何も描かれない。
 namespace UnityEngine
 {
     // COMPILE-ONLY stub. Not a substitute for the Unity Editor.
@@ -95,12 +93,8 @@ namespace UnityEngine
         public static T[] FindObjectsByType<T>(FindObjectsInactive findObjectsInactive) where T : Object => System.Array.Empty<T>();
 
         /// <summary>
-        /// 本物はここに「壊されたか」の判定が入っている。
-        /// Unity は壊した Object を null のように振る舞う非 null 参照に
-        /// するので、素の参照比較では生きていると読んでしまう。
-        ///
-        /// 偽物は壊す仕組みを持たないので参照比較そのまま。
-        /// ここが通ることは、生存判定が正しいことを 1 つ も保証しない。
+        /// 本物は壊されたかを見る。壊した Object は非 null のまま null のように振る舞う。
+        /// 偽物は参照比較。ここが通っても生存判定は保証しない。
         /// </summary>
         public static bool operator ==(Object a, Object b) => ReferenceEquals(a, b);
         public static bool operator !=(Object a, Object b) => !ReferenceEquals(a, b);
@@ -120,10 +114,8 @@ namespace UnityEngine
         public GameObject(string name) { this.name = name; }
         public string tag { get; set; }
 
-        // 遅らせて作る。 即座に作ると Transform -> Component ->
-        // GameObject -> Transform で無限に降りて StackOverflow になる
-        // （Transform は Component の派生）。コンパイルだけなら踏まないので、
-        // フロントを実際に回す門を建てるまで誰も気づかなかった
+        // 遅らせて作る。即座に作ると Transform と GameObject が無限に降りて StackOverflow。
+        // コンパイルだけなら踏まない。
         Transform _transform;
         public Transform transform => _transform ??= new Transform();
         public bool activeSelf { get; private set; } = true;
@@ -159,11 +151,8 @@ namespace UnityEngine
         public bool useGUILayout { get; set; }
 
         /// <summary>
-        /// この component が壊されたときに取り消される印。
-        /// R3 の購読を切るのに使う —— <c>subscription.RegisterTo(token)</c>。
-        ///
-        /// 本物は Unity 2022.2 以降 の MonoBehaviour が持つ。ここが偽物なので
-        /// 決して取り消されないが、コンパイルが通るかを見るのが目的。
+        /// 壊されたときに取り消される印。R3 の購読を切るのに使う。
+        /// 偽物なので決して取り消されない。コンパイルが通るかを見るのが目的。
         /// </summary>
         public System.Threading.CancellationToken destroyCancellationToken { get; }
             = System.Threading.CancellationToken.None;
@@ -330,8 +319,7 @@ namespace UnityEngine
         }
 
         /// <summary>
-        /// 本物は struct。 取り出して書き換えても本体に伝わらないので、
-        /// Unity 側でも同じ書き方で効かないことがある。ここは compile を通すだけ
+        /// 本物は struct。取り出して書き換えても本体に伝わらない。ここは compile を通すだけ。
         /// </summary>
         public struct MainModule
         {
@@ -382,8 +370,7 @@ namespace UnityEngine
     }
 
     /// <summary>
-    /// fps の上限を掛けるとき、targetFrameRate より先に切る必要がある
-    /// —— vSyncCount が 1 以上 だと Unity は targetFrameRate を無視する。
+    /// vSyncCount が 1 以上だと Unity は targetFrameRate を無視する。先に切る。
     /// </summary>
     public static class QualitySettings
     {
@@ -394,9 +381,7 @@ namespace UnityEngine
 namespace UnityEngine.Rendering
 {
     // COMPILE-ONLY stub. 透過で描くときに使う面だけ。
-    //
-    // <summary>RenderMeshDescription が既定値に使う。本物と同じ並びにする
-    // —— 省いた引数の値は呼び手の IL に焼き込まれる</summary>
+    // 既定値は本物と同じ並び。省いた引数の値は呼び手の IL に焼き込まれる。
     public enum LightProbeUsage
     {
         Off = 0,

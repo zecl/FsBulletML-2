@@ -7,10 +7,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 {
     /// <summary>
     /// 帯域 を締める 3 つ の手 を、同じ走行の上で並べて測る（E1.6）。
-    ///
-    /// 網 を通さない。 通すと弾数 が走行中に増えるので、
-    /// A と B を同じ点 で比べられない —— 実際に網 越しで測ったら、
-    /// 2 秒 ごとの行 が 623 発 -> 1501 発 と動いていた。
+    /// </summary>
     public static class MeasureWire
     {
         public static int Run(int frames, int seed, string bulletml)
@@ -76,11 +73,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         const int RoomLoopFps = 60;
 
         /// <summary>
-        /// 量子化 する前 の形。もう配っていない。
-        ///
-        /// 比べる相手 を残しておく。 量子化 を入れた後 に素 の形 を消すと、
-        /// 「どれだけ効いたか」をもう一度 測れなくなる ——
-        /// 次に刻み を変えたくなったとき、判断の material が無い。
+        /// 量子化 する前 の形。
         /// </summary>
         static long Plain(BulletDto[][] run, int sendEvery)
         {
@@ -110,12 +103,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 
         /// <summary>
         /// x / y / 向き を整数 に丸めた形。
-        ///
-        /// 当たる先 は float32 が MessagePack で 5 バイト固定（0xca ＋ 4）
-        /// なところ。盤面 が 4.8 x 6.4 なら、ushort で 0.0001 刻み まで足りる。
-        /// 向き は度 なので 0..36000（1/100 度）に丸める。
         /// </summary>
-        /// <summary>いま配っている形。そのまま焼く</summary>
         static long Quantized(BulletDto[][] run, int sendEvery)
         {
             long total = 0;
@@ -130,10 +118,8 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 
         /// <summary>
         /// 丸めて戻したときに、どれだけずれるかを測る。
-        ///
-        /// 量子化 で新しく入った危ない面 はここだけ。 丸め方 が
-        /// 片側 にずれていてもビルドは通るし落ちもしない ——
-        /// 弾が半 ピクセル ずれた場所 に出るだけなので、目 でしか分からない。
+        /// 丸め方 が 片側 にずれていてもビルドは通るし落ちもしない —— 弾が半 ピクセル ずれた場所 に出るだけなので、目 でしか分からない。
+        /// </summary>
         static void Roundtrip()
         {
             float worstX = 0f, worstY = 0f, worstDir = 0f;
@@ -170,11 +156,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         }
 
         /// <summary>
-        /// 差分 の上界 を測る。実装する前 に、当たる先 が在るかを見る。
-        ///
-        /// 弾幕は毎コマ ほぼ全弾 が動くので、据え置ける弾 は
-        /// <c>wait</c> 中 のものだけ —— そこが 1 割 を切るなら、
-        /// 差分 は書かない（書いても帯域 は動かず、client に状態 が増えるだけ）。
+        /// 差分 の上界 を測る。
         /// </summary>
         static void Delta(BulletDto[][] run)
         {
@@ -192,9 +174,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
                         born++;
                     }
                     else if (old.X == b.X && old.Y == b.Y && old.Dir == b.Dir)
-                    // 量子化 した後 の値 で見る。 前 の値 で見ると、
-                    // 刻み より小さく動いた弾 を「動いた」に数える ——
-                    // 実際に配る形 で据え置けるかが知りたいので、こちら
+                    // 量子化 した後 の値 で見る。
                     {
                         same++;
                     }

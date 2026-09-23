@@ -7,11 +7,8 @@ using BulletType = FsBulletML2.DTD.BulletType;
 namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 {
     /// <summary>
-    /// サーバー側 の弾 1 発。Unity の <c>BulletSim</c> から、
-    /// 描くことと当たり判定 を抜いたもの。
-    /// 1/100 と Y の反転 はここに在る。 エンジンが返すのは差分で、
-    /// 位置と係数はフロントの持ち物（<c>Driver</c> の但し書き）——
-    /// サーバーがフロントの立場に立っているので、ここが持つ。
+    /// サーバー側 の弾 1 発。
+    /// </summary>
     public sealed class ServerBullet
     {
         readonly RoomEnv env;
@@ -42,9 +39,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         public bool Used { get; private set; } = true;
 
         /// <summary>
-        /// 敵の弾か自機の弾か。既定値を入れておくこと。
-        ///
-        /// F# の判別共用体は参照型なので、入れ忘れた既定は 0 ではなく null。
+        /// 敵の弾か自機の弾か。
         /// 型は合うのでコンパイルは通り、走らせて初めて落ちる。
         /// </summary>
         public BulletType BulletType { get; }
@@ -66,12 +61,8 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         }
 
         /// <summary>
-        /// 1 コマ 進める。撃たれた弾は <paramref name="spawn"/> へ渡す。
-        ///
-        /// 走らせ直すかどうかは、ここで決まる。 エンジンの但し書きに
-        /// 「呼ぶか呼ばないかで乱数の並びが変わる」と在る ——
-        /// サーバーが権威 を持つので、その決めごとをサーバー側 に固定した。
-        /// 全 top が終わったら最初から走らせ直す（＝弾幕が輪 になる）。
+        /// 1 コマ 進める。
+        /// </summary>
         public void Step(Action<ServerBullet, BulletRun> spawn)
         {
             if (!run.HasValue)

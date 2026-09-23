@@ -3,12 +3,7 @@ namespace FsBulletML2.Benchmarks
 open BenchmarkDotNet.Attributes
 open FsBulletML2.Benchmarks.Harness
 
-/// 弾幕 1 本 を 60 フレーム 走らせる費用。
-///
-/// 対象は勘で選んでいない。控え（tests/TestData/trace/corpus-trace.txt）に
-/// 「撃った弾数 / 最終フレームに残っていた数」が記録されているので、そこから
-/// 撃つ量の違うものを取った。弾数だけで選ぶと「濃いが浅い」ものに偏るので、
-/// 弾数は少ないが毎コマ 向きを引き直す homing を別枠で入れてある。
+/// 弾幕 1 本 を 60 フレーム 走らせる費用。弾数の違うものに、毎コマ 引き直す homing を足してある。
 [<MemoryDiagnoser>]
 type StepBenchmarks() =
 
@@ -22,14 +17,7 @@ type StepBenchmarks() =
     | Some p -> System.IO.File.ReadAllText p
     | None -> failwithf "台本が見つかりません: %s（samples の下を探した: %s）" suffix Corpus.samplesDir
 
-  /// 読んだ木を走行のあいだ使い回す。使い回して答えが変わらないことを
-  /// Setup で確かめてから返す（読み直した木との弾数の一致）。
-  /// 黙って通ると、2 回目 以降だけ違うものを測っていても誰も気づかない。
-  ///
-  /// 「新 API と旧 API で弾数が一致する」の照合は落とした。 旧の列を
-  /// 消したので相手が居ない。値そのものの一致は tests の橋 227 本 が
-  /// 見ている（あちらは凍結した旧エンジンの軌跡との突き合わせで、
-  /// ここに在ったシム同士の照合より強い網）
+  /// 読んだ木を使い回す。読み直しと弾数が違えば落とす。
   let loadDoc suffix =
     let xml = load suffix
     let doc = parseXml xml
@@ -53,11 +41,6 @@ type StepBenchmarks() =
     way10 <- loadDoc "Content/xml/EnemyBullet/10Way.xml"
     homing <- loadDoc "Content/xml/EnemyBullet/[G_DARIUS]_homing_laser.xml"
 
-  // 新 API（Runner.step）。出荷する経路で、いまはこれだけ。
-  //
-  // 旧 API（BulletRunner.run）の 4 本 は落とした。同じプロセスで並べる
-  // ためだけに残していたが、対照ではなかった —— 旧い口を新経路の上に
-  // 載せたシムで、中では同じ Step.step を通っていた。
   [<Benchmark(Description = "move（撃たない）")>]
   member _.Move() = runPreparedApi (prepareApi move) 60
 
@@ -71,15 +54,7 @@ type StepBenchmarks() =
   member _.Homing() = runPreparedApi (prepareApi homing) 60
 
 
-/// 下ごしらえが、いくら掛かるのか。
-///
-/// StepBenchmarks と同じ物差しで測るためにここに置く。大きさを知らないまま
-/// 外すと、次に誰かが「入れても大差ない」と戻してしまう。 走行と並べて読む。
-///
-/// 外した分（XML を読む）と残っている分（Runner.load）をそれぞれ直に測る。
-/// 引き算で出さない —— 2 つ の数の差はどちらの誤差も乗るうえ、引く相手を
-/// 間違えてももっともらしい数になる。実際、引き算では move 34.2 us と出たが、
-/// 直に測ると 31.9 us だった。
+/// 外した分と残っている分を、引き算ではなく直に測る。
 [<MemoryDiagnoser>]
 type SetupBenchmarks() =
 
@@ -113,18 +88,12 @@ type SetupBenchmarks() =
   [<Benchmark(Description = "5way: 下ごしらえ Runner.load（測定区間の中）")>]
   member _.Way5Prepare() = prepareApi way5Doc
 
-  /// Env を 1 回 組む費用。aim 4 本 の atan2 がここ。
-  ///
-  /// Env を遅延にしたときの天井 = これ × --counts の「aim を組む」回数。
-  /// 遅延にしても実際に読まれるぶんは残るので、その積は上界。
+  /// aim 4 本 の atan2。天井はこれ ×「aim を組む」。`countEnvBuilds` は掛けるな。
   [<Benchmark(Description = "Env を 1 回 組む（aim 4 本）")>]
   member _.EnvBuild() = envCost 12.0f 34.0f
 
 
-/// 227 本 を 1 周 する費用。橋と控えが見ているのと同じ母集団。
-///
-/// 1 本 ずつの数字だけを見ていると、選んだ 4 本 の外で起きた変化が見えない。
-/// 通しは遅い（tests 側の計測で 8 秒 前後）ので、繰り返しの回数は少なくてよい。
+/// 227 本 を 1 周 する。選んだ 4 本 の外を見る網。
 [<MemoryDiagnoser>]
 [<SimpleJob(launchCount = 1, warmupCount = 1, iterationCount = 3)>]
 type CorpusBenchmarks() =

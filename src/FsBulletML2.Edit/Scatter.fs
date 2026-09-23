@@ -1,20 +1,11 @@
 /// 弾幕 を 種 に載せ、飛んだ 先 の n か所 で 咲かせる。
-///
-/// 撃つ のは 敵 1 点 だけ なので、同じ 弾幕 を 2 つ 重ねて も 1 つ にしか 見えない ——
-/// 茎 を 1 本 下 へ伸ばし、その先 から 種 を n 角形 に撒いて、種 の位置 で 1 波 を撃たせる。
-/// 中身 は読まない ので、花 でも 渦 でも 幕 でも 同じ 手 が効く。
-///
-/// 弾数 は 撒いた 数 だけ 増える。減らす のは 作る 側 の仕事 ——
-/// 花 なら `HarmonicSpec.Blooms` が 1 輪 の腕 を割る
+/// 中身 は読まない。弾数 は 撒いた 数 だけ 増える。
 module FsBulletML2.Scatter
 
 open FsBulletML2
 
-/// 茎 が伸びる コマ と、その 距離（px）。
-///
-/// n 角形 の中心 を ここ まで 下げる。敵 (240, 80) を中心 に する と、
-/// 上 の頂点 が y = 20 に来て 咲いた 弾幕 の上半分 が 天井 で切れた（面 は 480x640）。
-/// 面 の寸法 を知って いる のは この 2 つ の定数 だけ で、`Scatter` の他 は AST しか 見ない
+/// 茎 が伸びる コマ と、その 距離（px）。n 角形 の中心 を ここ まで 下げる。
+/// 面 の寸法 を知って いる のは この 2 つ の定数 だけ。
 let [<Literal>] STEM_TERM = 40
 
 let DROP = 120.0
@@ -27,10 +18,7 @@ let REACH = 120.0
 let [<Literal>] MARK = "scattered"
 
 /// n 角形 の頂点 の向き（度）。0 は 真上、180 が 真下。
-///
-/// 半 目盛り ずらす ので、真上 は いつも 辺 の真ん中 に来る ——
-/// 頂点 を 真上 に置く と、その 種 が 茎 を遡って 敵 の高さ へ戻る。
-/// n が奇数 なら 真下 に 1 つ 来る
+/// 半 目盛り ずらす。頂点 を 真上 に置く と 茎 を遡って 敵 の高さ へ戻る。
 let vertexDeg (count: int) (j: int) = 360.0 * (float j + 0.5) / float count
 
 // --- 名前 -----------------------------------------------------------------
@@ -118,9 +106,7 @@ let private seedBullet (name: string) (wave: Action list) =
           yield Action.Vanish ]) ])
 
 /// 実引数 が残って いない か。`$rand` と `$rank` 以外 の `$` は 埋まらなかった 印。
-///
-/// `Param.replaceIn` は 足りない 番号 で 例外 を投げない —— 回る のは 渡した 数 だけ で、
-/// 余った `$2` は 字 のまま 残り、式 として 読めて 0 に評価 される
+/// `Param.replaceIn` は 足りない 番号 で 例外 を投げない。余った `$2` は 0 に評価 される。
 let private filled (e: Expr.NumExpr) =
   not ((Expr.NumExpr.text e).Replace("$rand", "").Replace("$rank", "").Contains "$")
 
@@ -141,10 +127,7 @@ let rec private fillIn (param: Map<string, string>) (a: Action) : Action =
   | _ -> a
 
 /// 波 の木 から 撃つ ところ を抜いた 写し。間合い だけ が残る。
-///
-/// 止める のは `changeSpeed` と `changeDirection` だけ。`accel` は 走り続ける だけ で
-/// 台本 を止めない（実測 1 コマ）。止める 2 つ は 速さ も 向き も 変えない
-/// `relative 0` に差し替える —— `wait term` では 1 コマ ずれる（実測 20 対 19）
+/// 止める のは `changeSpeed` と `changeDirection`。`relative 0` に差し替える。
 let rec private ghostIn (actions: Map<string, Action list>) (seen: string list) (xs: Action list) : Action list option =
   let zero = Expr.NumExpr.ofString "0"
   let ok (e: Expr.NumExpr) = not e.NeedRand && filled e
@@ -208,12 +191,6 @@ let rec private spends (xs: Action list) =
       | Action.Repeat(_, ActionElm.Action(_, ys)) -> spends ys
       | _ -> false)
 
-/// 外側 の繰り返し は 撒く 側 に残す。1 波 の中身 だけ を 種 へ移す。
-///
-/// 間合い が 1 つ も残らない なら 散らさない。待ち を持たない 台本 は 1 コマ で終わり、
-/// 面 が 頭 から 走らせ直す ので 毎コマ 茎 を撒き 直す ——
-/// 待ち が 内側 の `repeat` の中 にしか 無い 輪 を 3 か所 に散らして 100 コマ 走らせる と
-/// 221,390 発 まで 増えた（散らさなければ 1,482 発）
 /// `top` から 引ける action の表。`actionRef` の 行き先 を辿る のに要る
 let private topActions (elms: BulletmlElm list) : Map<string, Action list> =
   elms
@@ -223,6 +200,8 @@ let private topActions (elms: BulletmlElm list) : Map<string, Action list> =
       | _ -> None)
   |> Map.ofList
 
+/// 外側 の繰り返し は 撒く 側 に残す。1 波 の中身 だけ を 種 へ移す。
+/// 間合い が残らない なら 散らさない。待ち が無い と 毎コマ 茎 を撒き 直す。
 let private split (actions: Map<string, Action list>) (stem: string) (xs: Action list) =
   let keep (inner: Action list) (wrap: Action list -> Action list) =
     let wave, _ = splitTailWaits inner

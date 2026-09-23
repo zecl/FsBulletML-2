@@ -1,11 +1,8 @@
 using Unity.Entities;
 
 /// <summary>
-/// 弾 1 発 の状態。ここが、写した元 との違いの芯。
-///
-/// 元（<c>FsBulletML2.Sample.Unity2D.CSharp</c>）では、この class が
-/// 弾幕エンジンを毎コマ 呼んで自分で進んでいた ——
-/// <c>Driver.Step</c> / <c>Runner.NewRoot</c> / <c>BulletRun</c> / <c>Motion</c>。
+/// 弾 1 発 の状態。
+/// </summary>
 public sealed class BulletSim : IComponentData
 {
     public Entity Entity;

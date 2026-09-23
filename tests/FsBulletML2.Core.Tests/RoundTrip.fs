@@ -5,10 +5,6 @@ open FsBulletML2
 open FsBulletML2.BulletmlRead
 
 /// XML を読んで書き戻したとき、属性が生き残るか。
-///
-/// 既存の `Parser.Tests` の `文字列からのパース` は、入力の文字列と
-/// ToXmlStringForTest() の完全一致を見る。ただし TestCase 2 本が持つ属性は
-/// xmlns と type だけで、name / description を持つ入力が無い。
 [<TestFixture>]
 type RoundTrip() =
 

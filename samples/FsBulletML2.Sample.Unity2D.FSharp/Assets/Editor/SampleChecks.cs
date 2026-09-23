@@ -110,11 +110,7 @@ public static class SampleChecks
 
     /// <summary>
     /// シーンが開けて、欠けた component が無いか。
-    ///
-    /// 古い Unity にしか無かった component（GUILayer など）がシーンに
-    /// 残っていると、開くたびに Console へ赤が出る ——
-    /// <c>Component GUI Layer ... is no longer available.</c>
-    /// 動きには障らないが、本物のエラーが埋もれる。
+    /// </summary>
     static int CheckScene()
     {
         var failures = 0;

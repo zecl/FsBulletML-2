@@ -3,11 +3,6 @@
 open NUnit.Framework
 
 /// 同じ定義から作られた弾どうしが、可変状態を共有していないか。
-///
-/// 旧は走らせる木に mutable を埋めていて、撃たれた弾ごとに deep-copy して
-/// 独立させていた。共有していると、片方の弾が進めた term や finish が
-/// もう片方に効く。 いまは Progress が弾ごとの値なので構造で分かれるが、
-/// 振る舞いの側からも固めておく。
 [<TestFixture>]
 type StateIsolation() =
 
@@ -18,8 +13,6 @@ type StateIsolation() =
 """ + body + "\n</bulletml>"
 
   /// 同じ bulletRef から 3 発を別々のフレームで撃つ。
-  /// 弾の中の action は changeSpeed（term 3）を持つので、term が共有されていれば
-  /// 2 発目以降は「もう終わっている」扱いになって加速しないはず。
   [<Test>]
   member _.``同じ定義から撃った弾が、それぞれ自分の term を持つ``() =
     bml """<action label="top">

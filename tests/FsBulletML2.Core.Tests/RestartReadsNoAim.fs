@@ -6,14 +6,6 @@ open FsBulletML2
 open FsBulletML2.Domain
 
 /// `Runner.restart` が aim を読まないこと。
-///
-/// `BulletRun.HasNoScript` の但し書きが逆のことを書いていた ——
-/// 「restart は changeDirection type="aim" の term を引き直すので aim を
-/// 読みうる」。引き直すのは `<term>`（数式）で、`getValue` が触るのは
-/// `Rand` と `Rank` だけ（`Eval.fs`）。aim はどこにも入らない。
-/// これが効くのは 1 つ。フロントが `restart` の前に aim を組むのは
-/// 捨てる計算で、Atan2 4 本 と、ゲームへの問い合わせ 2 回 が
-/// 弾が終わるたびに無駄になる。
 [<TestFixture>]
 type RestartReadsNoAim() =
 
@@ -70,13 +62,7 @@ type RestartReadsNoAim() =
                     (List.length diverged) (List.head diverged))
     TestContext.WriteLine(sprintf "比べた台本: %d 本" compared)
 
-  /// 較正。 上の門が「そもそも restart を観測していない」ではないことを
-  /// 見る。`Wait` の値だけは `getValue` の戻りが残る（`Step.fs` の
-  /// `PWait (true, getValue env s)`）ので、`$rand` を変えれば動くはず。
-  ///
-  /// `Rank` では較正できなかった。 `ChangeDirection` / `ChangeSpeed` の
-  /// term は `getValue env t |> ignore` で捨てられていて、残るのは
-  /// `Wait` だけ。`$rank` を待ち時間に使う弾幕がコーパスに無かった
+  /// 較正。
   [<Test>]
   member _.``較正: 乱数を変えると走らせ直しの結果は動く``() =
     let compared, diverged = compareOver (0.1f, 0.0f) (0.9f, 0.0f)

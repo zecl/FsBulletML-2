@@ -6,13 +6,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// 意味の層（v2.3）。読めて・組めても、走らないものが在る。
-///
-/// --- 版の頭で測って、出すものを決めた
-///
-/// 候補は 4 つ 在って、同梱 176 本 に当てたらこうなった ——
-///
-/// あちらの但し書きに書いてある —— 点は残すが、これは門ではなく
-/// 「そう決めた」の記録だと読むこと。
+/// 点は残すが、これは門ではなく「そう決めた」の記録。
 [<TestFixture>]
 type Semantics() =
 
@@ -60,8 +54,7 @@ type Semantics() =
 </bulletml>"""
     let dup = findingsOf src |> List.filter (fun f -> f.Kind = Semantics.DuplicateDefinition)
     dup |> List.length |> should equal 1
-    // 光るのは負けるほう（走るのは先に書いたほう。実機で数えた）——
-    // 5 行 目 の `x`
+    // 光るのは負けるほう。先に書いたほうが走る。5 行目の `x`。
     (List.head dup).Line |> should equal 5
 
   [<Test>]
@@ -181,10 +174,8 @@ type Semantics() =
 
   [<Test>]
   member _.``位置はその名前の値の上``() =
-    // 波線を引く先。要素の頭でも属性の名前でもなく、値そのもの ——
-    // `Refs.missing` が `Hit.Column` / `EndColumn` をそのまま波線にしていて、
-    // あれは `AttrHit` の値の範囲。同じ作法に揃える（片方 だけ違うと、
-    // 参照の波線と定義の波線で引く先が食い違う）
+    // 波線は要素の頭でも属性の名前でもなく、値そのもの。
+    // 片方だけ違うと、参照と定義で引く先が食い違う。
     let src = """<?xml version="1.0" ?>
 <bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
   <action label="top"><wait>1</wait></action>
@@ -244,8 +235,7 @@ type Semantics() =
 
   [<Test>]
   member _.``無い参照が光る``() =
-    // Apply は通る（実測）—— 解けない参照は黙って無視されるだけで、
-    // Core は落ちない。だからここで出さないと誰も言わない
+    // 解けない参照は黙って無視される。Core は落ちない。ここで出さないと誰も言わない。
     let src = """<?xml version="1.0" ?>
 <bulletml xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
   <action label="top"><actionRef label="nope"/></action>

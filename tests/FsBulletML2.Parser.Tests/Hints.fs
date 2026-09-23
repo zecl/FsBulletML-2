@@ -6,10 +6,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// 式の横に値を出す先（v4.4）。
-///
-/// --- 出すのは 3 つ を通ったものだけ
-///
-///     読める            読めない式は波線の担当（v4.1）
+/// 読めない式は波線の担当。ここは読めたものだけ。
 [<TestFixture>]
 type Hints() =
 
@@ -77,9 +74,6 @@ type Hints() =
   member _.``位置は式の終わりの次``() =
     match lang.Hints src with
     | first :: _ ->
-        // `    <repeat><times>4+8*$rank</times>` は 4 行 目。
-        // `<times>` の `>` が 19 桁 目 なので中身は 20 桁 目 から 9 文字 ——
-        // 指すのは閉じ札の `<` と同じ 29 桁 目（式の終わりの次）
         first.Line |> should equal 4
         first.Column |> should equal 29
     | [] -> failwith "1 つ も出ない"
@@ -116,7 +110,7 @@ type Hints() =
     let names = vocab.Elements |> List.filter (fun e -> e.Text) |> List.map (fun e -> e.Name)
     let all = corpus |> List.sumBy (fun (_, t) -> List.length (XmlScan.texts t names))
     let shown = corpus |> List.sumBy (fun (_, t) -> List.length (lang.Hints t))
-    // 版の頭で 26.8% と数えた。大きく動いたらここが赤くなる
+    // 大きく動いたらここが赤くなる。
     let pct = 100 * shown / all
     pct |> should be (greaterThan 15)
     pct |> should be (lessThan 40)

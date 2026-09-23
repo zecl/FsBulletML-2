@@ -4,11 +4,8 @@ using Godot;
 namespace FsBulletML2.Sample.Godot.MagicOnion
 {
     /// <summary>
-    /// 盤面 の値 を、画面 の座標 へ移す。client がやるのはこれ だけ。
-    ///
-    /// 物理量 には触らない。 弾 の向き を決める式（<c>aim</c>）は
-    /// 座標系 の上 で計算されるので、サーバーと client が別 の空間 を持つと
-    /// 軌跡 が割れる。 サーバーが自分 の空間 で走らせ、その名前（<see cref="RoomInfo"/>）
+    /// 盤面 の値 を、画面 の座標 へ移す。
+    /// </summary>
     public sealed class Space
     {
         readonly float minX;
@@ -40,9 +37,6 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
 
         /// <summary>
         /// 盤面 の座標 -> 画面。
-        ///
-        /// Y の向き はサーバーが言う。 Godot の Y は下向き なので、
-        /// 部屋 が <c>YUp</c> なら裏返す —— client が勝手 に決めない。
         /// </summary>
         public Vector2 ToScreen(float x, float y)
         {
@@ -65,10 +59,7 @@ namespace FsBulletML2.Sample.Godot.MagicOnion
 
         /// <summary>
         /// 配ってきた目盛り（0..65535）を盤面 の値 へ戻してから画面 へ。
-        ///
-        /// 戻す式 は口 の <see cref="Wire"/> に 1 本 だけ。
-        /// 2 か所 に書くと、丸め方 が 1 ビット ずれた瞬間 に
-        /// 弾 が半 ピクセル ずれた場所 に出る —— ビルド は通るし落ちもしない。
+        /// 2 か所 に書くと、丸め方 が 1 ビット ずれた瞬間 に 弾 が半 ピクセル ずれた場所 に出る —— ビルド は通るし落ちもしない。
         /// </summary>
         public Vector2 ToScreen(in BulletDto b, RoomInfo room) => ToScreen(
             Wire.FromGrid(b.X, room.MinX, room.MaxX),

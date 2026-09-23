@@ -6,10 +6,7 @@ type BgScroll () =
   inherit MonoBehaviour ()
   [<SerializeField;DefaultValue>]val mutable public scrollSpeed : float32
 
-  /// 背景を毎コマ 少しずつ流す。
-  ///
-  /// Renderer は 1 回 だけ引く。 旧は毎コマ `GetComponent` を呼んでいた ——
-  /// あれは型で component を走査するので、毎コマ 払う理由が無い
+  /// `Renderer` は 1 回 だけ引く。毎コマ `GetComponent` する理由は無い。
   member this.Start () =
     let r = this.GetComponent<Renderer>()
     FrameTicker.Frames

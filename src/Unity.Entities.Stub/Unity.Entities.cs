@@ -1,15 +1,7 @@
 using System;
 
-// COMPILE-ONLY stub of Unity.Entities. Not a substitute for the Unity Editor.
-//
-// アセンブリ名が本物と一致していることが要。 1 本 に詰めると、焼いた dll が
-// 「この型は UnityEngine に在る」と主張したまま Unity へ渡り、CS7069 で落ちる。
-//
-// signature も本物どおりに写すこと。 引数の型・数・既定値は呼び手の IL に
-// そのまま焼き込まれる。ここで楽な形（`Type[]` を取るなど）を足すと、
-// stub では通り、Unity で MissingMethodException になる。
-//
-// 詳しい但し書きは src/UnityEngine.Stub/UnityEngine.cs の頭。
+// COMPILE-ONLY stub。Editor の代わりにはならない。
+// アセンブリ名と signature は本物どおり。楽な形を足すと Unity で MissingMethodException。
 namespace Unity.Entities
 {
     public struct Entity : IEquatable<Entity>
@@ -48,10 +40,7 @@ namespace Unity.Entities
     }
 
     /// <summary>
-    /// 本物は SystemBase の基底。EntityManager も OnCreate も
-    /// GetEntityQuery もこちらに在る。1 つ に潰すと、呼び手が
-    /// <c>SystemBase::get_EntityManager</c> を吐いて本物に無い口を指す
-    /// （override も宣言型が合わず、別のメソッドになる）。
+    /// SystemBase の基底。1 つに潰すと、呼び手が本物に無い口を指す。
     /// </summary>
     public abstract class ComponentSystemBase
     {
@@ -62,9 +51,7 @@ namespace Unity.Entities
     }
 
     /// <summary>
-    /// ECS の System。C# サンプルだけが使う —— F# サンプルは
-    /// `SystemBase` を避けて `FrameTicker` から回している
-    /// （理由は samples/FsBulletML2.Sample.Unity2D.FSharp の BulletEcsDriver.fs）。
+    /// ECS の System。C# サンプルだけが使う。F# サンプルは FrameTicker から回している。
     /// </summary>
     public abstract partial class SystemBase : ComponentSystemBase
     {
@@ -106,9 +93,8 @@ namespace Unity.Entities
     }
 
     /// <summary>
-    /// component の型を覚えているところ。dll で配ると自動登録が掛からないので、
-    /// 足す面は本物の public だけ —— GetOrCreateTypeIndex は本物では
-    /// internal なので置かない。stub にだけ在る面は、呼び手がそれを使ってしまう。
+    /// component の型を覚えているところ。足す面は本物の public だけ。
+    /// stub にだけ在る面は、呼び手がそれを使ってしまう。
     /// </summary>
     public static class TypeManager
     {

@@ -7,21 +7,11 @@ open System.Text
 open NUnit.Framework
 open FsBulletML2.Processable
 
-/// Producer of `tests/TestData/trace/corpus-trace-varying-old-4077ed6.tsv`.
-///
-/// This file is not part of any build at HEAD. It exists to make the
-/// frozen corpus (the branch's only surviving old-engine evidence, since
-/// commit 9d98954 deleted `ProcessableBulletml`) reproducible by someone who
-/// was not here. It only compiles against the pre-deletion API
-/// (`Processable.ProcessableBulletml`, `BulletmlTask.Init()` with no `Env`
-/// argument), so it has to be run from a worktree checked out at the old
-/// engine's last commit, not from this branch.
+/// Not part of any build at HEAD. Compiles only against the pre-deletion API. Run from a worktree at that commit.
 [<TestFixture>]
 type DumpFrozenCorpus() =
 
-  // Parameters. Must match Equivalence.fs's
-  // ``227 本を、凍結した旧エンジン（4077ed6）の軌跡と突き合わせると全部 一致する``
-  // exactly, or the two sides are not comparable
+  // Must match Equivalence.fs's frozen-corpus parameters exactly, or the sides are not comparable.
   let sourceCommit = "4077ed6"
   let rank, px, py = 0.5f, 30.0f, 100.0f
   let frames = 60
@@ -32,10 +22,7 @@ type DumpFrozenCorpus() =
     let i = inner e
     sprintf "%s: %s" (i.GetType().Name) (i.Message.Replace("\r", "").Replace("\n", " "))
 
-  // Copied verbatim from Equivalence.FoldTrace at HEAD (the SHA256-first-6-bytes
-  // digest and the fired/alive counting), with one addition: exception messages
-  // are also stripped of literal tabs before being written, since this is the
-  // one place that has to survive being written into a TSV column
+  // Copied from Equivalence.FoldTrace. Also strip tabs; this column is written into a TSV.
   let digest (s: string) =
     use h = SHA256.Create()
     h.ComputeHash(Encoding.UTF8.GetBytes s)

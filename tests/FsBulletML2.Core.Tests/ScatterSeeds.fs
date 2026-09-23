@@ -5,56 +5,8 @@ open FsUnit
 open FsBulletML2
 
 /// 1 波 を 種 に載せ、離れた 場所 で 咲かせる ところ。
-///
-/// 当てる のは 花 でない 弾幕（刻み で撒く 輪）—— 中身 を読まない こと が この 操作 の値打ち なので、
-/// 花 で測る と「花 だから 効いた」と 区別 が つかない。
-///
-/// --- 較正（当てた変異 と、赤くなった点）
-///
-///   `apply` の `count <= 1` を落とす        1 は そのまま
-///   `stemBullet` の撒き を 1 発 に固定   撒いた 数 だけ 種 が出る
-///   `vertexDeg` の 0.5 を落とす             真上 に 種 を飛ばさない
-///   `stemFire` の 180 を 0 に               茎 は 真下 へ伸びる
-///   `stemBullet` の `Vanish` を落とす        撒き終えた 茎 は 消える
-///   `split` の `wave` を空 に               1 波 は 種 の中 へ移る
-///   `splitTailWaits` を素通し に            間合い は 撒く 側 に残る
-///   `split` で `Repeat` を 種 へ移す        繰り返し は 撒く 側 に残る
-///   `seedBullet` の `Vanish` を落とす       咲いた 種 は 消える
-///   `freeName` を素通し に                  名前 がぶつかったら 番号 を足す
-///   `split` の `None` を落とす              待ち が残らない 形 は 散らさない ／ 咲く 数 は 1
-///   `places` を count 固定 に               咲く 数 は 1
-///   `places` を 1 固定 に                   咲く 数 は 1
-///   `changeSpeed` を そのまま 残す           撃つ ところ を抜いた 写し
-///   `changeSpeed` を `Wait term` に          撃つ ところ を抜いた 写し
-///   `accel` を `Wait term` に                accel は 間合い を食わない
-///   `Fire` を 写し に残す                    1 波 は 種 の中 へ移る ／ 撃つ ところ を抜いた 写し
-///   `Vanish` の あと も 写す                 消えた あと の 並び は 写さない
-///   `spends` を いつも true に               待ち が残らない 形 は 散らさない ／ 咲く 数 は 1
-///   `ghost` を いつも `Some []` に           10 点
-///   `Repeat` の中身 を写さない               内側 の繰り返し ／ 咲く 数 は 1
-///   `Repeat` の写し に 元 の label を残す     内側 の繰り返し
-///   入れ子 の `action` を写さない            入れ子 の action
-///   `spends` の再帰 を落とす                 入れ子 の action ／ 内側 の繰り返し ／ 咲く 数 は 1
-///   `fillIn` を素通し に                     actionRef の間合い
-///   `ok` から `filled` を落とす              間合い が決まらない actionRef
-///   辿れない label を `Some []` に            間合い が決まらない actionRef
-///   `ActionRef` を 写し に残す               actionRef の間合い ／ 間合い が決まらない actionRef
-///   `topActions` を空 の表 に                actionRef の間合い
-///
-///   `ok` から `NeedRand` を落とす            目 で決まる 間合い
-///   `Repeat` の `times` の `ok` を落とす      目 で決まる 間合い
-///   `ok` を いつも true に                   目 で決まる 間合い ／ 間合い が決まらない actionRef
-///   `ok` を いつも false に                  14 点（`$rank` の側 も 散らなく なる）
-///
 /// `seen` の番 を落とす と、赤 ではなく テスト の ホスト が落ちる（`looped` で 無限 再帰）。
 /// 「アクティブ なテスト の実行 が 中止 されました」だけ が出て 件数 は 出ない。
-///
-/// 上 の 2 つ（`NeedRand` と `times` の `ok`）は、`$rand` の fixture を足す まで
-/// どの 門 にも 当たって いなかった
-///
-/// 「散らした なら 撒く 側 は 待つ」は 書いて 落とした ——
-/// 単独 で赤 に する 変異 が 無い。`ring` の 撒く 側 は
-/// 「間合い と 繰り返し は 撒く 側 に残る」が `<wait>4</wait>` で もっと 強く 見て いる
 [<TestFixture>]
 type ScatterSeeds() =
 
@@ -149,7 +101,7 @@ type ScatterSeeds() =
        </action></repeat></action>
        <bullet label="core"><speed>2</speed></bullet>"""
 
-  /// `accel` は 台本 を止めない（実測 term 20 で 1 コマ）
+  /// `accel` は 台本 を止めない。
   static let drifting =
     """<action label="top"><repeat><times>8</times><action>
          <wait>4</wait>
@@ -337,19 +289,13 @@ type ScatterSeeds() =
       let ranked = read (src.Replace("$rand", "$rank"))
       xml (Scatter.apply 3 ranked) |> should not' (equal (xml ranked))
 
-  /// 撒く 側 に 待ち が 1 つ も残らない と、その 台本 は 1 コマ で終わる ——
-  /// 面 は 終えた 弾 を 頭 から 走らせ直す ので、毎コマ 茎 を撒き 直す。
-  ///
-  /// `nested` も ここ に在った（3 か所 に散らして 100 コマ で 221,390 発）が、
-  /// 写し が 間合い を運ぶ ように なった ので 散らせる 側 へ移した
+  /// 撒く 側 に 待ち が残らない と、終えた 弾 を 頭 から 走らせ直し、毎コマ 茎 を 撒き直す。
   [<Test>]
   member _.``撒く 側 に 待ち が残らない 形 は 散らさない``() =
     let b = read waitless
     xml (Scatter.apply 3 b) |> should equal (xml b)
 
-  /// 撃つ ところ を抜いた 写し が 撒く 側 に残る。
-  /// `changeSpeed` は 速さ を変えない `relative 0` に差し替える ——
-  /// そのまま 残すと 茎 の速さ が変わり、`wait term` に すると 1 コマ ずれる（実測 20 対 19）
+  /// `changeSpeed` は 速さ を変えない `relative 0` に差し替える。
   [<Test>]
   member _.``撃つ ところ を抜いた 写し が 撒く 側 に残る``() =
     let s = xml (Scatter.apply 3 (read paced))
@@ -362,8 +308,7 @@ type ScatterSeeds() =
     seedPart s |> should haveSubstring "sequence"
     seedPart s |> should haveSubstring "<speed>3</speed>"
 
-  /// `accel` は `term` の あいだ 走り続ける だけ で 台本 を止めない（実測 term 20 で 1 コマ）。
-  /// `wait term` に置き換える と 茎 が 20 コマ 余計 に待つ
+  /// `accel` は 台本 を止めない。`wait term` に置き換える と、茎 が余計 に待つ。
   [<Test>]
   member _.``accel は 間合い を食わない``() =
     let top = topPart (xml (Scatter.apply 3 (read drifting)))

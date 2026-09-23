@@ -8,15 +8,8 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.LanguageService
 
-/// 参照の欠けを数える側の目盛り、fsb の側。 `ReferenceScan` /
-/// `SxmlReferenceScan` と対。
-///
-/// 数える中身（走る先の対、定義と参照の突き合わせ、並べ方）は
-/// `References` に 1 本 しか無い。表記ごとなのは字の数え方だけで、
-/// それを `FsbScan.tags` として渡している。
-///
-/// だからここで赤くなるのは `FsbScan` の側 —— 共通の側が壊れれば
-/// XML と sxml の試験も一緒に赤くなる。
+/// 参照の欠けを数える側の目盛り、fsb の側。 `ReferenceScan` / `SxmlReferenceScan` と対。
+/// 数える中身は `References` に 1 本。ここで赤くなるのは `FsbScan`。共通が壊れれば XML と sxml も赤くなる。
 [<TestFixture>]
 type FsbReferenceScan() =
 
@@ -101,9 +94,7 @@ type FsbReferenceScan() =
   [<Test>]
   member _.``閉じ引用符が無いときは、構文の理由だけを出す``() =
     // `FsbScan` は閉じ引用符の無い値を捨てない（カーソルの居場所に要る）。
-    // そのぶん値が行末まで伸びるが、そこへは届かない ——
-    // 閉じていなければ `Offside.parse` が位置つきで落ち、`explain` は
-    // 位置が在る層をそのまま返して `missing` を呼ばない
+    // 閉じていなければ位置つきで落ち、`missing` は呼ばれない。
     let src = "bulletml\n    action label=\"top\"\n        actionRef label=\"a"
     match explain src with
     | [ f ] ->

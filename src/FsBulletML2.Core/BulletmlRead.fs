@@ -436,16 +436,8 @@ module BulletmlRead =
         Action.Repeat(createTimes children "repeat", actionOrActionRef)
     | _ -> new BulletmlDTDViolationException ("not support element.") |> raise
 
-  /// 子を、その位置の型で読む 3 本。
-  ///
-  /// 落とし方は位置ごとに違う。ここは変えていない。
-  ///
-  ///     action の子    命令でないものは黙って落とす（bullet / direction など）
-  ///     bullet の子    action / actionRef 以外は黙って落とす
-  ///     bulletml の子  bullet / fire / action 以外の命令は上げる。
-  ///                    命令ですらないもの（direction など）は黙って落とす
-  ///
-  /// fire だけが 2 つ の位置に来るので、どちらの腕を作るかは factory で渡す。
+  /// 子を位置の型で読む 3 本。落とし方は位置ごとに違う。ここは変えていない。
+  /// fire だけ 2 位置に来るので、腕は factory で渡す。
   let rec internal readCommands (children: XmlNode list) : Action list =
     children |> List.choose (fun child ->
       match child with
@@ -511,22 +503,14 @@ module BulletmlRead =
     with | _ -> None
 
  
-  /// 定数を畳む。$ を含まない式だけを eval して数へ潰し、文字に書き戻す。
-  ///
-  /// 型が同じになっても走査は残る（畳みは木を歩かないとかけられない）。
-  /// `test` は小数の書き方だけを変える（下の `toStr`）。
+  /// 定数を畳む。$ を含まない式だけ数へ潰す。型が同じでも走査は残る。test は小数の書き方だけを変える。
   let private foldConstants' bulletml test =
     // 値は小数点 `.` で持ち回る。 F10 を既定カルチャで作ると `,` が混ざり、
     // 読み直す側が桁区切りと読んで落ちる
     let toStr (single: float32) =
       if test then single.ToString(CultureInfo.InvariantCulture)
       else single.ToString("F10", CultureInfo.InvariantCulture)
-    /// 畳むのは $ を含まない式だけ（下の rep が見ている）。
-    /// 乱数も難度も読まれないので 0 を渡す。
-    ///
-    /// 走行の `getValue` と同じ木・同じ評価を通す。
-    /// 読めない式で落ちるのは畳む側だけ —— 走行は素通りのまま
-    /// （読めない式で台本を止めない決め）。
+    /// $ を含まない式だけ畳む。乱数も難度も読まないので 0。読めない式で落ちるのは畳む側だけ。
     let foldEval (x: Expr.NumExpr) =
       if not (Expr.NumExpr.isReadable x) then
         new BulletmlDTDViolationException(sprintf "式として読めない:[%s]" (Expr.NumExpr.text x)) |> raise

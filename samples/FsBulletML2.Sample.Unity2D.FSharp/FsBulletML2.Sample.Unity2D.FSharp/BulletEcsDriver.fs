@@ -10,11 +10,6 @@ open UnityEngine
 open FsBulletML2
 
 /// 弾の Entity を毎コマ 回す。
-///
-/// `SystemBase` を使っていないのは意図。 ECS の System は Roslyn の
-/// source generator（`SystemGenerator.dll`）が partial クラスを生成する
-/// 仕組みで、F# コンパイラでは走らない。`EntityManager` を直に触るぶんには
-/// F# から普通に呼べるので、MonoBehaviour の Update から回している。
 [<DefaultExecutionOrder(-100)>]
 type BulletEcsDriver () =
   inherit MonoBehaviour ()
@@ -35,9 +30,7 @@ type BulletEcsDriver () =
   /// 初回の 1 コマ だけログを出すための印。
   /// 毎コマ 出すと弾の数だけ行が流れて Console が使えなくなる
   [<DefaultValue>]val mutable private logged : bool
-  /// ダメージの通知先。Bootstrap が入れる。
-  /// BulletEcsRuntime は Transform しか持たない（型の輪を避けるため）ので、
-  /// 型を知っているこちらで持つ
+  /// ダメージの通知先。
   [<DefaultValue>]val mutable public player : Player
   [<DefaultValue>]val mutable public enemy : Enemy
 
@@ -72,8 +65,7 @@ type BulletEcsDriver () =
     let entities = this.query.ToEntityArray(Allocator.Temp)
 
     // 初回だけ、回っていることと画面の範囲を出す。
-    // 「弾が変な位置に残る」を追うとき、Driver が回っていないのか
-    // 消す範囲がずれているのかを、画面からは区別できない
+    // 「弾が変な位置に残る」を追うとき、Driver が回っていないのか 消す範囲がずれているのかを、画面からは区別できない
     if not this.logged then
       this.logged <- true
       Debug.Log(
@@ -102,12 +94,6 @@ type BulletEcsDriver () =
           em.SetComponentData(entity, tr)
 
           // LocalToWorld も自分で書く。
-          //
-          // Entities Graphics が見るのは LocalTransform ではなく LocalToWorld で、
-          // その変換は TransformSystemGroup（ECS の System）がやる。
-          //
-          // System なので順序が取れている。F# は System を書けないので、
-          // 変換のほうを自分で済ませて System を待たない。
           if em.HasComponent<LocalToWorld> entity then
             let mutable ltw = LocalToWorld()
             ltw.Value <- float4x4.TRS(pos, rot, float3(1.0f, 1.0f, 1.0f))
@@ -144,25 +130,13 @@ type BulletEcsDriver () =
         if not (em.Exists e) then overlapScratch.Add e
       for e in overlapScratch do overlappingPlayer.Remove e |> ignore
 
-/// Play の頭で場面を組む。シーンに置く必要はない —— 居なければ自分で作る。
-///
-/// やることは 3 つ。
-///   1. 自機と敵の Transform を BulletEcsRuntime へ（毎コマ 探さないため）
-///   2. ダメージの通知先を Driver へ
-///   3. 弾の見た目を BulletEntityFactory へ（prefab の SpriteRenderer から）
+/// Play の頭で場面を組む。
 type BulletEcsBootstrap () =
   inherit MonoBehaviour ()
 
   [<RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)>]
   static member AutoCreate () =
     // Play 中でなければ何もしない。
-    //
-    // ここは Informations.Awake からも呼ばれるが、あちらは
-    // [<ExecuteInEditMode()>] なので Play していない Editor でも走る。
-    // そこで DontDestroyOnLoad を呼ぶと InvalidOperationException になり、
-    // 呼んだ側（Informations.Awake）の残りが実行されない ——
-    // enemy / player が null のままになり、OnGUI が落ちて HUD が消える。
-    // 実際にそれで「UI が表示されない」を出した。
     if Application.isPlaying then
       let found = UnityEngine.Object.FindAnyObjectByType<BulletEcsBootstrap>()
       if isNull (box found) then
@@ -170,22 +144,12 @@ type BulletEcsBootstrap () =
         UnityEngine.Object.DontDestroyOnLoad go
         go.AddComponent<BulletEcsBootstrap>() |> ignore
         // ここが出ないなら、この属性が Unity に拾われていない。
-        // F# の static member に付けた属性が効いているかを、
-        // 画面ではなくログで確かめられるようにする
         Debug.Log "BulletEcsBootstrap: AutoCreate で作った"
 
   member this.Awake () = this.Configure ()
 
-  /// component の型が TypeManager に登録されている前提で動く。
-  ///
-  /// Entities は普通、ILPostProcessor（Unity.Entities.CodeGen）が各アセンブリに
-  /// `Unity.Entities.CodeGeneratedRegistry.AssemblyTypeRegistry` を埋め込み、
-  /// TypeManager がそれを集めて回る。その加工は Unity がコンパイルした
-  /// アセンブリにしか掛からない。 このサンプルは F# を外でビルドして dll を
-  /// Assets へ置くので掛からず、こう落ちた ——
-  ///     ArgumentException: Unknown Type: ...BulletSim
-  /// 例外文は `TypeManager.GetOrCreateTypeIndex` を案内するが、6.5.0 には
-  /// 存在しない（メッセージだけが古い）。手で足す口は無い。
+  /// F# を外でビルドした dll には codegen が掛からず、TypeManager が型を知らない。
+  /// 例外文の `GetOrCreateTypeIndex` は 6.5.0 には無い。
   member this.Configure () =
     // シーンは Built-in の前提のままなので、URP で描ける形に
     // 直さないと自機も敵も背景も出ない（実際に真っ暗になった）
@@ -229,8 +193,7 @@ type BulletEcsBootstrap () =
     driver.enemy <- enemy
 
     // どこで切れているかを 1 行 で読めるようにする。
-    // 弾が出ないとき、原因は「World が無い」「Configure が届いていない」
-    // 「自機か敵が見つからない」のどれか。画面からは区別がつかない
+    // 弾が出ないとき、原因は「World が無い」「Configure が届いていない」 「自機か敵が見つからない」のどれか。
     let world = World.DefaultGameObjectInjectionWorld
     Debug.Log(
       sprintf "BulletEcsBootstrap: world=%s ready=%b player=%b enemy=%b"

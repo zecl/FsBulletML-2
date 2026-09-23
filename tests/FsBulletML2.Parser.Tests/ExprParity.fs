@@ -6,13 +6,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// 読めない式を字の上に出す（v4.1）。
-///
-/// --- なぜ読み手が 2 本 在るのか
-///
-/// `FsBulletML2.LanguageService` は `ProjectReference` を 1 本 も持たない ——
-///
-/// 写しである以上、片方 だけ直した形が黙って残る。
-/// この門が、コーパスの全件 で 2 本 の答えを突き合わせる。
+/// 読み手が 2 本 在る。片方だけ直すと、写しが黙って残る。
 [<TestFixture>]
 type ExprParity() =
 
@@ -62,8 +56,7 @@ type ExprParity() =
   member _.``式が書ける要素が引けている``() =
     // 0 件 だと、下の点が全部「当てる先が無くて緑」になる
     exprNames |> should not' (be Empty)
-    // 8 つ。 版の頭で「7 つ」と数えたのは誤りで、`param` を落としていた ——
-    // この点が拾った。 増えたらまた赤くなる（DTD が動いた印）
+    // 8 つ。増えたら赤くなる。DTD が動いた印。
     exprNames |> List.length |> should equal 8
 
   // --- 突き合わせ --------------------------------------------------------------
@@ -91,7 +84,7 @@ type ExprParity() =
 
   [<Test>]
   member _.``同梱 176 本 に式が在る``() =
-    // 上の点の当てる先。版の頭で 4,582 件 と数えた
+    // 上の点の当てる先。
     corpus |> List.sumBy (fun (_, t) -> (XmlScan.texts t exprNames).Length)
     |> should be (greaterThan 1000)
 
@@ -109,13 +102,8 @@ type ExprParity() =
   [<Test>]
   member _.``xml と sxml と fsb で、取り出す式が揃う``() =
     [ for i in Bullets.Dsl.All.bullets do
-        // 空白を全部 落として比べる。 揃わないのは取り出しではなく書く側の
-        // 都合が 2 つ ——
-        //
-        //     fsb は `120 + 120 * $rand` を `120+120*$rand` と焼く（空白を入れない）
-        //     xml は長い式を改行で折り返す（1 本 で踏んだ。95 件 中 1 件）
-        //
-        // ここで見たいのは「同じ式を、同じ要素名で、同じ数だけ拾えるか」
+        // 空白を全部落として比べる。書く側が空白と改行を落とすので、字面はそのままでは揃わない。
+        // 見たいのは同じ式を、同じ要素名で、同じ数だけ拾えるか。
         let squeeze (s: string) =
           s |> Seq.filter (System.Char.IsWhiteSpace >> not) |> Seq.toArray |> System.String
         let take (t: string) (g: string -> string list -> TextHit list) =

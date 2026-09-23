@@ -37,22 +37,13 @@ type BulletmlTypeProvider(config: TypeProviderConfig) as this =
                                           invokeCode = (fun args -> <@@ xml :> obj @@>))
           typ.AddMember ctor
 
-          // ビルドに入っていなかったあいだに、読む側の API がここだけ古いまま
-          // 残っていた（FsBulletML2.Xml.Bulletml.readXmlString に (xml, None) を
-          // 渡す形）。いまは Bulletml.readXmlString が文字列 1 つ を受ける。
-          // 隣の束縛（Bulletml(...) を組んで捨てるだけの bulletml2）も消した ——
-          // 読まれないので、レコードにフィールドが増えても気づけなかった
+          // Bulletml.readXmlString は文字列 1 つ。古い (xml, None) の形は残さない。
           let bulletml = xml |> Bulletml.readXmlString
           let instanceProp = 
             ProvidedProperty(propertyName = "Value", 
                              propertyType = Impl.bulletmlType, 
-                             // 値を quotation へ直に埋めない。 Bulletml は
-                             // FsBulletML2.DTD で型とモジュールが同名なので、値を埋めると
-                             // プロパティの型が FsBulletML2.DTD.Bulletml.Bulletml という
-                             // 在りもしない名前で焼かれ、使う側が FS1109 で落ちる
-                             // （型プロバイダ自身のビルドは通るので門を通すまで見えない）。
-                             // Impl.read を呼ぶ形にすると、焼かれるのは呼び出しだけになる。
-                             // 上の bulletml は「設計時に読めるか」を確かめる役目で残す
+                             // 値を quotation へ直に埋めない。型とモジュールが同名で FS1109 になる。
+                             // Impl.read を呼ぶ。上の bulletml は設計時に読めるかの確認。
                              getterCode = (fun _ -> <@@ Impl.read Style.Xml xml @@>))
           instanceProp.AddXmlDoc(System.String.Format(@"BulletMLを取得します。"))
 

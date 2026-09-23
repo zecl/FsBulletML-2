@@ -3,10 +3,6 @@ namespace FsBulletML2.Core.Tests
 open NUnit.Framework
 
 /// ref の param に入れた $rand / $rank が、走るたびに読み直されるか。
-///
-/// 直す前は、`BulletRunner.convertBulletmlTask` が
-/// `BulletmlRead.existRandomParam` を見て、$rand を含む ref がひとつでもあれば
-/// `BulletmlTask.Original` に生の XML を持たせ、`Init()` が毎周 作り直していた。
 [<TestFixture>]
 type RefParamFreeze() =
 
@@ -67,12 +63,7 @@ type RefParamFreeze() =
   <wait>1</wait>
 </action>"""
 
-  /// フレーム 4 で値を切り替える。前後で 2 発ずつ撃つ長さにしてある。
-  ///
-  /// 旧は MutableManager（グローバル）を走行の途中で差し替えていた。
-  /// 新 API はフロントが毎コマ Env を渡すので、ふつうの mutable でよい
-  /// —— 差し替えるグローバルが要らない。移植が正しいことは、
-  /// 下の Golden が 1 バイト も動かないことで押さえている。
+  /// フレーム 4 で値を切り替える。
   let runSwitching (xml: string) (rand: unit -> float32) (rank: unit -> float32)
                    (switch: unit -> unit) =
     TraceApi.runWithParams (fun i -> if i = 4 then switch ())
@@ -136,12 +127,6 @@ type RefParamFreeze() =
     |> Golden.check "freeze-rand-within-loop"
 
   /// 11 を直す代償を測る。
-  ///
-  /// mapEval を外して param を文字のまま渡すと、$rand / $rank は getValue まで
-  /// 生き残る。そのかわり $1 を何度も使う action では、使うたびに転がる。
-  /// 揃った扇がばらけるかどうかが、直すか決める材料になる。
-  ///
-  /// ここは 1 つの action の中で同じ $1 を 3 回 使い、3 発の向きが揃うかを見る
   [<Test>]
   member _.``同じ param を 1 つの action で何度も使う``() =
     let xml =
@@ -154,10 +139,7 @@ type RefParamFreeze() =
   <fire><direction type="absolute">$1</direction><speed>2</speed><bullet/></fire>
   <fire><direction type="absolute">$1</direction><speed>3</speed><bullet/></fire>
 </action>"""
-    // 毎フレーム rand を動かす。param が数へ潰されていれば 3 発とも同じ向き、
-    // 文字のまま渡っていれば 3 発ともばらける。
-    // 木を組む段は 0.5（旧はループの前に FixedManager(0.5f, ...) が
-    // 入っていた）。hook はコマの頭で呼ばれるので、f0 からは 0.1 x n
+    // 毎フレーム rand を動かす。
     let mutable n = 0
     let mutable rand = 0.5f
     let hook _ =

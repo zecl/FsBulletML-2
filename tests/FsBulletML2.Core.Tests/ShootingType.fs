@@ -3,12 +3,7 @@
 open NUnit.Framework
 
 /// `<bulletml type="none|vertical|horizontal">` が走らせる側に効くか。
-///
-/// 効かない、を固めるテスト。 ふつうに軌跡の控えを 1 本取っても、
-/// 読む側が居ないので「どの type でも緑」になり何も担保しない。
-///
-/// 上の「軌跡が変わらない」テストは、繋いだあとも緑のままが正しい。
-/// 読んで分岐する所は 1 つも無いので、値が届いても軌跡は動かない。
+/// 読む側が居ないので、軌跡の控えはどの type でも緑になり何も担保しない。
 [<TestFixture>]
 type ShootingType() =
 
@@ -37,11 +32,7 @@ type ShootingType() =
     // 3 つとも同じなので、代表 1 本だけ控えに残す
     none |> Golden.check "shooting-type-no-effect"
 
-  /// DTD は type を省略可（既定 "none"）と定めている。実装がそれに従うかを見る。
-  ///
-  /// 測った結果は「落ちない」。createBulletml が
-  /// 属性が無ければ bulletmlType = None を返すので、
-  /// convertBulletmlTask の `None -> BulletVertical` に届く。
+  /// DTD は type を省略可（既定 "none"）と定めている。
   [<Test>]
   member _.``type を省くとどうなるか``() =
     let noType = """<?xml version="1.0" ?>
@@ -64,10 +55,6 @@ type ShootingType() =
     |> Golden.check "shooting-type-omitted"
 
   /// BulletmlRead.fs の `| None ->` に届く入力があるかを探す。
-  ///
-  /// 条件は `tryFindBulletmlAttrs` が None のとき。中身は `maybe { ... }` だが
-  /// `let!` が 1 つも無いので Bind を通らず、必ず `return` に着く。
-  /// 属性をぜんぶ省いた `<bulletml>` が、いちばん届きそうな入力にあたる。
   [<Test>]
   member _.``bulletml の属性をぜんぶ省くとどうなるか``() =
     let noAttrs = """<?xml version="1.0" ?>

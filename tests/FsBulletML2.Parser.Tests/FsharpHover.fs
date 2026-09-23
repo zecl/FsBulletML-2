@@ -9,12 +9,7 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.SourceLanguage
 
 /// F# の CE の hover。 `HoverMarkdown`（XML 側）と対。
-///
-/// --- 何を真とするか
-///
-/// CE で書いていても読んでいるのは BulletML なので、出す字は
-/// ほかの 3 表記 と同じ（DTD 由来の散文）。違うのは
-/// 「カーソルの下の名前が、BulletML の何を作るか」を 1 段 挟むところだけ。
+/// 出す字はほかの表記と同じ。違うのは、名前が BulletML の何を作るかを 1 段挟むところ。
 [<TestFixture>]
 type FsharpHover() =
 

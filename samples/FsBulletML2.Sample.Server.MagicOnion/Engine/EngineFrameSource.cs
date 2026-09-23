@@ -8,18 +8,13 @@ using BulletType = FsBulletML2.DTD.BulletType;
 namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 {
     /// <summary>
-    /// 弾幕エンジンを 1 部屋 ぶん走らせる。この class だけが F# を呼ぶ。
-    ///
-    /// 1 本 の Task からしか呼ばれないのが不変条件（<see cref="Room"/>）。
-    /// 排他を持たないのはそのため。
+    /// 弾幕エンジンを 1 部屋 ぶん走らせる。
     /// </summary>
     public sealed class EngineFrameSource : IFrameSource
     {
         /// <summary>
-        /// 抱える弾の上限。超えたぶんは捨てる。
-        ///
-        /// エンジンは撃った弾を値で返しきり、フロントが「撃つのを断る」口 は
-        /// 無い（<c>Frame.Spawned</c> の但し書き）。捨てるのはこちらの都合。
+        /// 抱える弾の上限。
+        /// 超えたぶんは捨てる。
         /// </summary>
         public const int MaxBullets = 4000;
 
@@ -37,9 +32,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         readonly BulletmlScript script;
 
         /// <summary>
-        /// 自機 の弾幕。1 本 につき 1 回 だけ読む。
-        /// 撃つたびに読み直すと、木 を組む段でまた乱数 を引いて並びが変わる
-        /// （Unity2D サンプルの <c>Player.Awake</c> も 1 回 だけ読んでいた）。
+        /// 自機 の弾幕。
         /// </summary>
         readonly BulletmlScript[] shotScripts;
 
@@ -95,10 +88,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
 
         public void SetPlayer(float x, float y) => env.SetPlayer(x, y);
 
-        /// <summary>
-        /// 自機 の弾 を撃つ。1 回 の呼びで 2 発。
-        ///
-        /// 撃たれた弾（<c>NewShot</c>）として始める。 根（<c>NewRoot</c>）
+        /// <summary>自機の弾を撃つ。1 回の呼びで 2 発。撃たれた弾として始める。</summary>
         public void Shoot(float x, float y)
         {
             for (int i = 0; i < ShotOffsets.Length; i++)
@@ -126,13 +116,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
             playerHits = 0;
             enemyHits = 0;
 
-            // `born` をここで空 にしない。 撃ち（`Shoot`）はコマの頭 で、
-            // つまり この関数に入る前 に積まれる。頭 で払うと、
-            // 撃った弾が 1 発 も出ない（実際にそう書いて踏んだ）。
-            // 払うのは並びに載せ終えた後。
-            //
-            // 添字 で回す。 産まれた弾はこのコマでは回さない
-            // （エンジンの決めと同じ。産まれた弾は次のコマから）
+            // `born` をここで空 にしない。
             for (int i = 0; i < live.Count; i++)
             {
                 live[i].Step(Spawn);
@@ -158,9 +142,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
             for (int i = 0; i < live.Count; i++)
             {
                 var b = live[i];
-                // 配る形 は整数。 盤面 を 0..65535 に割る（Wire）——
-                // float32 は MessagePack で 5 バイト固定 なので、
-                // x / y / 向き の 3 本 で 弾 1 発 19.9 -> 13.8 バイト
+                // 配る形 は整数。
                 dtos[i] = new BulletDto
                 {
                     Id = b.Id,
@@ -180,8 +162,8 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
         }
 
         /// <summary>
-        /// 死んだ弾を落とす。撃つ側 は盤面 の外 でも落とさない ——
-        /// 落とすと、その場で建て直しが走って弾幕が頭 へ戻る。
+        /// 死んだ弾を落とす。撃つ側は盤面の外でも落とさない。落とすと弾幕が頭へ戻る。
+        /// </summary>
         void Sweep()
         {
             // 自機 を 1 度 も知らされていないなら、被弾 は数えない。
@@ -247,9 +229,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Engine
                 Y = Field.OriginY,
             };
 
-            // 読み直さない。 Unity2D サンプルの Enemy は台本を読み直して
-            // 建て直すが、読む段でまた乱数 を引くので並びが変わる。
-            // サーバーが権威 を持つので、台本は 1 本 のまま使い回す
+            // 読み直さない。
             root.SetScript(script);
             live.Add(root);
         }

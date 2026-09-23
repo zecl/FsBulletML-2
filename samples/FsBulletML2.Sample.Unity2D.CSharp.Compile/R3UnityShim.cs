@@ -1,11 +1,6 @@
 using UnityEngine;
 
-// R3 の Unity 向けパッケージ（R3.Unity）に在るもののうち、
-// このサンプルが呼ぶぶんだけ。UnityEngine.Stub には置かない ——
-// あちらは UnityEngine の代役で、これは R3 の代役なので出どころが違う。
-//
-// 本物は Unity の Editor 側にしか無い。ここは compile を通すためだけの空実装で、
-// 走らせるものではない。
+// R3 の Unity 向けパッケージ（R3.Unity）に在るもののうち、 このサンプルが呼ぶぶんだけ。
 namespace R3
 {
     /// <summary>

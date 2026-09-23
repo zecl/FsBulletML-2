@@ -5,12 +5,6 @@ open FsUnit
 open FsBulletML2
 
 /// 手書き の弾幕 の数 だけ を振る ところ。
-///
-/// --- 較正（当てた変異 と、赤くなった点）
-///
-///   `split` を常 に None に        押し戻して 元 の字 に戻る の 1 点
-///   `spinnable` を常 に true に    absolute は振らない の 1 点
-///   `Wait` の逆数 を素 の倍率 に    密 にする と 待ち が短く なる の 1 点
 [<TestFixture>]
 type TuneNumbers() =
 
@@ -236,7 +230,6 @@ type TuneNumbers() =
 
   /// 撃つ のが `<bulletRef>` の弾幕 —— 同梱 の多く が そう —— は、
   /// 終点 が 撃つ 場所 でなく 定義 の側 に在る。
-  /// 撃つ 枝 だけ 見て いた とき、この形 に 1 段 も 足せなかった
   [<Test>]
   member _.``名前 で引く 弾 にも 段 を足せる``() =
     let src =

@@ -1,11 +1,5 @@
-/// 書きかけ の木 から、1 度 も 走らない 枝 を落とす。
-/// `Tune` の `DropSplit` と違って 印 を見ない。
-///
-/// 入口 は 名前 が `top` で始まる `action`（`Api.fs` の `scripts`）。
-/// あそこ は `BulletmlOps.getAction` を通す ので、入れ子 の `top2` も 入口。
-///
-/// 落とす のは 根直下 だけ —— 入れ子 の `<action label>` は 親 から 順 に走る ので、
-/// 名前 が浮いて いる ことと その枝 が走らない ことは 別
+/// 書きかけ の木 から、1 度 も 走らない 枝 を落とす。印 は見ない。
+/// 落とす のは 根直下 だけ。入口 は 名前 が `top` で始まる `action`。
 module FsBulletML2.Prune
 
 open FsBulletML2
@@ -92,11 +86,8 @@ let private hasEntry (elm: BulletmlElm) =
       | ActionKey l -> (ActionLabel.text l).StartsWith "top"
       | _ -> false)
 
-/// 生き残る 根直下 の要素。
-///
-/// 入口 から 始めて、引いた 先 を 足して いく。
-/// 足した 要素 が また 別 を引く ので、増えなく なる まで 回す ——
-/// 1 周 で止める と、入口 から 2 段 離れた 定義 が 落ちる
+/// 生き残る 根直下 の要素。入口 から 引いた 先 を、増えなく なる まで 足す。
+/// 1 周 で止める と、入口 から 2 段 離れた 定義 が 落ちる。
 let private survivors (elms: BulletmlElm list) : BulletmlElm list =
   let defs = elms |> List.map labelsIn
   let uses = elms |> List.map refsIn

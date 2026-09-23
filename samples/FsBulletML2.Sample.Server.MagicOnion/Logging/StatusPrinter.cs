@@ -10,10 +10,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
 {
     /// <summary>
     /// いま何が起きているかを 1 秒 に 1 行 出す。
-    ///
-    /// 配れているかは、ここでしか見えない。 降りるほう（<c>OnFrame</c>）は
-    /// filter を通らないので、アクセスログ には 1 行 も出ない ——
-    /// 「繋がっているのに絵 が動かない」を割るのはこの行 の <c>コマ</c> の伸び。
+    /// </summary>
     public sealed class StatusPrinter : BackgroundService
     {
         readonly RoomRegistry registry;
@@ -49,10 +46,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
             using var timer = new PeriodicTimer(options.StatusInterval);
             int lastFrame = 0;
 
-            // 公称の間隔 で割らない。 1 回 でも遅れると、その遅れたぶんに
-            // 溜まった数を短い時間 で割ることになり、60 コマ/秒 の輪 から
-            // 63 配/s が出た（5% の系統誤差）。A/B に使う物差しなので、
-            // 実際に経った時間 で割る
+            // 公称の間隔 で割らない。
             var since = System.Diagnostics.Stopwatch.StartNew();
 
             try
@@ -88,9 +82,8 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
                             line.Append(" 撃ち捨て ").Append(room.DroppedShots);
                         }
 
-                        // 物差し が 2 つ ある。 実測（焼いた長さ）が在るときは
-                        // そちらを出す —— 概算 は「弾 1 発 20.0 バイト」を掛けるだけなので、
-                        // 量子化 で 1 発 の大きさ を変えても 1 ビット も動かない
+                        // 物差し が 2 つ ある。
+                        // 実測（焼いた長さ）が在るときは そちらを出す —— 概算 は「弾 1 発 20.0 バイト」を掛けるだけなので、 量子化 で 1 発 の大きさ を変えても 1 ビット も動かない
                         if (!meter.Enabled)
                         {
                             double mbps = room.LastBullets * 20.0 * room.Info.Fps

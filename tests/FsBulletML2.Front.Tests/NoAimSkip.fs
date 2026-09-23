@@ -7,12 +7,7 @@ open FsBulletML2.Domain
 open FsBulletML2.Front
 
 /// 台本が無い弾のコマで、Front がゲームに何も聞かないこと。
-///
-/// 変異で穴が見つかって足した。 `Driver` の
-/// `if run.HasNoScript then noAim front else at ...` を消して
-/// いつも aim を組む変異を入れても、598 本 が緑のまま通った ——
-/// 答えが同じだから。 省いているのは Atan2 4 本 と、ゲームへの
-/// 問い合わせだけで、`Env` の aim 欄はどちらの道でも 0 になる。
+/// 答えはどちらでも 0 なので、軌跡の門ではこの省略は守られない。
 [<TestFixture>]
 type NoAimSkip() =
 
@@ -76,11 +71,7 @@ type NoAimSkip() =
     Driver.step w Space.YDown SpawnOrigin.AtOrigin child Motion.zero |> ignore
     asked () |> should equal 0
 
-  /// 走らせ直しは台本が在っても聞かない。
-  ///
-  /// aim が結果に出ないから（`RestartReadsNoAim.fs`）。
-  /// 以前はここで `at` を通していて、Atan2 4 本 と問い合わせ 2 回 を
-  /// 組んで捨てていた
+  /// 走らせ直しは台本が在っても聞かない。aim が結果に出ない。
   [<Test>]
   member _.``走らせ直しでは、台本が在ってもゲームに聞かない``() =
     let script = load ()

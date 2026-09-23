@@ -5,10 +5,7 @@ open FsUnit
 open FsBulletML2.LanguageService
 
 /// カーソルの下に在るもの、sxml の側。`XmlToken` と対。hover が引く。
-///
-/// `Context` とは向きが違う —— あちらは「そこで何を打てるか」なので手前だけを
-/// 見て、名前を打っている途中なら本文扱いにする。こちらは「いま何の上に
-/// 居るか」なので、語の途中でもその語を返す。
+/// `Context` は打てるもの。こちらは居るものなので、語の途中でもその語を返す。
 [<TestFixture>]
 type SxmlToken() =
 
@@ -53,9 +50,7 @@ type SxmlToken() =
 
   [<Test>]
   member _.``内側の括弧を返す``() =
-    // 入れ子は位置で覆われている。 覆っているものを先着で採ると
-    // どこに触っても根（bulletml）が当たり、名前の範囲から外れて
-    // 「何でもない」になる —— 25 は bullet の名前の中
+    // 覆っているものを先着で採ると、どこに触っても根が当たり「何でもない」になる。
     SxmlScan.tokenAt "(bulletml (action (fire (bullet))))" 25 |> should equal (Element "bullet")
 
   [<Test>]

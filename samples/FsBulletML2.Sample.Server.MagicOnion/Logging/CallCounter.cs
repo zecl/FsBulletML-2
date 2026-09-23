@@ -6,12 +6,8 @@ using System.Threading;
 namespace FsBulletML2.Sample.Server.MagicOnion.Logging
 {
     /// <summary>
-    /// 口 が何回 呼ばれたかを数える。サーバーに 1 つ（singleton）。
-    ///
-    /// なぜ 1 行 ずつ出さないか。 <c>SetPlayerAsync</c> は毎コマ、
-    /// <c>ShootAsync</c> は押しっぱなしで毎コマ 来る。2 本 で 120 行/秒。
+    /// 口 が何回 呼ばれたかを数える。
     /// 1 行 ずつ出すと、見たい「入った・出た・落ちた」が流れて消える。
-    /// だから高頻度の口 は数えて、状況 の行 に <c>毎秒 何回</c> で混ぜる。
     /// </summary>
     public sealed class CallCounter
     {
@@ -45,9 +41,7 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Logging
     }
 
     /// <summary>
-    /// いま何本 繋がっているか。部屋 に入っていない接続も数える ——
-    /// 繋がったのに入ってこない形（口 の食い違い）は、
-    /// ここと部屋 の人数 が食い違うことで見える。
+    /// いま何本 繋がっているか。
     /// </summary>
     public sealed class ConnectionCounter
     {

@@ -1,8 +1,7 @@
 namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open R3
-// R3 のあとに開くこと。 どちらにも `Observable` があり、あとに開いたほうが
-// 勝つ。ここで欲しいのは F# 側（`Observable.filter` などのパイプライン関数）
+// R3 のあとに開く。`Observable` はあとに開いたほうが勝つ。欲しいのは F# 側。
 open FSharp.Control.R3
 open UnityEngine
 open FsBulletML2.Unity2D
@@ -10,11 +9,7 @@ open FsBulletML2.Unity2D
 type ParticleSortingLayer () =
   inherit MonoBehaviour ()
 
-  /// 爆風が消え終わったらプールへ返す。
-  ///
-  /// `take 1` を付けてある。 旧は毎コマ `IsAlive` を見て、消えていたら
-  /// `Destroy` を呼んでいた —— 返したあとも毎コマ 呼び続ける形だった。
-  /// 落ちはしない（プールへ返すだけ）が、いちど 流れたら購読ごと切れるのが正しい
+  /// `take 1` で切る。返したあとも毎コマ `Destroy` を呼び続けない。
   member this.Start () =
     let r = this.GetComponent<ParticleSystemRenderer>()
     r.sortingLayerName <- "Bomb"

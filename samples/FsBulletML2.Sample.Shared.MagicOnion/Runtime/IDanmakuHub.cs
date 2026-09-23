@@ -4,10 +4,7 @@ using MagicOnion;
 namespace FsBulletML2.Sample.MagicOnion.Shared
 {
     /// <summary>
-    /// 部屋との繋がり。client が知るのはこの口 と <see cref="BulletDto"/> だけ。
-    ///
-    /// F# も BulletML も出てこない。 出てこないことは目では確かめられない
-    /// ので、門 で数える（<c>guard-client-has-no-fsharp.ps1</c>）。
+    /// 部屋との繋がり。
     /// </summary>
     public interface IDanmakuHub : IStreamingHub<IDanmakuHub, IDanmakuHubReceiver>
     {
@@ -18,19 +15,12 @@ namespace FsBulletML2.Sample.MagicOnion.Shared
         ValueTask LeaveAsync();
 
         /// <summary>
-        /// 自機の位置を知らせる。<c>aim</c> はこれを読む。
-        ///
-        /// 送らなければ、サーバーが持っている既定の位置が使われる
-        /// （＝自機を狙う弾幕でも、狙う先が動かない）。
+        /// 自機の位置を知らせる。
         /// </summary>
         ValueTask SetPlayerAsync(float x, float y);
 
         /// <summary>
-        /// 自機の弾を撃つ。撃つのもサーバー。
-        ///
-        /// client 側 で撃つ形にしない。 そうすると
-        /// 「敵の弾はサーバー、自機の弾はローカル」の 2 系統 になり、
-        /// client がまた運動則を持つ（この帯 が潰そうとしている形）。
+        /// 自機の弾を撃つ。
         /// </summary>
         ValueTask ShootAsync(float x, float y);
     }

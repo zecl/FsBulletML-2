@@ -7,19 +7,12 @@ open FsBulletML2.LanguageService
 open FsBulletML2.LanguageService.Languages.Sxml
 
 /// カーソルがどこに居るかの判定、sxml の側。`XmlContext` と対。
-///
-/// 同じ問いを 2 本 目 の表記で当てる —— 答えの型は同じ（`Context`）で、
-/// 数え方だけが違う。ここが XML と同じ形に書けることが、
-/// 「器が XML に寄っていない」の中身。
-///
-/// 打っている途中の sxml は必ず壊れているので、閉じていない形も見る。
+/// 答えの型は同じで、数え方だけが違う。閉じていない形も見る。
 [<TestFixture>]
 type SxmlContext() =
 
   /// `|` の位置をカーソルとして読む。
-  ///
-  /// `@` は使えない —— sxml では属性ブロックの印（`(@ ...)`）で、
-  /// XML 側の試験と同じ印にすると本文そのものが変わってしまう
+  /// `@` は属性ブロックの印。同じ印にすると本文そのものが変わる。
   let at (marked: string) =
     let offset = marked.IndexOf '|'
     contextAt (marked.Replace("|", "")) offset
@@ -73,9 +66,7 @@ type SxmlContext() =
 
   [<Test>]
   member _.``閉じ引用符が無くても属性値``() =
-    // XML 側と分かれる唯一 の形。 あちらは閉じ引用符の無い属性を捨てて、
-    // カーソルの居場所は別の走査で出している。こちらは 1 本 で出すので
-    // 捨てられない —— 捨てると `(type "` まで打った時点で候補が静かに消える
+    // XML 側と分かれる唯一の形。捨てると `(type "` まで打った時点で候補が静かに消える。
     at "(bulletml\n(action\n(direction (@ (type \"|"
     |> should equal (InAttrValue("direction", "type"))
 

@@ -3,13 +3,7 @@ module FsBulletML2.Benchmarks.Program
 open BenchmarkDotNet.Running
 open FsBulletML2.Benchmarks.Harness
 
-/// 走らせ方
-///
-///   dotnet run -c Release --project bench/FsBulletML2.Benchmarks -- --filter *
-///   dotnet run -c Release --project bench/FsBulletML2.Benchmarks -- --filter *StepBenchmarks*
-///   dotnet run -c Release --project bench/FsBulletML2.Benchmarks -- --counts
-/// Debug で走らせると BenchmarkDotNet が止める（最適化が効いていない数を
-/// 出さないため）。測るときは必ず Release。
+/// Debug では BenchmarkDotNet が止める。測るときは Release。
 let private scenarios =
   [ "move",   "Content/xml/Enemy/move.xml"
     "5way",   "Content/xml/EnemyBullet/5way.xml"
@@ -17,20 +11,10 @@ let private scenarios =
     "homing", "Content/xml/EnemyBullet/[G_DARIUS]_homing_laser.xml"
     "wide",   "Content/xml/EnemyBullet/sdmkun/bosses.d/[OtakuTwo]_dis_bee_1.xml" ]
 
-/// StepBenchmarks（時間）に載っているのは先頭 4 本 だけ。wide は確保の
-/// 物差しにしか載っていない。 却下の根拠が確保だったので、まず確保で
-/// 測り直せる形にした。確保で効きが出たら、そのとき時間の物差しへ載せる。
+/// 時間の物差しは先頭 4 本。wide は確保だけ。効きが出てから時間へ載せる。
 let private onBdn = 4
 
-/// その台本が、その変更を見られるのかを出す。数を比べる前にここを見る。
-///
-/// 「死」は step に入ったが、生きている top が 1 本 も無かった呼び出し。
-/// 死んだコマにしか効かない変更（たとえば aim を組まずに 0 で済ませる
-/// 早道。`BulletRun.HasNoScript` の枝）は、死が 0 の台本では原理的に効かない。
-/// そこで数が動いていたら、それは効きではなく走行間の台の動き。
-///
-/// 効きの出どころが分かっていない変更では、逆に「死が 0 の台本」を対照として
-/// 使える。対照が同じだけ動いていたら、対象の動きも台のもの。
+/// 数を比べる前にここを見る。死が 0 の台本は、死んだコマの変更の対照。
 let private counts () =
   fixManager ()
   printfn "台本ごとの step 呼び出し。60 コマ。"
@@ -59,10 +43,7 @@ let private counts () =
   printfn "死んだコマが 0 の台本（move / homing）では 2 つの列が一致するので、"
   printfn "**対照の側だけが合っていて、対象の側だけが外れる**という形で隠れていた。"
 
-/// 記録した確保。旧 API の列が消えたあとの物差し。
-///
-/// 新 API の絶対値そのものを控えておいて、走行のたびに
-/// 「記録からどう動いたか」を出す。
+/// 新 API の絶対値。走行のたびに記録からの差を出す。
 let private baselineAt = "572086a（旧 API 廃止。BulletRunner を消し、FakeBullet を小さくした版）"
 
 let private baseline =
@@ -72,23 +53,12 @@ let private baseline =
          "homing", 4_120_840L
          "wide",   3_157_808L ]
 
-/// 1 走行の確保を、BenchmarkDotNet を通さずに出す。数秒 で終わる。
-///
-/// 構造を 1 手 変えるたびに 90 分 の走行を回せないので、確保だけを即席で測る。
-/// 時間はここでは測れない。
-/// 旧 API の列（と、その比で合わせていた校正値）は落とした。
-/// 校正の土台にしていた `calibration` は新旧の比だったが、その 2 列 は
-/// 独立した実装ではなく大部分が同じコードを通っていた。いまの物差しは
-/// `baseline`（新 API の絶対値を控えたもの）からの差。
+/// BenchmarkDotNet を通さない。時間は測れない。物差しは `baseline` からの差。
 let private alloc () =
   fixManager ()
   printfn "1 走行（60 コマ）の確保。BenchmarkDotNet を通さない即席の物差し。"
   printfn ""
-  // 1 巡 空けてから測る。 allocOf は呼びごとに 1 回 空回ししているが、
-  // それだけでは足りない —— 1 巡目 は move が +6,192 B（2.0%）動いたことが
-  // ある。1 巡 空けると 0.1% 未満まで下がる（0 にはならない。原因は
-  // 段階的 JIT。Harness.allocOf の但し書き）。
-  // 捨てないと、いちばん軽い move（313 KB）では 2% の嘘になる。
+  // 1 巡 空けて 2 巡目 を出す。空けないと軽い台本が段階的 JIT で動く。
   let measure () =
     [ for name, suffix in scenarios do
         match Corpus.findBySuffix suffix with

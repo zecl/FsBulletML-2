@@ -3,10 +3,7 @@
 open System
 open FsBulletML2
 
-/// BulletFunctions が要るのは Player という型そのものではなく、
-/// 位置を返せる何か 1 つ（player.transform.position.x / .y だけ）。
-/// Player 側がコンストラクタで自分（this）を渡す形にすることで、
-/// BulletFunctions は Player 型を知らずに済み、循環参照が切れる。
+/// Player 型そのものは要らない。位置を返す何か 1 つで、循環参照が切れる。
 type IPlayerPosition =
   abstract PlayerPosX : unit -> float32
   abstract PlayerPosY : unit -> float32

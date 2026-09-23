@@ -21,20 +21,15 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
     public sealed class RoomOptions
     {
         /// <summary>
-        /// 何コマ に 1 回 配るか。進めるのは毎コマ のまま。
-        ///
-        /// 進める速さ と 配る速さ を分けるのが E1.6 の手 1 —— 弾の動きは
-        /// 60 コマ/秒 のままで、降ろす回数 だけ減らす。帯域 は割った数 で割れるが、
-        /// client は受け取った 2 枚 のあいだ を埋める必要が出る。
+        /// 何コマ に 1 回 配るか。
         /// </summary>
         public int SendEvery { get; set; } = 1;
     }
 
     /// <summary>
-    /// 走っている部屋 1 つ。弾幕エンジンを持つのはここだけ。
-    ///
-    /// 輪 を回すのは Hub ではなく、この側。 Hub は接続 1 本 の寿命で
-    /// 作り直されるので、そこに輪 を置くと「誰かが切れた瞬間にコマが飛ぶ」。
+    /// 走っている部屋 1 つ。
+    /// Hub は接続 1 本 の寿命で 作り直されるので、そこに輪 を置くと「誰かが切れた瞬間にコマが飛ぶ」。
+    /// </summary>
     public sealed class Room : IAsyncDisposable
     {
         readonly IFrameSource source;
@@ -44,9 +39,8 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         readonly int sendEvery;
 
         /// <summary>
-        /// あと何コマ で配るか。剰余 で書かない。
-        /// <c>frame % N == 0</c> は「その数列を必ず全部 通る」前提 で、
-        /// 1 つ でも飛ぶと二度と踏まない（この repo で 1 度 踏んでいる）。
+        /// あと何コマ で配るか。
+        /// <c>frame % N == 0</c> は「その数列を必ず全部 通る」前提 で、 1 つ でも飛ぶと二度と踏まない（この repo で 1 度 踏んでいる）。
         /// </summary>
         int untilSend;
         readonly CancellationTokenSource stopping = new CancellationTokenSource();
@@ -57,19 +51,12 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         int hasPlayer;
 
         /// <summary>
-        /// 撃った合図。位置 と違って、いちばん新しい 1 つ では足りない。
-        ///
-        /// 位置は「いまどこか」なので古いものを捨ててよいが、
-        /// 撃つのは出来事で、捨てると弾が 1 発 出ない。
-        /// 1 コマ に 2 つ 以上 届くことが在るので並べて持つ。
+        /// 撃った合図。
+        /// 位置は「いまどこか」なので古いものを捨ててよいが、 撃つのは出来事で、捨てると弾が 1 発 出ない。
         /// </summary>
         readonly ConcurrentQueue<long> pendingShots = new ConcurrentQueue<long>();
 
-        /// <summary>
-        /// 溜める上限。超えたら捨てる。
-        /// client が壊れて撃ち続けたときに、部屋 が溺れないようにする
-        /// —— 捨てた数は数える（黙って落とさない）。
-        /// </summary>
+        /// <summary>超えたら捨てる。捨てた数は数える。黙って落とさない。</summary>
         const int MaxPendingShots = 32;
 
         int droppedShots;
@@ -114,9 +101,8 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
         public RoomInfo Info => source.Info;
 
         /// <summary>
-        /// 状況 の行 に出す名前。<see cref="Key"/> をそのまま出さない ——
-        /// 弾幕 を名指ししなければ頭 が空 になって <c>#5</c> としか出ない。
-        /// 種 は残す（同じ弾幕 の別の部屋 を見分けるため）。
+        /// 状況 の行 に出す名前。
+        /// <see cref="Key"/> をそのまま出さない —— 弾幕 を名指ししなければ頭 が空 になって <c>#5</c> としか出ない。
         /// </summary>
         public string Label
         {
@@ -223,9 +209,8 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
                         Interlocked.Add(ref enemyHits, snapshot.EnemyHits);
                     }
 
-                    // 当たりは間引きで消さない。 配らないコマの当たりを
-                    // 捨てると、その 1 発 が無かったことになる（client 側 で
-                    // 遅れたコマを落とすときと同じ分かれ目）。溜めて次に載せる
+                    // 当たりは間引きで消さない。
+                    // 配らないコマの当たりを 捨てると、その 1 発 が無かったことになる（client 側 で 遅れたコマを落とすときと同じ分かれ目）。
                     pendingPlayerHits += snapshot.PlayerHits;
                     pendingEnemyHits += snapshot.EnemyHits;
 
@@ -255,9 +240,8 @@ namespace FsBulletML2.Sample.Server.MagicOnion.Rooms
             {
                 // 畳んだ。これは失敗ではない
             }
-            // `System.` を省けない。 この repo には `FsBulletML2.Exception` が
-            // 在り、ここの名前空間が `FsBulletML2.` 始まりなので、
-            // 素 の `Exception` はそちらに当たる（CS0155 で落ちる）
+            // `System.` を省けない。
+            // この repo には `FsBulletML2.Exception` が 在り、ここの名前空間が `FsBulletML2.` 始まりなので、 素 の `Exception` はそちらに当たる（CS0155 で落ちる）
             catch (System.Exception ex)
             {
                 // 輪 が落ちたことを黙って飲まない。 飲むと、client には

@@ -5,13 +5,8 @@ open FsUnit
 open FsBulletML2
 open FsBulletML2.LanguageService
 
-/// 覚える口 が嘘をつかないか（v4.9）。
-///
-/// --- なぜ覚えるようになったか
-///
-/// 打鍵ごとに走る口は、どれも `Tags` を自分で呼ぶ。いちばん長い本
-/// （29,190 字）を実機で測ったら、打鍵 1 回 の 10.6 ms のうち 8.2 ms が
-/// 同じ走査の焼き直しだった。`VocabularyLanguage` が直前の 1 本 だけ覚える。
+/// 覚える口が嘘をつかないか（v4.9）。
+/// 打鍵ごとに `Tags` を焼き直すと、同じ走査を繰り返す。直前の 1 本だけ覚える。
 [<TestFixture>]
 type Memo() =
 
@@ -77,9 +72,8 @@ type Memo() =
   member _.``Hints は本文を取り違えない``() =
     alternates (fun l s -> l.Hints s |> List.map (fun x -> x.Text, x.Line, x.Column))
 
-  /// `Findings` と `Hints` は同じ名前の並びを見る（v4.9 で 1 本 に畳んだ）。
-  /// ここで見るのは「本文が同じでも、口ごとに答えが混ざらない」ほう ——
-  /// 覚えているのは Texts の結果 1 つ で、2 つ の口 が順に読む
+  /// `Findings` と `Hints` は同じ名前の並びを見る。
+  /// 覚えているのは Texts の結果 1 つ。口ごとに答えが混ざらないこと。
   [<Test>]
   member _.``式の取り出しは、渡した名前ごとに覚える``() =
     let one = fresh ()
@@ -92,15 +86,8 @@ type Memo() =
     one.Hints a |> List.map (fun x -> x.Text) |> should equal wantH
     wantH |> should not' (be Empty)
 
-  /// F# の CE も同じ形で覚える。
-  ///
-  /// あちらは語彙にも依る（`labelTable` を引く）ので鍵に入れてあるが、
-  /// ここでは語彙が 1 つ しか無いので、その欄は較正で 0 点 になった
-  /// （版の頭で そう書いて、当てたらそのとおりだった）——
-  /// 語彙が入れ替わるのは起動時の 1 度 だけで、試験の中に 2 つ 目 を
-  /// 作ると「本番に無い形」を固定することになる。残す理由を書いておく。
-  ///
-  /// 本文のほうは当たる —— 同じ変異で 赤 11 点。
+  /// F# の CE も同じ形で覚える。語彙が入れ替わるのは起動時の 1 度だけ。
+  /// 試験の中に 2 つ目を作ると、本番に無い形を固定することになる。
   [<Test>]
   member _.``CE も本文を取り違えない``() =
     let write (kind: SourceKind) (b: Bulletml) =
@@ -120,10 +107,8 @@ type Memo() =
       [ of_ one x; of_ one y; of_ one x ] |> should equal want
     | _ -> failwith "同梱が 2 本 無い"
 
-/// 位置から行桁を引く 3 本 が、同じ答えを返すか（v4.9）。
-///
-/// `lineColumn` は 1 回 につき本文を頭から走る 1 本。
-/// `lineColumnsAscending` は昇順の並びを 1 巡 で（v4.4）。
+/// 位置から行桁を引く 3 本が、同じ答えを返すか（v4.9）。
+/// `lineColumn` は 1 回につき頭から走る。昇順の並びは 1 巡。
 [<TestFixture>]
 type LineColumns() =
 

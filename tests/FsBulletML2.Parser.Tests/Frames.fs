@@ -9,19 +9,12 @@ open FsBulletML2.LanguageService.SourceLanguage
 open FsBulletML2.LanguageService.Languages
 
 /// 雛形（v2.6）。骨は 1 つ、字にする手は表記ごと。
-///
-/// `Shape.WriteFrame` は `SourceWriter` と別に「骨から字を作る」ので、
-/// 同じことを言う手が 2 か所 に在る。片方 だけ直すのを止めるのがここ。
-///
-/// 2 がいちばん効く。 1 だけだと、片方 の表記で属性を落としても
-/// 「読めた」で通る。3 は `WriteFrame` と `SourceWriter` を直に突き合わせる。
+/// `WriteFrame` と `SourceWriter` が別々に字を作る。片方だけ直すと、読めただけで通る。
 [<TestFixture>]
 type Frames() =
 
   /// snippet の穴を既定値に潰す。`${1:8}` -> `8`
-  ///
-  /// 穴をそのまま読ませない —— `$1` は BulletML の式（param の参照）として
-  /// 正しく読めてしまうので、潰さないと「読めた」が嘘になる
+  /// `$1` は param の参照として読めてしまう。潰さないと「読めた」が嘘になる。
   static let fill (s: string) = Regex.Replace(s, @"\$\{\d+:([^}]*)\}", "$1")
 
   /// 雛形を、その表記で読める形に包む。包むのも `WriteFrame` ——
@@ -94,9 +87,7 @@ type Frames() =
 
   [<Test>]
   member _.``WriteFrame の字は、SourceWriter が焼いた字と一致する``() =
-    // 2 か所 を直に突き合わせる。 読んで木にしてから焼き直せば、
-    // `SourceWriter` の側の字になる —— そこと `WriteFrame` の字が同じなら、
-    // 骨から字を作る手が 2 つ とも同じことを言っている
+    // `WriteFrame` と `SourceWriter` を直に突き合わせる。片方だけ直すと字が割れる。
     for snippet in Frames.all do
       for (name, shape) in shapes do
         let mine = fill (shape.WriteFrame(wrap snippet))
@@ -132,9 +123,8 @@ type Frames() =
 
   [<Test>]
   member _.``host が焼いた JSON に雛形が載っている``() =
-    // 器は JSON でしか受け取らない。 ここが落ちると、試験は緑のまま
-    // ブラウザにだけ雛形が届かない（`VocabForTests` は `Frames.all` を
-    // 直に渡すので、JSON の往復を 1 度 も通らない）
+    // 器は JSON でしか受け取らない。`VocabForTests` は往復を通さない。
+    // ここが落ちると、試験は緑のままブラウザにだけ雛形が届かない。
     let json = FsBulletML2.LanguageService.Vocabulary.toJson ()
     use doc = System.Text.Json.JsonDocument.Parse json
     let mutable frames = Unchecked.defaultof<System.Text.Json.JsonElement>

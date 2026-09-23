@@ -8,12 +8,9 @@ open FsBulletML2
 open FsBulletML2.Front
 open FsBulletML2.Unity2D
 
-/// このフロントが `Env` を組むところの門。MonoGame 側の `EnvGate` と対。
-///
-/// 何を守るのかは向こうの doc に書いてある。ここに要るのは
-/// こちらの決めごとが向こうと違うことで、
-///
-/// オブジェクト式には member val を書けないので型にしてある
+/// このフロントが `Env` を組むところの門。MonoGame 側と対。
+/// Y は反転しない。産まれる弾は撃った側と同じ場所。取り違えても型は通る。
+/// オブジェクト式には member val を書けないので型にしてある。
 type private StubBullet(x: float32, y: float32) =
   let mutable pos = Vector3(x, y, 0.0f)
   interface IDefaultBullet with
@@ -62,10 +59,8 @@ type EnvGate() =
   [<SetUp>]
   member _.SetUp() =
     BulletMLManager.Init(fixedManager ())
-    // 敵の一覧はグローバル。前の試験の残りを持ち越さない。
-    // `Manager.removeAll` では抜けない —— あれは `Used` を寝かせるだけで、
-    // 一覧から抜くのは `Manager.free`。そちらは MonoBehaviour へのキャストを
-    // 通すので、位置だけのスタブは落ちる。ここは一覧を直に空ける
+    // 敵の一覧はグローバル。`removeAll` は `Used` を寝かせるだけで抜けない。
+    // `free` は MonoBehaviour へキャストするのでスタブは落ちる。一覧を直に空ける。
     Manager.enemies.Clear()
     Manager.rootBullets.Clear()
     Manager.enemyBullets.Clear()
@@ -138,12 +133,7 @@ type EnvGate() =
     env.Spawn.ToEnemy |> should equal 0.0f
 
   /// 産まれる弾の相手は、撃った側が覚えている相手と同じ。
-  /// このフロントは弾を撃った側と同じ場所に作るので、産まれる弾から見た
-  /// 相手も撃った側と同じ。MonoGame は原点に作るので選び直す ——
-  /// そちらの振る舞いをこちらへ持ってくるとここで割れる。
-  ///
-  /// 変異で穴が見つかって足した。 `TrySpawnTargetFrom` を
-  /// 選び直すほう（`TryNearest`）に差し替えても、通しが緑のまま通った
+  /// MonoGame は原点に作って選び直す。その振る舞いを持ってくるとここで割れる。
   [<Test>]
   member _.``産まれる弾の相手は、撃った側が覚えている相手と同じ``() =
     // 遠い E1 だけ置いて 1 回 引く。ここで E1 を覚える

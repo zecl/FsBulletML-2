@@ -6,10 +6,6 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// 入れ子の深さ（v2.4）。知り方は表記ごとに違うが、答えは同じ。
-///
-///     xml    開始札で増やし、閉じ札で減らす
-///     sxml   括弧を読む再帰の段
-///     fsb    字下げの段（幅を決め打たない）
 [<TestFixture>]
 type Depth() =
 
@@ -42,10 +38,7 @@ type Depth() =
       "fsb", SourceKind.Fsb, FsbScan.tags ]
 
   /// `label` を持つ要素だけ、(名前, 深さ)。
-  /// CE はそこしか返さないので、比べるならこちらに揃える。
-  ///
-  /// はじめ「xml のうち CE にも在る名前」で絞ったら数が合わなかった ——
-  /// 同じ名前が何度も出るので、名前で絞っても同じ並びにならない
+  /// CE はそこしか返さないので、比べるならこちらに揃える。名前で絞っても並びは揃わない。
   static let labeledOf (tags: string -> TagHit list) (src: string) =
     tags src
     |> List.filter (fun t ->
@@ -89,9 +82,7 @@ type Depth() =
 
   [<Test>]
   member _.``F# の CE は名前の並びだけ一致する``() =
-    // 4 表記 目。 あちらは `{ }` を数えるので、ほかの 3 つ と
-    // 知り方がいちばん遠い —— そして深さは一致しない（下の点）。
-    // 名前の並びは一致する
+    // 4 表記 目。`{ }` の数え方はほかと違い、深さは一致しない。名前の並びは一致する。
     let broken =
       catalog
       |> List.choose (fun info ->
@@ -108,12 +99,7 @@ type Depth() =
 
   [<Test>]
   member _.``F# の CE の深さは要素の入れ子と一致しない``() =
-    // 測って分かったこと。 CE の `{ }` は要素と 1 対 1 ではない ——
-    //
-    //     refBullet "cross" [ ]      `◯◯Ref` は `{ }` を開かない
-    //     doActs (body { ... })      要素に当たらない包みが 1 段 増える
-    // だから CE のアウトラインは「CE の構造」を映す。それが正しい ——
-    // あちらで見ているのは CE の本文であって XML ではない。
+    // CE の `{ }` は要素と 1 対 1 ではない。アウトラインは CE の構造を映す。
     let differ =
       catalog
       |> List.filter (fun info ->

@@ -9,11 +9,7 @@ open FsBulletML2
 open FsBulletML2.LanguageService
 
 /// 補完の語彙が、書き出す側と食い違っていないか。
-///
-/// 語彙（`Vocabulary`）は `Core/DTD.fs` の DU を reflection で読んで作る。
-/// 読み方には当てずっぽうが 3 つ 入っている ——
-/// 腕の名前を小文字にする / field 名から要素名を剥がす /
-/// 全部の腕が同じ語で始まるならその語を落とす。
+/// 読み方には当てずっぽうが入っている。腕の名前の切り方を取り違えると、表だけがずれる。
 [<TestFixture>]
 type VocabularyCoverage() =
 

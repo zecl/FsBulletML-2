@@ -1,13 +1,6 @@
 namespace FsBulletML2.Core.Tests
 
-/// 公開 API で 1 本 走らせる入口。軌跡を文字列で返すのは Trace.run と同じ。
-///
-/// 互換の口を落とす前、テストの多くは fixture の SetUp で
-/// `BulletMLManager.Init(FixedManager(rand, rank, px, py))` を呼び、
-/// `Trace.run xml frames` で走らせていた。グローバル可変（static mutable）を
-/// 触るので fixture を NonParallelizable にする必要があり、しかも
-/// 「その走行がどの乱数・どの自機位置で回っているか」は SetUp まで
-/// 遡らないと読めなかった。
+/// 公開 API で 1 本 走らせる入口。
 module TraceRun =
 
   /// 既定。旧い SetUp のうち最も多かった FixedManager(0.5f, 0.5f, 30.0f, 100.0f)。

@@ -11,12 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 
-// 弾幕エンジンをサーバーで走らせて、弾の並びを配る。Console アプリ。
-//
-// 眺めて分かることを 3 段 で出す。
-//
-//   出入り   繋がった / 部屋 へ入った / 出た / 切れた
-//   呼び     口 が呼ばれた 1 行（高頻度の 2 本 は数えるだけ）
+// 弾幕エンジンをサーバーで走らせて、弾の並びを配る。
 if (args.Contains("--measure"))
 {
     int at = Array.IndexOf(args, "--measure");
@@ -41,9 +36,7 @@ var accessLog = new AccessLogOptions
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 骨組み の log を黙らせる。 既定では Kestrel と gRPC が
-// 1 接続 につき数行 出すので、こちらの 3 段 が埋まる。
-// --verbose で戻る（港 が開かない・HTTP/2 で折り合わない を割るときに要る）
+// 骨組み の log を黙らせる。
 builder.Logging.ClearProviders();
 builder.Logging.AddConsoleFormatter<PlainConsoleFormatter, ConsoleFormatterOptions>();
 builder.Logging.AddConsole(console => console.FormatterName = PlainConsoleFormatter.FormatterName);
@@ -80,11 +73,6 @@ builder.Services.AddSingleton<ConnectionCounter>();
 builder.Services.AddHostedService<StatusPrinter>();
 
 // 差し替える 1 行。
-//
-//   EngineFrameSourceFactory   同梱弾幕 を走らせる（既定）
-//   FixedFrameSourceFactory    エンジンを 1 度 も呼ばない。配線だけを見る
-//
-// 絵 が出ないときに後者へ替えれば、配線かエンジンかが割れる
 bool fixedSource = args.Contains("--fixed");
 if (fixedSource)
 {

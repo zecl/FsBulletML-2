@@ -5,16 +5,11 @@ open System.Globalization
 open System.IO
 open FsBulletML2
 
-/// 旧実装。式の字を毎回 XPath で評価する。
-///
-/// エンジンはもうここを通らない。残してあるのは `ExprTests` が
-/// 「木（`Expr.NumExpr`）が同じ値を返すか」を突き合わせる相手として要るから。
+/// 旧実装。
 [<AutoOpen>]
 module XPathOracle =
 
   /// 式の値は BulletML の文書と同じ書き方（小数点は . ）で持ち回る。
-  /// 読む側を既定カルチャのままにすると、de-DE は "2.5" の . を桁区切りと読んで
-  /// 例外なく 25 を返す。作る側はここでは元から不変（F# の string 演算子）。
   let private xpathNumber (expression: string) =
     let regx = new System.Text.RegularExpressions.Regex(@"([\+\-\*])")
     let xexpr = regx.Replace(expression, " ${1} ").Replace("/", " div ").Replace("%", " mod ")

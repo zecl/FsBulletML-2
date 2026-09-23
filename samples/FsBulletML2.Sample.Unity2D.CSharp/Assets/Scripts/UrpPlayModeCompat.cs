@@ -4,8 +4,6 @@ using UnityEngine.Rendering.Universal;
 
 /// <summary>
 /// Runtime safety net so GameObject sprites (player/enemy/bg/bomb/HUD) and the
-/// Main Camera actually draw under URP Forward+/Entities Graphics.
-/// Persistent asset conversion is done by FixBlackScreen in the Editor.
 /// </summary>
 public static class UrpPlayModeCompat
 {

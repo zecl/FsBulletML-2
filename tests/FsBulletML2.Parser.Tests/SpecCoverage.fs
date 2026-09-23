@@ -6,12 +6,7 @@ open FsUnit
 open FsBulletML2.LanguageService
 
 /// 散文の表が、語彙と過不足なく一致するか。
-///
-/// `Spec.fs` は手で書いた表。`Vocabulary` は `Core/DTD.fs` から
-/// reflection で出る。片方 だけが動くのを止める ——
-///   足りない   Core に要素が増えて書き忘れ    -> 赤
-///   余る       Core から要素が消えて表が残る  -> 赤
-/// 中身の正しさは測れない。 ここが見るのは「在ること」だけ。
+/// `Spec.fs` は手書き、`Vocabulary` は reflection。中身の正しさは測れない。
 [<TestFixture>]
 type SpecCoverage() =
 
@@ -38,12 +33,8 @@ type SpecCoverage() =
       if not extra.IsEmpty then
         yield sprintf "%s: 散文が在って語彙に無い -> %s" name (String.concat ", " extra) ]
 
-  /// `FsBulletML2.Dsl` の CE の名前。reflection で舐める ——
+  /// `FsBulletML2.Dsl` の CE の名前。reflection で舐める。
   /// 表と突き合わせる相手を手で書くと、突き合わせにならない。
-  ///
-  /// 2 通り 在る —— module の公開 `let`（`fire` / `defAction` …）と、
-  /// builder の `[<CustomOperation>]`（`aim` / `speedSeq` …）。
-  /// どちらも CE の中で打つ字なので、hover の当てる先はこの和集合
   static let ceKeys =
     let asm = typeof<FsBulletML2.Dsl.BulletmlBuilder>.Assembly
     let dslModule = asm.GetTypes() |> Array.find (fun t -> t.FullName = "FsBulletML2.Dsl")
@@ -85,11 +76,7 @@ type SpecCoverage() =
   member _.``属性値が 過不足なく 一致する``() =
     both "属性値" attrValueKeys Spec.attrValues |> should be Empty
 
-  // --- F# の CE の表 --------------------------------------------------------
-  //
-  // ここは散文の表ではなく対応の表（CE の名前 -> 要素・属性値）。
-  // 散文は上の 3 つ から引くので、当てるのは 2 つ ——
-  // 名前が `Dsl` を過不足なく覆うことと、指す先が語彙に在ること。
+  // CE の表は散文ではない。名前が `Dsl` を覆うことと、指す先が語彙に在ること。
   [<Test>]
   member _.``CE の名前も表も空でない``() =
     // どちらかが空だと、下の突き合わせは「両方 空で緑」になる

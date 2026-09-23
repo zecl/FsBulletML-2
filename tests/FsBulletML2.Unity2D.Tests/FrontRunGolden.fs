@@ -1,19 +1,11 @@
 namespace FsBulletML2.Unity2D.Tests
 
 /// `FrontRun` の控え。別ファイルにしてある（MonoGame 側と同じ理由）。
-///
-/// 目で読んでから入れた。 読み方:
-///
-///     f00  1 発 目。撃った位置は撃った側と同じ (2.4, -1.0)
-///          —— MonoGame は原点に作る。ここが SpawnOrigin の違い
-///     f01  向きが 4.89045 へ。changeDirection が 4 コマ かけて 180 度 へ寄せる。
+/// 撃った位置が撃った側と同じなのは SpawnOrigin の違い。MonoGame は原点に作る。
 module FrontRunGolden =
 
-  // 改行を揃えてから渡す。 控えは三重引用符でこのソースに埋まっているので、
-  // 改行はファイルの改行そのもの —— `.gitattributes` の `text=auto` で
-  // checkout した機械しだいで CRLF になる。生成側は `\n` に揃えてあるので、
-  // 揃えないと全行 が字面どおりなのに割れる（差が `\r` なので目で出ない）。
-  // 落ちるのは autocrlf が効く機械だけで、書いた人の手元は緑のまま
+  // 改行を揃えてから渡す。控えの三重引用符は checkout の改行のままになる。
+  // 生成側は `\n`。揃えないと字面が同じでも `\r` で割れる。autocrlf の機械だけで落ちる。
   let private normalize (s: string) = s.Replace("\r\n", "\n")
   let Expected = normalize """f00  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.40000 y=-1.00000 d=5.47340 s=2.00000 used=true]
 f01  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.38032 y=-0.99646 d=4.89045 s=2.00000 used=true]

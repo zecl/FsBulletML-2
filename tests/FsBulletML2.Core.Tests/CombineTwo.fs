@@ -5,16 +5,6 @@ open FsUnit
 open FsBulletML2
 
 /// 2 つ の弾幕 を 1 つ に混ぜる ところ。
-///
-/// --- 較正（当てた変異 と、赤くなった点）
-///
-///   `rename` の `top` の枝 を落とす      重ねる と 相手 も 走る
-///   `prefixed` を素通し に               名前 がぶつかっても 混ぜない
-///   `Inside` で top を隠さない            弾 を B にする と 二重 に走らない
-///   `oneWave` を恒等 に                  咲く のは B の 1 波
-///   `branch` の `repeat` を外す           咲く のは 4 発 に 1 発
-///   `hidden` に `lifeLeaf` を当てない     咲いた 弾 は 消える
-///   `motionOnly` を素通し に              弾 を借りる と 撒き方 は A のまま
 [<TestFixture>]
 type CombineTwo() =
 
@@ -80,8 +70,6 @@ type CombineTwo() =
     got |> should haveSubstring "<times>8</times>"
 
   /// 1 波 に絞って も、A の終点弾 の数 だけ 咲く ので 掛け算 が残る。
-  /// 実機 で フリーズ した ——
-  /// 600 コマ の最大同時 で 377,318 発（10Way に Progear）
   [<Test>]
   member _.``咲く のは 4 発 に 1 発``() =
     let got = xml (Combine.apply Combine.Inside (read a) (read b))
@@ -89,8 +77,7 @@ type CombineTwo() =
     // 引く 口 は 1 つ。包み を外す と ここ が 裸 の `actionRef` に戻る
     count ("<times>" + Combine.BLOOM + "</times>") got |> should equal 1
 
-  /// 確率 だけ では 上 が決まらない（4 発 に 1 発 でも 36,895 発）。
-  /// 咲いた 弾 に 寿命 を付ける と、A が 何発 撃とう と 同時数 の上 が 決まる
+  /// 咲いた 弾 に 寿命 を付ける と、A が 何発 撃とう と 同時数 の上 が 決まる。
   [<Test>]
   member _.``咲いた 弾 は 消える``() =
     let got = xml (Combine.apply Combine.Inside (read a) (read b))
