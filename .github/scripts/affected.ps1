@@ -59,17 +59,12 @@ $NoImpact = @(
 # 同じく無視するが、ディレクトリの前置きで書くもの
 $NoImpactDirs = @(
   'license/'        # 元実装とサンプル素材のライセンス本文
-  'docs/'           # 出力済みのドキュメントとそのテンプレート
   'nuget/'          # パッケージを作る bat と nuspec。build には入らない
 )
 
-# slnx に載っていないが repo には在る化石。CI の対象外。ディレクトリの前置きで書く。
-# ここに足すときは「なぜ solution に無いのか」を一緒に書く。
-$OutOfScope = @(
-  # MSBuild 4.0 / FSharp.Formatting 2.2.3 の頃のドキュメント生成。
-  # solution から外れて久しく、いまの SDK では復元も通らない。
-  'src/FsBulletML2.Docs/'
-)
+# slnx に載っていないが repo には在るもの。CI の対象外。
+# 足すときは理由を書き、guard-slnx.ps1 の同じ並びと揃える。
+$OutOfScope = @()
 
 function ToRel([string]$p) {
   $q = $p -replace '\\', '/'

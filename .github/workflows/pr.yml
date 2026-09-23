@@ -19,7 +19,7 @@ name: PR
 #                   dotnet 自身 が落ちる（黙って別の SDK で建つことはない）
 #
 # **土 は変えていない。** 4 job は windows-latest で走っていたものをそのまま
-# Windows の runner へ移しただけ —— Linux へ移すと門の 3 か所（`\bin\Release\`）と
+# Windows の runner へ移しただけ —— Linux へ移すと門の 1 か所（`guard-shipped-refs` の `\bin\Release\`）と
 # 773 件 の試験が初めて別の軸に載る。「止まっているものを外す」と
 # 「走ったことのない軸を増やす」を混ぜない。
 
@@ -198,8 +198,8 @@ jobs:
       # 突き合わせる表の材料がここにしか無い —— 選ぶ job へ戻すと材料が消える。
       #
       # 門は出力を `\bin\Release\` で絞っている。いまは runner が Windows なので
-      # 当たるが、**区切りが `/` の機械では 1 本 も拾えない** ——
-      # Linux へ移すときはここと guard-stub-shape.ps1 の 2 か所 を直す
+      # 当たるが、区切りが `/` の機械では 1 本 も拾えない。
+      # Linux へ移すときはここを直す
       # （infra/gha-runner/README.md の「なぜ Windows なのか」）
       - name: 同梱 dll の参照先
         shell: pwsh

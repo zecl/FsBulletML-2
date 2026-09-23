@@ -19,12 +19,8 @@ Set-StrictMode -Version Latest
 if (-not $RepoRoot) { $RepoRoot = (git rev-parse --show-toplevel) }
 $RepoRoot = $RepoRoot -replace '\\', '/'
 
-# slnx に無くてよいもの。前置きで書く。理由を必ず添える。
-$OutOfScope = @(
-  # MSBuild 4.0 / FSharp.Formatting 2.2.3 の頃のドキュメント生成。
-  # いまの SDK では復元も通らない。affected.ps1 の同名の並びと揃えること。
-  'src/FsBulletML2.Docs/'
-)
+# slnx に無くてよいもの。理由を書いて、affected.ps1 の同じ並びと揃える。
+$OutOfScope = @()
 
 function NormalizePath([string]$p) {
   $out = [System.Collections.Generic.List[string]]::new()
