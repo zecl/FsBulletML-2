@@ -19,9 +19,6 @@ x64/
 *.vsp
 *.vspx
 
-# Document
-docs/output/
-
 # NuGet package restore at repo root only (do not ignore Unity Packages/)
 /packages/
 nuget/*.nupkg
@@ -115,9 +112,6 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
-
-# 手元だけに置くもの（SDD の走行記録、外から持ってきた設計案）
-docs/local/
 
 # BenchmarkDotNet が走らせるたびに repo の根元へ吐くもの
 BenchmarkDotNet.Artifacts/

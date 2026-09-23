@@ -32,8 +32,6 @@ param(
   # 通す先と、通す理由。**理由が書けないものは通さない**。
   # 既定がこの repo の本番の並びで、渡せるのは校正のため
   [hashtable[]]$Allow = @(
-    @{ Path = 'src/FsBulletML2.Docs/*'
-       Why  = 'slnx の外。元の repo から持ち越したまま建てていない' }
     @{ Path = 'src/FsBulletML2.TypeProviders/ProvidedTypes.fs'
        Why  = 'よそから貰った現物。こちらで直さない' }
     @{ Path = '.github/scripts/guard-abs-paths.Tests.ps1'

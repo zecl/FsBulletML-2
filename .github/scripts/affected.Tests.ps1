@@ -242,9 +242,8 @@ Write-Host '=== 0 件 のあつかい'
 Check 'md だけなら何も走らない' `
   @('README.md', 'samples/FsBulletML2.Sample.Unity2D.CSharp/README.md') @() @()
 
-Check 'ライセンス本文・出力済みドキュメント・パッケージの bat は走らせない' `
-  @('license/bulletml/readme.txt', 'docs/templates/template-file.html',
-    'nuget/FsBulletML2.Core.package.bat') @() @()
+Check 'ライセンス本文とパッケージの bat は走らせない' `
+  @('license/bulletml/readme.txt', 'nuget/FsBulletML2.Core.package.bat') @() @()
 
 Check 'bench だけなら試験 0・build 1' `
   @('bench/FsBulletML2.Benchmarks/Program.fs') @() @('FsBulletML2.Benchmarks')
