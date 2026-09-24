@@ -75,7 +75,7 @@ Write-Host '撃った数が 0。**両方 一致するのに、何も確かめて
 $zero = New-Probe 'zero'
 $fs = Join-Path $zero 'Probe.fs'
 [IO.File]::WriteAllText($fs,
-  ([IO.File]::ReadAllText($fs) -replace 'for _ in 1 \.\. 60 do', 'for _ in 1 .. 0 do'), $enc)
+  ([IO.File]::ReadAllText($fs) -replace 'for _ in 1\s*\.\.\s*60 do', 'for _ in 1 .. 0 do'), $enc)
 Case '撃った数が 0' $false { & $guard -RepoRoot $repo -ProbeRoot $zero -Quiet }
 
 Write-Host ''
