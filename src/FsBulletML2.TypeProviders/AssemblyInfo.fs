@@ -1,4 +1,5 @@
 ﻿module AssemblyInfo
+
 open System.Resources
 open System.Reflection
 open System.Runtime.InteropServices
@@ -28,5 +29,5 @@ open Microsoft.FSharp.Core.CompilerServices
 [<assembly: AssemblyConfiguration("Release")>]
 #endif
 
-[<assembly:TypeProviderAssembly>] 
-do()
+[<assembly: TypeProviderAssembly>]
+do ()

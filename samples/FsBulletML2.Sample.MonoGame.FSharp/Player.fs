@@ -8,75 +8,103 @@ open Microsoft.Xna.Framework.Input
 open Microsoft.Xna.Framework.Graphics
 open FsBulletML2
 open FsBulletML2.MonoGame
-type Player () as this =
-  [<DefaultValue>]val mutable timer : int
-  [<DefaultValue>]val mutable pos : Vector2
-  [<DefaultValue>]val mutable speed : float32
-  [<DefaultValue>]val mutable radius : float32
-  [<DefaultValue>]val mutable damageCounter : int32
-  [<DefaultValue>]val mutable texture : Texture2D
 
-  let playerXml name =
-    Path.Combine(AppContext.BaseDirectory, "Content", "xml", "PlayerBullet", name)
+type Player() as this =
+    [<DefaultValue>]
+    val mutable timer: int
 
-  let shoot2WayLeftBullet (player:Player) =
-    let ``2wayLeftBullet`` = Runner.load loadRand (loadRank ()) (Bulletml.readXml (playerXml "2wayLeft.xml")) |> Some
-    if player.timer > 0 then
-      let bullet = new PlayerBullet()
-      Manager.addPlayerBulletPos(bullet, new Vector2(this.pos.X - 10.f, this.pos.Y + 1.f))
-      bullet.SetScript(``2wayLeftBullet``) 
+    [<DefaultValue>]
+    val mutable pos: Vector2
 
-  let shoot2WayRightBullet (player:Player) =
-    let ``2wayRightBullet`` = Runner.load loadRand (loadRank ()) (Bulletml.readXml (playerXml "2wayRight.xml")) |> Some
-    if player.timer > 0 then
-      let bullet = new PlayerBullet()
-      Manager.addPlayerBulletPos(bullet, new Vector2(this.pos.X + 10.f, this.pos.Y + 1.f ))
-      bullet.SetScript(``2wayRightBullet``) 
+    [<DefaultValue>]
+    val mutable speed: float32
 
-  let shootHomingBullet (player:Player) = 
-    let homingBullet = 
-      Runner.load loadRand (loadRank ()) (Bulletml.readXml (playerXml "homing.xml")) |> Some
+    [<DefaultValue>]
+    val mutable radius: float32
 
-    if player.timer > 60 then
-      let bullet = new PlayerBullet()
-      Manager.addPlayerBulletPos(bullet, this.pos)
-      bullet.SetScript(homingBullet) 
+    [<DefaultValue>]
+    val mutable damageCounter: int32
 
-  do
-    this.pos <- new Vector2()
-    this.speed <- 3.f
-    this.radius <- 3.5f
+    [<DefaultValue>]
+    val mutable texture: Texture2D
 
-  member this.Pos with get () = this.pos
-                   and set (v) = this.pos <- v 
+    let playerXml name =
+        Path.Combine(AppContext.BaseDirectory, "Content", "xml", "PlayerBullet", name)
 
-  member this.Speed with get () = this.speed
-                     and set (v) = this.speed <- v 
+    let shoot2WayLeftBullet (player: Player) =
+        let ``2wayLeftBullet`` =
+            Runner.load loadRand (loadRank ()) (Bulletml.readXml (playerXml "2wayLeft.xml"))
+            |> Some
 
-  member this.Radius with get () = this.radius 
-                      and set (v) = this.radius <- v
-  member this.Init () =
-    this.pos.X <- Settings.Player.X
-    this.pos.Y <- Settings.Player.Y
+        if player.timer > 0 then
+            let bullet = new PlayerBullet()
+            Manager.addPlayerBulletPos (bullet, new Vector2(this.pos.X - 10.f, this.pos.Y + 1.f))
+            bullet.SetScript(``2wayLeftBullet``)
 
-  member this.Update () = 
+    let shoot2WayRightBullet (player: Player) =
+        let ``2wayRightBullet`` =
+            Runner.load loadRand (loadRank ()) (Bulletml.readXml (playerXml "2wayRight.xml"))
+            |> Some
 
-    if (Keyboard.GetState().IsKeyDown(Keys.Left)) then
-      if this.pos.X - this.speed  >= 0.f then
-        this.pos.X <- this.pos.X - this.speed
-    if (Keyboard.GetState().IsKeyDown(Keys.Right)) then
-      if this.pos.X - this.speed <= Settings.Display.Width then
-        this.pos.X <- this.pos.X +  this.speed
-    if (Keyboard.GetState().IsKeyDown(Keys.Up)) then
-      if this.pos.Y - this.speed >= 0.f then
-        this.pos.Y <- this.pos.Y - this.speed
-    if (Keyboard.GetState().IsKeyDown(Keys.Down)) then
-      if this.pos.Y - this.speed <= Settings.Display.Height then
-        this.pos.Y <- this.pos.Y + this.speed
+        if player.timer > 0 then
+            let bullet = new PlayerBullet()
+            Manager.addPlayerBulletPos (bullet, new Vector2(this.pos.X + 10.f, this.pos.Y + 1.f))
+            bullet.SetScript(``2wayRightBullet``)
 
-    this.timer <- this.timer + 1
-    if Keyboard.GetState().IsKeyDown(Keys.Z) then
-      [shoot2WayLeftBullet; shoot2WayRightBullet; shootHomingBullet] |> List.iter (fun f -> f this)
+    let shootHomingBullet (player: Player) =
+        let homingBullet =
+            Runner.load loadRand (loadRank ()) (Bulletml.readXml (playerXml "homing.xml"))
+            |> Some
 
-    if (this.timer > 60) then
-       this.timer <- 0
+        if player.timer > 60 then
+            let bullet = new PlayerBullet()
+            Manager.addPlayerBulletPos (bullet, this.pos)
+            bullet.SetScript(homingBullet)
+
+    do
+        this.pos <- new Vector2()
+        this.speed <- 3.f
+        this.radius <- 3.5f
+
+    member this.Pos
+        with get () = this.pos
+        and set (v) = this.pos <- v
+
+    member this.Speed
+        with get () = this.speed
+        and set (v) = this.speed <- v
+
+    member this.Radius
+        with get () = this.radius
+        and set (v) = this.radius <- v
+
+    member this.Init() =
+        this.pos.X <- Settings.Player.X
+        this.pos.Y <- Settings.Player.Y
+
+    member this.Update() =
+
+        if (Keyboard.GetState().IsKeyDown(Keys.Left)) then
+            if this.pos.X - this.speed >= 0.f then
+                this.pos.X <- this.pos.X - this.speed
+
+        if (Keyboard.GetState().IsKeyDown(Keys.Right)) then
+            if this.pos.X - this.speed <= Settings.Display.Width then
+                this.pos.X <- this.pos.X + this.speed
+
+        if (Keyboard.GetState().IsKeyDown(Keys.Up)) then
+            if this.pos.Y - this.speed >= 0.f then
+                this.pos.Y <- this.pos.Y - this.speed
+
+        if (Keyboard.GetState().IsKeyDown(Keys.Down)) then
+            if this.pos.Y - this.speed <= Settings.Display.Height then
+                this.pos.Y <- this.pos.Y + this.speed
+
+        this.timer <- this.timer + 1
+
+        if Keyboard.GetState().IsKeyDown(Keys.Z) then
+            [ shoot2WayLeftBullet; shoot2WayRightBullet; shootHomingBullet ]
+            |> List.iter (fun f -> f this)
+
+        if (this.timer > 60) then
+            this.timer <- 0

@@ -1,9 +1,15 @@
 ﻿namespace FsBulletML2
+
 open System
 
 [<AutoOpen>]
 module Exception =
 
-  type BulletmlDTDViolationException (message:string, ?innerException:exn) =
-    inherit Exception (message, 
-        match innerException with | Some(ex) -> ex | _ -> null)       
+    type BulletmlDTDViolationException(message: string, ?innerException: exn) =
+        inherit
+            Exception(
+                message,
+                match innerException with
+                | Some(ex) -> ex
+                | _ -> null
+            )

@@ -1,4 +1,5 @@
 namespace FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun
+
 open FsBulletML2
 open FsBulletML2.Dsl
 
@@ -7,45 +8,54 @@ open FsBulletML2.Dsl
 [<RequireQualifiedAccess>]
 module ChaosSeed =
 
-  /// カオスシード、大猿ボス。by 白い弾幕くん
-  /// [ChaosSeed]_big_monkey_boss.xml
-  let big_monkey_boss =
-    createBulletmlInfo <|
-    untypedXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "カオスシード、大猿ボス。by 白い弾幕くん" {
-        defBullet "roll" {
-            doActs (body {
-                changeDirectionSeq "3" "10000"
-                changeSpeed "2" "60"
-                wait "60"
-                changeSpeed "1.8" "40"
-                wait "40"
-                changeSpeed "2" "30"
-                wait "30"
-                changeDirectionSeq "2" "10000"
-                changeSpeedSeq "0.01" "100000"
-            })
-        }
-        defBullet "explosionBullet" {
-            doActs (body {
-                wait "30"
-                repeat "12" {
-                    fire {
-                        sequence "30"
-                        speed "1.2"
-                        refBullet "roll" []
+    /// カオスシード、大猿ボス。by 白い弾幕くん
+    /// [ChaosSeed]_big_monkey_boss.xml
+    let big_monkey_boss =
+        createBulletmlInfo
+        <| untypedXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "カオスシード、大猿ボス。by 白い弾幕くん" {
+            defBullet "roll" {
+                doActs (
+                    body {
+                        changeDirectionSeq "3" "10000"
+                        changeSpeed "2" "60"
+                        wait "60"
+                        changeSpeed "1.8" "40"
+                        wait "40"
+                        changeSpeed "2" "30"
+                        wait "30"
+                        changeDirectionSeq "2" "10000"
+                        changeSpeedSeq "0.01" "100000"
                     }
+                )
+            }
+
+            defBullet "explosionBullet" {
+                doActs (
+                    body {
+                        wait "30"
+
+                        repeat "12" {
+                            fire {
+                                sequence "30"
+                                speed "1.2"
+                                refBullet "roll" []
+                            }
+                        }
+
+                        vanish
+                    }
+                )
+            }
+
+            top {
+                repeat "3+$rank*6" {
+                    fire {
+                        aim "-90+180*$rand"
+                        speed "$rand*3+1"
+                        refBullet "explosionBullet" []
+                    }
+
+                    wait "90-$rank*60"
                 }
-                vanish
-            })
-        }
-        top {
-            repeat "3+$rank*6" {
-                fire {
-                    aim "-90+180*$rand"
-                    speed "$rand*3+1"
-                    refBullet "explosionBullet" []
-                }
-                wait "90-$rank*60"
             }
         }
-    }

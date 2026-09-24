@@ -11,85 +11,98 @@ open FsBulletML2
 [<TestFixture>]
 type BulletsEquivalence() =
 
-  /// 参照を残すための錨。型を使わない参照は出力に残らず、走査が 0 件 になる。
-  static let anchorPlain = FsBulletML2.Bullets.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
-  static let anchorDsl = FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
+    /// 参照を残すための錨。型を使わない参照は出力に残らず、走査が 0 件 になる。
+    static let anchorPlain = FsBulletML2.Bullets.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
+    static let anchorDsl = FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun.SilverGun.b4D_boss_PENTA
 
-  /// 両側のアセンブリに在る弾幕の数。片側だけ減ると、空の突き合わせが緑になる。
-  [<Literal>]
-  static let Expected = 196
+    /// 両側のアセンブリに在る弾幕の数。片側だけ減ると、空の突き合わせが緑になる。
+    [<Literal>]
+    static let Expected = 196
 
-  /// アセンブリの中の弾幕を「名前 -> 木」で集める。
-  /// 名前は namespace の接頭辞を落としたもので、両側で同じ形になる
-  static let collect (assemblyName: string) (prefix: string) =
-    let asm =
-      AppDomain.CurrentDomain.GetAssemblies()
-      |> Array.tryFind (fun a -> a.GetName().Name = assemblyName)
-    match asm with
-    | None -> failwithf "アセンブリが読み込まれていない: %s" assemblyName
-    | Some asm ->
-      asm.GetTypes()
-      |> Array.collect (fun t ->
-          if isNull t.FullName || not (t.FullName.StartsWith prefix) then [||]
-          else
-            t.GetProperties(BindingFlags.Public ||| BindingFlags.Static)
-            |> Array.choose (fun p ->
-                let value =
-                  if p.PropertyType = typeof<BulletmlInfo> then
-                    Some ((p.GetValue null :?> BulletmlInfo).Bulletml)
-                  elif p.PropertyType = typeof<Bulletml> then
-                    Some (p.GetValue null :?> Bulletml)
-                  else None
-                value
-                |> Option.map (fun b ->
-                    (t.FullName.Substring(prefix.Length) + "." + p.Name), b)))
-      |> Map.ofArray
+    /// アセンブリの中の弾幕を「名前 -> 木」で集める。
+    /// 名前は namespace の接頭辞を落としたもので、両側で同じ形になる
+    static let collect (assemblyName: string) (prefix: string) =
+        let asm =
+            AppDomain.CurrentDomain.GetAssemblies()
+            |> Array.tryFind (fun a -> a.GetName().Name = assemblyName)
 
-  static let plain = lazy (collect "FsBulletML2.Bullets" "FsBulletML2.Bullets.")
-  static let dsl = lazy (collect "FsBulletML2.Bullets.Dsl" "FsBulletML2.Bullets.Dsl.")
+        match asm with
+        | None -> failwithf "アセンブリが読み込まれていない: %s" assemblyName
+        | Some asm ->
+            asm.GetTypes()
+            |> Array.collect (fun t ->
+                if isNull t.FullName || not (t.FullName.StartsWith prefix) then
+                    [||]
+                else
+                    t.GetProperties(BindingFlags.Public ||| BindingFlags.Static)
+                    |> Array.choose (fun p ->
+                        let value =
+                            if p.PropertyType = typeof<BulletmlInfo> then
+                                Some((p.GetValue null :?> BulletmlInfo).Bulletml)
+                            elif p.PropertyType = typeof<Bulletml> then
+                                Some(p.GetValue null :?> Bulletml)
+                            else
+                                None
 
-  /// 錨が生きていること。これが落ちるなら参照が消えている
-  [<Test>]
-  member _.``両側のアセンブリが読み込まれている``() =
-    anchorPlain.Bulletml |> should equal anchorDsl.Bulletml
+                        value
+                        |> Option.map (fun b -> (t.FullName.Substring(prefix.Length) + "." + p.Name), b)))
+            |> Map.ofArray
 
-  [<Test>]
-  member _.``DU で書いた側の弾幕が 196 個 ある``() =
-    plain.Value.Count |> should equal Expected
+    static let plain = lazy (collect "FsBulletML2.Bullets" "FsBulletML2.Bullets.")
+    static let dsl = lazy (collect "FsBulletML2.Bullets.Dsl" "FsBulletML2.Bullets.Dsl.")
 
-  [<Test>]
-  member _.``CE で書いた側の弾幕も 196 個 ある``() =
-    dsl.Value.Count |> should equal Expected
+    /// 錨が生きていること。これが落ちるなら参照が消えている
+    [<Test>]
+    member _.``両側のアセンブリが読み込まれている``() =
+        anchorPlain.Bulletml |> should equal anchorDsl.Bulletml
 
-  /// 名前の集合が一致する。 数が同じでも中身がずれていれば、
-  /// 突き合わせが「たまたま同数」で通ってしまう
-  [<Test>]
-  member _.``名前の集合が両側で一致する``() =
-    let onlyPlain = plain.Value |> Map.toSeq |> Seq.map fst |> Seq.filter (fun k -> not (dsl.Value.ContainsKey k)) |> List.ofSeq
-    let onlyDsl = dsl.Value |> Map.toSeq |> Seq.map fst |> Seq.filter (fun k -> not (plain.Value.ContainsKey k)) |> List.ofSeq
-    if not (List.isEmpty onlyPlain) || not (List.isEmpty onlyDsl) then
-      Assert.Fail(
-        sprintf "DU 側にしかない: %A\nCE 側にしかない: %A" onlyPlain onlyDsl)
+    [<Test>]
+    member _.``DU で書いた側の弾幕が 196 個 ある``() =
+        plain.Value.Count |> should equal Expected
 
-  /// 本体。 196 個 すべてについて木が完全に一致することを見る。
-  /// 落ちたときにどれが違うかが分かるよう、名前を並べて出す
-  [<Test>]
-  member _.``CE で書き直した弾幕が、元と同じ木になる``() =
-    let mismatches =
-      plain.Value
-      |> Map.toSeq
-      |> Seq.choose (fun (name, before) ->
-          match dsl.Value.TryFind name with
-          | Some after when after = before -> None
-          | Some _ -> Some (name + "（木が違う）")
-          | None -> Some (name + "（CE 側に無い）"))
-      |> List.ofSeq
+    [<Test>]
+    member _.``CE で書いた側の弾幕も 196 個 ある``() =
+        dsl.Value.Count |> should equal Expected
 
-    if not (List.isEmpty mismatches) then
-      Assert.Fail(
-        sprintf "%d 個 が一致しない:\n%s"
-          mismatches.Length
-          (String.Join("\n", mismatches |> List.truncate 40)))
+    /// 名前の集合が一致する。 数が同じでも中身がずれていれば、
+    /// 突き合わせが「たまたま同数」で通ってしまう
+    [<Test>]
+    member _.``名前の集合が両側で一致する``() =
+        let onlyPlain =
+            plain.Value
+            |> Map.toSeq
+            |> Seq.map fst
+            |> Seq.filter (fun k -> not (dsl.Value.ContainsKey k))
+            |> List.ofSeq
 
-    // 突き合わせた数も見る。 両方 空でも上は通ってしまう
-    plain.Value.Count |> should equal Expected
+        let onlyDsl =
+            dsl.Value
+            |> Map.toSeq
+            |> Seq.map fst
+            |> Seq.filter (fun k -> not (plain.Value.ContainsKey k))
+            |> List.ofSeq
+
+        if not (List.isEmpty onlyPlain) || not (List.isEmpty onlyDsl) then
+            Assert.Fail(sprintf "DU 側にしかない: %A\nCE 側にしかない: %A" onlyPlain onlyDsl)
+
+    /// 本体。 196 個 すべてについて木が完全に一致することを見る。
+    /// 落ちたときにどれが違うかが分かるよう、名前を並べて出す
+    [<Test>]
+    member _.``CE で書き直した弾幕が、元と同じ木になる``() =
+        let mismatches =
+            plain.Value
+            |> Map.toSeq
+            |> Seq.choose (fun (name, before) ->
+                match dsl.Value.TryFind name with
+                | Some after when after = before -> None
+                | Some _ -> Some(name + "（木が違う）")
+                | None -> Some(name + "（CE 側に無い）"))
+            |> List.ofSeq
+
+        if not (List.isEmpty mismatches) then
+            Assert.Fail(
+                sprintf "%d 個 が一致しない:\n%s" mismatches.Length (String.Join("\n", mismatches |> List.truncate 40))
+            )
+
+        // 突き合わせた数も見る。 両方 空でも上は通ってしまう
+        plain.Value.Count |> should equal Expected

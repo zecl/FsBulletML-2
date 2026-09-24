@@ -5,14 +5,16 @@ open FsBulletML2
 
 /// Player 型そのものは要らない。位置を返す何か 1 つで、循環参照が切れる。
 type IPlayerPosition =
-  abstract PlayerPosX : unit -> float32
-  abstract PlayerPosY : unit -> float32
+    abstract PlayerPosX: unit -> float32
+    abstract PlayerPosY: unit -> float32
 
-type BulletFunctions (player: IPlayerPosition) =
-  static let rand = new System.Random()
+type BulletFunctions(player: IPlayerPosition) =
+    static let rand = new System.Random()
 
-  interface IBulletMLManager with
-    member this.GetRandom() = Math.Round(rand.NextDouble() * 10000.) / 10000. |> float32
-    member this.GetRank () = 0.f
-    member this.GetPlayerPosX () = player.PlayerPosX()
-    member this.GetPlayerPosY () = player.PlayerPosY()
+    interface IBulletMLManager with
+        member this.GetRandom() =
+            Math.Round(rand.NextDouble() * 10000.) / 10000. |> float32
+
+        member this.GetRank() = 0.f
+        member this.GetPlayerPosX() = player.PlayerPosX()
+        member this.GetPlayerPosY() = player.PlayerPosY()

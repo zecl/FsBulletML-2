@@ -8,32 +8,43 @@ open Impl
 
 [<TypeProvider>]
 [<CompilerMessage("hidden...", 13730, IsError = false, IsHidden = true)>]
-type BulletMLFromSxmlTypeProvider (config: TypeProviderConfig) as this =
-  inherit TypeProviderForNamespaces(config, addDefaultProbingLocation = true)
-  let ctx = new Context(this.Invalidate)
+type BulletMLFromSxmlTypeProvider(config: TypeProviderConfig) as this =
+    inherit TypeProviderForNamespaces(config, addDefaultProbingLocation = true)
+    let ctx = new Context(this.Invalidate)
 
-  let ns = ns + ".Sxml"
-  let typ = createProvidedTypeDefinition ns
-  do 
-    let docText = 
-      """<summary>Typed representation of BulletML, Sxml style.</summary>
+    let ns = ns + ".Sxml"
+    let typ = createProvidedTypeDefinition ns
+
+    do
+        let docText =
+            """<summary>Typed representation of BulletML, Sxml style.</summary>
          <param name='bulletmls'>Location of BulletML files or string BulletML documents. delimiter is `;` or `,`.</param>
          <param name='watch'>Specify whether or not to monitor the file</param>"""
 
-    typ.AddXmlDoc docText
-    typ.DefineStaticParameters(
-        [ProvidedStaticParameter("bulletmls", typeof<string>)
-         ProvidedStaticParameter("watch", typeof<bool>, false)],
-        fun typeName parameters ->
-          let bulletmls = string parameters.[0]
-          let style = Style.Sxml 
-          let watch = parameters.[1] :?> bool
-          let bullets = paramSprit bulletmls
-          let typ = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, hideObjectMethods = true)
-          let ctor = ProvidedConstructor(parameters = [ ], invokeCode = (fun _ -> <@@ bullets @@>))
-          typ.AddMember ctor
-          addProperties typ bullets style config watch ctx
-          typ)
-  do 
-    this.Disposing.Add(fun _ -> (ctx :> IDisposable).Dispose())
-    this.AddNamespace(ns, [typ])
+        typ.AddXmlDoc docText
+
+        typ.DefineStaticParameters(
+            [
+                ProvidedStaticParameter("bulletmls", typeof<string>)
+                ProvidedStaticParameter("watch", typeof<bool>, false)
+            ],
+            fun typeName parameters ->
+                let bulletmls = string parameters.[0]
+                let style = Style.Sxml
+                let watch = parameters.[1] :?> bool
+                let bullets = paramSprit bulletmls
+
+                let typ =
+                    ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, hideObjectMethods = true)
+
+                let ctor =
+                    ProvidedConstructor(parameters = [], invokeCode = (fun _ -> <@@ bullets @@>))
+
+                typ.AddMember ctor
+                addProperties typ bullets style config watch ctx
+                typ
+        )
+
+    do
+        this.Disposing.Add(fun _ -> (ctx :> IDisposable).Dispose())
+        this.AddNamespace(ns, [ typ ])

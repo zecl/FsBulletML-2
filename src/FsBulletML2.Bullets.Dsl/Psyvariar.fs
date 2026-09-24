@@ -1,4 +1,5 @@
 namespace FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun
+
 open FsBulletML2
 open FsBulletML2.Dsl
 
@@ -7,97 +8,109 @@ open FsBulletML2.Dsl
 [<RequireQualifiedAccess>]
 module Psyvariar =
 
-  /// サイヴァリア4-Dボス、MZIQかも。by 白い弾幕くん
-  /// [Psyvariar]_4-D_boss_MZIQ.xml
-  let b4_D_boss_MZIQ =
-    createBulletmlInfo <|
-    verticalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "サイヴァリア4-Dボス、MZIQかも。by 白い弾幕くん" {
-        defAction "add11" {
-            repeat "11" {
-                fire {
-                    sequence "30"
-                    speedSeq "0"
-                    plain
+    /// サイヴァリア4-Dボス、MZIQかも。by 白い弾幕くん
+    /// [Psyvariar]_4-D_boss_MZIQ.xml
+    let b4_D_boss_MZIQ =
+        createBulletmlInfo
+        <| verticalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "サイヴァリア4-Dボス、MZIQかも。by 白い弾幕くん" {
+            defAction "add11" {
+                repeat "11" {
+                    fire {
+                        sequence "30"
+                        speedSeq "0"
+                        plain
+                    }
                 }
             }
-        }
-        top {
-            repeat "30" {
-                fire {
-                    sequence "-11"
-                    speed "1+$rank"
-                    plain
-                }
-                actionRef "add11" []
-                repeat "3" {
-                    wait "4-$rank*2+$rand"
+
+            top {
+                repeat "30" {
                     fire {
-                        sequence "-5+30"
+                        sequence "-11"
                         speed "1+$rank"
                         plain
                     }
+
                     actionRef "add11" []
-                }
-                wait "4-$rank*2+$rand"
-            }
-            wait "30-$rank*30"
-        }
-    }
 
-  /// サイヴァリア、多分最終面ボス。by 白い弾幕くん
-  /// [Psyvariar]_X-A_boss_opening.xml
-  let X_A_boss_opening =
-    createBulletmlInfo <|
-    verticalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "サイヴァリア、多分最終面ボス。by 白い弾幕くん" {
-        top {
-            repeat "600" {
+                    repeat "3" {
+                        wait "4-$rank*2+$rand"
+
+                        fire {
+                            sequence "-5+30"
+                            speed "1+$rank"
+                            plain
+                        }
+
+                        actionRef "add11" []
+                    }
+
+                    wait "4-$rank*2+$rand"
+                }
+
+                wait "30-$rank*30"
+            }
+        }
+
+    /// サイヴァリア、多分最終面ボス。by 白い弾幕くん
+    /// [Psyvariar]_X-A_boss_opening.xml
+    let X_A_boss_opening =
+        createBulletmlInfo
+        <| verticalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "サイヴァリア、多分最終面ボス。by 白い弾幕くん" {
+            top {
+                repeat "600" {
+                    fire {
+                        dir "-45+$rand*90"
+                        speed "(0.3+$rand*0.5)*($rank+1)"
+                        plain
+                    }
+
+                    wait "1"
+                }
+
+                wait "100"
+            }
+        }
+
+    /// サイヴァリア、多分最終面ボス。by 白い弾幕くん
+    /// [Psyvariar]_X-A_boss_winder.xml
+    let X_A_boss_winder =
+        createBulletmlInfo
+        <| verticalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "サイヴァリア、多分最終面ボス。by 白い弾幕くん" {
+            defBullet "winderBullet" { speed "3" }
+
+            topFireAs "fireWinder" {
+                sequence "$1"
+                refBullet "winderBullet" []
+            }
+
+            defAction "roundWinder" {
+                fireRef "fireWinder" [ "$1" ]
+                repeat "11" { fireRef "fireWinder" [ "30" ] }
+                wait "5"
+            }
+
+            defAction "winderSequence" {
+                repeatRef "12" "roundWinder" [ "30" ]
+                repeatRef "12" "roundWinder" [ "$1" ]
+                repeatRef "12" "roundWinder" [ "30" ]
+            }
+
+            defAction "top1" {
                 fire {
-                    dir "-45+$rand*90"
-                    speed "(0.3+$rand*0.5)*($rank+1)"
-                    plain
+                    absolute "2"
+                    refBullet "winderBullet" []
                 }
-                wait "1"
-            }
-            wait "100"
-        }
-    }
 
-  /// サイヴァリア、多分最終面ボス。by 白い弾幕くん
-  /// [Psyvariar]_X-A_boss_winder.xml
-  let X_A_boss_winder =
-    createBulletmlInfo <|
-    verticalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "サイヴァリア、多分最終面ボス。by 白い弾幕くん" {
-        defBullet "winderBullet" {
-            speed "3"
-        }
-        topFireAs "fireWinder" {
-            sequence "$1"
-            refBullet "winderBullet" []
-        }
-        defAction "roundWinder" {
-            fireRef "fireWinder" ["$1"]
-            repeat "11" {
-                fireRef "fireWinder" ["30"]
+                actionRef "winderSequence" [ "30.9+0.1*$rank" ]
             }
-            wait "5"
-        }
-        defAction "winderSequence" {
-            repeatRef "12" "roundWinder" ["30"]
-            repeatRef "12" "roundWinder" ["$1"]
-            repeatRef "12" "roundWinder" ["30"]
-        }
-        defAction "top1" {
-            fire {
-                absolute "2"
-                refBullet "winderBullet" []
+
+            defAction "top2" {
+                fire {
+                    absolute "-2"
+                    refBullet "winderBullet" []
+                }
+
+                actionRef "winderSequence" [ "29.1-0.1*$rank" ]
             }
-            actionRef "winderSequence" ["30.9+0.1*$rank"]
         }
-        defAction "top2" {
-            fire {
-                absolute "-2"
-                refBullet "winderBullet" []
-            }
-            actionRef "winderSequence" ["29.1-0.1*$rank"]
-        }
-    }

@@ -7,15 +7,18 @@ open NUnit.Framework
 [<TestFixture>]
 type Refs() =
 
-  let bml body =
-    """<?xml version="1.0" ?>
+    let bml body =
+        """<?xml version="1.0" ?>
 <!DOCTYPE bulletml SYSTEM "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml/bulletml.dtd">
 <bulletml type="vertical" xmlns="http://www.asahi-net.or.jp/~cs8k-cyu/bulletml">
-""" + body + "\n</bulletml>"
+"""
+        + body
+        + "\n</bulletml>"
 
-  [<Test>]
-  member _.``bulletRef にパラメータを渡すと、弾の速さと向きに入る``() =
-    bml """<action label="top">
+    [<Test>]
+    member _.``bulletRef にパラメータを渡すと、弾の速さと向きに入る``() =
+        bml
+            """<action label="top">
   <fire>
     <bulletRef label="b"><param>30</param><param>2</param></bulletRef>
   </fire>
@@ -30,11 +33,12 @@ type Refs() =
   <direction type="absolute">$1</direction>
   <speed>$2</speed>
 </bullet>"""
-    |> fun x -> TraceRun.std x 8 |> Golden.check "bullet-ref-params"
+        |> fun x -> TraceRun.std x 8 |> Golden.check "bullet-ref-params"
 
-  [<Test>]
-  member _.``actionRef のパラメータが、入れ子の中まで届く``() =
-    bml """<action label="top">
+    [<Test>]
+    member _.``actionRef のパラメータが、入れ子の中まで届く``() =
+        bml
+            """<action label="top">
   <actionRef label="shot"><param>3</param><param>20</param></actionRef>
   <wait>30</wait>
 </action>
@@ -51,11 +55,12 @@ type Refs() =
     </action>
   </repeat>
 </action>"""
-    |> fun x -> TraceRun.std x 10 |> Golden.check "action-ref-params"
+        |> fun x -> TraceRun.std x 10 |> Golden.check "action-ref-params"
 
-  [<Test>]
-  member _.``fireRef のパラメータが、fire の中の向きに入る``() =
-    bml """<action label="top">
+    [<Test>]
+    member _.``fireRef のパラメータが、fire の中の向きに入る``() =
+        bml
+            """<action label="top">
   <fireRef label="f"><param>45</param></fireRef>
   <wait>2</wait>
   <fireRef label="f"><param>90</param></fireRef>
@@ -67,11 +72,12 @@ type Refs() =
   <speed>2</speed>
   <bullet/>
 </fire>"""
-    |> fun x -> TraceRun.std x 8 |> Golden.check "fire-ref-params"
+        |> fun x -> TraceRun.std x 8 |> Golden.check "fire-ref-params"
 
-  [<Test>]
-  member _.``入れ子の repeat が、内側と外側の回数の積になる``() =
-    bml """<action label="top">
+    [<Test>]
+    member _.``入れ子の repeat が、内側と外側の回数の積になる``() =
+        bml
+            """<action label="top">
   <repeat><times>2</times>
     <action>
       <repeat><times>3</times>
@@ -89,11 +95,12 @@ type Refs() =
   </repeat>
   <wait>30</wait>
 </action>"""
-    |> fun x -> TraceRun.std x 16 |> Golden.check "nested-repeat"
+        |> fun x -> TraceRun.std x 16 |> Golden.check "nested-repeat"
 
-  [<Test>]
-  member _.``弾の中の action から、さらに撃つ``() =
-    bml """<action label="top">
+    [<Test>]
+    member _.``弾の中の action から、さらに撃つ``() =
+        bml
+            """<action label="top">
   <fire>
     <direction type="absolute">0</direction>
     <speed>1</speed>
@@ -111,12 +118,13 @@ type Refs() =
   </fire>
   <wait>60</wait>
 </action>"""
-    |> fun x -> TraceRun.std x 8 |> Golden.check "bullet-fires-bullet"
+        |> fun x -> TraceRun.std x 8 |> Golden.check "bullet-fires-bullet"
 
-  /// 同じ label が 2 つあるとどちらが走るか。
-  [<Test>]
-  member _.``同じ label が 2 つあるとき、いまはどちらが走るか``() =
-    bml """<action label="top">
+    /// 同じ label が 2 つあるとどちらが走るか。
+    [<Test>]
+    member _.``同じ label が 2 つあるとき、いまはどちらが走るか``() =
+        bml
+            """<action label="top">
   <actionRef label="dup"/>
   <wait>4</wait>
 </action>
@@ -128,15 +136,15 @@ type Refs() =
 <action label="dup">
   <fire><direction type="absolute">90</direction><speed>9</speed><bullet/></fire>
 </action>"""
-    |> fun x ->
-      TraceRun.std x 6
-      + "\n前の dup なら d=0.000 s=1.000、後ろの dup なら d=1.571 s=9.000"
-    |> Golden.check "now-duplicate-label-first-wins"
+        |> fun x ->
+            TraceRun.std x 6 + "\n前の dup なら d=0.000 s=1.000、後ろの dup なら d=1.571 s=9.000"
+            |> Golden.check "now-duplicate-label-first-wins"
 
-  /// 上は兄弟に 2 つ置いた形。
-  [<Test>]
-  member _.``同じ label が入れ子のとき、いまはどちらが走るか``() =
-    bml """<action label="top">
+    /// 上は兄弟に 2 つ置いた形。
+    [<Test>]
+    member _.``同じ label が入れ子のとき、いまはどちらが走るか``() =
+        bml
+            """<action label="top">
   <actionRef label="dup"/>
   <wait>6</wait>
 </action>
@@ -147,7 +155,6 @@ type Refs() =
     <fire><direction type="absolute">90</direction><speed>9</speed><bullet/></fire>
   </action>
 </action>"""
-    |> fun x ->
-      TraceRun.std x 6
-      + "\n外側が勝つなら s=1.000 と s=9.000 の両方、内側だけなら s=9.000 のみ"
-    |> Golden.check "now-duplicate-label-nested"
+        |> fun x ->
+            TraceRun.std x 6 + "\n外側が勝つなら s=1.000 と s=9.000 の両方、内側だけなら s=9.000 のみ"
+            |> Golden.check "now-duplicate-label-nested"

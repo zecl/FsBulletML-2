@@ -13,200 +13,245 @@ open FsBulletML2.LanguageService
 [<TestFixture>]
 type ReferenceScan() =
 
-  /// `References` が見ているのと同じ形。閉じ札は落とす。
-  /// 閉じ札を使うのはカーソルの居場所。欠けを数える側は開始札しか見ない。
-  let openTags (src: string) = XmlScan.tags src |> List.filter (fun t -> not t.Closing)
+    /// `References` が見ているのと同じ形。閉じ札は落とす。
+    /// 閉じ札を使うのはカーソルの居場所。欠けを数える側は開始札しか見ない。
+    let openTags (src: string) =
+        XmlScan.tags src |> List.filter (fun t -> not t.Closing)
 
-  /// 字を数える 1 本 を渡す（v0.9）。 `References` は表記を知らなくなった ——
-  /// ここが渡しているのは XML の側で、sxml は `SxmlReferenceScan.fs`
-  let missing = References.missing XmlScan.tags
+    /// 字を数える 1 本 を渡す（v0.9）。 `References` は表記を知らなくなった ——
+    /// ここが渡しているのは XML の側で、sxml は `SxmlReferenceScan.fs`
+    let missing = References.missing XmlScan.tags
 
-  let rand () = 0.5f
-  let rank = 0.5f
-  let build (b: Bulletml) = Runner.load rand rank b |> ignore
-  let coreFails xml = (Diagnosis.apply build xml).IsSome
-  /// 本番と同じ道。`Main.fs` の `ApplySource` もこれを通る
-  let explain xml = References.explain XmlScan.tags (Diagnosis.apply build xml) xml
+    let rand () = 0.5f
+    let rank = 0.5f
+    let build (b: Bulletml) = Runner.load rand rank b |> ignore
+    let coreFails xml = (Diagnosis.apply build xml).IsSome
 
-  let corpus =
-    lazy
-      let root = Path.Combine(AppContext.BaseDirectory, "TestData", "xml")
-      if Directory.Exists root
-      then Directory.EnumerateFiles(root, "*.xml", SearchOption.AllDirectories) |> Seq.toArray
-      else [||]
+    /// 本番と同じ道。`Main.fs` の `ApplySource` もこれを通る
+    let explain xml =
+        References.explain XmlScan.tags (Diagnosis.apply build xml) xml
 
-  /// 参照の label を 1 つ だけ、在り得ない名前に差し替える。
-  /// `[^>]*?` なのでタグを跨がない
-  let refAttr = Regex("<(actionRef|fireRef|bulletRef)([^>]*?)label\\s*=\\s*\"([^\"]*)\"")
+    let corpus =
+        lazy
+            let root = Path.Combine(AppContext.BaseDirectory, "TestData", "xml")
 
-  // --- 走る先が導けているか -------------------------------------------------
+            if Directory.Exists root then
+                Directory.EnumerateFiles(root, "*.xml", SearchOption.AllDirectories)
+                |> Seq.toArray
+            else
+                [||]
 
-  [<Test>]
-  member _.``対が語彙から導けている``() =
-    // ここが 0 だと下の点は全部「挙げないから緑」になる
-    References.pairs.Length |> should greaterThan 0
-    let names = References.pairs |> Array.map (fun (r, d, a) -> sprintf "%s->%s@%s" r d a) |> Array.sort
-    names |> should equal [| "actionRef->action@label"; "bulletRef->bullet@label"; "fireRef->fire@label" |]
+    /// 参照の label を 1 つ だけ、在り得ない名前に差し替える。
+    /// `[^>]*?` なのでタグを跨がない
+    let refAttr =
+        Regex("<(actionRef|fireRef|bulletRef)([^>]*?)label\\s*=\\s*\"([^\"]*)\"")
 
-  // --- 挙げる / 挙げない ----------------------------------------------------
+    // --- 走る先が導けているか -------------------------------------------------
 
-  [<Test>]
-  member _.``定義が在れば挙げない``() =
-    missing "<bulletml><action label=\"a\"><wait>1</wait></action><action label=\"top\"><actionRef label=\"a\"/></action></bulletml>"
-    |> should be Empty
+    [<Test>]
+    member _.``対が語彙から導けている``() =
+        // ここが 0 だと下の点は全部「挙げないから緑」になる
+        References.pairs.Length |> should greaterThan 0
 
-  [<Test>]
-  member _.``無い参照を 2 つ とも挙げる``() =
-    // これが本題。 Core はここで 1 件 目 しか言わない
-    let found =
-      missing "<bulletml><action label=\"top\"><actionRef label=\"a\"/><actionRef label=\"b\"/></action></bulletml>"
-    found.Length |> should equal 2
-    found |> List.forall (fun f -> f.Line > 0) |> should be True
+        let names =
+            References.pairs
+            |> Array.map (fun (r, d, a) -> sprintf "%s->%s@%s" r d a)
+            |> Array.sort
 
-  [<Test>]
-  member _.``同じ名前を 2 回 参照したら 2 本``() =
-    // どちらも直す先なので、1 本 に畳まない
-    (missing "<bulletml><action label=\"top\"><actionRef label=\"a\"/><actionRef label=\"a\"/></action></bulletml>").Length
-    |> should equal 2
+        names
+        |> should
+            equal
+            [|
+                "actionRef->action@label"
+                "bulletRef->bullet@label"
+                "fireRef->fire@label"
+            |]
 
-  [<Test>]
-  member _.``fire と bullet も見る``() =
-    let found =
-      missing
-        "<bulletml><action label=\"top\"><fireRef label=\"f\"/><fire><bulletRef label=\"b\"/></fire></action></bulletml>"
-    found.Length |> should equal 2
-    found |> List.map (fun f -> f.Message.Split(' ').[0]) |> List.sort
-    |> should equal [ "bulletRef"; "fireRef" ]
+    // --- 挙げる / 挙げない ----------------------------------------------------
 
-  // --- 位置 -----------------------------------------------------------------
+    [<Test>]
+    member _.``定義が在れば挙げない``() =
+        missing
+            "<bulletml><action label=\"a\"><wait>1</wait></action><action label=\"top\"><actionRef label=\"a\"/></action></bulletml>"
+        |> should be Empty
 
-  [<Test>]
-  member _.``位置が label の値そのものを指す``() =
-    // 3 行目 の `<actionRef label="a"/>`。`a` は 19 桁目、閉じ引用符が 20
-    let xml = "<bulletml>\n<action label=\"top\">\n<actionRef label=\"a\"/>\n</action>\n</bulletml>"
-    match missing xml with
-    | [ f ] ->
-      f.Line |> should equal 3
-      f.Column |> should equal 19
-      f.EndColumn |> should equal 20
-      f.Message |> should haveSubstring "a"
-    | other -> failwithf "1 件 のはずが %d 件" other.Length
+    [<Test>]
+    member _.``無い参照を 2 つ とも挙げる``() =
+        // これが本題。 Core はここで 1 件 目 しか言わない
+        let found =
+            missing
+                "<bulletml><action label=\"top\"><actionRef label=\"a\"/><actionRef label=\"b\"/></action></bulletml>"
 
-  [<Test>]
-  member _.``行が動く``() =
-    // いつも 1 を返す壊れ方が緑で通らないように、2 か所 の行を数える
-    let xml =
-      "<bulletml>\n<action label=\"top\">\n<actionRef label=\"a\"/>\n<wait>1</wait>\n<actionRef label=\"b\"/>\n</action>\n</bulletml>"
-    missing xml |> List.map (fun f -> f.Line) |> should equal [ 3; 5 ]
+        found.Length |> should equal 2
+        found |> List.forall (fun f -> f.Line > 0) |> should be True
 
-  // --- 飛ばすもの -----------------------------------------------------------
+    [<Test>]
+    member _.``同じ名前を 2 回 参照したら 2 本``() =
+        // どちらも直す先なので、1 本 に畳まない
+        (missing "<bulletml><action label=\"top\"><actionRef label=\"a\"/><actionRef label=\"a\"/></action></bulletml>")
+            .Length
+        |> should equal 2
 
-  [<Test>]
-  member _.``コメントの中は数えない``() =
-    // コメントの中に `>` を先に置く。 置かないと、コメント専用の飛ばしを
-    // 外しても `<!` の枝が `>` まで食って同じ結果になり、変異が当たらない
-    missing "<bulletml><action label=\"top\"><!-- x > <actionRef label=\"a\"/> --><wait>1</wait></action></bulletml>"
-    |> should be Empty
+    [<Test>]
+    member _.``fire と bullet も見る``() =
+        let found =
+            missing
+                "<bulletml><action label=\"top\"><fireRef label=\"f\"/><fire><bulletRef label=\"b\"/></fire></action></bulletml>"
 
-  [<Test>]
-  member _.``CDATA の中は数えない``() =
-    // コメントと同じで、中に `>` を先に置かないと変異が `<!` の枝に吸われる
-    missing "<bulletml><action label=\"top\"><wait><![CDATA[x > <actionRef label=\"a\"/>]]></wait></action></bulletml>"
-    |> should be Empty
+        found.Length |> should equal 2
 
-  [<Test>]
-  member _.``宣言と閉じ札を積まない``() =
-    // `<?xml ...?>` と `</action>` をタグとして拾うと、名前が空の札が混ざる
-    openTags "<?xml version=\"1.0\"?><bulletml><action label=\"top\"></action></bulletml>"
-    |> List.map (fun t -> t.TagName)
-    |> should equal [ "bulletml"; "action" ]
+        found
+        |> List.map (fun f -> f.Message.Split(' ').[0])
+        |> List.sort
+        |> should equal [ "bulletRef"; "fireRef" ]
 
-  [<Test>]
-  member _.``引用符の中の 大なり に騙されない``() =
-    // 値の中の `>` でタグが終わったことにすると、次の属性を取り落とす
-    let tags = openTags "<action label=\"a>b\" x=\"1\"><actionRef label=\"a>b\"/></action>"
-    tags |> List.map (fun t -> t.TagName) |> should equal [ "action"; "actionRef" ]
-    tags.Head.Attrs |> List.length |> should equal 2
-    // 定義側も参照側も同じ値なので、欠けは無い
-    missing "<bulletml><action label=\"a>b\"><wait>1</wait></action><action label=\"top\"><actionRef label=\"a>b\"/></action></bulletml>"
-    |> should be Empty
+    // --- 位置 -----------------------------------------------------------------
 
-  [<Test>]
-  member _.``閉じ引用符が無い属性は捨てる``() =
-    // 位置が本文とずれるものを挙げない。 読めていないまま挙げると嘘の波線
-    missing "<bulletml><action label=\"top\"><actionRef label=\"a/></action></bulletml>"
-    |> should be Empty
+    [<Test>]
+    member _.``位置が label の値そのものを指す``() =
+        // 3 行目 の `<actionRef label="a"/>`。`a` は 19 桁目、閉じ引用符が 20
+        let xml =
+            "<bulletml>\n<action label=\"top\">\n<actionRef label=\"a\"/>\n</action>\n</bulletml>"
 
-  // --- コーパスと突き合わせる -----------------------------------------------
+        match missing xml with
+        | [ f ] ->
+            f.Line |> should equal 3
+            f.Column |> should equal 19
+            f.EndColumn |> should equal 20
+            f.Message |> should haveSubstring "a"
+        | other -> failwithf "1 件 のはずが %d 件" other.Length
 
-  [<Test>]
-  member _.``コーパスが読めている``() =
-    // 下の 2 点 は「1 本 も読めなくても緑」になる
-    corpus.Value.Length |> should greaterThan 0
+    [<Test>]
+    member _.``行が動く``() =
+        // いつも 1 を返す壊れ方が緑で通らないように、2 か所 の行を数える
+        let xml =
+            "<bulletml>\n<action label=\"top\">\n<actionRef label=\"a\"/>\n<wait>1</wait>\n<actionRef label=\"b\"/>\n</action>\n</bulletml>"
 
-  [<Test>]
-  member _.``Apply が通る弾幕には 1 本 も引かない``() =
-    // 本番の道で見る。 `missing` 単独だと、到達しない枝の壊れた参照を
-    // 挙げてしまう（Core より広い）。`explain` は Core が通れば呼ばない
-    let noisy =
-      corpus.Value
-      |> Array.choose (fun file ->
-          let xml = File.ReadAllText file
-          match explain xml with
-          | [] -> None
-          | fs when coreFails xml -> ignore fs; None   // 読めない形も置いてある並び
-          | fs -> Some(sprintf "%s: %s" (Path.GetFileName file) fs.Head.Message))
-      |> Array.toList
-    noisy |> should be Empty
+        missing xml |> List.map (fun f -> f.Line) |> should equal [ 3; 5 ]
 
-  [<Test>]
-  member _.``構文が壊れているときは、構文の理由だけを出す``() =
-    // 本文が読めていないので、字から数えた位置は当てにならない。
-    // 参照の欠けが本文に在っても、そちらへ乗り換えない
-    let xml = "<bulletml><action label=\"top\"><actionRef label=\"nope\"/><fire>"
-    (missing xml).Length |> should equal 1   // 単独なら挙げる
-    match explain xml with
-    | [ f ] ->
-      f.Line |> should greaterThan 0
-      f.Message |> should not' (haveSubstring "nope")
-    | other -> failwithf "1 本 のはずが %d 本" other.Length
+    // --- 飛ばすもの -----------------------------------------------------------
 
-  [<Test>]
-  member _.``到達しない枝の壊れた参照は、Apply が通るので波線にならない``() =
-    // Core と食い違う唯一 の向きを、字で固定する。 ここが赤くなったら
-    // Core の展開が変わったということ（到達を見るようになった、など）
-    let xml =
-      "<bulletml><action label=\"top\"><wait>1</wait></action>"
-      + "<fire label=\"orphan\"><bulletRef label=\"nope\"/></fire></bulletml>"
-    coreFails xml |> should be False
-    // `missing` 単独では挙げる。広いこと自体は間違いではない
-    (missing xml).Length |> should equal 1
-    // 本番の道では出ない
-    explain xml |> should be Empty
+    [<Test>]
+    member _.``コメントの中は数えない``() =
+        // コメントの中に `>` を先に置く。 置かないと、コメント専用の飛ばしを
+        // 外しても `<!` の枝が `>` まで食って同じ結果になり、変異が当たらない
+        missing
+            "<bulletml><action label=\"top\"><!-- x > <actionRef label=\"a\"/> --><wait>1</wait></action></bulletml>"
+        |> should be Empty
 
-  [<Test>]
-  member _.``参照を 1 つ 壊すと、Core が落ちて、同じ名前を挙げる``() =
-    // 見落とし。Core が真で、こちらは位置を足すだけ
-    let mutable measured = 0
-    let mutable skipped = 0
-    let bad = ResizeArray<string>()
-    for file in corpus.Value do
-      let xml = File.ReadAllText file
-      if not (coreFails xml) then
-        for m in refAttr.Matches xml do
-          let broken =
-            xml.Substring(0, m.Groups.[3].Index)
-            + "__nope__"
-            + xml.Substring(m.Groups.[3].Index + m.Groups.[3].Length)
-          // 壊しても Core が通るのは、そこが到達しない枝だったとき。
-          // 測定材料にならないので飛ばす（飛ばした数は下で見る）
-          if not (coreFails broken) then skipped <- skipped + 1
-          else
-            measured <- measured + 1
-            let found = explain broken
-            if not (found |> List.exists (fun f -> f.Message.EndsWith "__nope__")) then
-              bad.Add(sprintf "%s: Core は落ちたのに挙げなかった（%d 本）" (Path.GetFileName file) found.Length)
-    // 飛ばしてばかりだと、この試験は何も測っていない
-    measured |> should greaterThan 0
-    measured |> should greaterThan skipped
-    bad |> List.ofSeq |> should be Empty
+    [<Test>]
+    member _.``CDATA の中は数えない``() =
+        // コメントと同じで、中に `>` を先に置かないと変異が `<!` の枝に吸われる
+        missing
+            "<bulletml><action label=\"top\"><wait><![CDATA[x > <actionRef label=\"a\"/>]]></wait></action></bulletml>"
+        |> should be Empty
+
+    [<Test>]
+    member _.``宣言と閉じ札を積まない``() =
+        // `<?xml ...?>` と `</action>` をタグとして拾うと、名前が空の札が混ざる
+        openTags "<?xml version=\"1.0\"?><bulletml><action label=\"top\"></action></bulletml>"
+        |> List.map (fun t -> t.TagName)
+        |> should equal [ "bulletml"; "action" ]
+
+    [<Test>]
+    member _.``引用符の中の 大なり に騙されない``() =
+        // 値の中の `>` でタグが終わったことにすると、次の属性を取り落とす
+        let tags =
+            openTags "<action label=\"a>b\" x=\"1\"><actionRef label=\"a>b\"/></action>"
+
+        tags |> List.map (fun t -> t.TagName) |> should equal [ "action"; "actionRef" ]
+        tags.Head.Attrs |> List.length |> should equal 2
+        // 定義側も参照側も同じ値なので、欠けは無い
+        missing
+            "<bulletml><action label=\"a>b\"><wait>1</wait></action><action label=\"top\"><actionRef label=\"a>b\"/></action></bulletml>"
+        |> should be Empty
+
+    [<Test>]
+    member _.``閉じ引用符が無い属性は捨てる``() =
+        // 位置が本文とずれるものを挙げない。 読めていないまま挙げると嘘の波線
+        missing "<bulletml><action label=\"top\"><actionRef label=\"a/></action></bulletml>"
+        |> should be Empty
+
+    // --- コーパスと突き合わせる -----------------------------------------------
+
+    [<Test>]
+    member _.``コーパスが読めている``() =
+        // 下の 2 点 は「1 本 も読めなくても緑」になる
+        corpus.Value.Length |> should greaterThan 0
+
+    [<Test>]
+    member _.``Apply が通る弾幕には 1 本 も引かない``() =
+        // 本番の道で見る。 `missing` 単独だと、到達しない枝の壊れた参照を
+        // 挙げてしまう（Core より広い）。`explain` は Core が通れば呼ばない
+        let noisy =
+            corpus.Value
+            |> Array.choose (fun file ->
+                let xml = File.ReadAllText file
+
+                match explain xml with
+                | [] -> None
+                | fs when coreFails xml ->
+                    ignore fs
+                    None // 読めない形も置いてある並び
+                | fs -> Some(sprintf "%s: %s" (Path.GetFileName file) fs.Head.Message))
+            |> Array.toList
+
+        noisy |> should be Empty
+
+    [<Test>]
+    member _.``構文が壊れているときは、構文の理由だけを出す``() =
+        // 本文が読めていないので、字から数えた位置は当てにならない。
+        // 参照の欠けが本文に在っても、そちらへ乗り換えない
+        let xml = "<bulletml><action label=\"top\"><actionRef label=\"nope\"/><fire>"
+        (missing xml).Length |> should equal 1 // 単独なら挙げる
+
+        match explain xml with
+        | [ f ] ->
+            f.Line |> should greaterThan 0
+            f.Message |> should not' (haveSubstring "nope")
+        | other -> failwithf "1 本 のはずが %d 本" other.Length
+
+    [<Test>]
+    member _.``到達しない枝の壊れた参照は、Apply が通るので波線にならない``() =
+        // Core と食い違う唯一 の向きを、字で固定する。 ここが赤くなったら
+        // Core の展開が変わったということ（到達を見るようになった、など）
+        let xml =
+            "<bulletml><action label=\"top\"><wait>1</wait></action>"
+            + "<fire label=\"orphan\"><bulletRef label=\"nope\"/></fire></bulletml>"
+
+        coreFails xml |> should be False
+        // `missing` 単独では挙げる。広いこと自体は間違いではない
+        (missing xml).Length |> should equal 1
+        // 本番の道では出ない
+        explain xml |> should be Empty
+
+    [<Test>]
+    member _.``参照を 1 つ 壊すと、Core が落ちて、同じ名前を挙げる``() =
+        // 見落とし。Core が真で、こちらは位置を足すだけ
+        let mutable measured = 0
+        let mutable skipped = 0
+        let bad = ResizeArray<string>()
+
+        for file in corpus.Value do
+            let xml = File.ReadAllText file
+
+            if not (coreFails xml) then
+                for m in refAttr.Matches xml do
+                    let broken =
+                        xml.Substring(0, m.Groups.[3].Index)
+                        + "__nope__"
+                        + xml.Substring(m.Groups.[3].Index + m.Groups.[3].Length)
+                    // 壊しても Core が通るのは、そこが到達しない枝だったとき。
+                    // 測定材料にならないので飛ばす（飛ばした数は下で見る）
+                    if not (coreFails broken) then
+                        skipped <- skipped + 1
+                    else
+                        measured <- measured + 1
+                        let found = explain broken
+
+                        if not (found |> List.exists (fun f -> f.Message.EndsWith "__nope__")) then
+                            bad.Add(sprintf "%s: Core は落ちたのに挙げなかった（%d 本）" (Path.GetFileName file) found.Length)
+        // 飛ばしてばかりだと、この試験は何も測っていない
+        measured |> should greaterThan 0
+        measured |> should greaterThan skipped
+        bad |> List.ofSeq |> should be Empty

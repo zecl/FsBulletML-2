@@ -1,38 +1,41 @@
 ﻿namespace FsBulletML2.Sample.Unity2D.FSharp
 
 open UnityEngine
-open FsBulletML2.Unity2D 
+open FsBulletML2.Unity2D
 
 [<AbstractClass>]
-type BaseBullet () =
-  inherit MonoBehaviour () 
+type BaseBullet() =
+    inherit MonoBehaviour()
 
-  [<DefaultValue>]val mutable private defaultBullet : IDefaultBullet
-  [<DefaultValue>]val mutable public bulletObject : GameObject
+    [<DefaultValue>]
+    val mutable private defaultBullet: IDefaultBullet
 
-  member this.Awake () =
-    let impl transform = {
-      new DefaultBullet (transform) with
-        override __.GetBulletPrefubInstance () = 
-          let bullet = this.GetBulletPrefubInstance ()
-          let self = bullet.GetComponent(typeof<IBullet>) :> obj :?> IBullet
-          let bullet = self.GetDefaultBullet ()
-          bullet.Init()
-          bullet
-    }
-    this.defaultBullet <- impl this.transform 
-    this.defaultBullet.Init()
+    [<DefaultValue>]
+    val mutable public bulletObject: GameObject
 
-  abstract member GetBulletPrefubInstance: unit -> GameObject
-  default this.GetBulletPrefubInstance () = null
+    member this.Awake() =
+        let impl transform =
+            { new DefaultBullet(transform) with
+                override __.GetBulletPrefubInstance() =
+                    let bullet = this.GetBulletPrefubInstance()
+                    let self = bullet.GetComponent(typeof<IBullet>) :> obj :?> IBullet
+                    let bullet = self.GetDefaultBullet()
+                    bullet.Init()
+                    bullet
+            }
 
-  member this.GetDefaultBullet () = this.defaultBullet
+        this.defaultBullet <- impl this.transform
+        this.defaultBullet.Init()
 
-  interface IBullet with
-     member this.GetDefaultBullet() = 
-      // defaultBullet はもともと IDefaultBullet。:> を書くと FS0066 が出る
-      this.defaultBullet
+    abstract member GetBulletPrefubInstance: unit -> GameObject
+    default this.GetBulletPrefubInstance() = null
 
-  abstract member Update : unit -> unit
-  default this.Update () = this.defaultBullet.Update()
- 
+    member this.GetDefaultBullet() = this.defaultBullet
+
+    interface IBullet with
+        member this.GetDefaultBullet() =
+            // defaultBullet はもともと IDefaultBullet。:> を書くと FS0066 が出る
+            this.defaultBullet
+
+    abstract member Update: unit -> unit
+    default this.Update() = this.defaultBullet.Update()
