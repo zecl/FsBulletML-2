@@ -13,7 +13,8 @@ open FsBulletML2.LanguageService
 [<TestFixture>]
 type FsharpCeCorpus() =
 
-    /// `  let <名> =` から次の同じ深さの `  let ` までを 1 本 とする
+    /// `    let <名> =` から次の同じ深さの `    let ` までを 1 本 とする。
+    /// 深さは Fantomas の 4 空白。2 空白のまま数えると 0 本 になって、下の点が空のまま緑になる。
     static let sources =
         lazy
             let root = Path.Combine(AppContext.BaseDirectory, "BulletsDsl")
@@ -21,7 +22,7 @@ type FsharpCeCorpus() =
             if not (Directory.Exists root) then
                 dict []
             else
-                let head = Regex(@"^  let\s+(\w+)\s*=", RegexOptions.Multiline)
+                let head = Regex(@"^    let\s+(\w+)\s*=", RegexOptions.Multiline)
                 let table = System.Collections.Generic.Dictionary<string, string>()
 
                 for file in Directory.EnumerateFiles(root, "*.fs", SearchOption.AllDirectories) do
