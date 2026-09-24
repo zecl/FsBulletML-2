@@ -296,12 +296,25 @@ jobs:
       - name: 型プロバイダで引いた弾幕を走らせる
         run: dotnet run --project samples/FsBulletML2.Sample.TypeProviders.Debug -c Release
 
+  # **選ばずに毎回 走らせる。** どの .fs を触ってもずれは起きる。
+  # 生成物と上流の ProvidedTypes は .fantomasignore。
+  # 手で揃えると、次の焼き直しで消えるか、SDK の原文と差が付く。
+  format:
+    name: Format
+    runs-on: [self-hosted, windows, fsbulletml2]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fantomas
+        run: |
+          dotnet tool restore
+          dotnet fantomas check .
+
   # 枝分かれした job をまとめて 1 つ の必須チェックにする。
   # **skipped を成功として数えない** —— 選ばれなかったのか、落ちて飛ばされたのかは
   # 別のことなので、select の結果を見て分ける
   gate:
     name: Gate
-    needs: [select, test, build, shipped, parity, typeproviders]
+    needs: [select, test, build, shipped, parity, typeproviders, format]
     if: always()
     runs-on: [self-hosted, windows, fsbulletml2]
     steps:
@@ -314,6 +327,7 @@ jobs:
           SHIPPED: ${{ needs.shipped.result }}
           PARITY: ${{ needs.parity.result }}
           TYPEPROVIDERS: ${{ needs.typeproviders.result }}
+          FORMAT: ${{ needs.format.result }}
           TESTS: ${{ needs.select.outputs.tests }}
           BUILDS: ${{ needs.select.outputs.builds }}
         run: ./.github/scripts/gate.ps1

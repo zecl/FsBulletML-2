@@ -2,7 +2,7 @@
 
 open System
 open System.Collections.Generic
-open Microsoft.FSharp.Core.Operators.Unchecked 
+open Microsoft.FSharp.Core.Operators.Unchecked
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Input
 open Microsoft.Xna.Framework.Graphics
@@ -10,178 +10,280 @@ open Microsoft.Xna.Framework.Graphics
 open FsBulletML2
 open FsBulletML2.MonoGame
 
-type FsBulletML2SampleGame () as this = 
-  inherit Game()
-  [<DefaultValue>]val mutable boss : IEnemy
-  [<DefaultValue>]val mutable currentKeyState : KeyboardState 
-  [<DefaultValue>]val mutable prevKeyState : KeyboardState 
-  [<DefaultValue>]val mutable enemyIndex : int 
-  [<DefaultValue>]val mutable background : Background
-  [<DefaultValue>]val mutable fps : Fps
-  [<DefaultValue>]val mutable bulletName : string
-  [<DefaultValue>]val mutable enemyBullets : BulletmlInfo list
-  [<DefaultValue>]val mutable emitter : ParticleEmitter
+type FsBulletML2SampleGame() as this =
+    inherit Game()
 
-  static let mutable gmanager = null : GraphicsDeviceManager
-  let gametitle, sprite = "FsBulletML2.Sample.MonoGame.FSharp", lazy new SpriteBatch(this.GraphicsDevice)
-  let bulletTexture,enemyBullet1Texture, enemyBullet2Texture, playerTexture, playerBullet1Texture, playerBullet2Texture, enemyTexture, backgroundTexture, particleTexture, enemyBullet3Texture = 
-    ["bullet"; "enemy_bullet1";"enemy_bullet2";"player";"p_bullet_s";"player_bullet2";"enemy1";"background";"particle";"g_bullet_s"] 
-    |> List.map (fun name -> lazy this.Content.Load<Texture2D>("Sprites/" + name)) |> function 
-    |  a::b::c::d::e::f::g::h::i::j::[] -> a,b,c,d,e,f,g,h,i,j | _ -> invalidArg "tlist" "長さが違う"
-  let sfont = lazy (
-    try this.Content.Load<SpriteFont>("font/SpriteFont2")
-    with ex ->
-      eprintfn "SpriteFont XNB load failed (%s); baking a DejaVu fallback." ex.Message
-      FsBulletML2.Sample.MonoGame.Font.RuntimeSpriteFont.Bake(this.GraphicsDevice, 14.f))
-  let drawText (msg:string) (v:Vector2) c = sprite.Force() |> function
-    | x -> sfont.Force() |> fun font -> [font, msg, Vector2(v.X+2.f,v.Y+2.f), Color.Gray; font, msg, v, c ] 
-                                       |> List.iter (fun (font, msg, v, c) -> x.DrawString(font, msg, v, c))
+    [<DefaultValue>]
+    val mutable boss: IEnemy
 
-  /// `<bulletml type>` を画面に出すための言い換え。
-  let scrollLabel (d: FsBulletML2.DTD.ShootingDirection) =
-    if isNull (box d) then "(未設定)"
-    else
-      match d with
-      | FsBulletML2.DTD.ShootingDirection.BulletVertical   -> "vertical"
-      | FsBulletML2.DTD.ShootingDirection.BulletHorizontal -> "horizontal"
-      | FsBulletML2.DTD.ShootingDirection.BulletNone       -> "none"
+    [<DefaultValue>]
+    val mutable currentKeyState: KeyboardState
 
-  static let mutable ship = defaultof<Player>
-  static member Player : Player = ship
-  static member Graphics = gmanager
+    [<DefaultValue>]
+    val mutable prevKeyState: KeyboardState
 
-  let enemyDefaultPos = new Vector2(Settings.Enemy.X, Settings.Enemy.Y)
-  let createEnemy pos bulletMove = 
-      let enemy = new Enemy()
-      Manager.addEnemy(enemy)
-      enemy.pos <- pos 
-      enemy.SetBulletTask(bulletMove)
-      enemy
+    [<DefaultValue>]
+    val mutable enemyIndex: int
 
-  let getEnemyInfo = fun index ->
-    let len = this.enemyBullets |> List.length 
-    if len <= (index) then
-      this.enemyIndex  <- 0
-    
-    this.enemyBullets
-    |> Seq.item this.enemyIndex
-    |> fun bullet ->
-        // 木を組んで、wait の term をここで引いておく下ごしらえ。
-        bullet.Script (loadRand, loadRank ()) |> ignore
-        enemyDefaultPos, (bullet.Name, bullet)
+    [<DefaultValue>]
+    val mutable background: Background
 
-  do 
-    this.Content.RootDirectory <- "Content"
-    this.IsMouseVisible <- true
-    this.Window.AllowUserResizing <- true
-    gmanager <- new GraphicsDeviceManager(this)
-    // 480x640 already fits this box (1280x800); keep original playfield.
-    gmanager.PreferredBackBufferWidth <- Settings.Display.Width |> int
-    gmanager.PreferredBackBufferHeight <- Settings.Display.Height |> int
-    gmanager.SynchronizeWithVerticalRetrace <- true
+    [<DefaultValue>]
+    val mutable fps: Fps
 
-  override this.Initialize() =
-    base.Initialize()
+    [<DefaultValue>]
+    val mutable bulletName: string
 
-  override this.LoadContent() =
-    base.Window.Title <-gametitle
-    this.enemyBullets <- EnemyControl.bullets 
+    [<DefaultValue>]
+    val mutable enemyBullets: BulletmlInfo list
 
-    let pos, (name,bm) = getEnemyInfo(this.enemyIndex)
-    this.bulletName <- name
-    this.boss <- createEnemy pos (name,bm) 
+    [<DefaultValue>]
+    val mutable emitter: ParticleEmitter
 
-    ship <- new Player()
-    ship.Init()
-    ship.texture <- playerTexture.Force()
+    static let mutable gmanager = null: GraphicsDeviceManager
 
-    this.emitter <- new ParticleEmitter()
-    this.fps <- new Fps()
-    let bgTexture = backgroundTexture.Force()
-    this.background <- new Background(bgTexture, gmanager.PreferredBackBufferHeight |> float32, 64.f)
-    base.LoadContent()
+    let gametitle, sprite =
+        "FsBulletML2.Sample.MonoGame.FSharp", lazy new SpriteBatch(this.GraphicsDevice)
 
-  override this.UnloadContent () = 
-    base.UnloadContent()
+    let (bulletTexture,
+         enemyBullet1Texture,
+         enemyBullet2Texture,
+         playerTexture,
+         playerBullet1Texture,
+         playerBullet2Texture,
+         enemyTexture,
+         backgroundTexture,
+         particleTexture,
+         enemyBullet3Texture) =
+        [
+            "bullet"
+            "enemy_bullet1"
+            "enemy_bullet2"
+            "player"
+            "p_bullet_s"
+            "player_bullet2"
+            "enemy1"
+            "background"
+            "particle"
+            "g_bullet_s"
+        ]
+        |> List.map (fun name -> lazy this.Content.Load<Texture2D>("Sprites/" + name))
+        |> function
+            | a :: b :: c :: d :: e :: f :: g :: h :: i :: j :: [] -> a, b, c, d, e, f, g, h, i, j
+            | _ -> invalidArg "tlist" "長さが違う"
 
-  override this.Update(gameTime) = 
-    this.background.Update(gameTime.ElapsedGameTime.TotalSeconds)
-    this.fps.Update(gameTime.ElapsedGameTime.TotalSeconds)
+    let sfont =
+        lazy
+            (try
+                this.Content.Load<SpriteFont>("font/SpriteFont2")
+             with ex ->
+                 eprintfn "SpriteFont XNB load failed (%s); baking a DejaVu fallback." ex.Message
+                 FsBulletML2.Sample.MonoGame.Font.RuntimeSpriteFont.Bake(this.GraphicsDevice, 14.f))
 
-    this.prevKeyState <- this.currentKeyState;
-    this.currentKeyState <- Keyboard.GetState();
+    let drawText (msg: string) (v: Vector2) c =
+        sprite.Force()
+        |> function
+            | x ->
+                sfont.Force()
+                |> fun font ->
+                    [ font, msg, Vector2(v.X + 2.f, v.Y + 2.f), Color.Gray; font, msg, v, c ]
+                    |> List.iter (fun (font, msg, v, c) -> x.DrawString(font, msg, v, c))
 
-    if this.boss.Life = 0 || (this.IsPressed(Keys.Enter)) then
-      Manager.removeAll()
-      this.enemyIndex <- this.enemyIndex + 1
-      let pos, (name,bm) = getEnemyInfo(this.enemyIndex)
-      (this.boss :> IBullet).Used <- false
-      this.bulletName <- name
-      this.boss <- createEnemy pos (name,bm) 
+    /// `<bulletml type>` を画面に出すための言い換え。
+    let scrollLabel (d: FsBulletML2.DTD.ShootingDirection) =
+        if isNull (box d) then
+            "(未設定)"
+        else
+            match d with
+            | FsBulletML2.DTD.ShootingDirection.BulletVertical -> "vertical"
+            | FsBulletML2.DTD.ShootingDirection.BulletHorizontal -> "horizontal"
+            | FsBulletML2.DTD.ShootingDirection.BulletNone -> "none"
 
-    if Keyboard.GetState().IsKeyDown(Keys.Escape) then
-      this.Exit()
+    static let mutable ship = defaultof<Player>
+    static member Player: Player = ship
+    static member Graphics = gmanager
 
-    ship.Update()
-    Manager.update()
-    Manager.free()
-    Manager.updateSpace()
+    let enemyDefaultPos = new Vector2(Settings.Enemy.X, Settings.Enemy.Y)
 
-    let createParticle pos =
-      let rand = new Random ()
-      let v = new Vector2 (rand.Next(0, 10) |> float32, rand.Next(0, 10) |> float32)
-      let particleTexture = particleTexture.Force()
-      this.emitter.Emmit(particleTexture, pos + v, 1.4f, 1.2f, 1.0f, 2, 45, Color.Gold);
-      this.emitter.Emmit(particleTexture, pos + v, 1.2f, 1.5f, 1.2f, 1, 40, Color.OrangeRed );
-      this.emitter.Emmit(particleTexture, pos + v, 1.2f, 1.2f, 0.9f, 1, 45, Color.LightGoldenrodYellow);
-      this.emitter.Emmit(particleTexture, pos + v, 1.6f, 2.0f, 1.8f, 2, 40, Color.Orange);
-      this.emitter.Emmit(particleTexture, pos + v, 1.0f, 1.5f, 1.5f, 2, 40, Color.DarkRed);
-      this.emitter.Emmit(particleTexture, pos + v, 1.3f, 1.2f, 1.4f, 2, 40, Color.Tomato);
+    let createEnemy pos bulletMove =
+        let enemy = new Enemy()
+        Manager.addEnemy (enemy)
+        enemy.pos <- pos
+        enemy.SetBulletTask(bulletMove)
+        enemy
 
-    Manager.checkPlayerCollision ship.Pos ship.Radius (fun () -> createParticle ship.Pos ; ship.damageCounter <- ship.damageCounter + 1)
-    Manager.checkEnemyCollision this.boss.Pos this.boss.Radius (fun () -> createParticle this.boss.Pos ;if this.boss.Life > 0 then this.boss.Life <- this.boss.Life - 1)
-    this.emitter.Update(gameTime.ElapsedGameTime.TotalSeconds);
-    base.Update gameTime
+    let getEnemyInfo =
+        fun index ->
+            let len = this.enemyBullets |> List.length
 
-  override this.Draw(gameTime) = base.Draw gameTime |> fun _ ->
-    gmanager.GraphicsDevice.Clear(Color.Black)
-    let spriteBatch = sprite.Force()
-    spriteBatch.Begin()
-    this.background.Draw(spriteBatch)
-    drawText (String.Format("FPS: {0:F5}", this.fps.value)) (new Vector2(3.f, 3.f)) Color.White
+            if len <= (index) then
+                this.enemyIndex <- 0
 
-    let enemyBullet1Texture = enemyBullet3Texture.Force()
-    let enemyBullet2Texture = enemyBullet2Texture.Force()
-    let playerBullet1Texture = playerBullet1Texture.Force()
-    let playerBullet2Texture = playerBullet2Texture.Force()
-    let enemyTexture = enemyTexture.Force()
+            this.enemyBullets
+            |> Seq.item this.enemyIndex
+            |> fun bullet ->
+                // 木を組んで、wait の term をここで引いておく下ごしらえ。
+                bullet.Script(loadRand, loadRank ()) |> ignore
+                enemyDefaultPos, (bullet.Name, bullet)
 
-    Manager.playerBullets
-    |> Seq.iter (fun bullet -> let textureCenter = new Vector2(enemyBullet1Texture.Width / 2 |> float32, enemyBullet1Texture.Height / 2 |> float32);
-                               let position = Manager.getDrawPos bullet.Pos playerBullet1Texture + textureCenter
-                               spriteBatch.Draw(playerBullet1Texture, position, System.Nullable(), Color.White,bullet.Dir, textureCenter, 1.0f, SpriteEffects.None, 0.f))
-    Manager.enemyBullets
-    |> Seq.iter (fun bullet -> let textureCenter = new Vector2(enemyBullet1Texture.Width / 2 |> float32, enemyBullet1Texture.Height / 2 |> float32);
-                               let position = Manager.getDrawPos bullet.Pos enemyBullet1Texture + textureCenter
-                               spriteBatch.Draw(enemyBullet1Texture, position, System.Nullable(), Color.White,bullet.Dir, textureCenter, 1.0f, SpriteEffects.None, 0.f))
-    Manager.enemies 
-    |> Seq.iter (fun enemy -> spriteBatch.Draw(enemyTexture, Manager.getDrawPos enemy.Pos enemyTexture, Color.AntiqueWhite))
+    do
+        this.Content.RootDirectory <- "Content"
+        this.IsMouseVisible <- true
+        this.Window.AllowUserResizing <- true
+        gmanager <- new GraphicsDeviceManager(this)
+        // 480x640 already fits this box (1280x800); keep original playfield.
+        gmanager.PreferredBackBufferWidth <- Settings.Display.Width |> int
+        gmanager.PreferredBackBufferHeight <- Settings.Display.Height |> int
+        gmanager.SynchronizeWithVerticalRetrace <- true
 
-    spriteBatch.Draw(ship.texture, Manager.getDrawPos ship.Pos ship.texture, Color.AntiqueWhite)
+    override this.Initialize() = base.Initialize()
 
-    drawText (sprintf "Name :%s " this.bulletName ) (new Vector2(3.f, 18.f)) Color.White
-    // <bulletml type> がライブラリから届いているかを、そのまま出す。
-    // ここは「値が届いている」ことが目で見えるようにしただけ（上の TODO 参照）
-    drawText (sprintf "Scroll : %s" (scrollLabel this.boss.ShootingDirection)) (new Vector2(3.f, 33.f)) Color.White
-    drawText (sprintf "Boss Life : %s" <| this.boss.Life.ToString()) (new Vector2(3.f, 48.f)) Color.White
-    drawText (sprintf "Player Damage : %s" <| ship.damageCounter.ToString()) (new Vector2(3.f, 63.f)) Color.White
+    override this.LoadContent() =
+        base.Window.Title <- gametitle
+        this.enemyBullets <- EnemyControl.bullets
 
-    this.emitter.Draw(spriteBatch)
+        let pos, (name, bm) = getEnemyInfo (this.enemyIndex)
+        this.bulletName <- name
+        this.boss <- createEnemy pos (name, bm)
 
-    spriteBatch.End()
+        ship <- new Player()
+        ship.Init()
+        ship.texture <- playerTexture.Force()
 
-  override this.EndRun () = base.EndRun()
+        this.emitter <- new ParticleEmitter()
+        this.fps <- new Fps()
+        let bgTexture = backgroundTexture.Force()
+        this.background <- new Background(bgTexture, gmanager.PreferredBackBufferHeight |> float32, 64.f)
+        base.LoadContent()
 
-  member this.IsPressed(key:Keys) =
-    (this.currentKeyState.IsKeyDown(key) && this.prevKeyState.IsKeyUp(key));
+    override this.UnloadContent() = base.UnloadContent()
 
+    override this.Update(gameTime) =
+        this.background.Update(gameTime.ElapsedGameTime.TotalSeconds)
+        this.fps.Update(gameTime.ElapsedGameTime.TotalSeconds)
+
+        this.prevKeyState <- this.currentKeyState
+        this.currentKeyState <- Keyboard.GetState()
+
+        if this.boss.Life = 0 || (this.IsPressed(Keys.Enter)) then
+            Manager.removeAll ()
+            this.enemyIndex <- this.enemyIndex + 1
+            let pos, (name, bm) = getEnemyInfo (this.enemyIndex)
+            (this.boss :> IBullet).Used <- false
+            this.bulletName <- name
+            this.boss <- createEnemy pos (name, bm)
+
+        if Keyboard.GetState().IsKeyDown(Keys.Escape) then
+            this.Exit()
+
+        ship.Update()
+        Manager.update ()
+        Manager.free ()
+        Manager.updateSpace ()
+
+        let createParticle pos =
+            let rand = new Random()
+            let v = new Vector2(rand.Next(0, 10) |> float32, rand.Next(0, 10) |> float32)
+            let particleTexture = particleTexture.Force()
+            this.emitter.Emmit(particleTexture, pos + v, 1.4f, 1.2f, 1.0f, 2, 45, Color.Gold)
+            this.emitter.Emmit(particleTexture, pos + v, 1.2f, 1.5f, 1.2f, 1, 40, Color.OrangeRed)
+            this.emitter.Emmit(particleTexture, pos + v, 1.2f, 1.2f, 0.9f, 1, 45, Color.LightGoldenrodYellow)
+            this.emitter.Emmit(particleTexture, pos + v, 1.6f, 2.0f, 1.8f, 2, 40, Color.Orange)
+            this.emitter.Emmit(particleTexture, pos + v, 1.0f, 1.5f, 1.5f, 2, 40, Color.DarkRed)
+            this.emitter.Emmit(particleTexture, pos + v, 1.3f, 1.2f, 1.4f, 2, 40, Color.Tomato)
+
+        Manager.checkPlayerCollision ship.Pos ship.Radius (fun () ->
+            createParticle ship.Pos
+            ship.damageCounter <- ship.damageCounter + 1)
+
+        Manager.checkEnemyCollision this.boss.Pos this.boss.Radius (fun () ->
+            createParticle this.boss.Pos
+
+            if this.boss.Life > 0 then
+                this.boss.Life <- this.boss.Life - 1)
+
+        this.emitter.Update(gameTime.ElapsedGameTime.TotalSeconds)
+        base.Update gameTime
+
+    override this.Draw(gameTime) =
+        base.Draw gameTime
+        |> fun _ ->
+            gmanager.GraphicsDevice.Clear(Color.Black)
+            let spriteBatch = sprite.Force()
+            spriteBatch.Begin()
+            this.background.Draw(spriteBatch)
+            drawText (String.Format("FPS: {0:F5}", this.fps.value)) (new Vector2(3.f, 3.f)) Color.White
+
+            let enemyBullet1Texture = enemyBullet3Texture.Force()
+            let enemyBullet2Texture = enemyBullet2Texture.Force()
+            let playerBullet1Texture = playerBullet1Texture.Force()
+            let playerBullet2Texture = playerBullet2Texture.Force()
+            let enemyTexture = enemyTexture.Force()
+
+            Manager.playerBullets
+            |> Seq.iter (fun bullet ->
+                let textureCenter =
+                    new Vector2(enemyBullet1Texture.Width / 2 |> float32, enemyBullet1Texture.Height / 2 |> float32)
+
+                let position = Manager.getDrawPos bullet.Pos playerBullet1Texture + textureCenter
+
+                spriteBatch.Draw(
+                    playerBullet1Texture,
+                    position,
+                    System.Nullable(),
+                    Color.White,
+                    bullet.Dir,
+                    textureCenter,
+                    1.0f,
+                    SpriteEffects.None,
+                    0.f
+                ))
+
+            Manager.enemyBullets
+            |> Seq.iter (fun bullet ->
+                let textureCenter =
+                    new Vector2(enemyBullet1Texture.Width / 2 |> float32, enemyBullet1Texture.Height / 2 |> float32)
+
+                let position = Manager.getDrawPos bullet.Pos enemyBullet1Texture + textureCenter
+
+                spriteBatch.Draw(
+                    enemyBullet1Texture,
+                    position,
+                    System.Nullable(),
+                    Color.White,
+                    bullet.Dir,
+                    textureCenter,
+                    1.0f,
+                    SpriteEffects.None,
+                    0.f
+                ))
+
+            Manager.enemies
+            |> Seq.iter (fun enemy ->
+                spriteBatch.Draw(enemyTexture, Manager.getDrawPos enemy.Pos enemyTexture, Color.AntiqueWhite))
+
+            spriteBatch.Draw(ship.texture, Manager.getDrawPos ship.Pos ship.texture, Color.AntiqueWhite)
+
+            drawText (sprintf "Name :%s " this.bulletName) (new Vector2(3.f, 18.f)) Color.White
+            // <bulletml type> がライブラリから届いているかを、そのまま出す。
+            // ここは「値が届いている」ことが目で見えるようにしただけ（上の TODO 参照）
+            drawText
+                (sprintf "Scroll : %s" (scrollLabel this.boss.ShootingDirection))
+                (new Vector2(3.f, 33.f))
+                Color.White
+
+            drawText (sprintf "Boss Life : %s" <| this.boss.Life.ToString()) (new Vector2(3.f, 48.f)) Color.White
+
+            drawText
+                (sprintf "Player Damage : %s" <| ship.damageCounter.ToString())
+                (new Vector2(3.f, 63.f))
+                Color.White
+
+            this.emitter.Draw(spriteBatch)
+
+            spriteBatch.End()
+
+    override this.EndRun() = base.EndRun()
+
+    member this.IsPressed(key: Keys) =
+        (this.currentKeyState.IsKeyDown(key) && this.prevKeyState.IsKeyUp(key))

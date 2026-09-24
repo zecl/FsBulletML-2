@@ -9,13 +9,13 @@ open System.Runtime.CompilerServices
 [<Extension; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Action =
 
-  /// `DefaultBullet.RunTask` が、受け取った `Action` を F# 関数に戻すのに使う
-  [<Extension; CompiledName "ToFSharpFunc">]
-  let toFSharpFunc2 (f: Action<'T1, 'T2>) = fun t1 t2 -> f.Invoke(t1, t2)
+    /// `DefaultBullet.RunTask` が、受け取った `Action` を F# 関数に戻すのに使う
+    [<Extension; CompiledName "ToFSharpFunc">]
+    let toFSharpFunc2 (f: Action<'T1, 'T2>) = fun t1 t2 -> f.Invoke(t1, t2)
 
 [<Extension; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module FSharpFunc =
 
-  /// `DefaultBullet.Update` が、自分の `RunTask` を呼ぶのに使う
-  [<Extension; CompiledName "ToAction">]
-  let ToAction2 (f: 'T1 -> 'T2 -> unit) = Action<'T1, 'T2>(f)
+    /// `DefaultBullet.Update` が、自分の `RunTask` を呼ぶのに使う
+    [<Extension; CompiledName "ToAction">]
+    let ToAction2 (f: 'T1 -> 'T2 -> unit) = Action<'T1, 'T2>(f)

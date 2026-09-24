@@ -1,4 +1,5 @@
 namespace FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun
+
 open FsBulletML2
 open FsBulletML2.Dsl
 
@@ -7,57 +8,64 @@ open FsBulletML2.Dsl
 [<RequireQualifiedAccess>]
 module Garegga =
 
-  /// バトルガレッガのBlackHeartMk2のワインダー。by 白い弾幕くん
-  /// [Garegga]_black_heart_mk2_winder.xml
-  let black_heart_mk2_winder =
-    createBulletmlInfo <|
-    verticalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "バトルガレッガのBlackHeartMk2のワインダー。by 白い弾幕くん" {
-        top {
-            fire {
-                absolute "135"
-                refBullet "winder" []
-            }
-            fire {
-                absolute "225"
-                refBullet "winder" []
-            }
-            wait "220"
-        }
-        defBullet "winder" {
-            speed "2.3"
-            doActs (body {
-                wait "10"
-                changeSpeed "0" "1"
+    /// バトルガレッガのBlackHeartMk2のワインダー。by 白い弾幕くん
+    /// [Garegga]_black_heart_mk2_winder.xml
+    let black_heart_mk2_winder =
+        createBulletmlInfo
+        <| verticalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "バトルガレッガのBlackHeartMk2のワインダー。by 白い弾幕くん" {
+            top {
                 fire {
-                    absolute "230"
-                    ofBullet (bulletAnon {
-                        doActs (body {
-                            vanish
-                        })
-                    })
+                    absolute "135"
+                    refBullet "winder" []
                 }
-                actionRef "move" ["0"; "40"]
-                actionRef "move" ["0.7+$rank"; "20"]
-                actionRef "move" ["-0.7-$rank"; "40"]
-                actionRef "move" ["0.7+$rank"; "20"]
-                vanish
-            })
-        }
-        defAction "move" {
-            repeat "$2" {
+
                 fire {
-                    sequence "$1-100"
-                    speed "5"
-                    plain
+                    absolute "225"
+                    refBullet "winder" []
                 }
-                repeat "4" {
+
+                wait "220"
+            }
+
+            defBullet "winder" {
+                speed "2.3"
+
+                doActs (
+                    body {
+                        wait "10"
+                        changeSpeed "0" "1"
+
+                        fire {
+                            absolute "230"
+                            ofBullet (bulletAnon { doActs (body { vanish }) })
+                        }
+
+                        actionRef "move" [ "0"; "40" ]
+                        actionRef "move" [ "0.7+$rank"; "20" ]
+                        actionRef "move" [ "-0.7-$rank"; "40" ]
+                        actionRef "move" [ "0.7+$rank"; "20" ]
+                        vanish
+                    }
+                )
+            }
+
+            defAction "move" {
+                repeat "$2" {
                     fire {
-                        sequence "25"
+                        sequence "$1-100"
                         speed "5"
                         plain
                     }
+
+                    repeat "4" {
+                        fire {
+                            sequence "25"
+                            speed "5"
+                            plain
+                        }
+                    }
+
+                    wait "2"
                 }
-                wait "2"
             }
         }
-    }

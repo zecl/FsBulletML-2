@@ -6,6 +6,5 @@ namespace FsBulletML2
 [<AutoOpen>]
 module Eval =
 
-  /// 式の値。乱数は式の中身によらず 1 回 だけ引く。回数を変えると軌跡がずれる。
-  let getValue (env: Domain.Env) (e: Expr.NumExpr) =
-    Expr.NumExpr.eval env.Rand env.Rank e
+    /// 式の値。乱数は式の中身によらず 1 回 だけ引く。回数を変えると軌跡がずれる。
+    let getValue (env: Domain.Env) (e: Expr.NumExpr) = Expr.NumExpr.eval env.Rand env.Rank e

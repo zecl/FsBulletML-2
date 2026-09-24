@@ -10,7 +10,8 @@ samples/FsBulletML2.Sample.MonoGame.CSharp/Enemy.cs
     base.RunTask((x, y) => { this.self.X = this.self.X + x; this.self.Y = this.self.Y + y; });
 
 samples/FsBulletML2.Sample.MonoGame.FSharp/Enemy.fs
-    let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
+    this.self.X <- this.self.X + x
+    this.self.Y <- this.self.Y + y
 
 samples/FsBulletML2.Sample.Server.MagicOnion/Engine/ServerBullet.cs
     X += f.Delta.X / 100f;
@@ -18,7 +19,8 @@ samples/FsBulletML2.Sample.Server.MagicOnion/Engine/ServerBullet.cs
 
 samples/FsBulletML2.Sample.TypeProviders.Debug/Program.fs
     let f = Runner.stepWith env bullet { bullet.Motion with Pos = pos }
-    next.Add (f.Run, { X = pos.X + f.Delta.X; Y = pos.Y + f.Delta.Y })
+    X = pos.X + f.Delta.X
+    Y = pos.Y + f.Delta.Y
 
 samples/FsBulletML2.Sample.Unity2D.CSharp/Assets/Scripts/BaseBullet.cs
     X = X + (f.Delta.X / 100);
@@ -36,12 +38,14 @@ src/FsBulletML2.Front/Driver.fs
     Runner.stepWith env run motion
 
 src/FsBulletML2.Generate/Felt.fs
-    let f = Runner.stepWith (envOf rand rank root enemy) root { root.Motion with Pos = enemy }
+    Runner.stepWith (envOf rand rank root enemy) root { root.Motion with Pos = enemy }
     let f = Runner.stepWith (envOf rand rank r mot.Pos) r mot
-    let p = { X = mot.Pos.X + f.Delta.X; Y = mot.Pos.Y + f.Delta.Y }
+    X = mot.Pos.X + f.Delta.X
+    Y = mot.Pos.Y + f.Delta.Y
 
 src/FsBulletML2.MonoGame/BaseBullet.fs
-    let apply x y = this.self.X <- this.self.X + x; this.self.Y <- this.self.Y + y
+    this.self.X <- this.self.X + x
+    this.self.Y <- this.self.Y + y
     apply f.Delta.X f.Delta.Y
 
 src/FsBulletML2.Unity2D/DefaultBullet.fs
@@ -53,4 +57,4 @@ run の経路に居ないが、座標を足している所（件数だけ）:
   samples/FsBulletML2.Sample.MonoGame.FSharp/Background.fs         1 行
   samples/FsBulletML2.Sample.MonoGame.FSharp/Player.fs             4 行
 
-―― 本体 11 ファイル / 21 行（0 なら走査か網が壊れている）
+―― 本体 11 ファイル / 25 行（0 なら走査か網が壊れている）

@@ -12,89 +12,103 @@ open FsBulletML2.LanguageService.Languages.Xml
 [<TestFixture>]
 type XmlCompletion() =
 
-  static let lang = XmlLanguage(fun () -> vocab)
+    static let lang = XmlLanguage(fun () -> vocab)
 
-  /// `@` の位置をカーソルとして候補を出す
-  let complete (marked: string) =
-    lang.Candidates(marked.Replace("@", ""), marked.IndexOf '@')
+    /// `@` の位置をカーソルとして候補を出す
+    let complete (marked: string) =
+        lang.Candidates(marked.Replace("@", ""), marked.IndexOf '@')
 
-  let labels marked =
-    complete marked
-    // 雛形（v2.6）は外す。 ここが数えているのは「その場所に置ける要素」で、
-    // 形の候補はその上に載る別の並び（`Frames.fs` が持ち、`Frames` が当てる）
-    |> List.filter (fun c -> not c.IsFrame)
-    |> List.map (fun c -> c.Label)
-    |> List.sort
+    let labels marked =
+        complete marked
+        // 雛形（v2.6）は外す。 ここが数えているのは「その場所に置ける要素」で、
+        // 形の候補はその上に載る別の並び（`Frames.fs` が持ち、`Frames` が当てる）
+        |> List.filter (fun c -> not c.IsFrame)
+        |> List.map (fun c -> c.Label)
+        |> List.sort
 
-  [<Test>]
-  member _.``本文では置ける子要素``() =
-    labels "<bulletml>\n@\n</bulletml>" |> should equal [ "action"; "bullet"; "fire" ]
-    labels "<bulletml>\n<action>\n<fire>\n@\n</fire>\n</action>\n</bulletml>"
-    |> should equal [ "bullet"; "bulletRef"; "direction"; "speed" ]
+    [<Test>]
+    member _.``本文では置ける子要素``() =
+        labels "<bulletml>\n@\n</bulletml>"
+        |> should equal [ "action"; "bullet"; "fire" ]
 
-  [<Test>]
-  member _.``根の外は bulletml だけ``() =
-    labels "@" |> should equal [ "bulletml" ]
+        labels "<bulletml>\n<action>\n<fire>\n@\n</fire>\n</action>\n</bulletml>"
+        |> should equal [ "bullet"; "bulletRef"; "direction"; "speed" ]
 
-  [<Test>]
-  member _.``打っている名前のぶんを置き換える``() =
-    // Monaco の語の定義に頼らない。 ここが 0 のままだと、
-    // 打った字の後ろに候補が継ぎ足される（`<fifire>`）
-    complete "<bulletml>\n<action>\n<fi@" |> List.map (fun c -> c.Replace) |> List.distinct
-    |> should equal [ 2 ]
-    complete "<bulletml>\n<action>\n@" |> List.map (fun c -> c.Replace) |> List.distinct
-    |> should equal [ 0 ]
+    [<Test>]
+    member _.``根の外は bulletml だけ``() =
+        labels "@" |> should equal [ "bulletml" ]
 
-  [<Test>]
-  member _.``属性名は 等号と引用符 まで入れる``() =
-    let items = complete "<bulletml>\n<action>\n<direction @>1</direction>\n</action>\n</bulletml>"
-    items |> List.map (fun c -> c.Label) |> should equal [ "type" ]
-    // `$0` はカーソルの置き場。名前だけ入れると必ず手で 3 文字 足すことになる
-    items |> List.map (fun c -> c.Insert) |> should equal [ "type=\"$0\"" ]
-    items |> List.forall (fun c -> c.Snippet) |> should be True
+    [<Test>]
+    member _.``打っている名前のぶんを置き換える``() =
+        // Monaco の語の定義に頼らない。 ここが 0 のままだと、
+        // 打った字の後ろに候補が継ぎ足される（`<fifire>`）
+        complete "<bulletml>\n<action>\n<fi@"
+        |> List.map (fun c -> c.Replace)
+        |> List.distinct
+        |> should equal [ 2 ]
 
-  [<Test>]
-  member _.``属性値は語彙の並び``() =
-    labels "<bulletml>\n<action>\n<direction type=\"@\">1</direction>\n</action>\n</bulletml>"
-    |> should equal [ "absolute"; "aim"; "relative"; "sequence" ]
+        complete "<bulletml>\n<action>\n@"
+        |> List.map (fun c -> c.Replace)
+        |> List.distinct
+        |> should equal [ 0 ]
 
-  [<Test>]
-  member _.``中身を取る要素では式も出る``() =
-    // wait は子を持たないので、出るのは式だけ
-    labels "<bulletml>\n<action>\n<wait>@</wait>\n</action>\n</bulletml>"
-    |> should equal [ "$rand"; "$rank" ]
-    // param も #PCDATA（型は string list なので reflection では見えない）
-    labels "<bulletml>\n<action>\n<actionRef label=\"a\"><param>@</param></actionRef>\n</action>\n</bulletml>"
-    |> should equal [ "$rand"; "$rank" ]
+    [<Test>]
+    member _.``属性名は 等号と引用符 まで入れる``() =
+        let items =
+            complete "<bulletml>\n<action>\n<direction @>1</direction>\n</action>\n</bulletml>"
 
-  [<Test>]
-  member _.``中身を取らない要素では式は出ない``() =
-    labels "<bulletml>\n@\n</bulletml>" |> should not' (contain "$rand")
+        items |> List.map (fun c -> c.Label) |> should equal [ "type" ]
+        // `$0` はカーソルの置き場。名前だけ入れると必ず手で 3 文字 足すことになる
+        items |> List.map (fun c -> c.Insert) |> should equal [ "type=\"$0\"" ]
+        items |> List.forall (fun c -> c.Snippet) |> should be True
 
-  [<Test>]
-  member _.``式の置き換えは ドル記号 を含む``() =
-    // 含めないと `$` の後ろに `$rand` が付いて `$$rand` になる
-    complete "<bulletml>\n<action>\n<wait>$r@</wait>\n</action>\n</bulletml>"
-    |> List.map (fun c -> c.Replace) |> List.distinct
-    |> should equal [ 2 ]
-    complete "<bulletml>\n<action>\n<wait>3+$ra@</wait>\n</action>\n</bulletml>"
-    |> List.map (fun c -> c.Replace) |> List.distinct
-    |> should equal [ 3 ]
-    complete "<bulletml>\n<action>\n<wait>$@</wait>\n</action>\n</bulletml>"
-    |> List.map (fun c -> c.Replace) |> List.distinct
-    |> should equal [ 1 ]
+    [<Test>]
+    member _.``属性値は語彙の並び``() =
+        labels "<bulletml>\n<action>\n<direction type=\"@\">1</direction>\n</action>\n</bulletml>"
+        |> should equal [ "absolute"; "aim"; "relative"; "sequence" ]
 
-  [<Test>]
-  member _.``式の候補は Parser が読める字である``() =
-    // 綴りは DU から引けない（読む側が文字で持っている）ので、
-    // 表と Parser がずれていないかをここで当てる
-    for token in Vocabulary.expressions do
-      let e = Expr.NumExpr.ofString token
-      e.Ast |> should not' (equal Expr.Node.Invalid)
-      (e.NeedRand || e.NeedRank) |> should be True
+    [<Test>]
+    member _.``中身を取る要素では式も出る``() =
+        // wait は子を持たないので、出るのは式だけ
+        labels "<bulletml>\n<action>\n<wait>@</wait>\n</action>\n</bulletml>"
+        |> should equal [ "$rand"; "$rank" ]
+        // param も #PCDATA（型は string list なので reflection では見えない）
+        labels "<bulletml>\n<action>\n<actionRef label=\"a\"><param>@</param></actionRef>\n</action>\n</bulletml>"
+        |> should equal [ "$rand"; "$rank" ]
 
-  [<Test>]
-  member _.``読めない字は Parser が弾く（上の点が当たっている証拠）``() =
-    // 上の点が「何を入れても緑」でないこと
-    let e = Expr.NumExpr.ofString "$rnd"
-    (e.Ast = Expr.Node.Invalid || not (e.NeedRand || e.NeedRank)) |> should be True
+    [<Test>]
+    member _.``中身を取らない要素では式は出ない``() =
+        labels "<bulletml>\n@\n</bulletml>" |> should not' (contain "$rand")
+
+    [<Test>]
+    member _.``式の置き換えは ドル記号 を含む``() =
+        // 含めないと `$` の後ろに `$rand` が付いて `$$rand` になる
+        complete "<bulletml>\n<action>\n<wait>$r@</wait>\n</action>\n</bulletml>"
+        |> List.map (fun c -> c.Replace)
+        |> List.distinct
+        |> should equal [ 2 ]
+
+        complete "<bulletml>\n<action>\n<wait>3+$ra@</wait>\n</action>\n</bulletml>"
+        |> List.map (fun c -> c.Replace)
+        |> List.distinct
+        |> should equal [ 3 ]
+
+        complete "<bulletml>\n<action>\n<wait>$@</wait>\n</action>\n</bulletml>"
+        |> List.map (fun c -> c.Replace)
+        |> List.distinct
+        |> should equal [ 1 ]
+
+    [<Test>]
+    member _.``式の候補は Parser が読める字である``() =
+        // 綴りは DU から引けない（読む側が文字で持っている）ので、
+        // 表と Parser がずれていないかをここで当てる
+        for token in Vocabulary.expressions do
+            let e = Expr.NumExpr.ofString token
+            e.Ast |> should not' (equal Expr.Node.Invalid)
+            (e.NeedRand || e.NeedRank) |> should be True
+
+    [<Test>]
+    member _.``読めない字は Parser が弾く（上の点が当たっている証拠）``() =
+        // 上の点が「何を入れても緑」でないこと
+        let e = Expr.NumExpr.ofString "$rnd"
+        (e.Ast = Expr.Node.Invalid || not (e.NeedRand || e.NeedRank)) |> should be True

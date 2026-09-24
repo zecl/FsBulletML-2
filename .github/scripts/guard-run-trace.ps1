@@ -174,7 +174,8 @@ foreach ($n in @('substCommand', 'substActionElm', 'expandCommand', 'expandActio
 }
 
 # 畳みの対は組む段で 1 回。**enabled を見ずに歩くと、繋がない人が毎回 木を 1 周 する**
-if ($api -notmatch 'if NodeOrigin\.enabled then FoldOrigin\.walk') {
+# Fantomas は `then` のあとで改行する。意味は「enabled の中でしか歩かない」。
+if ($api -notmatch 'if NodeOrigin\.enabled then\s+FoldOrigin\.walk') {
   $problems.Add('Api.fs の Runner.load が "if NodeOrigin.enabled then FoldOrigin.walk" の形で無い')
 }
 # --- 約束 —— 繋ぐのは Focus.fs の 1 か所 だけ ---------------------------------

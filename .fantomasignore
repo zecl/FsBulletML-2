@@ -1,0 +1,17 @@
+# ビルド出力。gitignore だけでは Fantomas は止まらない。
+bin/
+obj/
+
+# 手元に置いてある資料庫。この repo の木ではない。
+docs/
+
+# 生成物。手で揃えると次の焼き直しで消える。
+samples/FsBulletML2.Bullets/
+src/FsBulletML2.Bullets.Dsl/All.fs
+
+# FSharp.TypeProviders.SDK からそのまま置いた上流。
+src/FsBulletML2.TypeProviders/ProvidedTypes.fs
+src/FsBulletML2.TypeProviders/ProvidedTypes.fsi
+
+# Fantomas 8.0.4 が三重引用符のあとの引数を壊す。直るまで外す。
+tests/FsBulletML2.Core.Tests/SelfReference.fs

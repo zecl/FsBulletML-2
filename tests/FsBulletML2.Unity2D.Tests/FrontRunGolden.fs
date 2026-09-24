@@ -4,10 +4,13 @@ namespace FsBulletML2.Unity2D.Tests
 /// 撃った位置が撃った側と同じなのは SpawnOrigin の違い。MonoGame は原点に作る。
 module FrontRunGolden =
 
-  // 改行を揃えてから渡す。控えの三重引用符は checkout の改行のままになる。
-  // 生成側は `\n`。揃えないと字面が同じでも `\r` で割れる。autocrlf の機械だけで落ちる。
-  let private normalize (s: string) = s.Replace("\r\n", "\n")
-  let Expected = normalize """f00  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.40000 y=-1.00000 d=5.47340 s=2.00000 used=true]
+    // 改行を揃えてから渡す。控えの三重引用符は checkout の改行のままになる。
+    // 生成側は `\n`。揃えないと字面が同じでも `\r` で割れる。autocrlf の機械だけで落ちる。
+    let private normalize (s: string) = s.Replace("\r\n", "\n")
+
+    let Expected =
+        normalize
+            """f00  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.40000 y=-1.00000 d=5.47340 s=2.00000 used=true]
 f01  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.38032 y=-0.99646 d=4.89045 s=2.00000 used=true]
 f02  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.36193 y=-1.00434 d=4.30750 s=2.00000 used=true]
 f03  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.35092 y=-1.02103 d=3.72454 s=2.00000 used=true | b2 x=2.40000 y=-1.00000 d=5.47340 s=2.00000 used=true]
@@ -21,7 +24,7 @@ f10  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.35092 y=-1.
 f11  [b0 x=2.40000 y=-1.00000 d=0.00000 s=0.00000 used=true | b1 x=2.35092 y=-1.04103 d=3.14159 s=2.00000 used=true | b2 x=2.38032 y=-0.99646 d=4.89045 s=2.00000 used=true]
 """
 
-  /// 撃った直後の姿。この文字列が何回 出るかが、撃った回数。
-  /// repeat は 2 周 なので、3 回 以上 出ていれば走らせ直しが通っている
-  [<Literal>]
-  let Birth = "x=2.40000 y=-1.00000 d=5.47340 s=2.00000"
+    /// 撃った直後の姿。この文字列が何回 出るかが、撃った回数。
+    /// repeat は 2 周 なので、3 回 以上 出ていれば走らせ直しが通っている
+    [<Literal>]
+    let Birth = "x=2.40000 y=-1.00000 d=5.47340 s=2.00000"

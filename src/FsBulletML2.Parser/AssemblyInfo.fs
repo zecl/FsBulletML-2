@@ -1,4 +1,5 @@
 ﻿module AssemblyInfo
+
 open System.Resources
 open System.Reflection
 open System.Runtime.CompilerServices
@@ -30,4 +31,4 @@ open System.Runtime.InteropServices
 [<assembly: AssemblyConfiguration("Release")>]
 #endif
 
-do()
+do ()

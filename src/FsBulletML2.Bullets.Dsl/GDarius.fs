@@ -1,4 +1,5 @@
 namespace FsBulletML2.Bullets.Dsl.EnemyBullet.Sdmkun
+
 open FsBulletML2
 open FsBulletML2.Dsl
 
@@ -7,40 +8,51 @@ open FsBulletML2.Dsl
 [<RequireQualifiedAccess>]
 module GDarius =
 
-  /// Gダライアス中のホーミングレーザー by 白い弾幕くん
-  /// [G_DARIUS]_homing_laser.xml
-  let homing_laser =
-    createBulletmlInfo <|
-    horizontalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "Gダライアス中のホーミングレーザー by 白い弾幕くん" {
-        top {
-            repeat "20" {
-                fire {
-                    dir "-60+$rand*120"
-                    refBullet "hmgLsr" []
-                }
-                repeat "8" {
-                    wait "1"
+    /// Gダライアス中のホーミングレーザー by 白い弾幕くん
+    /// [G_DARIUS]_homing_laser.xml
+    let homing_laser =
+        createBulletmlInfo
+        <| horizontalXmlns "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml" "Gダライアス中のホーミングレーザー by 白い弾幕くん" {
+            top {
+                repeat "20" {
                     fire {
-                        sequence "0"
+                        dir "-60+$rand*120"
                         refBullet "hmgLsr" []
                     }
+
+                    repeat "8" {
+                        wait "1"
+
+                        fire {
+                            sequence "0"
+                            refBullet "hmgLsr" []
+                        }
+                    }
+
+                    wait "10"
                 }
-                wait "10"
+
+                wait "60"
             }
-            wait "60"
+
+            defBullet "hmgLsr" {
+                speed "2"
+
+                doActs (
+                    body {
+                        changeSpeed "0.3" "30"
+                        wait "100"
+                        changeSpeed "5" "100"
+                    }
+                )
+
+                doActs (
+                    body {
+                        repeat "12" {
+                            changeDirectionAim "0" "45-$rank*30"
+                            wait "5"
+                        }
+                    }
+                )
+            }
         }
-        defBullet "hmgLsr" {
-            speed "2"
-            doActs (body {
-                changeSpeed "0.3" "30"
-                wait "100"
-                changeSpeed "5" "100"
-            })
-            doActs (body {
-                repeat "12" {
-                    changeDirectionAim "0" "45-$rank*30"
-                    wait "5"
-                }
-            })
-        }
-    }

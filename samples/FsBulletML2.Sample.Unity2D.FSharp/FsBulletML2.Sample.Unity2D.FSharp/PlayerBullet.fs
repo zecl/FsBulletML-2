@@ -3,41 +3,42 @@
 open System
 open UnityEngine
 open FsBulletML2
-open FsBulletML2.Unity2D 
- 
-type PlayerBullet () =
-  inherit BaseBullet ()
+open FsBulletML2.Unity2D
 
-  member this.Awake () =
-    base.Awake ()
-    let self = this.GetDefaultBullet ()
-    self.Init()
-    self.IsBullet <- true
-    self.BulletType <- BulletType.Player 
+type PlayerBullet() =
+    inherit BaseBullet()
 
-  override this.Update () = 
-    base.Update()
+    member this.Awake() =
+        base.Awake()
+        let self = this.GetDefaultBullet()
+        self.Init()
+        self.IsBullet <- true
+        self.BulletType <- BulletType.Player
 
-    let self = this.GetDefaultBullet ()
-    if (not self.Root && self.BulletRoot && not self.Used) then
-      InstanceManager.Destroy(this.gameObject)
+    override this.Update() =
+        base.Update()
 
-    if (this.transform.position.x < 0.f || this.transform.position.x > 4.8f) then
-      self.Used <- false
-      InstanceManager.Destroy(this.gameObject)
+        let self = this.GetDefaultBullet()
 
-    if (this.transform.position.y < -6.4f || this.transform.position.y > 0.f) then
-      self.Used <- false
-      InstanceManager.Destroy(this.gameObject)
+        if (not self.Root && self.BulletRoot && not self.Used) then
+            InstanceManager.Destroy(this.gameObject)
 
-  override this.GetBulletPrefubInstance () =
-    InstanceManager.InstantiatePrefab(this.bulletObject, this.transform.position, this.transform.rotation)
+        if (this.transform.position.x < 0.f || this.transform.position.x > 4.8f) then
+            self.Used <- false
+            InstanceManager.Destroy(this.gameObject)
 
-  /// 弾幕を割り当てる。根から始めるので実行状態は Core に作らせる
-  member this.SetScript(script) =
-    let self = this.GetDefaultBullet ()
-    self.SetScript(script)
+        if (this.transform.position.y < -6.4f || this.transform.position.y > 0.f) then
+            self.Used <- false
+            InstanceManager.Destroy(this.gameObject)
 
-  member this.OnTriggerEnter2D(collier:Collider2D) =
-    if (collier.gameObject.tag = "Enemy") then
-      InstanceManager.Destroy(this.gameObject)
+    override this.GetBulletPrefubInstance() =
+        InstanceManager.InstantiatePrefab(this.bulletObject, this.transform.position, this.transform.rotation)
+
+    /// 弾幕を割り当てる。根から始めるので実行状態は Core に作らせる
+    member this.SetScript(script) =
+        let self = this.GetDefaultBullet()
+        self.SetScript(script)
+
+    member this.OnTriggerEnter2D(collier: Collider2D) =
+        if (collier.gameObject.tag = "Enemy") then
+            InstanceManager.Destroy(this.gameObject)
