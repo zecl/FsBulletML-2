@@ -62,6 +62,7 @@
     <Compile Include="PruneDead.fs" />
     <Compile Include="TuneThin.fs" />
     <Compile Include="TuneHush.fs" />
+    <Compile Include="OpenDoesNotShadow.fs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\TestData\**\*">
