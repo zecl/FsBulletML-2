@@ -1,9 +1,4 @@
 <Solution>
-  <Folder Name="/.nuget/">
-    <File Path=".nuget/NuGet.Config" />
-    <File Path=".nuget/NuGet.exe" />
-    <File Path=".nuget/NuGet.targets" />
-  </Folder>
   <Folder Name="/bench/">
     <Project Path="bench/FsBulletML2.Benchmarks/FsBulletML2.Benchmarks.fsproj" />
   </Folder>

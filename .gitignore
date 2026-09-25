@@ -21,7 +21,6 @@ x64/
 
 # NuGet package restore at repo root only (do not ignore Unity Packages/)
 /packages/
-nuget/*.nupkg
 
 # Others
 *.dtd
