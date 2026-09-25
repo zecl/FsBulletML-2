@@ -21,7 +21,6 @@ x64/
 
 # NuGet package restore at repo root only (do not ignore Unity Packages/)
 /packages/
-nuget/*.nupkg
 
 # Others
 *.dtd
@@ -119,3 +118,19 @@ BenchmarkDotNet.Artifacts/
 # Godot 4 のインポート キャッシュ と、mono の中間物。
 # **.godot/mono/temp/bin に dll が出る** —— Unity の Library/ と同じ立場
 .godot/
+
+# AI エージェント の作業場所（設定・記憶・計画・会話 の控え）。
+# 手元 の道具 のもの で、repo に入れない
+.claude/
+.agent/
+.agents/
+.grok/
+.codex/
+.gemini/
+.cursor/
+.windsurf/
+.continue/
+.aider*
+.serena/
+.superpowers/
+CLAUDE.local.md

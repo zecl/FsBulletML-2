@@ -5,7 +5,7 @@
 
 .DESCRIPTION
   v2.9 で 4 通り の形を測って、この形に決めた
-  （`src/FsBulletML2.Playground/README.md` の「線を越える」）——
+  （「線を越える」の測定）——
 
       Env に口を足す        OFF が素に戻らない（5way で +1.92%）
       int を走査で運ぶ      費用が inline の判断に乗るので表にできない

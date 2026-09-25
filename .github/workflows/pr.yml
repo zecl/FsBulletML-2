@@ -8,7 +8,7 @@ name: PR
 #
 # 全 job を手元の Windows 機で走らせる。
 #
-# 正本は infra/gha-runner/README.md。契約は 3 つ ——
+# 契約は 3 つ ——
 #
 #     labels        runs-on: [self-hosted, windows, fsbulletml2]
 #                   install-runner.ps1 の -Label と対。片方 だけ変えると
@@ -200,7 +200,6 @@ jobs:
       # 門は出力を `\bin\Release\` で絞っている。いまは runner が Windows なので
       # 当たるが、区切りが `/` の機械では 1 本 も拾えない。
       # Linux へ移すときはここを直す
-      # （infra/gha-runner/README.md の「なぜ Windows なのか」）
       - name: 同梱 dll の参照先
         shell: pwsh
         run: ./.github/scripts/guard-shipped-refs.ps1
