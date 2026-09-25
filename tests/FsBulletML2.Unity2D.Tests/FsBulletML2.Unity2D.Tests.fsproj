@@ -8,7 +8,9 @@
     <AssemblyName>FsBulletML2.Unity2D.Tests</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Stubs.fs" />
     <Compile Include="EnvGate.fs" />
+    <Compile Include="GridGate.fs" />
     <Compile Include="FrontRunGolden.fs" />
     <Compile Include="FrontRun.fs" />
   </ItemGroup>
