@@ -5,7 +5,6 @@ open System.Reflection
 open System.Runtime.InteropServices
 open Microsoft.FSharp.Core.CompilerServices
 
-//[<assembly: AssemblyVersion("0.9.*")>]
 [<assembly: AssemblyVersion("0.9.1")>]
 [<assembly: AssemblyFileVersion("0.9.1")>]
 [<assembly: AssemblyInformationalVersion("0.9.1")>]

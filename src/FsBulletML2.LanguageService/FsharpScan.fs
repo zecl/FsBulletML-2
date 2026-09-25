@@ -100,9 +100,6 @@ module FsharpScan =
                 else
                     Some(src.Substring(s, e - s + 1))
 
-    /// その位置を含む行と桁（1 起点）。`Scan.lineColumn` の 1 本 を引く
-    let private lineColumn (src: string) (offset: int) = Scan.lineColumn src offset
-
     /// 名前を載せている CE の並び。ほかの 3 表記 と同じ `TagHit`。
     /// 空にするな。無いのは要素名であって名前ではない。
     let tags (labels: (string * string * int * string)[]) (attrName: string) (src: string) : TagHit list =
@@ -147,7 +144,7 @@ module FsharpScan =
                         let attrs =
                             if labelArg < 0 then
                                 // 引数を取らない名前。位置は名前そのもの。書き換え先が無い。
-                                let struct (line, col) = lineColumn src s
+                                let struct (line, col) = Scan.lineColumn src s
 
                                 [
                                     {
@@ -196,7 +193,7 @@ module FsharpScan =
                                 match got with
                                 | None -> []
                                 | Some(value, vs, ve) ->
-                                    let struct (line, col) = lineColumn src vs
+                                    let struct (line, col) = Scan.lineColumn src vs
 
                                     [
                                         {

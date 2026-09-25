@@ -9,8 +9,7 @@ open FsBulletML2.Front
 
 type DefaultBullet(transform: Transform) as this =
 
-    /// 走らせている弾幕と、その実行状態。旧の Task option を 2 つ に割ったもの
-    let mutable script: BulletmlScript option = None
+    /// 走らせている弾幕の実行状態。台本は `run` が持つ
     let mutable run: BulletRun option = None
     /// 直前のコマで全 top が終わったか。旧 BulletmlTask.Finish の置き場所
     let mutable finished = false

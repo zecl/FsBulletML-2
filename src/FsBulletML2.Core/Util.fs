@@ -5,11 +5,7 @@ open System.Globalization
 open System.IO
 open System.Runtime.CompilerServices
 
-[<AutoOpen>]
-module internal Util =
-    // BinaryFormatter は戻すな。深い複製が要る型が出たら、型の付いた clone を足す。
-    open System.Diagnostics
-    let dprintfn fmt = Printf.ksprintf Debug.WriteLine fmt
+// BinaryFormatter は戻すな。深い複製が要る型が出たら、型の付いた clone を足す。
 
 [<RequireQualifiedAccess>]
 module internal TryParse =
