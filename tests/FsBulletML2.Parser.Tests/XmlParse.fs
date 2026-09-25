@@ -645,3 +645,27 @@ module ``XMLファイル:BulletML DTDに基づくパース`` =
     [<TestCase(@"..\..\..\TestData\xml\sample\5way.xml")>]
     [<TestCase(@"..\..\..\TestData\xml\sample\readTest.xml")>]
     let ``その他-サンプル等`` (xmlFile) = parse xmlFile
+
+/// 型 の属性 が読めず、#PCDATA も無いとき。**型 の方 を先 に言う**（`BulletmlRead.tryFindTyped`）。
+/// 試験データ にこの組み合わせ が無く、順 を入れ替えても他 の試験 は緑 のまま だった
+module ``型 が読めず中身 も空`` =
+
+    [<TestCase("""<changeDirection><direction type="hoge"></direction><term>1</term></changeDirection>""",
+               "not support DirectionType.:[hoge]")>]
+    [<TestCase("""<changeSpeed><speed type="hoge"></speed><term>1</term></changeSpeed>""",
+               "not support SpeedType.:[hoge]")>]
+    [<TestCase("""<accel><horizontal type="hoge"></horizontal><term>1</term></accel>""",
+               "not support HorizontalType.:[hoge]")>]
+    [<TestCase("""<accel><vertical type="hoge"></vertical><term>1</term></accel>""", "not support VerticalType.:[hoge]")>]
+    let ``型 の方 を先 に言う`` (command: string, expected: string) =
+        let source =
+            """<bulletml><action label="top">""" + command + """</action></bulletml>"""
+
+        let message =
+            try
+                XmlNode.ReadXmlString source |> convertBulletmlFromXmlNode |> ignore
+                ""
+            with :? FsBulletML2.Exception.BulletmlDTDViolationException as e ->
+                e.Message
+
+        message |> should equal expected
