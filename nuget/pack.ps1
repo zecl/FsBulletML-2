@@ -39,6 +39,7 @@ $Packages = @(
   @{ Id = 'FsBulletML2.Parser'; Project = 'src/FsBulletML2.Parser/FsBulletML2.Parser.fsproj' }
   @{ Id = 'FsBulletML2.Front';  Project = 'src/FsBulletML2.Front/FsBulletML2.Front.fsproj' }
   @{ Id = 'FsBulletML2.Dsl';    Project = 'src/FsBulletML2.Dsl/FsBulletML2.Dsl.fsproj' }
+  @{ Id = 'FsBulletML2.TypeProviders'; Project = 'src/FsBulletML2.TypeProviders/FsBulletML2.TypeProviders.fsproj' }
 )
 
 if (Test-Path -LiteralPath $Output) { Remove-Item -LiteralPath $Output -Recurse -Force }

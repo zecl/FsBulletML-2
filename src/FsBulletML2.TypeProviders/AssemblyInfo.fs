@@ -5,28 +5,17 @@ open System.Reflection
 open System.Runtime.InteropServices
 open Microsoft.FSharp.Core.CompilerServices
 
-[<assembly: AssemblyVersion("0.9.1")>]
-[<assembly: AssemblyFileVersion("0.9.1")>]
-[<assembly: AssemblyInformationalVersion("0.9.1")>]
+// 版・題・説明・会社・著作権は SDK が Directory.Build.props から作る。
+// ここに書くと二重になって落ちる
 
-[<assembly: AssemblyTitle("FsBulletML2")>]
-[<assembly: AssemblyDescription("F# Implementation of BulletML. BulletML TypeProviders(Xml, Sxml, Fsb)")>]
-[<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("FsBulletML2.TypeProviders")>]
-[<assembly: AssemblyCopyright("Copyright (C) 2013-2014 zecl All Rights Reserved.")>]
-[<assembly: AssemblyTrademark("")>]
-[<assembly: AssemblyCulture("")>]
 [<assembly: NeutralResourcesLanguage("ja-JP")>]
 
 [<assembly: ComVisible(false)>]
 [<assembly: Guid("9A0CF746-36E8-4F2A-A3CD-E2B27C1E2E9D")>]
 
-
-#if DEBUG
-[<assembly: AssemblyConfiguration("Debug")>]
-#else
-[<assembly: AssemblyConfiguration("Release")>]
-#endif
-
-[<assembly: TypeProviderAssembly>]
+// 設計時 の dll を名前 で指す。引数 が空 だと、コンパイラ は参照した dll（NuGet なら lib/）を
+// そのまま読み、typeproviders/fsharp41/<tfm>/ を探さない —— 依存 の Core / Parser / FParsec が
+// 隣 に居ないので FS3033 になる。名前 を渡すと、そのフォルダ を先 に探し、無ければ隣 を読む
+// （この repo の中 の試験 は隣 を読む）
+[<assembly: TypeProviderAssembly("FsBulletML2.TypeProviders")>]
 do ()
