@@ -1,0 +1,124 @@
+name: Release
+
+# v* のタグで、段 1 の 4 本（Core / Parser / Front / Dsl）を nuget.org へ出す。
+# 手順と初回の設定は FsBulletML2-Docs の superpowers/runbooks/nuget-release.md。
+#
+#   pack     試験 → 焼く → 検査。ここまでは誰の承認も要らない
+#   publish  environment: nuget の承認を 1 回 挟んでから nuget.org へ push し、GitHub Release を作る
+#
+# ## runner は GitHub-hosted
+#
+# public にしたら CI は GitHub-hosted に戻す予定で、この workflow もその形で書く。
+# タグを打つのは public にした後なので、private の間には走らない。
+#
+# ## 認証は Trusted Publishing
+#
+# 長寿命の API キーを GitHub に置かない。NuGet/login が OIDC で 1 時間 のキーを取る。
+# nuget.org 側の設定（owner / repo / workflow ファイル名 / environment）は手順書に在る。
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pack:
+    name: Pack
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - run: dotnet tool restore
+
+      # タグと Directory.Build.props の <Version> が 1 文字 でもずれていたら止める。
+      # ずれたまま出すと、タグと中身の版が食い違ったパッケージが nuget.org に残る（消せない）
+      - name: タグと版が合っているか
+        id: version
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          [xml]$props = Get-Content -LiteralPath Directory.Build.props -Raw
+          $version = @($props.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-Object { $_ })[0]
+          $tag = $env:TAG
+          if ("v$version" -ne $tag) { throw "タグ $tag と Directory.Build.props の版 $version が合わない" }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "版 $version"
+
+      # 配る 4 本 の試験だけ回す（全部は PR の CI が見ている）
+      - name: 試験
+        shell: pwsh
+        run: |
+          foreach ($t in 'Core', 'Parser', 'Front', 'Dsl') {
+            dotnet test "tests/FsBulletML2.$t.Tests/FsBulletML2.$t.Tests.fsproj" -c Release -nologo
+            if ($LASTEXITCODE -ne 0) { throw "$t.Tests が落ちた" }
+          }
+
+      - name: 焼く
+        shell: pwsh
+        run: ./nuget/pack.ps1
+
+      - name: 検査（SourceLink / Deterministic）
+        shell: pwsh
+        run: ./nuget/validate.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: artifacts/packages/
+          if-no-files-found: error
+
+  publish:
+    name: Publish
+    needs: pack
+    runs-on: windows-latest
+    environment: nuget
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: packages
+
+      - uses: NuGet/login@v1
+        id: login
+        with:
+          user: zecl
+
+      # .snupkg は同じコマンドで一緒に上がる。
+      # --skip-duplicate：途中で落ちて Re-run したとき、上がったぶんを飛ばして残りだけ上げる
+      - name: nuget.org へ push
+        shell: pwsh
+        run: |
+          dotnet nuget push "packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate
+          if ($LASTEXITCODE -ne 0) { throw "push が落ちた（exit $LASTEXITCODE）" }
+
+      # 版に - が付く（1.1.0-preview.1 など）ときだけ prerelease の印を付ける
+      - name: GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.pack.outputs.version }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          # pwsh は外のコマンドに * を広げて渡さないので、ファイルは自分で並べる
+          $files = @(Get-ChildItem packages -Filter *.nupkg | ForEach-Object FullName)
+          $opt = @()
+          if ($env:VERSION -like '*-*') { $opt += '--prerelease' }
+          gh release create $env:TAG @files --repo $env:REPO --title $env:TAG --generate-notes @opt
+          if ($LASTEXITCODE -ne 0) { throw "Release を作れなかった（exit $LASTEXITCODE）" }
