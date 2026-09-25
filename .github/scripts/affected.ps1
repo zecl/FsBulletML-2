@@ -14,7 +14,7 @@
   持たない。** 参照が変わったとき対応表だけが古びるのを避けるため。
 
   どのプロジェクトにも属さないファイルが 1 つ でもあれば全部 走らせる
-  （global.json / *.slnx / tests/TestData / .github / .nuget など）。
+  （global.json / *.slnx / tests/TestData / .github など）。
   例外は $NoImpact に並べた形だけで、そこに落ちたファイルは無視する。
 
   **0 件 を黙って緑にしない。** 答えが 0 件 になってよいのは「変更が全部
@@ -59,7 +59,6 @@ $NoImpact = @(
 # 同じく無視するが、ディレクトリの前置きで書くもの
 $NoImpactDirs = @(
   'license/'        # 元実装とサンプル素材のライセンス本文
-  'nuget/'          # パッケージを作る bat と nuspec。build には入らない
 )
 
 # slnx に載っていないが repo には在るもの。CI の対象外。
