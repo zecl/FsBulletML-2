@@ -168,12 +168,20 @@ foreach ($p in $projects) {
 
 # 空配列を渡された場合と、渡されなかった場合を分ける。**空配列は「変更 0 件」
 # という答えであって、git を引き直せという指示ではない。**
+#
+# ForceFull のときは git を引かない。全部 走らせるので変更の一覧は要らない。
+# main への push（CI の checkout には origin/HEAD が無い）では merge-base が
+# 引けずに git が落ち、その終了コードで step ごと赤くなっていた。
 if (-not $PSBoundParameters.ContainsKey('ChangedFiles')) {
-  if (-not $Base) { $Base = (git merge-base origin/HEAD $Head) }
-  # **core.quotepath=false が要る。** 既定だと非 ASCII のパスが
-  # `"samples/.../\343\202\257.xml"` に化けて、どのプロジェクトの前置きにも
-  # 当たらなくなる。弾幕の XML は日本語名なので、ここが効く
-  $ChangedFiles = @(git -c core.quotepath=false diff --name-only "$Base" "$Head")
+  if ($ForceFull) {
+    $ChangedFiles = @()
+  } else {
+    if (-not $Base) { $Base = (git merge-base origin/HEAD $Head) }
+    # **core.quotepath=false が要る。** 既定だと非 ASCII のパスが
+    # `"samples/.../\343\202\257.xml"` に化けて、どのプロジェクトの前置きにも
+    # 当たらなくなる。弾幕の XML は日本語名なので、ここが効く
+    $ChangedFiles = @(git -c core.quotepath=false diff --name-only "$Base" "$Head")
+  }
 }
 $changed = @($ChangedFiles | Where-Object { $_ } | ForEach-Object { ToRel $_ })
 
