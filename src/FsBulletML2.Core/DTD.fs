@@ -295,97 +295,75 @@ module DTD =
 
     /// BulletML を XML に書き戻す。member にすると Parser の ToXmlString と名前がぶつかって自分を呼ぶ。
     module internal BulletmlXml =
+        let private directionText =
+            function
+            | DirectionType.Aim -> "aim"
+            | DirectionType.Absolute -> "absolute"
+            | DirectionType.Relative -> "relative"
+            | DirectionType.Sequence -> "sequence"
+
+        let private speedText =
+            function
+            | SpeedType.Absolute -> "absolute"
+            | SpeedType.Relative -> "relative"
+            | SpeedType.Sequence -> "sequence"
+
+        let private horizontalText =
+            function
+            | HorizontalType.Absolute -> "absolute"
+            | HorizontalType.Relative -> "relative"
+            | HorizontalType.Sequence -> "sequence"
+
+        let private verticalText =
+            function
+            | VerticalType.Absolute -> "absolute"
+            | VerticalType.Relative -> "relative"
+            | VerticalType.Sequence -> "sequence"
+
+        let private shootingDirectionText =
+            function
+            | ShootingDirection.BulletNone -> "none"
+            | ShootingDirection.BulletHorizontal -> "horizontal"
+            | ShootingDirection.BulletVertical -> "vertical"
+
         /// BulletML 書き込み
         let writeContentTo (sink: IBulletmlSink) (this: Bulletml) =
-            // 各腕の中身は位置ごとに分ける前と同じ順で書く
-            // （往復の試験が順序まで見ている）
-            let writeDirection (d: Direction) =
-                sink.Start("direction")
+            // 各識別子の中身は位置ごとに分ける前と同じ順で書く
+            // （往復のテストが順序まで見ている）
+            let attrIfSome name (value: string option) =
+                match value with
+                | Some v -> sink.Attr(name, v)
+                | None -> ()
 
-                match d with
-                | Direction(attrs, s) ->
-                    match attrs with
-                    | Some attrs ->
-                        let t =
-                            attrs.directionType
-                            |> function
-                                | DirectionType.Aim -> "aim"
-                                | DirectionType.Absolute -> "absolute"
-                                | DirectionType.Relative -> "relative"
-                                | DirectionType.Sequence -> "sequence"
-
-                        sink.Attr("type", t)
-                    | None -> ()
-
-                    sink.Text(Expr.NumExpr.text s)
-
+            let writeText name (s: string) =
+                sink.Start(name)
+                sink.Text(s)
                 sink.End()
 
-            let writeSpeed (sp: Speed) =
-                sink.Start("speed")
-
-                match sp with
-                | Speed(attrs, s) ->
-                    match attrs with
-                    | Some attrs ->
-                        let t =
-                            attrs.speedType
-                            |> function
-                                | SpeedType.Absolute -> "absolute"
-                                | SpeedType.Relative -> "relative"
-                                | SpeedType.Sequence -> "sequence"
-
-                        sink.Attr("type", t)
-                    | None -> ()
-
-                    sink.Text(Expr.NumExpr.text s)
-
-                sink.End()
-
-            let writeTerm (Term s) =
-                sink.Start("term")
+            let writeTyped name (typeText: string option) s =
+                sink.Start(name)
+                attrIfSome "type" typeText
                 sink.Text(Expr.NumExpr.text s)
                 sink.End()
 
-            let writeParams (prams: Params) =
-                prams
-                |> Seq.iter (fun s ->
-                    sink.Start("param")
-                    sink.Text(s)
-                    sink.End())
+            let writeDirection (Direction(attrs, s)) =
+                writeTyped "direction" (attrs |> Option.map (fun a -> directionText a.directionType)) s
 
-            let writeBulletBody (attrs: BulletAttrs) direction speed writeChildren =
-                sink.Start("bullet")
+            let writeSpeed (Speed(attrs, s)) =
+                writeTyped "speed" (attrs |> Option.map (fun a -> speedText a.speedType)) s
 
-                match attrs.bulletLabel with
-                | Some v -> sink.Attr("label", BulletLabel.text v)
-                | None -> ()
+            let writeHorizontal (Horizontal(attrs, s)) =
+                writeTyped "horizontal" (attrs |> Option.map (fun a -> horizontalText a.horizontalType)) s
 
-                direction |> Option.iter writeDirection
-                speed |> Option.iter writeSpeed
-                writeChildren ()
-                sink.End()
+            let writeVertical (Vertical(attrs, s)) =
+                writeTyped "vertical" (attrs |> Option.map (fun a -> verticalText a.verticalType)) s
 
-            let writeFireBody (attrs: FireAttrs) direction speed writeChild =
-                sink.Start("fire")
+            let writeTerm (Term s) = writeText "term" (Expr.NumExpr.text s)
 
-                match attrs.fireLabel with
-                | Some v -> sink.Attr("label", FireLabel.text v)
-                | None -> ()
-
-                direction |> Option.iter writeDirection
-                speed |> Option.iter writeSpeed
-                writeChild ()
-                sink.End()
-
-            let writeActionBody (attrs: ActionAttrs) writeChildren =
-                sink.Start("action")
-
-                match attrs.actionLabel with
-                | Some v -> sink.Attr("label", ActionLabel.text v)
-                | None -> ()
-
-                writeChildren ()
+            let writeRef name label (prams: Params) =
+                sink.Start(name)
+                sink.Attr("label", label)
+                prams |> Seq.iter (writeText "param")
                 sink.End()
 
             let rec writeCommand (c: Action) =
@@ -402,139 +380,72 @@ module DTD =
                     sink.End()
                 | Action.Accel(horizontal, vertical, term) ->
                     sink.Start("accel")
-
-                    match horizontal with
-                    | Some(Horizontal.Horizontal(attrs, s)) ->
-                        sink.Start("horizontal")
-
-                        match attrs with
-                        | Some attrs ->
-                            let t =
-                                attrs.horizontalType
-                                |> function
-                                    | HorizontalType.Absolute -> "absolute"
-                                    | HorizontalType.Relative -> "relative"
-                                    | HorizontalType.Sequence -> "sequence"
-
-                            sink.Attr("type", t)
-                        | None -> ()
-
-                        sink.Text(Expr.NumExpr.text s)
-                        sink.End()
-                    | _ -> ()
-
-                    match vertical with
-                    | Some(Vertical.Vertical(attrs, s)) ->
-                        sink.Start("vertical")
-
-                        match attrs with
-                        | Some attrs ->
-                            let t =
-                                attrs.verticalType
-                                |> function
-                                    | VerticalType.Absolute -> "absolute"
-                                    | VerticalType.Relative -> "relative"
-                                    | VerticalType.Sequence -> "sequence"
-
-                            sink.Attr("type", t)
-                        | None -> ()
-
-                        sink.Text(Expr.NumExpr.text s)
-                        sink.End()
-                    | _ -> ()
-
+                    horizontal |> Option.iter writeHorizontal
+                    vertical |> Option.iter writeVertical
                     writeTerm term
                     sink.End()
-                | Action.Wait s ->
-                    sink.Start("wait")
-                    sink.Text(Expr.NumExpr.text s)
-                    sink.End()
+                | Action.Wait s -> writeText "wait" (Expr.NumExpr.text s)
                 | Action.Vanish ->
                     sink.Start("vanish")
                     sink.End()
-                | Action.Repeat(times, child) ->
+                | Action.Repeat(Times s, child) ->
                     sink.Start("repeat")
-
-                    match times with
-                    | Times s ->
-                        sink.Start("times")
-                        sink.Text(Expr.NumExpr.text s)
-                        sink.End()
-
+                    writeText "times" (Expr.NumExpr.text s)
                     writeActionElm child
                     sink.End()
-                | Action.Fire(attrs, direction, speed, child) ->
-                    writeFireBody attrs direction speed (fun () -> writeBulletElm child)
-                | Action.FireRef(attrs, prams) ->
-                    sink.Start("fireRef")
-                    sink.Attr("label", FireLabel.text attrs.fireRefLabel)
-                    writeParams prams
-                    sink.End()
-                | Action.Action(attrs, children) -> writeActionBody attrs (fun () -> children |> Seq.iter writeCommand)
-                | Action.ActionRef(attrs, prams) ->
-                    sink.Start("actionRef")
-                    sink.Attr("label", ActionLabel.text attrs.actionRefLabel)
-                    writeParams prams
-                    sink.End()
+                | Action.Fire(attrs, direction, speed, child) -> writeFire attrs direction speed child
+                | Action.FireRef(attrs, prams) -> writeRef "fireRef" (FireLabel.text attrs.fireRefLabel) prams
+                | Action.Action(attrs, children) -> writeAction attrs children
+                | Action.ActionRef(attrs, prams) -> writeRef "actionRef" (ActionLabel.text attrs.actionRefLabel) prams
 
             and writeActionElm (a: ActionElm) =
                 match a with
-                | ActionElm.Action(attrs, children) ->
-                    writeActionBody attrs (fun () -> children |> Seq.iter writeCommand)
+                | ActionElm.Action(attrs, children) -> writeAction attrs children
                 | ActionElm.ActionRef(attrs, prams) ->
-                    sink.Start("actionRef")
-                    sink.Attr("label", ActionLabel.text attrs.actionRefLabel)
-                    writeParams prams
-                    sink.End()
+                    writeRef "actionRef" (ActionLabel.text attrs.actionRefLabel) prams
 
             and writeBulletElm (b: BulletElm) =
                 match b with
-                | BulletElm.Bullet(attrs, direction, speed, children) ->
-                    writeBulletBody attrs direction speed (fun () -> children |> Seq.iter writeActionElm)
+                | BulletElm.Bullet(attrs, direction, speed, children) -> writeBullet attrs direction speed children
                 | BulletElm.BulletRef(attrs, prams) ->
-                    sink.Start("bulletRef")
-                    sink.Attr("label", BulletLabel.text attrs.bulletRefLabel)
-                    writeParams prams
-                    sink.End()
+                    writeRef "bulletRef" (BulletLabel.text attrs.bulletRefLabel) prams
+
+            and writeAction (attrs: ActionAttrs) (children: Action list) =
+                sink.Start("action")
+                attrIfSome "label" (attrs.actionLabel |> Option.map ActionLabel.text)
+                children |> Seq.iter writeCommand
+                sink.End()
+
+            and writeBullet (attrs: BulletAttrs) direction speed (children: ActionElm list) =
+                sink.Start("bullet")
+                attrIfSome "label" (attrs.bulletLabel |> Option.map BulletLabel.text)
+                direction |> Option.iter writeDirection
+                speed |> Option.iter writeSpeed
+                children |> Seq.iter writeActionElm
+                sink.End()
+
+            and writeFire (attrs: FireAttrs) direction speed (child: BulletElm) =
+                sink.Start("fire")
+                attrIfSome "label" (attrs.fireLabel |> Option.map FireLabel.text)
+                direction |> Option.iter writeDirection
+                speed |> Option.iter writeSpeed
+                writeBulletElm child
+                sink.End()
 
             let writeTopElm (t: BulletmlElm) =
                 match t with
-                | BulletmlElm.Bullet(attrs, direction, speed, children) ->
-                    writeBulletBody attrs direction speed (fun () -> children |> Seq.iter writeActionElm)
-                | BulletmlElm.Fire(attrs, direction, speed, child) ->
-                    writeFireBody attrs direction speed (fun () -> writeBulletElm child)
-                | BulletmlElm.Action(attrs, children) ->
-                    writeActionBody attrs (fun () -> children |> Seq.iter writeCommand)
+                | BulletmlElm.Bullet(attrs, direction, speed, children) -> writeBullet attrs direction speed children
+                | BulletmlElm.Fire(attrs, direction, speed, child) -> writeFire attrs direction speed child
+                | BulletmlElm.Action(attrs, children) -> writeAction attrs children
 
             match this with
             | Bulletml.Bulletml(attrs, children) ->
                 sink.Start("bulletml")
-
-                match attrs.bulletmlXmlns with
-                | Some v -> sink.Attr("xmlns", v)
-                | None -> ()
-
-                match attrs.bulletmlType with
-                | Some typeName ->
-                    let t =
-                        typeName
-                        |> function
-                            | ShootingDirection.BulletNone -> "none"
-                            | ShootingDirection.BulletHorizontal -> "horizontal"
-                            | ShootingDirection.BulletVertical -> "vertical"
-
-                    sink.Attr("type", t)
-                | None -> ()
-
+                attrIfSome "xmlns" attrs.bulletmlXmlns
+                attrIfSome "type" (attrs.bulletmlType |> Option.map shootingDirectionText)
                 // parser が読む属性は writer も書く（書かないと往復で消える）
-                match attrs.bulletmlName with
-                | Some v -> sink.Attr("name", v)
-                | None -> ()
-
-                match attrs.bulletmlDescription with
-                | Some v -> sink.Attr("description", v)
-                | None -> ()
-
+                attrIfSome "name" attrs.bulletmlName
+                attrIfSome "description" attrs.bulletmlDescription
                 children |> Seq.iter writeTopElm
                 sink.End()
 
