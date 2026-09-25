@@ -99,13 +99,23 @@ jobs:
         with:
           user: zecl
 
-      # .snupkg は同じコマンドで一緒に上がる。
+      # .snupkg は隣に在れば同じコマンドで一緒に上がる。
       # --skip-duplicate：途中で落ちて Re-run したとき、上がったぶんを飛ばして残りだけ上げる
+      #
+      # ファイルは pwsh で並べて 1 本 ずつ渡す。dotnet nuget push のワイルドカードは
+      # Windows で / 区切りを解釈せず、"packages/*.nupkg" が「ファイルが存在しません」になる
+      # （v1.0.0 の初回で踏んだ。\ 区切りなら通るが、区切りに頼らない形にしておく）
       - name: nuget.org へ push
         shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: |
-          dotnet nuget push "packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate
-          if ($LASTEXITCODE -ne 0) { throw "push が落ちた（exit $LASTEXITCODE）" }
+          $files = @(Get-ChildItem packages -Filter *.nupkg)
+          if ($files.Count -eq 0) { throw 'packages に .nupkg が無い' }
+          foreach ($f in $files) {
+            dotnet nuget push $f.FullName --source https://api.nuget.org/v3/index.json --api-key $env:NUGET_API_KEY --skip-duplicate
+            if ($LASTEXITCODE -ne 0) { throw "$($f.Name) の push が落ちた（exit $LASTEXITCODE）" }
+          }
 
       # 版に - が付く（1.1.0-preview.1 など）ときだけ prerelease の印を付ける
       - name: GitHub Release
