@@ -340,7 +340,6 @@ module DTD =
                 sink.Text(s)
                 sink.End()
 
-            /// direction / speed / horizontal / vertical。type は書いてあったときだけ書く
             let writeTyped name (typeText: string option) s =
                 sink.Start(name)
                 attrIfSome "type" typeText
@@ -361,7 +360,6 @@ module DTD =
 
             let writeTerm (Term s) = writeText "term" (Expr.NumExpr.text s)
 
-            /// fireRef / actionRef / bulletRef
             let writeRef name label (prams: Params) =
                 sink.Start(name)
                 sink.Attr("label", label)
