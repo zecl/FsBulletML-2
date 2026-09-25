@@ -1,3 +1,5 @@
+[![CI](https://github.com/zecl/FsBulletML-2/actions/workflows/pr.yml/badge.svg)](https://github.com/zecl/FsBulletML-2/actions/workflows/pr.yml)
+
 # FsBulletML-2
 
 BulletML（弾幕記述言語）の F# 実装。仕様は Kenta Cho (ABA Games) の
