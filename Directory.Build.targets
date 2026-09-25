@@ -16,6 +16,17 @@
   </PropertyGroup>
 
   <!--
+    CI で焼くときだけ、PDB と dll の中のパスを /_/ に揃える（決定論的ビルド）。
+
+    配る 4 本 にだけ効かせる。試験や samples に効かせると __SOURCE_DIRECTORY__ まで
+    /_//tests/... になり、そこから repo の根元を辿る試験（Corpus.fs など）が
+    弾幕の xml を 1 本 も見つけられなくなる（227 本 が 0 本 になった）。
+  -->
+  <PropertyGroup Condition="'$(IsPackable)' == 'true' and '$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!--
     SDK が obj に焼く <TFM>.AssemblyAttributes.fs は、名前にカンマが入る
     （.NETCoreApp,Version=v10.0.AssemblyAttributes.fs）。F# のコンパイラは埋め込む
     ファイルをカンマ区切りで受けるので、この 1 本 だけ PDB に入らない ——

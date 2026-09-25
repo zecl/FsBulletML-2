@@ -55,7 +55,7 @@ let private counts () =
     printfn "**対照の側だけが合っていて、対象の側だけが外れる**という形で隠れていた。"
 
 /// 新 API の絶対値。走行のたびに記録からの差を出す。
-let private baselineAt = "572086a（旧 API 廃止。BulletRunner を消し、FakeBullet を小さくした版）"
+let private baselineAt = "611181d（旧 API 廃止。BulletRunner を消し、FakeBullet を小さくした版）"
 
 let private baseline =
     dict
