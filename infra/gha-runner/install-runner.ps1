@@ -4,7 +4,7 @@
   この repo 用 の self-hosted runner を 1 台 建てる（Windows）。
 
 .DESCRIPTION
-  なぜ Windows なのかと、キャッシュや labels の契約は README.md が正本。
+  なぜ Windows なのかと、キャッシュや labels の契約はここには書かない。
   ここに書くのは手順だけ。
 
   **何度 走らせても同じ形になる。** 既に登録されている runner が在れば
