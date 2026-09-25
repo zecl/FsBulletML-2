@@ -132,5 +132,4 @@ module Manager =
 
     [<CompiledName("CheckEnemyCollision")>]
     let checkEnemyCollision enemyPos radius cont =
-        checkCollision enemyPos radius playerBulletSpaces ignore cont
         checkCollision enemyPos radius playerBulletSpaces (fun target -> target.Used <- false) cont
