@@ -9,72 +9,55 @@ open FsBulletML2
 /// 深い ところ の `label` も `actionRef` から 引ける
 let private labelsIn (elm: BulletmlElm) : Set<RefKey> =
     let found = System.Collections.Generic.HashSet<RefKey>()
+    let add key = found.Add key |> ignore
 
-    let rec inAction (a: Action) =
-        match a with
-        | Action.Action(attrs, xs) ->
-            attrs.actionLabel |> Option.iter (ActionKey >> found.Add >> ignore)
-            List.iter inAction xs
-        | Action.Repeat(_, e) -> inElm e
-        | Action.Fire(attrs, _, _, b) ->
-            attrs.fireLabel |> Option.iter (FireKey >> found.Add >> ignore)
-            inBullet b
-        | _ -> ()
-
-    and inElm (e: ActionElm) =
-        match e with
-        | ActionElm.Action(attrs, xs) ->
-            attrs.actionLabel |> Option.iter (ActionKey >> found.Add >> ignore)
-            List.iter inAction xs
-        | ActionElm.ActionRef _ -> ()
-
-    and inBullet (b: BulletElm) =
-        match b with
-        | BulletElm.Bullet(attrs, _, _, xs) ->
-            attrs.bulletLabel |> Option.iter (BulletKey >> found.Add >> ignore)
-            List.iter inElm xs
-        | BulletElm.BulletRef _ -> ()
-
-    match elm with
-    | BulletmlElm.Action(attrs, xs) ->
-        attrs.actionLabel |> Option.iter (ActionKey >> found.Add >> ignore)
-        List.iter inAction xs
-    | BulletmlElm.Bullet(attrs, _, _, xs) ->
-        attrs.bulletLabel |> Option.iter (BulletKey >> found.Add >> ignore)
-        List.iter inElm xs
-    | BulletmlElm.Fire(attrs, _, _, b) ->
-        attrs.fireLabel |> Option.iter (FireKey >> found.Add >> ignore)
-        inBullet b
+    Walk.iter
+        { Walk.see with
+            onAction =
+                function
+                | Action.Action(attrs, _) -> attrs.actionLabel |> Option.iter (ActionKey >> add)
+                | Action.Fire(attrs, _, _, _) -> attrs.fireLabel |> Option.iter (FireKey >> add)
+                | _ -> ()
+            onElm =
+                function
+                | ActionElm.Action(attrs, _) -> attrs.actionLabel |> Option.iter (ActionKey >> add)
+                | ActionElm.ActionRef _ -> ()
+            onBullet =
+                function
+                | BulletElm.Bullet(attrs, _, _, _) -> attrs.bulletLabel |> Option.iter (BulletKey >> add)
+                | BulletElm.BulletRef _ -> ()
+            onTop =
+                function
+                | BulletmlElm.Action(attrs, _) -> attrs.actionLabel |> Option.iter (ActionKey >> add)
+                | BulletmlElm.Bullet(attrs, _, _, _) -> attrs.bulletLabel |> Option.iter (BulletKey >> add)
+                | BulletmlElm.Fire(attrs, _, _, _) -> attrs.fireLabel |> Option.iter (FireKey >> add)
+        }
+        [ elm ]
 
     Set.ofSeq found
 
 /// その要素 が 引く 名前
 let private refsIn (elm: BulletmlElm) : Set<RefKey> =
     let found = System.Collections.Generic.HashSet<RefKey>()
+    let add key = found.Add key |> ignore
 
-    let rec inAction (a: Action) =
-        match a with
-        | Action.ActionRef(attrs, _) -> found.Add(ActionKey attrs.actionRefLabel) |> ignore
-        | Action.FireRef(attrs, _) -> found.Add(FireKey attrs.fireRefLabel) |> ignore
-        | Action.Action(_, xs) -> List.iter inAction xs
-        | Action.Repeat(_, e) -> inElm e
-        | Action.Fire(_, _, _, b) -> inBullet b
-        | _ -> ()
-
-    and inElm (e: ActionElm) =
-        match e with
-        | ActionElm.Action(_, xs) -> List.iter inAction xs
-        | ActionElm.ActionRef(attrs, _) -> found.Add(ActionKey attrs.actionRefLabel) |> ignore
-
-    and inBullet (b: BulletElm) =
-        match b with
-        | BulletElm.Bullet(_, _, _, xs) -> List.iter inElm xs
-        | BulletElm.BulletRef(attrs, _) -> found.Add(BulletKey attrs.bulletRefLabel) |> ignore
-
-    match elm with
-    | BulletmlElm.Action(_, xs) -> List.iter inAction xs
-    | BulletmlElm.Bullet(_, _, _, xs) -> List.iter inElm xs
-    | BulletmlElm.Fire(_, _, _, b) -> inBullet b
+    Walk.iter
+        { Walk.see with
+            onAction =
+                function
+                | Action.ActionRef(attrs, _) -> add (ActionKey attrs.actionRefLabel)
+                | Action.FireRef(attrs, _) -> add (FireKey attrs.fireRefLabel)
+                | _ -> ()
+            onElm =
+                function
+                | ActionElm.ActionRef(attrs, _) -> add (ActionKey attrs.actionRefLabel)
+                | ActionElm.Action _ -> ()
+            onBullet =
+                function
+                | BulletElm.BulletRef(attrs, _) -> add (BulletKey attrs.bulletRefLabel)
+                | BulletElm.Bullet _ -> ()
+        }
+        [ elm ]
 
     Set.ofSeq found
 

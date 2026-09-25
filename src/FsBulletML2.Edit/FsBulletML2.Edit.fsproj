@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Walk.fs" />
     <Compile Include="Combine.fs" />
     <Compile Include="Tune.fs" />
     <Compile Include="Parts.fs" />

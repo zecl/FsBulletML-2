@@ -196,50 +196,44 @@ let private on knob slot (f: float -> 'a) (unchanged: 'a) =
     | Some k -> f k
     | None -> unchanged
 
-let rec private mapAction (knob: Knob) (a: Action) : Action =
-    match a with
-    | Action.ChangeDirection(d, t) ->
-        let d' = on knob "direction" (fun k -> mapDir k d) d
-        let t' = on knob "term" (fun k -> mapTerm k t) t
-        Action.ChangeDirection(d', t')
-    | Action.ChangeSpeed(s, t) ->
-        let s' = on knob "speed" (fun k -> mapSpeed k s) s
-        let t' = on knob "term" (fun k -> mapTerm k t) t
-        Action.ChangeSpeed(s', t')
-    | Action.Accel(h, v, t) ->
-        let h', v' = on knob "accel" (fun k -> mapAccel k h v) (h, v)
-        let t' = on knob "term" (fun k -> mapTerm k t) t
-        Action.Accel(h', v', t')
-    | Action.Wait e -> Action.Wait(on knob "wait" (fun k -> scale k e) e)
-    | Action.Repeat(t, e) -> Action.Repeat(on knob "times" (fun k -> mapTimes k t) t, mapActionElm knob e)
-    | Action.Fire(attrs, d, s, b) -> Action.Fire(attrs, mapDirOpt knob d, mapSpeedOpt knob s, mapBullet knob b)
-    | Action.Action(attrs, xs) -> Action.Action(attrs, List.map (mapAction knob) xs)
-    | _ -> a
-
-and private mapDirOpt knob (d: Direction option) =
+let private mapDirOpt knob (d: Direction option) =
     d |> Option.map (fun x -> on knob "direction" (fun k -> mapDir k x) x)
 
-and private mapSpeedOpt knob (s: Speed option) =
+let private mapSpeedOpt knob (s: Speed option) =
     s |> Option.map (fun x -> on knob "speed" (fun k -> mapSpeed k x) x)
 
-and private mapActionElm knob (e: ActionElm) : ActionElm =
-    match e with
-    | ActionElm.Action(attrs, xs) -> ActionElm.Action(attrs, List.map (mapAction knob) xs)
-    | ActionElm.ActionRef _ -> e
+let private tuning (knob: Knob) : Walk.Rewrite =
+    { Walk.keep with
+        action =
+            function
+            | Action.ChangeDirection(d, t) ->
+                let d' = on knob "direction" (fun k -> mapDir k d) d
+                let t' = on knob "term" (fun k -> mapTerm k t) t
+                Action.ChangeDirection(d', t')
+            | Action.ChangeSpeed(s, t) ->
+                let s' = on knob "speed" (fun k -> mapSpeed k s) s
+                let t' = on knob "term" (fun k -> mapTerm k t) t
+                Action.ChangeSpeed(s', t')
+            | Action.Accel(h, v, t) ->
+                let h', v' = on knob "accel" (fun k -> mapAccel k h v) (h, v)
+                let t' = on knob "term" (fun k -> mapTerm k t) t
+                Action.Accel(h', v', t')
+            | Action.Wait e -> Action.Wait(on knob "wait" (fun k -> scale k e) e)
+            | Action.Repeat(t, e) -> Action.Repeat(on knob "times" (fun k -> mapTimes k t) t, e)
+            | Action.Fire(attrs, d, s, b) -> Action.Fire(attrs, mapDirOpt knob d, mapSpeedOpt knob s, b)
+            | a -> a
+        bullet =
+            function
+            | BulletElm.Bullet(attrs, d, s, xs) -> BulletElm.Bullet(attrs, mapDirOpt knob d, mapSpeedOpt knob s, xs)
+            | b -> b
+        top =
+            function
+            | BulletmlElm.Bullet(attrs, d, s, xs) -> BulletmlElm.Bullet(attrs, mapDirOpt knob d, mapSpeedOpt knob s, xs)
+            | BulletmlElm.Fire(attrs, d, s, b) -> BulletmlElm.Fire(attrs, mapDirOpt knob d, mapSpeedOpt knob s, b)
+            | e -> e
+    }
 
-and private mapBullet knob (b: BulletElm) : BulletElm =
-    match b with
-    | BulletElm.Bullet(attrs, d, s, xs) ->
-        BulletElm.Bullet(attrs, mapDirOpt knob d, mapSpeedOpt knob s, List.map (mapActionElm knob) xs)
-    | BulletElm.BulletRef _ -> b
-
-let private mapTop knob (e: BulletmlElm) : BulletmlElm =
-    match e with
-    | BulletmlElm.Bullet(attrs, d, s, xs) ->
-        BulletmlElm.Bullet(attrs, mapDirOpt knob d, mapSpeedOpt knob s, List.map (mapActionElm knob) xs)
-    | BulletmlElm.Fire(attrs, d, s, b) ->
-        BulletmlElm.Fire(attrs, mapDirOpt knob d, mapSpeedOpt knob s, mapBullet knob b)
-    | BulletmlElm.Action(attrs, xs) -> BulletmlElm.Action(attrs, List.map (mapAction knob) xs)
+let private mapAction (knob: Knob) (a: Action) : Action = Walk.rewriteAction (tuning knob) a
 
 // --- 形 を足す 側 --------------------------------------------------------
 // 足す 要素 に 印 を付ける。外す 側 は その印 だけ を見る。
@@ -321,20 +315,6 @@ let private dropLayer (bulletml: Bulletml) : Bulletml =
             let last = List.last added
             Bulletml(attrs, elms |> List.filter (fun e -> not (Object.ReferenceEquals(e, last))))
 
-/// 撃つ 枝 を 1 つ でも 持って いるか。持って いない 弾 が 段 の終点
-let rec private firesIn (a: Action) =
-    match a with
-    | Action.Fire _
-    | Action.FireRef _ -> true
-    | Action.Repeat(_, e) -> firesInElm e
-    | Action.Action(_, xs) -> List.exists firesIn xs
-    | _ -> false
-
-and private firesInElm (e: ActionElm) =
-    match e with
-    | ActionElm.Action(_, xs) -> List.exists firesIn xs
-    | ActionElm.ActionRef _ -> false
-
 let private splitMarks (xs: ActionElm list) =
     xs
     |> List.filter (fun e ->
@@ -381,7 +361,7 @@ let rec private splitBullet (depth: int) (b: BulletElm) : BulletElm =
     | BulletElm.Bullet(attrs, d, s, xs) ->
         let deeper = List.map (splitElm depth) xs
         // 撃つ 枝 が 1 つ も無い 弾 が 段 の終点。そこ に だけ 足す
-        let leaf = not (List.exists (fun e -> firesInElm e) xs)
+        let leaf = not (List.exists (fun e -> Walk.firesInElm e) xs)
 
         if leaf && depth < MAX_SPLIT then
             BulletElm.Bullet(attrs, d, s, deeper @ [ splitBranch () ])
@@ -412,7 +392,7 @@ let private splitTop depth (e: BulletmlElm) : BulletmlElm =
         let deeper = List.map (splitElm depth) xs
         let marks = splitMarks xs |> List.length
 
-        if List.exists firesInElm xs || depth + marks >= MAX_SPLIT then
+        if List.exists Walk.firesInElm xs || depth + marks >= MAX_SPLIT then
             BulletmlElm.Bullet(attrs, d, s, deeper)
         else
             BulletmlElm.Bullet(attrs, d, s, deeper @ [ splitBranch () ])
@@ -580,33 +560,16 @@ let private hushTop target n (e: BulletmlElm) =
 let private hushCount (bulletml: Bulletml) =
     let mutable n = 0
 
-    let rec inAction (a: Action) =
-        if isHushed a then
-            n <- n + 1
-
-        match a with
-        | Action.Fire(_, _, _, b) -> inBullet b
-        | Action.Repeat(_, e) -> inElm e
-        | Action.Action(_, xs) -> List.iter inAction xs
-        | _ -> ()
-
-    and inElm (e: ActionElm) =
-        match e with
-        | ActionElm.Action(_, xs) -> List.iter inAction xs
-        | ActionElm.ActionRef _ -> ()
-
-    and inBullet (b: BulletElm) =
-        match b with
-        | BulletElm.Bullet(_, _, _, xs) -> List.iter inElm xs
-        | BulletElm.BulletRef _ -> ()
-
     match bulletml with
     | Bulletml(_, elms) ->
-        for e in elms do
-            match e with
-            | BulletmlElm.Action(_, xs) -> List.iter inAction xs
-            | BulletmlElm.Bullet(_, _, _, xs) -> List.iter inElm xs
-            | BulletmlElm.Fire(_, _, _, b) -> inBullet b
+        Walk.iter
+            { Walk.see with
+                onAction =
+                    fun a ->
+                        if isHushed a then
+                            n <- n + 1
+            }
+            elms
 
     n
 
@@ -755,7 +718,7 @@ let apply (knob: Knob) (bulletml: Bulletml) : Bulletml =
     | Unhush -> unhush bulletml
     | _ ->
         match bulletml with
-        | Bulletml(attrs, elms) -> Bulletml(attrs, List.map (mapTop knob) elms)
+        | Bulletml(attrs, elms) -> Bulletml(attrs, Walk.rewrite (tuning knob) elms)
 
 /// 軸 と 段数 を 1 回 で 当てる。途中 で落ちる と 中途半端 な形 で止まる。
 /// 知らない 軸 は 飛ばす。段数 の上限 は ここ（`MAX_STEPS`）。

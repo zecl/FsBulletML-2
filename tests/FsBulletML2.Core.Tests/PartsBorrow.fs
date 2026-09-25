@@ -54,6 +54,21 @@ type PartsBorrow() =
         let got = Parts.extract (read curving)
         got |> List.map fst |> should contain Parts.Curve
 
+    /// `find` は 長さ が同じ なら 先 に拾った ほう を返す。拾う 順 が 外 と 内 で入れ替わる と 借りる 仕掛け が変わる
+    [<Test>]
+    member _.``入れ子 の動き は 外 から 順 に拾う``() =
+        let nested =
+            """<action label="top"><fire><bulletRef label="core"/></fire></action>
+         <bullet label="core"><speed>1</speed><action>
+           <action><accel><horizontal>1</horizontal><term>5</term></accel>
+             <action><changeSpeed><speed>2</speed><term>5</term></changeSpeed></action>
+           </action>
+         </action></bullet>"""
+
+        Parts.extract (read nested)
+        |> List.map fst
+        |> should equal [ Parts.Accelerate; Parts.Accelerate; Parts.Drift ]
+
     /// 撃つ 枝 は 入れない —— `Combine.Inside` と同じ 掛け算 に なる
     [<Test>]
     member _.``撃つ 枝 は抜かない``() =
