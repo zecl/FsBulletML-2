@@ -1,12 +1,10 @@
-; Godot 4.7。**入力の割り当ては書いていない。**
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
 ;
-; `[input]` に書く形（InputMap）だと、キー 1 つ が 12 個 の property を持つ
-; Object リテラル になる。手で書くと間違えても**黙って「押されない」になる**ので、
-; `Input.IsPhysicalKeyPressed` で直に見ている（`Scripts/Player.cs`）。
-;
-; 盤面 は サーバーが配る（`RoomInfo` の MinX/MaxX/MinY/MaxY）。
-; ここ の viewport は**その縦横比 に合わせてあるだけ** —— x[0, 4.8] y[-6.4, 0] の 3:4。
-; 合っていなくても `Scripts/Space.cs` が letterbox で収める。
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
@@ -16,17 +14,16 @@ config/name="FsBulletML2 Sample Godot MagicOnion"
 run/main_scene="res://Scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 
-[dotnet]
-
-project/assembly_name="FsBulletML2.Sample.Godot.MagicOnion"
-
 [display]
 
 window/size/viewport_width=480
 window/size/viewport_height=640
 window/stretch/mode="canvas_items"
 
+[dotnet]
+
+project/assembly_name="FsBulletML2.Sample.Godot.MagicOnion"
+
 [rendering]
 
-renderer/rendering_method="forward_plus"
 environment/defaults/default_clear_color=Color(0.043, 0.043, 0.063, 1)
