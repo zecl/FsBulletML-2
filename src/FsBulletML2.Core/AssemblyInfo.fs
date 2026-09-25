@@ -5,17 +5,9 @@ open System.Reflection
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 
-[<assembly: AssemblyVersion("0.9.0")>]
-[<assembly: AssemblyFileVersion("0.9.0")>]
-[<assembly: AssemblyInformationalVersion("0.9.0")>]
+// 版・題・説明・会社・著作権は SDK が Directory.Build.props から作る。
+// ここに書くと二重になって落ちる
 
-[<assembly: AssemblyTitle("FsBulletML2")>]
-[<assembly: AssemblyDescription("F# implementation of BulletML for internal DSL, and Xml.")>]
-[<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("FsBulletML2.Core")>]
-[<assembly: AssemblyCopyright("Copyright (C) 2013-2014 zecl")>]
-[<assembly: AssemblyTrademark("")>]
-[<assembly: AssemblyCulture("")>]
 [<assembly: NeutralResourcesLanguage("ja-JP")>]
 
 [<assembly: ComVisible(false)>]
@@ -24,11 +16,5 @@ open System.Runtime.InteropServices
 [<assembly: InternalsVisibleTo("FsBulletML2.Parser")>]
 [<assembly: InternalsVisibleTo("FsBulletML2.Parser.Tests")>]
 [<assembly: InternalsVisibleTo("FsBulletML2.Core.Tests")>]
-
-#if DEBUG
-[<assembly: AssemblyConfiguration("Debug")>]
-#else
-[<assembly: AssemblyConfiguration("Release")>]
-#endif
 
 do ()

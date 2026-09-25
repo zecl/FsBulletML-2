@@ -1,0 +1,37 @@
+<Project>
+  <!--
+    NuGet に出すための共通の設定。repo の直下に置くので samples / tests / bench / tools にも効く。
+
+    既定は IsPackable=false。配る fsproj だけが true を書く ——
+    書かないプロジェクトが紛れて配られる事故を、既定の側で塞ぐ。
+    配るものの一覧は nuget/pack.ps1 が持つ。
+  -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+
+    <!-- 版はここ 1 か所。ProjectReference がそのままパッケージ依存になるので、ずらさない -->
+    <Version>1.0.0</Version>
+
+    <Authors>zecl</Authors>
+    <Copyright>Copyright (c) zecl</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/zecl/FsBulletML-2</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/zecl/FsBulletML-2</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>bulletml;danmaku;shmup;bullet-hell;fsharp;game</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- SourceLink は .NET 8 以降の SDK に同梱で、既定で有効 -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)nuget/README.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)nuget/icon.png" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+</Project>

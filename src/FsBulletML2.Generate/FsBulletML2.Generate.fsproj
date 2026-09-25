@@ -6,7 +6,6 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RootNamespace>FsBulletML2.Generate</RootNamespace>
     <AssemblyName>FsBulletML2.Generate</AssemblyName>
-    <Version>0.1.0</Version>
     <Product>FsBulletML2.Generate</Product>
     <Description>Builds BulletML from a PatternSpec.</Description>
   </PropertyGroup>

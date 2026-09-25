@@ -2,10 +2,12 @@
   <PropertyGroup>
     <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RootNamespace>FsBulletML2.Front</RootNamespace>
     <AssemblyName>FsBulletML2.Front</AssemblyName>
+    <IsPackable>true</IsPackable>
+    <PackageId>FsBulletML2.Front</PackageId>
+    <Description>Shared front-end layer for FsBulletML2: drives many bullets per frame for a game framework (MonoGame, Unity, Godot, ...).</Description>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />

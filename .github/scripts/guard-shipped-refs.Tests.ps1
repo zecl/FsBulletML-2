@@ -24,7 +24,7 @@ $guard = Join-Path $RepoRoot '.github/scripts/guard-shipped-refs.ps1'
 
 # stub を割る前の同梱 dll。ここに ECS と URP の型が
 # 「UnityEngine に在る」として焼き込まれている
-$BrokenAt = '4077d49'
+$BrokenAt = '75fcf1f'
 $BrokenDll = 'samples/FsBulletML2.Sample.Unity2D.FSharp/Assets/FsBulletML2/FsBulletML2.Sample.Unity2D.FSharp.dll'
 
 $ok = 0
