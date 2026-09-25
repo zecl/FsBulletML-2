@@ -68,8 +68,8 @@ type FSBTypeProvider(config: TypeProviderConfig) as this =
         let name = System.Reflection.AssemblyName(args.Name)
 
         let existingAssembly =
-            let hoge = System.AppDomain.CurrentDomain.GetAssemblies()
-            hoge |> Seq.tryFind (fun a -> name = a.GetName())
+            let loaded = System.AppDomain.CurrentDomain.GetAssemblies()
+            loaded |> Seq.tryFind (fun a -> name = a.GetName())
 
         match existingAssembly with
         | Some a -> a

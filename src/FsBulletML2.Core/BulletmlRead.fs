@@ -88,25 +88,11 @@ module BulletmlRead =
 
             List.map f children
 
-    let internal getTextDefault children defaultText =
-        children
-        |> List.tryPick (function
-            | PCData x -> Some x
-            | _ -> None)
-        |> function
-            | Some x -> x
-            | _ -> defaultText
-
     let internal tryFindAttrValue attrs attrName =
         attrs
         |> List.tryPick (fun (label, v) -> if label = attrName && v <> "" then Some v else None)
 
-    let internal getAttrValue attrs attrName =
-        attrs
-        |> List.pick (fun (label, v) -> if label = attrName && v <> "" then Some v else None)
-
     let internal tryFindLabelValue attrs = tryFindAttrValue attrs "label"
-    let internal getLabelValue attrs = getAttrValue attrs "label"
 
     let internal toSpeedType (s: string) =
         match s.ToLower() with

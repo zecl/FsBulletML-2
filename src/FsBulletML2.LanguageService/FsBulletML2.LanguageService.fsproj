@@ -17,7 +17,7 @@
     ## 2 つ の runtime で走る
 
     ここのソースは host（Blazor WASM の .NET）と ブラウザ側（Fable が
-    焼いた JS）の**両方 で走る**。Fable 側は `Playground.Js.fsproj` が
+    焼いた JS）の**両方 で走る**。Fable 側は `FsBulletML2.LanguageService.Js.fsproj` が
     `ProjectReference` で引き、Fable がソースから焼く。
 
     **`Fable.Core` に依存しない形で書くこと。** 依存すると host 側の
@@ -66,8 +66,8 @@
     <Compile Include="Languages/Xml.fs" />
     <Compile Include="Languages/Sxml.fs" />
     <Compile Include="Languages/Fsb.fs" />
-    <!-- **`Lookup` に載っていない。** CE の語彙は DTD から引けないので、
-         候補と hover は空。理由はファイルの頭に書いてある -->
+    <!-- **`Lookup` の `Shape` に載せない。** CE の形は DTD から引けない。
+         理由はファイルの頭に書いてある -->
     <Compile Include="Languages/Fsharp.fs" />
   </ItemGroup>
 </Project>

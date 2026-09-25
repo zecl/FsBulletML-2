@@ -72,15 +72,6 @@ module Sim =
                 Emit = ValueSome(fun rest -> e :: rest)
             }
 
-    /// まとめて積む。1 個ずつ bind すると repeat の周のぶんスタックが伸びる。
-    let internal emitMany (es: Effect list) : Sim<unit> =
-        fun _ st ->
-            {
-                Value = ()
-                State = st
-                Emit = ValueSome(fun rest -> es @ rest)
-            }
-
     /// 走らせて、効果を並びに潰す
     let internal run env st (m: Sim<'a>) =
         let r = m env st

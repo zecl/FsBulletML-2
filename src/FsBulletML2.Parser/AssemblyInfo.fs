@@ -5,7 +5,6 @@ open System.Reflection
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 
-//[<assembly: AssemblyVersion("0.8.*")>]
 [<assembly: AssemblyVersion("0.8.6")>]
 [<assembly: AssemblyFileVersion("0.8.6")>]
 [<assembly: AssemblyInformationalVersion("0.8.6")>]
@@ -23,7 +22,6 @@ open System.Runtime.InteropServices
 [<assembly: Guid("88DCD0C9-CEEE-428B-9AB9-8FD72B774275")>]
 
 [<assembly: InternalsVisibleTo("FsBulletML2.Parser.Tests")>]
-[<assembly: InternalsVisibleTo("CreateBullets")>]
 
 #if DEBUG
 [<assembly: AssemblyConfiguration("Debug")>]

@@ -5,7 +5,6 @@ open System
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes
 open Impl
-open System.Text.RegularExpressions
 
 [<TypeProvider>]
 [<CompilerMessage("hidden...", 13730, IsError = false, IsHidden = true)>]

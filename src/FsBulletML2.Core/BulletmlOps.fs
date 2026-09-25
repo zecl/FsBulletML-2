@@ -358,20 +358,6 @@ module internal BulletmlOps =
                     )
                     |> raise
 
-    let private expandTopElm visiting lastAction top (t: BulletmlElm) : BulletmlElm =
-        match t with
-        | BulletmlElm.Bullet(attrs, d, s, children) ->
-            BulletmlElm.Bullet(attrs, d, s, children |> List.map (expandActionElm visiting lastAction top))
-        | BulletmlElm.Fire(attrs, d, s, child) ->
-            BulletmlElm.Fire(attrs, d, s, expandBulletElm visiting lastAction top child)
-        | BulletmlElm.Action(attrs, children) ->
-            BulletmlElm.Action(attrs, children |> List.map (expandCommand visiting lastAction top))
-
-    /// 木を丸ごと展開する。根から入る唯一の入口
-    let internal convertRefBulletml (top: Bulletml) (bulletml: Bulletml) : Bulletml =
-        match bulletml with
-        | Bulletml.Bulletml(attrs, elms) -> Bulletml.Bulletml(attrs, elms |> List.map (expandTopElm Set.empty None top))
-
     /// top* の台本 1 本 を展開する。`Runner.load` が使う
     let internal convertRefActionElm (top: Bulletml) (a: ActionElm) : ActionElm = expandActionElm Set.empty None top a
 

@@ -5,7 +5,6 @@ open System.Reflection
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 
-//[<assembly: AssemblyVersion("0.1.*")>]
 [<assembly: AssemblyVersion("0.1.0")>]
 [<assembly: AssemblyFileVersion("0.1.0")>]
 [<assembly: AssemblyInformationalVersion("0.1.0")>]
@@ -24,7 +23,6 @@ open System.Runtime.InteropServices
 
 #if DEBUG
 [<assembly: InternalsVisibleTo("FsBulletML2.Unity2D.Tests")>]
-[<assembly: InternalsVisibleTo("CreateBullets")>]
 #endif
 
 #if DEBUG
