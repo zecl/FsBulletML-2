@@ -1,4 +1,4 @@
-name: PR
+name: CI
 
 # 変更されたコードから、走らせる試験を機械が決める。
 # 決め方は .github/scripts/affected.ps1、その校正は affected.Tests.ps1。
@@ -25,6 +25,10 @@ name: PR
 
 on:
   pull_request:
+  # main でも走らせる。README のバッジは main の上の結果を出すので、
+  # pull_request だけだと「no status」のまま になる
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       full:
@@ -123,7 +127,8 @@ jobs:
         shell: pwsh
         env:
           BASE_REF: ${{ github.base_ref }}
-          FORCE_FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.full }}
+          # push（main）は比べる相手 が無い —— merge-base が HEAD になり、変更 0 件 で落ちる。全部 走らせる
+          FORCE_FULL: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.full) }}
         run: |
           $opt = @{}
           if ($env:FORCE_FULL -eq 'true') {
