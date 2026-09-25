@@ -207,6 +207,31 @@ type CombineTwo() =
         // A の刻み も そのまま
         got |> should haveSubstring ">13<"
 
+    /// 上 の `bRich` は 根 の直下 に `<fire>` も 向き を持つ `<bullet>` も 持たない
+    [<Test>]
+    member _.``鏡 は 根 の直下 の fire と bullet の絶対角 も回す``() =
+        let rooted =
+            """<action label="top"><fireRef label="shot"/></action>
+         <fire label="shot"><direction type="absolute">45</direction><bulletRef label="core"/></fire>
+         <bullet label="core"><direction type="absolute">30</direction><speed>1</speed></bullet>"""
+
+        let got = xml (Combine.apply Combine.Mirror (read a) (read rooted))
+        got |> should haveSubstring "(45) + 180"
+        got |> should haveSubstring "(30) + 180"
+
+    /// `fireRef` だけ 付け直し を忘れて も、ほか の試験 は 緑 のまま だった
+    [<Test>]
+    member _.``付け直し は fireRef の名前 も揃える``() =
+        let shot =
+            """<action label="top"><fireRef label="shot"/></action>
+         <fire label="shot"><bulletRef label="core"/></fire>
+         <bullet label="core"><speed>1</speed></bullet>"""
+
+        let got = xml (Combine.apply Combine.Beside (read a) (read shot))
+        got |> should haveSubstring "<fire label=\"b-shot\">"
+        got |> should haveSubstring "<fireRef label=\"b-shot\""
+        got |> should not' (haveSubstring "label=\"shot\"")
+
     /// 回す のは B だけ。A は 混ぜる 先 なので そのまま 残す
     [<Test>]
     member _.``鏡 でも A は動かない``() =

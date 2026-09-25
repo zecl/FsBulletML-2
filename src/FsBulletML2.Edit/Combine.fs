@@ -40,40 +40,26 @@ let MARK = "mixed"
 
 let private actionLabels (bulletml: Bulletml) =
     let names = System.Collections.Generic.HashSet<string>()
-
-    let rec inAction (a: Action) =
-        match a with
-        | Action.Action({ actionLabel = Some(ActionLabel l) }, xs) ->
-            names.Add l |> ignore
-            List.iter inAction xs
-        | Action.Action(_, xs) -> List.iter inAction xs
-        | Action.Repeat(_, e) -> inElm e
-        | Action.Fire(_, _, _, b) -> inBullet b
-        | _ -> ()
-
-    and inElm (e: ActionElm) =
-        match e with
-        | ActionElm.Action({ actionLabel = Some(ActionLabel l) }, xs) ->
-            names.Add l |> ignore
-            List.iter inAction xs
-        | ActionElm.Action(_, xs) -> List.iter inAction xs
-        | ActionElm.ActionRef _ -> ()
-
-    and inBullet (b: BulletElm) =
-        match b with
-        | BulletElm.Bullet(_, _, _, xs) -> List.iter inElm xs
-        | BulletElm.BulletRef _ -> ()
+    let add (ActionLabel l) = names.Add l |> ignore
 
     match bulletml with
     | Bulletml(_, elms) ->
-        for e in elms do
-            match e with
-            | BulletmlElm.Action({ actionLabel = Some(ActionLabel l) }, xs) ->
-                names.Add l |> ignore
-                List.iter inAction xs
-            | BulletmlElm.Action(_, xs) -> List.iter inAction xs
-            | BulletmlElm.Bullet(_, _, _, xs) -> List.iter inElm xs
-            | BulletmlElm.Fire(_, _, _, b) -> inBullet b
+        Walk.iter
+            { Walk.see with
+                onAction =
+                    function
+                    | Action.Action(attrs, _) -> attrs.actionLabel |> Option.iter add
+                    | _ -> ()
+                onElm =
+                    function
+                    | ActionElm.Action(attrs, _) -> attrs.actionLabel |> Option.iter add
+                    | ActionElm.ActionRef _ -> ()
+                onTop =
+                    function
+                    | BulletmlElm.Action(attrs, _) -> attrs.actionLabel |> Option.iter add
+                    | _ -> ()
+            }
+            elms
 
         names
 
@@ -103,118 +89,99 @@ let private aLabel p (ActionLabel s) = ActionLabel(rename p s)
 let private fLabel p (FireLabel s) = FireLabel(p + s)
 let private bLabel p (BulletLabel s) = BulletLabel(p + s)
 
-let rec private mapAction p (a: Action) : Action =
-    match a with
-    | Action.Action(attrs, xs) ->
-        Action.Action(
-            {
-                actionLabel = Option.map (aLabel p) attrs.actionLabel
-            },
-            List.map (mapAction p) xs
-        )
-    | Action.ActionRef(attrs, ps) ->
-        Action.ActionRef(
-            {
-                actionRefLabel = aLabel p attrs.actionRefLabel
-            },
-            ps
-        )
-    | Action.Repeat(t, e) -> Action.Repeat(t, mapElm p e)
-    | Action.Fire(attrs, d, s, b) ->
-        Action.Fire(
-            {
-                fireLabel = Option.map (fLabel p) attrs.fireLabel
-            },
-            d,
-            s,
-            mapBullet p b
-        )
-    | Action.FireRef(attrs, ps) ->
-        Action.FireRef(
-            {
-                fireRefLabel = fLabel p attrs.fireRefLabel
-            },
-            ps
-        )
-    | _ -> a
+let private renamed p : Walk.Rewrite =
+    let action = Option.map (aLabel p)
+    let fire = Option.map (fLabel p)
+    let bullet = Option.map (bLabel p)
 
-and private mapElm p (e: ActionElm) : ActionElm =
-    match e with
-    | ActionElm.Action(attrs, xs) ->
-        ActionElm.Action(
-            {
-                actionLabel = Option.map (aLabel p) attrs.actionLabel
-            },
-            List.map (mapAction p) xs
-        )
-    | ActionElm.ActionRef(attrs, ps) ->
-        ActionElm.ActionRef(
-            {
-                actionRefLabel = aLabel p attrs.actionRefLabel
-            },
-            ps
-        )
-
-and private mapBullet p (b: BulletElm) : BulletElm =
-    match b with
-    | BulletElm.Bullet(attrs, d, s, xs) ->
-        BulletElm.Bullet(
-            {
-                bulletLabel = Option.map (bLabel p) attrs.bulletLabel
-            },
-            d,
-            s,
-            List.map (mapElm p) xs
-        )
-    | BulletElm.BulletRef(attrs, ps) ->
-        BulletElm.BulletRef(
-            {
-                bulletRefLabel = bLabel p attrs.bulletRefLabel
-            },
-            ps
-        )
-
-let private mapTop p (e: BulletmlElm) : BulletmlElm =
-    match e with
-    | BulletmlElm.Action(attrs, xs) ->
-        BulletmlElm.Action(
-            {
-                actionLabel = Option.map (aLabel p) attrs.actionLabel
-            },
-            List.map (mapAction p) xs
-        )
-    | BulletmlElm.Bullet(attrs, d, s, xs) ->
-        BulletmlElm.Bullet(
-            {
-                bulletLabel = Option.map (bLabel p) attrs.bulletLabel
-            },
-            d,
-            s,
-            List.map (mapElm p) xs
-        )
-    | BulletmlElm.Fire(attrs, d, s, b) ->
-        BulletmlElm.Fire(
-            {
-                fireLabel = Option.map (fLabel p) attrs.fireLabel
-            },
-            d,
-            s,
-            mapBullet p b
-        )
+    {
+        action =
+            function
+            | Action.Action(attrs, xs) ->
+                Action.Action(
+                    {
+                        actionLabel = action attrs.actionLabel
+                    },
+                    xs
+                )
+            | Action.ActionRef(attrs, ps) ->
+                Action.ActionRef(
+                    {
+                        actionRefLabel = aLabel p attrs.actionRefLabel
+                    },
+                    ps
+                )
+            | Action.Fire(attrs, d, s, b) -> Action.Fire({ fireLabel = fire attrs.fireLabel }, d, s, b)
+            | Action.FireRef(attrs, ps) ->
+                Action.FireRef(
+                    {
+                        fireRefLabel = fLabel p attrs.fireRefLabel
+                    },
+                    ps
+                )
+            | a -> a
+        elm =
+            function
+            | ActionElm.Action(attrs, xs) ->
+                ActionElm.Action(
+                    {
+                        actionLabel = action attrs.actionLabel
+                    },
+                    xs
+                )
+            | ActionElm.ActionRef(attrs, ps) ->
+                ActionElm.ActionRef(
+                    {
+                        actionRefLabel = aLabel p attrs.actionRefLabel
+                    },
+                    ps
+                )
+        bullet =
+            function
+            | BulletElm.Bullet(attrs, d, s, xs) ->
+                BulletElm.Bullet(
+                    {
+                        bulletLabel = bullet attrs.bulletLabel
+                    },
+                    d,
+                    s,
+                    xs
+                )
+            | BulletElm.BulletRef(attrs, ps) ->
+                BulletElm.BulletRef(
+                    {
+                        bulletRefLabel = bLabel p attrs.bulletRefLabel
+                    },
+                    ps
+                )
+        top =
+            function
+            | BulletmlElm.Action(attrs, xs) ->
+                BulletmlElm.Action(
+                    {
+                        actionLabel = action attrs.actionLabel
+                    },
+                    xs
+                )
+            | BulletmlElm.Bullet(attrs, d, s, xs) ->
+                BulletmlElm.Bullet(
+                    {
+                        bulletLabel = bullet attrs.bulletLabel
+                    },
+                    d,
+                    s,
+                    xs
+                )
+            | BulletmlElm.Fire(attrs, d, s, b) -> BulletmlElm.Fire({ fireLabel = fire attrs.fireLabel }, d, s, b)
+    }
 
 /// 相手 の名前 を ぜんぶ 付け直す。参照 も一緒 に ——
 /// 定義 だけ 直す と、参照 が 元 の名前 を指した まま 迷子 になる
 let private prefixed (p: string) (bulletml: Bulletml) =
     match bulletml with
-    | Bulletml(attrs, elms) -> Bulletml(attrs, List.map (mapTop p) elms)
+    | Bulletml(attrs, elms) -> Bulletml(attrs, Walk.rewrite (renamed p) elms)
 
 // --- 並べ方 を変える -------------------------------------------------------
-
-/// 名前 が `top` で始まる `action`。走らせる 側 が 並行 に走らせる もの
-let private isTop (e: BulletmlElm) =
-    match e with
-    | BulletmlElm.Action({ actionLabel = Some(ActionLabel l) }, _) -> l.StartsWith "top"
-    | _ -> false
 
 /// 絶対角 だけ を回す。`sequence` / `relative` / `aim` を回す と 形 が壊れる。
 /// 型 を書いて いない 向き も 触らない（既定 は `aim`）。
@@ -224,57 +191,36 @@ let private turned (deg: int) (d: Direction option) =
         Some(Direction(Some a, Expr.NumExpr.ofString (sprintf "(%s) + %d" e.Source deg)))
     | _ -> d
 
-let rec private turnAction deg (a: Action) : Action =
-    match a with
-    | Action.Fire(attrs, d, s, b) -> Action.Fire(attrs, turned deg d, s, turnBullet deg b)
-    | Action.Repeat(t, e) -> Action.Repeat(t, turnElm deg e)
-    | Action.Action(attrs, xs) -> Action.Action(attrs, List.map (turnAction deg) xs)
-    | Action.ChangeDirection(d, t) ->
-        match turned deg (Some d) with
-        | Some d' -> Action.ChangeDirection(d', t)
-        | None -> a
-    | _ -> a
-
-and private turnElm deg (e: ActionElm) : ActionElm =
-    match e with
-    | ActionElm.Action(attrs, xs) -> ActionElm.Action(attrs, List.map (turnAction deg) xs)
-    | ActionElm.ActionRef _ -> e
-
-and private turnBullet deg (b: BulletElm) : BulletElm =
-    match b with
-    | BulletElm.Bullet(attrs, d, s, xs) -> BulletElm.Bullet(attrs, turned deg d, s, List.map (turnElm deg) xs)
-    | BulletElm.BulletRef _ -> b
-
-let private turnTop deg (e: BulletmlElm) : BulletmlElm =
-    match e with
-    | BulletmlElm.Action(attrs, xs) -> BulletmlElm.Action(attrs, List.map (turnAction deg) xs)
-    | BulletmlElm.Bullet(attrs, d, s, xs) -> BulletmlElm.Bullet(attrs, turned deg d, s, List.map (turnElm deg) xs)
-    | BulletmlElm.Fire(attrs, d, s, b) -> BulletmlElm.Fire(attrs, turned deg d, s, turnBullet deg b)
+let private turning deg : Walk.Rewrite =
+    { Walk.keep with
+        action =
+            function
+            | Action.Fire(attrs, d, s, b) -> Action.Fire(attrs, turned deg d, s, b)
+            | Action.ChangeDirection(d, t) as a ->
+                match turned deg (Some d) with
+                | Some d' -> Action.ChangeDirection(d', t)
+                | None -> a
+            | a -> a
+        bullet =
+            function
+            | BulletElm.Bullet(attrs, d, s, xs) -> BulletElm.Bullet(attrs, turned deg d, s, xs)
+            | b -> b
+        top =
+            function
+            | BulletmlElm.Bullet(attrs, d, s, xs) -> BulletmlElm.Bullet(attrs, turned deg d, s, xs)
+            | BulletmlElm.Fire(attrs, d, s, b) -> BulletmlElm.Fire(attrs, turned deg d, s, b)
+            | e -> e
+    }
 
 /// B の top の頭 に 待ち を挿す。当てる のは `top` だけ ——
 /// 弾 の中 の action に入れる と、1 発 ごと に 遅れて 形 が崩れる
 let private lagged (e: BulletmlElm) : BulletmlElm =
     match e with
-    | BulletmlElm.Action(attrs, xs) when isTop e ->
+    | BulletmlElm.Action(attrs, xs) when Walk.isTop e ->
         BulletmlElm.Action(attrs, Action.Wait(Expr.NumExpr.ofString LAG) :: xs)
     | _ -> e
 
 // --- 繋ぐ -----------------------------------------------------------------
-
-
-/// 撃つ 枝 を 1 つ でも 持って いるか。持って いない 弾 が 段 の終点
-let rec private firesIn (a: Action) =
-    match a with
-    | Action.Fire _
-    | Action.FireRef _ -> true
-    | Action.Repeat(_, e) -> firesInElm e
-    | Action.Action(_, xs) -> List.exists firesIn xs
-    | _ -> false
-
-and private firesInElm (e: ActionElm) =
-    match e with
-    | ActionElm.Action(_, xs) -> List.exists firesIn xs
-    | ActionElm.ActionRef _ -> false
 
 /// B の top から 外側 の繰り返し を剥がす。1 波 だけ にする。
 /// 内側 の繰り返し（腕 を撒く `repeat`）は 残す。
@@ -314,7 +260,7 @@ let rec atLeafBullet (onLeaf: OnLeaf) (b: BulletElm) : BulletElm =
     | BulletElm.Bullet(attrs, d, s, xs) ->
         let deeper = List.map (atLeafElm onLeaf) xs
 
-        if List.exists firesInElm xs then
+        if List.exists Walk.firesInElm xs then
             BulletElm.Bullet(attrs, d, s, deeper)
         else
             onLeaf attrs d s deeper
@@ -340,7 +286,7 @@ let atLeafTop (onLeaf: OnLeaf) (e: BulletmlElm) : BulletmlElm =
     | BulletmlElm.Bullet(attrs, d, s, xs) ->
         let deeper = List.map (atLeafElm onLeaf) xs
 
-        if List.exists firesInElm xs then
+        if List.exists Walk.firesInElm xs then
             BulletmlElm.Bullet(attrs, d, s, deeper)
         else
             match onLeaf attrs d s deeper with
@@ -413,19 +359,6 @@ let private firstBullet (bulletml: Bulletml) =
 
     found
 
-/// 名前 を落とす。同じ 動き を A の葉 ぜんぶ に配る ので、
-/// label を持った まま だと 同じ 名前 が 何度 も 現れる
-let rec private unlabel (a: Action) : Action =
-    match a with
-    | Action.Action(_, xs) -> Action.Action({ actionLabel = None }, List.map unlabel xs)
-    | Action.Repeat(t, e) -> Action.Repeat(t, unlabelElm e)
-    | _ -> a
-
-and private unlabelElm (e: ActionElm) : ActionElm =
-    match e with
-    | ActionElm.Action(_, xs) -> ActionElm.Action({ actionLabel = None }, List.map unlabel xs)
-    | ActionElm.ActionRef _ -> e
-
 /// 撃つ 枝 を落とす。残す と `Inside` と同じ 掛け算 に戻る ——
 /// 借りる のは 動き だけ で、撒き方 は A のもの
 let private motionOnly (xs: ActionElm list) : ActionElm list =
@@ -433,9 +366,9 @@ let private motionOnly (xs: ActionElm list) : ActionElm list =
     |> List.choose (fun e ->
         match e with
         | ActionElm.Action(attrs, inner) ->
-            match inner |> List.filter (firesIn >> not) with
+            match inner |> List.filter (Walk.firesIn >> not) with
             | [] -> None
-            | kept -> Some(unlabelElm (ActionElm.Action(attrs, kept)))
+            | kept -> Some(Walk.unlabelElm (ActionElm.Action(attrs, kept)))
         | ActionElm.ActionRef _ -> None)
 
 /// A の撒き方 に B の弾 を載せる。弾数 は A のまま —— 掛け算 が起きない。
@@ -458,7 +391,7 @@ let apply (join: Join) (a: Bulletml) (b: Bulletml) : Bulletml =
         match join with
         | Beside -> Bulletml(attrs, aElms @ bElms)
         // 回す のは B だけ。A は 混ぜる 先 なので そのまま 残す
-        | Mirror -> Bulletml(attrs, aElms @ List.map (turnTop 180) bElms)
+        | Mirror -> Bulletml(attrs, aElms @ Walk.rewrite (turning 180) bElms)
         | After -> Bulletml(attrs, aElms @ List.map lagged bElms)
         | Inside ->
             // B の top は 自分 では 走らせない。A の終点 から 引く ——
@@ -467,7 +400,7 @@ let apply (join: Join) (a: Bulletml) (b: Bulletml) : Bulletml =
                 bElms
                 |> List.choose (fun e ->
                     match e with
-                    | BulletmlElm.Action({ actionLabel = Some l }, _) when isTop e -> Some l
+                    | BulletmlElm.Action({ actionLabel = Some l }, _) when Walk.isTop e -> Some l
                     | _ -> None)
             // 名前 を `top` から 外す。引ける まま、並行 では 走らなく なる。
             // 併せて 外側 の繰り返し を剥がし（1 波 だけ にする）、
@@ -476,7 +409,7 @@ let apply (join: Join) (a: Bulletml) (b: Bulletml) : Bulletml =
                 bElms
                 |> List.map (fun e ->
                     match e with
-                    | BulletmlElm.Action({ actionLabel = Some(ActionLabel l) }, xs) when isTop e ->
+                    | BulletmlElm.Action({ actionLabel = Some(ActionLabel l) }, xs) when Walk.isTop e ->
                         BulletmlElm.Action(
                             {
                                 actionLabel = Some(ActionLabel(MARK + "-" + l))

@@ -161,15 +161,6 @@ let private kindOf (xs: Action list) : Kind option =
     elif speeds = 1 then Some Drift
     else None
 
-/// 名前 を落とす。同じ 動き を 終点 ぜんぶ に配る ので、
-/// label を持った まま だと 同じ 名前 が 何度 も 現れる
-let rec private unlabel (a: Action) : Action =
-    match a with
-    | Action.Action(_, xs) -> Action.Action({ actionLabel = None }, List.map unlabel xs)
-    | Action.Repeat(t, ActionElm.Action(_, xs)) ->
-        Action.Repeat(t, ActionElm.Action({ actionLabel = None }, List.map unlabel xs))
-    | _ -> a
-
 /// 木 の中 の 仕掛け を ぜんぶ 拾う。深い ところ から でも 拾う ——
 /// 本物 の仕掛け は 弾 の中 の さらに 弾 に在る ことが多い
 let extract (bulletml: Bulletml) : (Kind * Action list) list =
@@ -178,39 +169,27 @@ let extract (bulletml: Bulletml) : (Kind * Action list) list =
     let take (xs: Action list) =
         if motionOnly xs then
             match kindOf xs with
-            | Some k -> found.Add(k, List.map unlabel xs)
+            | Some k -> found.Add(k, List.map Walk.unlabel xs)
             | None -> ()
-
-    let rec inAction (a: Action) =
-        match a with
-        | Action.Action(_, xs) ->
-            take xs
-            List.iter inAction xs
-        | Action.Repeat(_, e) -> inElm e
-        | Action.Fire(_, _, _, b) -> inBullet b
-        | _ -> ()
-
-    and inElm (e: ActionElm) =
-        match e with
-        | ActionElm.Action(_, xs) ->
-            take xs
-            List.iter inAction xs
-        | ActionElm.ActionRef _ -> ()
-
-    and inBullet (b: BulletElm) =
-        match b with
-        | BulletElm.Bullet(_, _, _, xs) -> List.iter inElm xs
-        | BulletElm.BulletRef _ -> ()
 
     match bulletml with
     | Bulletml(_, elms) ->
-        for e in elms do
-            match e with
-            | BulletmlElm.Action(_, xs) ->
-                take xs
-                List.iter inAction xs
-            | BulletmlElm.Bullet(_, _, _, xs) -> List.iter inElm xs
-            | BulletmlElm.Fire(_, _, _, b) -> inBullet b
+        Walk.iter
+            { Walk.see with
+                onAction =
+                    function
+                    | Action.Action(_, xs) -> take xs
+                    | _ -> ()
+                onElm =
+                    function
+                    | ActionElm.Action(_, xs) -> take xs
+                    | ActionElm.ActionRef _ -> ()
+                onTop =
+                    function
+                    | BulletmlElm.Action(_, xs) -> take xs
+                    | _ -> ()
+            }
+            elms
 
     List.ofSeq found
 
@@ -228,28 +207,17 @@ let find (kind: Kind) (sources: Bulletml seq) : Action list option =
 
 /// 撃つ 枝 を持つ 弾 にも 足す 歩き方。`Combine.atLeafTop` は 終点 だけ を見る ので、
 /// `Every` は ここ を通る —— 判定 を外した だけ の 別 の歩き方 に なる
-let rec private everyBullet (branch: ActionElm) (b: BulletElm) : BulletElm =
-    match b with
-    | BulletElm.Bullet(attrs, d, s, xs) -> BulletElm.Bullet(attrs, d, s, List.map (everyElm branch) xs @ [ branch ])
-    | BulletElm.BulletRef _ -> b
-
-and private everyAction (branch: ActionElm) (a: Action) : Action =
-    match a with
-    | Action.Fire(attrs, d, s, b) -> Action.Fire(attrs, d, s, everyBullet branch b)
-    | Action.Repeat(t, e) -> Action.Repeat(t, everyElm branch e)
-    | Action.Action(attrs, xs) -> Action.Action(attrs, List.map (everyAction branch) xs)
-    | _ -> a
-
-and private everyElm (branch: ActionElm) (e: ActionElm) : ActionElm =
-    match e with
-    | ActionElm.Action(attrs, xs) -> ActionElm.Action(attrs, List.map (everyAction branch) xs)
-    | ActionElm.ActionRef _ -> e
-
-let private everyTop (branch: ActionElm) (e: BulletmlElm) : BulletmlElm =
-    match e with
-    | BulletmlElm.Action(attrs, xs) -> BulletmlElm.Action(attrs, List.map (everyAction branch) xs)
-    | BulletmlElm.Bullet(attrs, d, s, xs) -> BulletmlElm.Bullet(attrs, d, s, List.map (everyElm branch) xs @ [ branch ])
-    | BulletmlElm.Fire(attrs, d, s, b) -> BulletmlElm.Fire(attrs, d, s, everyBullet branch b)
+let private everyBullet (branch: ActionElm) : Walk.Rewrite =
+    { Walk.keep with
+        bullet =
+            function
+            | BulletElm.Bullet(attrs, d, s, xs) -> BulletElm.Bullet(attrs, d, s, xs @ [ branch ])
+            | b -> b
+        top =
+            function
+            | BulletmlElm.Bullet(attrs, d, s, xs) -> BulletmlElm.Bullet(attrs, d, s, xs @ [ branch ])
+            | e -> e
+    }
 
 /// 弾 に仕掛け を足す。どこ に置く か は `Where`。
 /// `Leaf` と `Late` の歩き方 は `Combine` と共通。
@@ -266,7 +234,7 @@ let graft (where: Where) (body: Action list) (target: Bulletml) : Bulletml =
         let branch = ActionElm.Action({ actionLabel = Some(ActionLabel MARK) }, inner)
 
         match target, where with
-        | Bulletml(attrs, elms), Every -> Bulletml(attrs, List.map (everyTop branch) elms)
+        | Bulletml(attrs, elms), Every -> Bulletml(attrs, Walk.rewrite (everyBullet branch) elms)
         | Bulletml(attrs, elms), _ ->
             let onLeaf: Combine.OnLeaf =
                 fun a d s xs -> BulletElm.Bullet(a, d, s, xs @ [ branch ])

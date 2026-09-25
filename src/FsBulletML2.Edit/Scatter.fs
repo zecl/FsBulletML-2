@@ -34,32 +34,18 @@ let private bulletLabels (elms: BulletmlElm list) =
         | Some(BulletLabel l) -> names.Add l |> ignore
         | None -> ()
 
-    let rec inAction (a: Action) =
-        match a with
-        | Action.Fire(_, _, _, b) -> inBullet b
-        | Action.Repeat(_, e) -> inElm e
-        | Action.Action(_, xs) -> List.iter inAction xs
-        | _ -> ()
-
-    and inElm (e: ActionElm) =
-        match e with
-        | ActionElm.Action(_, xs) -> List.iter inAction xs
-        | ActionElm.ActionRef _ -> ()
-
-    and inBullet (b: BulletElm) =
-        match b with
-        | BulletElm.Bullet(attrs, _, _, xs) ->
-            add attrs
-            List.iter inElm xs
-        | BulletElm.BulletRef _ -> ()
-
-    for e in elms do
-        match e with
-        | BulletmlElm.Action(_, xs) -> List.iter inAction xs
-        | BulletmlElm.Bullet(attrs, _, _, xs) ->
-            add attrs
-            List.iter inElm xs
-        | BulletmlElm.Fire(_, _, _, b) -> inBullet b
+    Walk.iter
+        { Walk.see with
+            onBullet =
+                function
+                | BulletElm.Bullet(attrs, _, _, _) -> add attrs
+                | BulletElm.BulletRef _ -> ()
+            onTop =
+                function
+                | BulletmlElm.Bullet(attrs, _, _, _) -> add attrs
+                | _ -> ()
+        }
+        elms
 
     names
 
@@ -71,11 +57,6 @@ let private freeName (taken: System.Collections.Generic.HashSet<string>) (stem: 
     go 1
 
 // --- 組み立て -------------------------------------------------------------
-
-let private isTop (e: BulletmlElm) =
-    match e with
-    | BulletmlElm.Action({ actionLabel = Some(ActionLabel l) }, _) -> l.StartsWith "top"
-    | _ -> false
 
 /// 末尾 の `wait` を切り離す。波 と波 の間合い は 撒く 側 に残す ——
 /// 種 に付ける と、待つ のが 咲いた あと になって 波 が詰まる
@@ -301,7 +282,7 @@ let places (count: int) (bulletml: Bulletml) : int =
         | Bulletml(_, elms) ->
             let splits e =
                 match e with
-                | BulletmlElm.Action(_, xs) when isTop e ->
+                | BulletmlElm.Action(_, xs) when Walk.isTop e ->
                     match split (topActions elms) (MARK + "-stem") xs with
                     | None
                     | Some(_, []) -> false
@@ -325,7 +306,7 @@ let apply (count: int) (bulletml: Bulletml) : Bulletml =
                 elms
                 |> List.map (fun e ->
                     match e with
-                    | BulletmlElm.Action(a, xs) when isTop e ->
+                    | BulletmlElm.Action(a, xs) when Walk.isTop e ->
                         let stem = freeName taken (MARK + "-stem")
                         let seed = freeName taken (MARK + "-seed")
 
