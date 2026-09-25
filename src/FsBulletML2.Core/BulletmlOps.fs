@@ -26,13 +26,6 @@ module internal BulletmlOps =
     let internal convertHorizontalOption prams = Option.map (convertHorizontal prams)
     let internal convertVerticalOption prams = Option.map (convertVertical prams)
 
-    /// 作り直した節 を元 の節 と対 にする。同じ物 が返った とき は対 にしない（vanish は singleton、輪 は元 のまま）
-    let inline private paired (made: 'T) (src: obj) : 'T =
-        if NodeOrigin.enabled && not (obj.ReferenceEquals(box made, src)) then
-            NodeOrigin.pair (box made) src
-
-        made
-
     let private circular (key: RefKey) =
         new BulletmlDTDViolationException(
             sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)
@@ -92,7 +85,12 @@ module internal BulletmlOps =
                 match attrs.actionLabel with
                 | Some _ ->
                     // ここで新しい ActionElm ができる（元は 3 通り）
-                    [ paired (ActionElm.Action(attrs, children)) src ]
+                    let e = ActionElm.Action(attrs, children)
+
+                    if NodeOrigin.enabled && not (obj.ReferenceEquals(box e, src)) then
+                        NodeOrigin.pair (box e) src
+
+                    [ e ]
                 | None -> [])
             (fun _ -> [])
             (fun _ -> [])
@@ -187,9 +185,23 @@ module internal BulletmlOps =
             )
         | BulletElm.BulletRef(attrs, param) -> BulletElm.BulletRef(attrs, convertParam prams param)
 
-    and private substCommand prams (c: Action) : Action = paired (substCommandCore prams c) c
+    // 覆い。中身（*Core）は触っていない。同じ物が返ったときは対にしない（vanish は singleton）。
 
-    and private substActionElm prams (a: ActionElm) : ActionElm = paired (substActionElmCore prams a) a
+    and private substCommand prams (c: Action) : Action =
+        let r = substCommandCore prams c
+
+        if NodeOrigin.enabled && not (obj.ReferenceEquals(r, c)) then
+            NodeOrigin.pair (box r) (box c)
+
+        r
+
+    and private substActionElm prams (a: ActionElm) : ActionElm =
+        let r = substActionElmCore prams a
+
+        if NodeOrigin.enabled && not (obj.ReferenceEquals(r, a)) then
+            NodeOrigin.pair (box r) (box a)
+
+        r
 
     /// 参照先へ実引数を差し込む。種別ごとに 1 本。名前の確認は、必ず一致しても残す。
     let internal refAction (target: ActionElm) (label: ActionLabel) prams : ActionElm =
@@ -223,6 +235,7 @@ module internal BulletmlOps =
                 None
             else
                 circular key
+
         else
             match tryFindAction top attrs.actionRefLabel with
             | Some action ->
@@ -247,6 +260,7 @@ module internal BulletmlOps =
 
             if Set.contains key visiting then
                 circular key
+
 
             let visiting = Set.add key visiting
 
@@ -279,11 +293,23 @@ module internal BulletmlOps =
             | Some expanded -> expanded
 
 
+    // 覆い。中身（*Core）は触っていない。同じ物が返ったときは対にしない（輪の `| None -> c`）。
+
     and private expandCommand visiting lastAction top (c: Action) : Action =
-        paired (expandCommandCore visiting lastAction top c) c
+        let r = expandCommandCore visiting lastAction top c
+
+        if NodeOrigin.enabled && not (obj.ReferenceEquals(r, c)) then
+            NodeOrigin.pair (box r) (box c)
+
+        r
 
     and private expandActionElm visiting lastAction top (a: ActionElm) : ActionElm =
-        paired (expandActionElmCore visiting lastAction top a) a
+        let r = expandActionElmCore visiting lastAction top a
+
+        if NodeOrigin.enabled && not (obj.ReferenceEquals(r, a)) then
+            NodeOrigin.pair (box r) (box a)
+
+        r
 
     and private expandBulletElm visiting lastAction top (b: BulletElm) : BulletElm =
         match b with
