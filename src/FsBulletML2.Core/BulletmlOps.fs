@@ -3,56 +3,41 @@ namespace FsBulletML2
 /// 木の上の操作。名前で引く、実引数を入れる、輪を 1 段だけ解く。木が 1 つでも要る。
 module internal BulletmlOps =
 
-    let internal convertDirectionOption =
-        fun prams ->
-            function
-            | Some(Direction(attrs, s)) -> Direction(attrs, Param.replaceIn prams s) |> Some
-            | None -> None
+    let internal convertDirection prams (Direction(attrs, s)) =
+        Direction(attrs, Param.replaceIn prams s)
 
-    let internal convertDirection =
-        fun prams ->
-            function
-            | Direction(attrs, s) -> Direction(attrs, Param.replaceIn prams s)
+    let internal convertSpeed prams (Speed(attrs, s)) = Speed(attrs, Param.replaceIn prams s)
 
-    let internal convertSpeedOption =
-        fun prams ->
-            function
-            | Some(Speed(attrs, s)) -> Speed(attrs, Param.replaceIn prams s) |> Some
-            | None -> None
+    let internal convertHorizontal prams (Horizontal(attrs, s)) =
+        Horizontal(attrs, Param.replaceIn prams s)
 
-    let internal convertSpeed =
-        fun prams ->
-            function
-            | Speed(attrs, s) -> Speed(attrs, Param.replaceIn prams s)
+    let internal convertVertical prams (Vertical(attrs, s)) =
+        Vertical(attrs, Param.replaceIn prams s)
 
-    let internal convertTerm =
-        fun prams ->
-            function
-            | Term(s) -> Term(Param.replaceIn prams s)
+    let internal convertTerm prams (Term s) = Term(Param.replaceIn prams s)
+    let internal convertTimes prams (Times s) = Times(Param.replaceIn prams s)
+    let internal convertWait prams s = Param.replaceIn prams s
 
-    let internal convertTimes =
-        fun prams ->
-            function
-            | Times(s) -> Times(Param.replaceIn prams s)
+    let internal convertParam prams =
+        List.map (fun s -> Param.replace s prams)
 
-    let internal convertParam = fun prams -> List.map (fun s -> Param.replace s prams)
+    let internal convertDirectionOption prams = Option.map (convertDirection prams)
+    let internal convertSpeedOption prams = Option.map (convertSpeed prams)
+    let internal convertHorizontalOption prams = Option.map (convertHorizontal prams)
+    let internal convertVerticalOption prams = Option.map (convertVertical prams)
 
-    let internal convertWait =
-        fun prams ->
-            function
-            | s -> Param.replaceIn prams s
+    /// 作り直した節 を元 の節 と対 にする。同じ物 が返った とき は対 にしない（vanish は singleton、輪 は元 のまま）
+    let inline private paired (made: 'T) (src: obj) : 'T =
+        if NodeOrigin.enabled && not (obj.ReferenceEquals(box made, src)) then
+            NodeOrigin.pair (box made) src
 
-    let internal convertHorizontalOption =
-        fun prams ->
-            function
-            | Some(Horizontal(attrs, s)) -> Horizontal(attrs, Param.replaceIn prams s) |> Some
-            | None -> None
+        made
 
-    let internal convertVerticalOption =
-        fun prams ->
-            function
-            | Some(Vertical(attrs, s)) -> Vertical(attrs, Param.replaceIn prams s) |> Some
-            | None -> None
+    let private circular (key: RefKey) =
+        new BulletmlDTDViolationException(
+            sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)
+        )
+        |> raise
 
     /// 名前の付いた要素を集める。拾う順は自分を先、それから子。順を変えるな。
     let private collect
@@ -107,12 +92,7 @@ module internal BulletmlOps =
                 match attrs.actionLabel with
                 | Some _ ->
                     // ここで新しい ActionElm ができる（元は 3 通り）
-                    let e = ActionElm.Action(attrs, children)
-
-                    if NodeOrigin.enabled && not (obj.ReferenceEquals(box e, src)) then
-                        NodeOrigin.pair (box e) src
-
-                    [ e ]
+                    [ paired (ActionElm.Action(attrs, children)) src ]
                 | None -> [])
             (fun _ -> [])
             (fun _ -> [])
@@ -207,23 +187,9 @@ module internal BulletmlOps =
             )
         | BulletElm.BulletRef(attrs, param) -> BulletElm.BulletRef(attrs, convertParam prams param)
 
-    // 覆い。中身（*Core）は触っていない。同じ物が返ったときは対にしない（vanish は singleton）。
+    and private substCommand prams (c: Action) : Action = paired (substCommandCore prams c) c
 
-    and private substCommand prams (c: Action) : Action =
-        let r = substCommandCore prams c
-
-        if NodeOrigin.enabled && not (obj.ReferenceEquals(r, c)) then
-            NodeOrigin.pair (box r) (box c)
-
-        r
-
-    and private substActionElm prams (a: ActionElm) : ActionElm =
-        let r = substActionElmCore prams a
-
-        if NodeOrigin.enabled && not (obj.ReferenceEquals(r, a)) then
-            NodeOrigin.pair (box r) (box a)
-
-        r
+    and private substActionElm prams (a: ActionElm) : ActionElm = paired (substActionElmCore prams a) a
 
     /// 参照先へ実引数を差し込む。種別ごとに 1 本。名前の確認は、必ず一致しても残す。
     let internal refAction (target: ActionElm) (label: ActionLabel) prams : ActionElm =
@@ -256,10 +222,7 @@ module internal BulletmlOps =
             if lastAction = Some attrs.actionRefLabel then
                 None
             else
-                new BulletmlDTDViolationException(
-                    sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)
-                )
-                |> raise
+                circular key
         else
             match tryFindAction top attrs.actionRefLabel with
             | Some action ->
@@ -283,10 +246,7 @@ module internal BulletmlOps =
             let key = FireKey attrs.fireRefLabel
 
             if Set.contains key visiting then
-                new BulletmlDTDViolationException(
-                    sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)
-                )
-                |> raise
+                circular key
 
             let visiting = Set.add key visiting
 
@@ -319,23 +279,11 @@ module internal BulletmlOps =
             | Some expanded -> expanded
 
 
-    // 覆い。中身（*Core）は触っていない。同じ物が返ったときは対にしない（輪の `| None -> c`）。
-
     and private expandCommand visiting lastAction top (c: Action) : Action =
-        let r = expandCommandCore visiting lastAction top c
-
-        if NodeOrigin.enabled && not (obj.ReferenceEquals(r, c)) then
-            NodeOrigin.pair (box r) (box c)
-
-        r
+        paired (expandCommandCore visiting lastAction top c) c
 
     and private expandActionElm visiting lastAction top (a: ActionElm) : ActionElm =
-        let r = expandActionElmCore visiting lastAction top a
-
-        if NodeOrigin.enabled && not (obj.ReferenceEquals(r, a)) then
-            NodeOrigin.pair (box r) (box a)
-
-        r
+        paired (expandActionElmCore visiting lastAction top a) a
 
     and private expandBulletElm visiting lastAction top (b: BulletElm) : BulletElm =
         match b with

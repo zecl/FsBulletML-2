@@ -66,7 +66,7 @@ module BulletmlRead =
 
     let internal getParam xml =
         match xml with
-        | PCData x -> []
+        | PCData _ -> []
         | Element(_, _, children) ->
             let rec f x =
                 match x with
@@ -191,7 +191,7 @@ module BulletmlRead =
     /// <!ATTLIST bulletml type (none|vertical|horizontal) "none">
     let internal createBulletml xml readTopElms =
         match xml with
-        | Element(name, attrs, children) ->
+        | Element(_, attrs, children) ->
             let tryFindBulletmlAttrs =
                 maybe {
                     let toShootingDirection (s: string) =
@@ -242,7 +242,7 @@ module BulletmlRead =
     /// <!ATTLIST action label CDATA #IMPLIED>
     let internal createAction factory xml readCommands =
         match xml with
-        | Element(name, attrs, children) ->
+        | Element(_, attrs, children) ->
             let attrs =
                 {
                     actionLabel = tryFindLabelValue attrs |> Option.map ActionLabel
@@ -273,7 +273,7 @@ module BulletmlRead =
     let internal tryFindActionOrActionRef (children: XmlNode list) readCommands =
         let f xml =
             match xml with
-            | Element(name, attrs, children) ->
+            | Element(name, _, _) ->
                 match name.ToLower() with
                 | "action" -> createAction (ActionElm.Action) xml readCommands |> Some
                 | "actionref" -> createActionRef (ActionElm.ActionRef) xml |> Some
@@ -283,7 +283,7 @@ module BulletmlRead =
         let result =
             children
             |> List.filter (function
-                | Element(name, attrs, children) ->
+                | Element(name, _, _) ->
                     match name.ToLower() with
                     | "action"
                     | "actionref" -> true
@@ -326,7 +326,7 @@ module BulletmlRead =
     let internal tryFindBulletOrBulletRef (children: XmlNode list) readActionElms =
         let f xml =
             match xml with
-            | Element(name, attrs, children) ->
+            | Element(name, _, _) ->
                 match name.ToLower() with
                 | "bullet" -> createBullet (BulletElm.Bullet) xml readActionElms |> Some
                 | "bulletref" -> createBulletRef (BulletElm.BulletRef) xml |> Some
@@ -447,7 +447,7 @@ module BulletmlRead =
             refuseAttributes elementName attrs
 
             match tryFindPCData children with
-            | Some text ->
+            | Some _ ->
                 new BulletmlDTDViolationException(sprintf "this element cannot have #PCDATA.:[%s]" elementName)
                 |> raise
             | None -> Action.Vanish
