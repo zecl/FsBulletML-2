@@ -18,6 +18,15 @@ module BulletmlRead =
             | PCData x -> Some x
             | _ -> None)
 
+    /// 属性 を持たない要素 が属性 を持っていたら上げる
+    let internal refuseAttributes (elementName: string) attrs =
+        if existsAttribute attrs (fun _ _ -> true) then
+            new BulletmlDTDViolationException(sprintf "this element has no attributes.:[%s]" elementName)
+            |> raise
+
+    let internal notSupported () : 'T =
+        new BulletmlDTDViolationException("not support element.") |> raise
+
     let internal getElement children parentElementName elementName factory =
         let termXml =
             children
@@ -25,12 +34,7 @@ module BulletmlRead =
                 match xml with
                 | Element(name, attrs, _) ->
                     if name.ToLower() = elementName then
-                        if existsAttribute attrs (fun _ _ -> true) then
-                            new BulletmlDTDViolationException(
-                                sprintf "this element has no attributes.:[%s]" elementName
-                            )
-                            |> raise
-
+                        refuseAttributes elementName attrs
                         true
                     else
                         false
@@ -69,19 +73,13 @@ module BulletmlRead =
                 | PCData x -> x
                 | Element(elementName, attrs, children) ->
                     if elementName = "param" then
-                        if existsAttribute attrs (fun _ _ -> true) then
-                            new BulletmlDTDViolationException(
-                                sprintf "this element has no attributes.:[%s]" elementName
-                            )
-                            |> raise
-                        else
-                            if children |> List.length = 0 then
-                                new BulletmlDTDViolationException(
-                                    sprintf "[%s] element should have #PCDATA." elementName
-                                )
-                                |> raise
+                        refuseAttributes elementName attrs
 
-                            f (children.[0])
+                        if children |> List.length = 0 then
+                            new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
+                            |> raise
+
+                        f (children.[0])
                     else
                         new BulletmlDTDViolationException(sprintf "not support element.:[%s]" elementName)
                         |> raise
@@ -103,157 +101,87 @@ module BulletmlRead =
             new BulletmlDTDViolationException(sprintf "not support SpeedType.:[%s]" x)
             |> raise
 
-    let internal tryFindDirection (children: XmlNode list) =
-        let f =
-            function
+    let internal toDirectionType (s: string) =
+        match s.ToLower() with
+        | "aim" -> DirectionType.Aim
+        | "absolute" -> DirectionType.Absolute
+        | "relative" -> DirectionType.Relative
+        | "sequence" -> DirectionType.Sequence
+        | x ->
+            new BulletmlDTDViolationException(sprintf "not support DirectionType.:[%s]" x)
+            |> raise
+
+    let internal toHorizontalType (s: string) =
+        match s.ToLower() with
+        | "absolute" -> HorizontalType.Absolute
+        | "relative" -> HorizontalType.Relative
+        | "sequence" -> HorizontalType.Sequence
+        | x ->
+            new BulletmlDTDViolationException(sprintf "not support HorizontalType.:[%s]" x)
+            |> raise
+
+    let internal toVerticalType (s: string) =
+        match s.ToLower() with
+        | "absolute" -> VerticalType.Absolute
+        | "relative" -> VerticalType.Relative
+        | "sequence" -> VerticalType.Sequence
+        | x ->
+            new BulletmlDTDViolationException(sprintf "not support VerticalType.:[%s]" x)
+            |> raise
+
+    /// direction / speed / horizontal / vertical の 4 つ。型 の属性 が 1 つ と、式 の #PCDATA を持つ。
+    /// 属性 の字 を型 にする（読めなければ上げる）のが、#PCDATA が無い のを上げるより先
+    let private tryFindTyped (tag: string) (toAttrs: string -> 'A) (make: 'A option * Expr.NumExpr -> 'T) children =
+        children
+        |> List.tryPick (function
             | Element(elementName, attrs, children) ->
-                match elementName.ToLower() with
-                | "direction" ->
-                    let attr = attrs |> List.tryPick (fun (_, x) -> if x <> "" then Some x else None)
+                if elementName.ToLower() = tag then
+                    let attr =
+                        attrs
+                        |> List.tryPick (fun (_, x) -> if x <> "" then Some x else None)
+                        |> Option.map toAttrs
 
-                    match attr with
-                    | Some attr ->
-                        let toDirectionType (s: string) =
-                            match s.ToLower() with
-                            | "aim" -> DirectionType.Aim
-                            | "absolute" -> DirectionType.Absolute
-                            | "relative" -> DirectionType.Relative
-                            | "sequence" -> DirectionType.Sequence
-                            | x ->
-                                new BulletmlDTDViolationException(sprintf "not support DirectionType.:[%s]" x)
-                                |> raise
-
-                        let attr =
-                            {
-                                DirectionAttrs.directionType = attr |> toDirectionType
-                            }
-
-                        match tryFindPCData children with
-                        | Some text -> Direction(Some attr, numExpr text) |> Some
-                        | None ->
-                            new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
-                            |> raise
+                    match tryFindPCData children with
+                    | Some text -> make (attr, numExpr text) |> Some
                     | None ->
-                        match tryFindPCData children with
-                        | Some text -> Direction(None, numExpr text) |> Some
-                        | None ->
-                            new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
-                            |> raise
-                | _ -> None
-            | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+                        new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
+                        |> raise
+                else
+                    None
+            | _ -> notSupported ())
 
-        children |> List.tryPick f
+    let internal tryFindDirection (children: XmlNode list) =
+        tryFindTyped
+            "direction"
+            (fun s ->
+                {
+                    DirectionAttrs.directionType = toDirectionType s
+                })
+            Direction
+            children
 
     let internal tryFindSpeed (children: XmlNode list) =
-        let f =
-            function
-            | Element(elementName, attrs, children) ->
-                match elementName.ToLower() with
-                | "speed" ->
-                    let attr = attrs |> List.tryPick (fun (_, x) -> if x <> "" then Some x else None)
-
-                    match attr with
-                    | Some attr ->
-                        let attr =
-                            {
-                                SpeedAttrs.speedType = attr |> toSpeedType
-                            }
-
-                        match tryFindPCData children with
-                        | Some text -> Speed(Some attr, numExpr text) |> Some
-                        | None ->
-                            new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
-                            |> raise
-                    | None ->
-                        match tryFindPCData children with
-                        | Some text -> Speed(None, numExpr text) |> Some
-                        | None ->
-                            new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
-                            |> raise
-                | _ -> None
-            | _ -> new BulletmlDTDViolationException("not support element.") |> raise
-
-        children |> List.tryPick f
+        tryFindTyped "speed" (fun s -> { SpeedAttrs.speedType = toSpeedType s }) Speed children
 
     let internal tryFindHorizontal (children: XmlNode list) =
-        let f =
-            function
-            | Element(elementName, attrs, children) ->
-                match elementName.ToLower() with
-                | "horizontal" ->
-                    let attr = attrs |> List.tryPick (fun (_, x) -> if x <> "" then Some x else None)
-
-                    match attr with
-                    | Some attr ->
-                        let toHorizontalType (s: string) =
-                            match s.ToLower() with
-                            | "absolute" -> HorizontalType.Absolute
-                            | "relative" -> HorizontalType.Relative
-                            | "sequence" -> HorizontalType.Sequence
-                            | x ->
-                                new BulletmlDTDViolationException(sprintf "not support HorizontalType.:[%s]" x)
-                                |> raise
-
-                        let attr =
-                            {
-                                HorizontalAttrs.horizontalType = attr |> toHorizontalType
-                            }
-
-                        match tryFindPCData children with
-                        | Some text -> Horizontal(Some attr, numExpr text) |> Some
-                        | None ->
-                            new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
-                            |> raise
-                    | None ->
-                        match tryFindPCData children with
-                        | Some text -> Horizontal(None, numExpr text) |> Some
-                        | None ->
-                            new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
-                            |> raise
-                | _ -> None
-            | _ -> new BulletmlDTDViolationException("not support element.") |> raise
-
-        children |> List.tryPick f
+        tryFindTyped
+            "horizontal"
+            (fun s ->
+                {
+                    HorizontalAttrs.horizontalType = toHorizontalType s
+                })
+            Horizontal
+            children
 
     let internal tryFindVertical (children: XmlNode list) =
-        let f =
-            function
-            | Element(elementName, attrs, children) ->
-                match elementName.ToLower() with
-                | "vertical" ->
-                    let attr = attrs |> List.tryPick (fun (_, x) -> if x <> "" then Some x else None)
-
-                    match attr with
-                    | Some attr ->
-                        let toVerticalType (s: string) =
-                            match s.ToLower() with
-                            | "absolute" -> VerticalType.Absolute
-                            | "relative" -> VerticalType.Relative
-                            | "sequence" -> VerticalType.Sequence
-                            | x ->
-                                new BulletmlDTDViolationException(sprintf "not support VerticalType.:[%s]" x)
-                                |> raise
-
-                        let attr =
-                            {
-                                VerticalAttrs.verticalType = attr |> toVerticalType
-                            }
-
-                        match tryFindPCData children with
-                        | Some text -> Vertical(Some attr, numExpr text) |> Some
-                        | None ->
-                            new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
-                            |> raise
-                    | None ->
-                        match tryFindPCData children with
-                        | Some text -> Vertical(None, numExpr text) |> Some
-                        | None ->
-                            new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
-                            |> raise
-                | _ -> None
-            | _ -> new BulletmlDTDViolationException("not support element.") |> raise
-
-        children |> List.tryPick f
+        tryFindTyped
+            "vertical"
+            (fun s ->
+                {
+                    VerticalAttrs.verticalType = toVerticalType s
+                })
+            Vertical
+            children
 
     /// XmlNode to Bulletml.Bulletml
     ///
@@ -305,7 +233,7 @@ module BulletmlRead =
             | None ->
                 new BulletmlDTDViolationException("bulletml element attributes could not be read.")
                 |> raise
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+        | _ -> notSupported ()
 
     /// XmlNode to action。どの位置の腕を作るかは factory が決める
     ///
@@ -321,28 +249,26 @@ module BulletmlRead =
                 }
             // 命令でない子（bullet / bulletRef / direction …）は readCommands が黙って落とす
             factory (attrs, readCommands children)
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+        | _ -> notSupported ()
 
     /// XmlNode to actionRef。どの位置の腕を作るかは factory が決める
     ///
     /// DTD :
     /// <!ELEMENT actionRef (param* )>
     /// <!ATTLIST actionRef label CDATA #REQUIRED>
-    let internal createActionRef factory xml =
+    /// actionRef / bulletRef / fireRef の 3 つ。label が要り、子 は param だけ
+    let private createRef (kind: string) (toAttrs: string -> 'A) (make: 'A * string list -> 'R) xml =
         match xml with
         | Element(_, attrs, _) ->
-            let tryFindActionRefAtts =
-                maybe {
-                    let! label = tryFindLabelValue attrs
-                    return { actionRefLabel = ActionLabel label }
-                }
-
-            match tryFindActionRefAtts with
-            | Some attrs -> factory (attrs, getParam xml)
-            | _ ->
-                new BulletmlDTDViolationException("ActionRef element should have label attribute.")
+            match tryFindLabelValue attrs with
+            | Some label -> make (toAttrs label, getParam xml)
+            | None ->
+                new BulletmlDTDViolationException(sprintf "%s element should have label attribute." kind)
                 |> raise
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+        | _ -> notSupported ()
+
+    let internal createActionRef factory xml =
+        createRef "ActionRef" (fun label -> { actionRefLabel = ActionLabel label }) factory xml
 
     let internal tryFindActionOrActionRef (children: XmlNode list) readCommands =
         let f xml =
@@ -352,7 +278,7 @@ module BulletmlRead =
                 | "action" -> createAction (ActionElm.Action) xml readCommands |> Some
                 | "actionref" -> createActionRef (ActionElm.ActionRef) xml |> Some
                 | _ -> None
-            | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+            | _ -> notSupported ()
 
         let result =
             children
@@ -387,7 +313,7 @@ module BulletmlRead =
                 }
             // action / actionRef 以外は readActionElms が黙って落とす（getActions と同じ）
             factory (attr, tryFindDirection children, tryFindSpeed children, readActionElms children)
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+        | _ -> notSupported ()
 
     /// XmlNode to bulletRef。どの位置の腕を作るかは factory が決める
     ///
@@ -395,21 +321,7 @@ module BulletmlRead =
     /// <!ELEMENT bulletRef (param* )>
     /// <!ATTLIST bulletRef label CDATA #REQUIRED>
     let internal createBulletRef factory xml =
-        match xml with
-        | Element(_, attrs, _) ->
-            let tryFindBulletRefAttrs =
-                maybe {
-                    let! label = tryFindLabelValue attrs
-                    let bulletRefAttrs = { bulletRefLabel = BulletLabel label }
-                    return bulletRefAttrs
-                }
-
-            match tryFindBulletRefAttrs with
-            | Some attrs -> factory (attrs, getParam xml)
-            | None ->
-                new BulletmlDTDViolationException("BulletRef element should have label attribute.")
-                |> raise
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+        createRef "BulletRef" (fun label -> { bulletRefLabel = BulletLabel label }) factory xml
 
     let internal tryFindBulletOrBulletRef (children: XmlNode list) readActionElms =
         let f xml =
@@ -419,7 +331,7 @@ module BulletmlRead =
                 | "bullet" -> createBullet (BulletElm.Bullet) xml readActionElms |> Some
                 | "bulletref" -> createBulletRef (BulletElm.BulletRef) xml |> Some
                 | _ -> None
-            | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+            | _ -> notSupported ()
 
         children |> List.tryPick f
 
@@ -443,7 +355,7 @@ module BulletmlRead =
             | None ->
                 new BulletmlDTDViolationException("Fire element should have Bullet or BulletRef element.")
                 |> raise
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+        | _ -> notSupported ()
 
     /// XmlNode to Action.FireRef
     ///
@@ -451,20 +363,7 @@ module BulletmlRead =
     /// <!ELEMENT fireRef (param* )>
     /// <!ATTLIST fireRef label CDATA #REQUIRED>
     let internal createFireRef xml =
-        match xml with
-        | Element(_, attrs, _) ->
-            let tryFindFireAttrs =
-                maybe {
-                    let! label = tryFindLabelValue attrs
-                    return { fireRefLabel = FireLabel label }
-                }
-
-            match tryFindFireAttrs with
-            | Some attrs -> Action.FireRef(attrs, getParam xml)
-            | _ ->
-                new BulletmlDTDViolationException("FireRef element should have label attribute.")
-                |> raise
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+        createRef "FireRef" (fun label -> { fireRefLabel = FireLabel label }) Action.FireRef xml
 
     /// XmlNode to Action.Accel
     ///
@@ -473,15 +372,12 @@ module BulletmlRead =
     let internal createAccel =
         function
         | Element(elementName, attrs, children) ->
-            match existsAttribute attrs (fun _ _ -> true) with
-            | true ->
-                new BulletmlDTDViolationException(sprintf "this element has no attributes.:[%s]" elementName)
-                |> raise
-            | false ->
-                let horizontal = tryFindHorizontal children
-                let vertical = tryFindVertical children
-                Action.Accel(horizontal, vertical, createTerm children "accel")
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+            refuseAttributes elementName attrs
+
+            let horizontal = tryFindHorizontal children
+            let vertical = tryFindVertical children
+            Action.Accel(horizontal, vertical, createTerm children "accel")
+        | _ -> notSupported ()
 
     /// XmlNode to ChangeSpeed
     ///
@@ -490,22 +386,19 @@ module BulletmlRead =
     let internal createChangeSpeed =
         function
         | Element(elementName, attrs, children) ->
-            match existsAttribute attrs (fun _ _ -> true) with
-            | true ->
-                new BulletmlDTDViolationException(sprintf "this element has no attributes.:[%s]" elementName)
-                |> raise
-            | false ->
-                let speed =
-                    match tryFindSpeed children with
-                    | Some speed -> speed
-                    | None ->
-                        new BulletmlDTDViolationException(
-                            sprintf "this element should have Speed element.:[%s]" elementName
-                        )
-                        |> raise
+            refuseAttributes elementName attrs
 
-                Action.ChangeSpeed(speed, createTerm children "changeSpeed")
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+            let speed =
+                match tryFindSpeed children with
+                | Some speed -> speed
+                | None ->
+                    new BulletmlDTDViolationException(
+                        sprintf "this element should have Speed element.:[%s]" elementName
+                    )
+                    |> raise
+
+            Action.ChangeSpeed(speed, createTerm children "changeSpeed")
+        | _ -> notSupported ()
 
     /// XmlNode to ChangeDirection
     ///
@@ -514,22 +407,19 @@ module BulletmlRead =
     let internal createChangeDirection =
         function
         | Element(elementName, attrs, children) ->
-            match existsAttribute attrs (fun _ _ -> true) with
-            | true ->
-                new BulletmlDTDViolationException(sprintf "this element has no attributes.:[%s]" elementName)
-                |> raise
-            | false ->
-                let direction =
-                    match tryFindDirection children with
-                    | Some direction -> direction
-                    | None ->
-                        new BulletmlDTDViolationException(
-                            sprintf "this element should have Direction element.:[%s]" elementName
-                        )
-                        |> raise
+            refuseAttributes elementName attrs
 
-                Action.ChangeDirection(direction, createTerm children "changeDirection")
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+            let direction =
+                match tryFindDirection children with
+                | Some direction -> direction
+                | None ->
+                    new BulletmlDTDViolationException(
+                        sprintf "this element should have Direction element.:[%s]" elementName
+                    )
+                    |> raise
+
+            Action.ChangeDirection(direction, createTerm children "changeDirection")
+        | _ -> notSupported ()
 
     /// XmlNode to Action.Wait
     ///
@@ -538,17 +428,14 @@ module BulletmlRead =
     let internal createWait =
         function
         | Element(elementName, attrs, children) ->
-            match existsAttribute attrs (fun _ _ -> true) with
-            | true ->
-                new BulletmlDTDViolationException(sprintf "this element has no attributes.:[%s]" elementName)
+            refuseAttributes elementName attrs
+
+            match tryFindPCData children with
+            | Some text -> Action.Wait(numExpr text)
+            | None ->
+                new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
                 |> raise
-            | false ->
-                match tryFindPCData children with
-                | Some text -> Action.Wait(numExpr text)
-                | None ->
-                    new BulletmlDTDViolationException(sprintf "[%s] element should have #PCDATA." elementName)
-                    |> raise
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+        | _ -> notSupported ()
 
     /// XmlNode to Action.Vanish
     ///
@@ -557,17 +444,14 @@ module BulletmlRead =
     let internal createVanish =
         function
         | Element(elementName, attrs, children) ->
-            match existsAttribute attrs (fun _ _ -> true) with
-            | true ->
-                new BulletmlDTDViolationException(sprintf "this element has no attributes.:[%s]" elementName)
+            refuseAttributes elementName attrs
+
+            match tryFindPCData children with
+            | Some text ->
+                new BulletmlDTDViolationException(sprintf "this element cannot have #PCDATA.:[%s]" elementName)
                 |> raise
-            | false ->
-                match tryFindPCData children with
-                | Some text ->
-                    new BulletmlDTDViolationException(sprintf "this element cannot have #PCDATA.:[%s]" elementName)
-                    |> raise
-                | None -> Action.Vanish
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+            | None -> Action.Vanish
+        | _ -> notSupported ()
 
     /// XmlNode to Action.Repeat
     ///
@@ -576,20 +460,17 @@ module BulletmlRead =
     let internal createRepeat xml getChildren =
         match xml with
         | Element(elementName, attrs, children) ->
-            match existsAttribute attrs (fun _ _ -> true) with
-            | true ->
-                new BulletmlDTDViolationException(sprintf "this element has no attributes.:[%s]" elementName)
-                |> raise
-            | false ->
-                let actionOrActionRef =
-                    match tryFindActionOrActionRef children getChildren with
-                    | Some actionOrActionRef -> actionOrActionRef
-                    | None ->
-                        new BulletmlDTDViolationException("repeat element should have Action or ActionRef.")
-                        |> raise
+            refuseAttributes elementName attrs
 
-                Action.Repeat(createTimes children "repeat", actionOrActionRef)
-        | _ -> new BulletmlDTDViolationException("not support element.") |> raise
+            let actionOrActionRef =
+                match tryFindActionOrActionRef children getChildren with
+                | Some actionOrActionRef -> actionOrActionRef
+                | None ->
+                    new BulletmlDTDViolationException("repeat element should have Action or ActionRef.")
+                    |> raise
+
+            Action.Repeat(createTimes children "repeat", actionOrActionRef)
+        | _ -> notSupported ()
 
     /// 子を位置の型で読む 3 本。落とし方は位置ごとに違う。ここは変えていない。
     /// fire だけ 2 位置に来るので、腕は factory で渡す。
