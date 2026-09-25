@@ -47,3 +47,8 @@ foreach ($p in $packages) {
 
 if ($fails -gt 0) { throw "$fails 本 が通らなかった" }
 Write-Host "$($packages.Count) 本 とも通った"
+
+# 0 で終わると明示する。dotnet-validate は Compiler Flags で毎回 exit 1 を返し、
+# その $LASTEXITCODE が残る。GitHub Actions の pwsh は最後に exit $LASTEXITCODE するので、
+# 明示しないと「4 本 とも通った」の直後に step が赤くなる（v1.0.0 の初回で踏んだ）
+exit 0
