@@ -5,7 +5,6 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RootNamespace>FsBulletML2.Bullets.Dsl</RootNamespace>
     <AssemblyName>FsBulletML2.Bullets.Dsl</AssemblyName>
-    <Version>0.1.1</Version>
     <Product>FsBulletML2.Bullets.Dsl</Product>
     <Description>The bundled BulletML patterns, written with the FsBulletML2.Dsl computation expressions.</Description>
   </PropertyGroup>

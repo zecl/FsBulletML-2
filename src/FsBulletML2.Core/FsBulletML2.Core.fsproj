@@ -2,10 +2,12 @@
   <PropertyGroup>
     <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RootNamespace>FsBulletML2.Core</RootNamespace>
     <AssemblyName>FsBulletML2.Core</AssemblyName>
+    <IsPackable>true</IsPackable>
+    <PackageId>FsBulletML2.Core</PackageId>
+    <Description>BulletML engine written in F#. Runs danmaku (bullet-hell) patterns as a pure step function; no game framework required.</Description>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />

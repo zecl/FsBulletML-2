@@ -6,7 +6,6 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RootNamespace>FsBulletML2.Edit</RootNamespace>
     <AssemblyName>FsBulletML2.Edit</AssemblyName>
-    <Version>0.1.0</Version>
     <Product>FsBulletML2.Edit</Product>
     <Description>Rewrites a BulletML tree: mix, tune, borrow parts, drop dead branches.</Description>
   </PropertyGroup>

@@ -1,0 +1,33 @@
+<Project>
+  <!--
+    配るパッケージの FSharp.Core の下限。
+
+    既定のままだと、ビルドした機械の SDK が持つ FSharp.Core（10.1.x）が依存に乗り、
+    使う側に最新の FSharp.Core を強いる。しかも機械ごとに版が変わる。
+
+    8.0.403 は、配る 4 本がビルドできて、Core.Tests（338 本）と Parser.Tests（850 本）が
+    その版で緑になる最も低い版。6.0.7 でも 4 本はビルドできるが、Core.Tests が
+    seq の try/with（FSharp.Core 8 から）を使うので、その版では試験で確かめられない。
+
+    IsPackable は各 fsproj が書くので、props ではなくここ（fsproj の後）で見る。
+  -->
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <FSharpCoreImplicitPackageVersion>8.0.403</FSharpCoreImplicitPackageVersion>
+  </PropertyGroup>
+
+  <!--
+    SDK が obj に焼く <TFM>.AssemblyAttributes.fs は、名前にカンマが入る
+    （.NETCoreApp,Version=v10.0.AssemblyAttributes.fs）。F# のコンパイラは埋め込む
+    ファイルをカンマ区切りで受けるので、この 1 本 だけ PDB に入らない ——
+    dotnet-validate が「untracked sources (obj)」と出す。
+    EmbeddedFiles に名指しで足しても同じ理由で入らなかった。
+
+    カンマの無い名前で焼かせる。そうすれば EmbedUntrackedSources で入る。
+    TargetFramework で分けるので、複数 TFM でも衝突しない。
+  -->
+  <Target Name="CommaFreeAssemblyAttributesPath" BeforeTargets="GenerateTargetFrameworkMonikerAttribute" Condition="'$(IsPackable)' == 'true'">
+    <PropertyGroup>
+      <TargetFrameworkMonikerAssemblyAttributesPath>$(IntermediateOutputPath)$(TargetFramework).AssemblyAttributes$(DefaultLanguageSourceExtension)</TargetFrameworkMonikerAssemblyAttributesPath>
+    </PropertyGroup>
+  </Target>
+</Project>

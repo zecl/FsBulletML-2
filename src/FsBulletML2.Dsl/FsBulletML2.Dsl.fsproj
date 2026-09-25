@@ -5,9 +5,9 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RootNamespace>FsBulletML2.Dsl</RootNamespace>
     <AssemblyName>FsBulletML2.Dsl</AssemblyName>
-    <Version>0.1.1</Version>
-    <Product>FsBulletML2.Dsl</Product>
-    <Description>Computation-expression DSL for writing BulletML.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageId>FsBulletML2.Dsl</PackageId>
+    <Description>Computation-expression DSL for writing BulletML in F#.</Description>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BulletDsl.fs" />
