@@ -4,8 +4,7 @@
 
        置いたときは赤だった（同梱の ProvidedTypes.fs が .NET Framework 時代の
        SDK で FS1108）。SDK を 8.11.0 へ差し替え、設計時の probing を直して
-       緑になり、FsBulletML2.sln に入れた。経緯は
-       samples/FsBulletML2.Sample.TypeProviders.Debug/README.md。
+       緑になり、FsBulletML2.sln に入れた。
 
        **ここが赤いときは sln から外すこと。** 入れたまま赤くすると
        dotnet test がソリューションごと落ちて、他の 554 本 が走らなくなる。

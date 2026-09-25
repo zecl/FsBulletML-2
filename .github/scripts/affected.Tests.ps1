@@ -237,10 +237,11 @@ if ($jp.Count -gt 0) {
 
 Write-Host '=== 0 件 のあつかい'
 
-# 2 本目 は「割り当て不明に落ちる置き場」に在る md。**そこに在るのが効く** ——
-# 拡張子を見ずに置き場だけで決めていたら、この 1 本 で全部 走ってしまう
+# root 以外の README は FsBulletML2-Docs へ移したので、割り当て不明に落ちる
+# 置き場の md はもう無い。2 本目 は README ではない名前の md ——
+# 名前ではなく拡張子で落ちていることを見る
 Check 'md だけなら何も走らない' `
-  @('README.md', 'samples/FsBulletML2.Sample.Unity2D.CSharp/README.md') @() @()
+  @('README.md', 'LICENSE.md') @() @()
 
 Check 'ライセンス本文は走らせない' `
   @('license/bulletml/readme.txt', 'license/sdmkun/README.txt') @() @()
