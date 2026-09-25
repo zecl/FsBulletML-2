@@ -2,9 +2,14 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>FsBulletML2.TypeProvider</RootNamespace>
     <AssemblyName>FsBulletML2.TypeProviders</AssemblyName>
+    <IsPackable>true</IsPackable>
+    <PackageId>FsBulletML2.TypeProviders</PackageId>
+    <Description>F# type providers for BulletML: turn an XML, SXML or FSB pattern into a typed value at compile time.</Description>
+    <!-- The compiler loads a type provider from typeproviders/fsharp41/<tfm>/ in the package
+         (see the target at the bottom). lib/ keeps the same assembly for run time. -->
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackTypeProviderDesignTime</TargetsForTfmSpecificContentInPackage>
     <!-- A type provider assembly must be loaded with its full implementation at design/compile
          time. The SDK's separate, method-body-stripped reference assembly (used elsewhere purely
          to speed up incremental builds) is not usable here - consumers would load stub bodies
@@ -47,4 +52,22 @@
     <ProjectReference Include="..\FsBulletML2.Core\FsBulletML2.Core.fsproj" />
     <ProjectReference Include="..\FsBulletML2.Parser\FsBulletML2.Parser.fsproj" />
   </ItemGroup>
+  <!-- The NuGet layout. The compiler loads a type provider from typeproviders/fsharp41/<tfm>/
+       in the package, and falls back to lib/ only when that folder is absent.
+
+       A type provider runs inside the compiler, which reads neither the consumer's deps.json nor
+       the package dependencies - FsBulletML2.Core, .Parser and FParsec each land in their own
+       package folder, not next to this assembly. So the design-time folder carries all of them.
+       Every provider registers its own folder with RegisterProbingFolder, so sitting side by
+       side is enough. FSharp.Core is not packed; the compiler brings its own.
+
+       FsBulletML (2014) did the same by reading the consumer's packages.config and building
+       packages\<Id>.<Version>\lib paths. PackageReference has no packages.config and a different
+       folder layout, hence the dedicated folder instead. -->
+  <Target Name="PackTypeProviderDesignTime">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(OutputPath)FsBulletML2.TypeProviders.dll;$(OutputPath)FsBulletML2.Core.dll;$(OutputPath)FsBulletML2.Parser.dll;$(OutputPath)FParsec.dll;$(OutputPath)FParsecCS.dll"
+                              PackagePath="typeproviders/fsharp41/$(TargetFramework)/" />
+    </ItemGroup>
+  </Target>
 </Project>
