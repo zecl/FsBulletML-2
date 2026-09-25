@@ -263,9 +263,19 @@ let parseFile (path: string) : Parsed =
     let entries = ResizeArray<Entry>()
     let mutable pendingDocs: string list = []
     let mutable pendingAttrs: string list = []
+    // module の中身 の字下げ。整形器 で変わる（Fantomas で 2 -> 4）ので、字 で決め打ち しない
+    let mutable bodyIndent = -1
+    let mutable anyLet = 0
 
     for raw in lines do
         let t = raw.Trim()
+        let indent = raw.Length - raw.TrimStart().Length
+
+        if modName <> "" && bodyIndent < 0 && t <> "" && indent > 0 then
+            bodyIndent <- indent
+
+        if t.StartsWith "let " then
+            anyLet <- anyLet + 1
 
         if raw.StartsWith "namespace " then
             ns <- raw.Substring("namespace ".Length).Trim()
@@ -280,8 +290,8 @@ let parseFile (path: string) : Parsed =
             modAttrs <- pendingAttrs
             pendingDocs <- []
             pendingAttrs <- []
-        elif raw.StartsWith "  let " then
-            let after = raw.Substring("  let ".Length)
+        elif indent = bodyIndent && t.StartsWith "let " then
+            let after = t.Substring("let ".Length)
             let name = after.Split([| ' '; '=' |], StringSplitOptions.RemoveEmptyEntries).[0]
             entries.Add { Name = name; Docs = pendingDocs }
             pendingDocs <- []
@@ -291,6 +301,10 @@ let parseFile (path: string) : Parsed =
         else
             pendingDocs <- []
             pendingAttrs <- []
+
+    // `let` が在るのに 1 つ も拾えなかったら、書き出す前 に落とす。黙って進むと空 の一覧 で上書き する
+    if anyLet > 0 && entries.Count = 0 then
+        failwithf "%s: let が %d 行 在るのに、module の直下 の定義 を 1 つ も拾えない（字下げ %d）" path anyLet bodyIndent
 
     {
         File = Path.GetFileName path
@@ -326,13 +340,7 @@ let valueOf (ns: string) (modName: string) (name: string) =
 let duHeader =
     [
         "// このファイルは生成物。手で直すと次の焼き直しで消える。"
-        "//"
-        "// 人が書くのは src/FsBulletML2.Bullets.Dsl（CE）のほう。ここは"
-        "// その値を DU で直に組んだ形へ写したもので、突き合わせ門の相手として置いてある。"
-        "//"
-        "// 焼き直し:"
-        "//     dotnet build src/FsBulletML2.Bullets.Dsl -c Release"
-        "//     dotnet fsi src/FsBulletML2.Bullets.Dsl/gen.fsx"
+        "// 人が書くのは src/FsBulletML2.Bullets.Dsl（CE）。ここは DU へ写した突き合わせ門の相手。"
     ]
 
 let generateDu (p: Parsed) =
