@@ -1,7 +1,5 @@
 namespace FsBulletML2
 
-open System.IO
-open System.Text
 open System.Xml
 
 /// 弾幕の木を XML の字にするところ。
@@ -22,30 +20,8 @@ module internal BulletmlXmlWrite =
             member _.End() = writer.WriteEndElement()
 
     let getXmlString formatting (encdoc: EncodingAndDoctype) indentation (this: Bulletml) =
-        let output = new StringBuilder()
-
-        let sw =
-            { new StringWriter(output) with
-                override this.Encoding = Encoding.UTF8
-            }
-
-        sw.NewLine <- "\r\n"
-
-        use writer =
-            new XmlTextWriter(sw, Formatting = formatting, Indentation = indentation)
-
-        encdoc
-        |> function
-            | Nothing -> ()
-            // DOCTYPE の名前と SYSTEM id は `Xml.fs` の [<Literal>] を使う。
-            // Core に在ったころは同じ字がここにも書いてあった —— 同じ値が 2 か所 に
-            // 在ると、片方 だけ直したときに黙って食い違う
-            | Exist ->
-                writer.WriteStartDocument()
-                writer.WriteDocType(Xml.docType, null, Xml.sysid, null)
-
-        DTD.BulletmlXml.writeContentTo (XmlSink(writer)) this
-        output.ToString()
+        Xml.writeXmlString formatting encdoc indentation (fun writer ->
+            DTD.BulletmlXml.writeContentTo (XmlSink(writer)) this)
 
     let toXmlString (encodingAndDoctype: EncodingAndDoctype) (this: Bulletml) =
         getXmlString Formatting.None encodingAndDoctype 0 this

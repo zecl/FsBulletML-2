@@ -76,6 +76,29 @@ type ReadEntryPoints() =
         finally
             File.Delete tmp
 
+    /// 上の 2 本は「落ちる」までしか見ていない。文の書式名を取り違えても緑のまま
+    [<Test>]
+    member _.``読めない sxml と fsb の read は、書式の名前を入れた文で落ちる``() =
+        let message (f: unit -> Bulletml) =
+            (Assert.Throws<exn>(fun () -> f () |> ignore)).Message
+
+        let garbage = "(this is not sxml"
+
+        message (fun () -> Bulletml.readSxmlString garbage)
+        |> should equal "sxml parse error"
+
+        message (fun () -> Bulletml.readFsbString garbage)
+        |> should equal "fsb parse error"
+
+        let tmp = Path.Combine(Path.GetTempPath(), "fsbulletml2-broken-message.txt")
+        File.WriteAllText(tmp, garbage)
+
+        try
+            message (fun () -> Bulletml.readSxml tmp) |> should equal "sxml parse error"
+            message (fun () -> Bulletml.readFsb tmp) |> should equal "fsb parse error"
+        finally
+            File.Delete tmp
+
     /// C# から見える口。module の関数とは別の実体（型拡張の static member）
     /// なので、片方だけ繋ぎ変えても気づけない
     [<Test>]
@@ -114,6 +137,19 @@ type ReadEntryPoints() =
         withDoctype |> should haveSubstring "bulletml.dtd"
         // 読み直せることも見る。DOCTYPE を付けた結果が読めなければ意味が無い
         Bulletml.readXmlString withDoctype |> should equal xml
+
+    /// 上の門は "bulletml.dtd" を含むかしか見ていない。SYSTEM id の字が
+    /// ずれても緑なので、頭を丸ごと当てる。弾幕の木と XML の木の両方
+    [<Test>]
+    member _.``DOCTYPE の行は SYSTEM id まで字どおり``() =
+        let head =
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE bulletml SYSTEM \"http://www.asahi-net.or.jp/~cs8k-cyu/bulletml/bulletml.dtd\"><bulletml "
+
+        let xml = Bulletml.readXmlString (text "xml")
+        xml.ToXmlString(EncodingAndDoctype.Exist) |> should startWith head
+
+        (XmlNode.ReadXml(path "xml")).ToXmlString(EncodingAndDoctype.Exist)
+        |> should startWith head
 
     /// 省略引数つきの多重定義。引数なしの版とは別の実体で、既定値を
     /// 埋める行がそれぞれに居る

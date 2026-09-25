@@ -1,6 +1,5 @@
 namespace FsBulletML2
 
-open System.Xml
 open System.Runtime.InteropServices
 open FParsec
 
@@ -8,63 +7,48 @@ open FParsec
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Bulletml =
 
+    let private convertParsed (kind: string) (parsed: ParserResult<XmlNode, 'u>) : Bulletml =
+        match parsed with
+        | Success(r, _, _) -> r |> BulletmlRead.convertBulletmlFromXmlNode
+        | Failure(_, _, _) -> failwith (kind + " parse error")
+
+    let private tryParsed (parsed: ParserResult<XmlNode, 'u>) : Bulletml option =
+        match parsed with
+        | Success(r, _, _) -> r |> BulletmlRead.tryBulletmlFromXmlNode
+        | Failure(_, _, _) -> None
+
     let readXmlString (xml: string) : Bulletml =
-        use reader = new System.IO.StringReader(xml)
-        use reader = XmlReader.Create(reader, readerSettingsIndented)
-        XmlNode.Read(xml, reader) |> BulletmlRead.convertBulletmlFromXmlNode
+        XmlNode.ReadXmlString xml |> BulletmlRead.convertBulletmlFromXmlNode
 
     let tryReadXmlString (xml: string) : Bulletml option =
-        use reader = new System.IO.StringReader(xml)
-        use reader = XmlReader.Create(reader, readerSettingsIndented)
-        XmlNode.Read(xml, reader) |> BulletmlRead.tryBulletmlFromXmlNode
+        XmlNode.ReadXmlString xml |> BulletmlRead.tryBulletmlFromXmlNode
 
     let readXml (xmlFile: string) : Bulletml =
-        use reader = XmlReader.Create((xmlFile: string), readerSettingsIndented)
-        XmlNode.Read(xmlFile, reader) |> BulletmlRead.convertBulletmlFromXmlNode
+        XmlNode.ReadXml xmlFile |> BulletmlRead.convertBulletmlFromXmlNode
 
     let tryReadXml (xmlFile: string) : Bulletml option =
-        use reader = XmlReader.Create((xmlFile: string), readerSettingsIndented)
-        XmlNode.Read(xmlFile, reader) |> BulletmlRead.tryBulletmlFromXmlNode
+        XmlNode.ReadXml xmlFile |> BulletmlRead.tryBulletmlFromXmlNode
 
-    let readSxmlString (sxml: string) : Bulletml =
-        match Sxml.parse sxml with
-        | Success(r, _, _) -> r |> BulletmlRead.convertBulletmlFromXmlNode
-        | Failure(_, _, _) -> failwith "sxml parse error"
+    let readSxmlString (sxml: string) : Bulletml = Sxml.parse sxml |> convertParsed "sxml"
 
-    let tryReadSxmlString (sxml: string) : Bulletml option =
-        match Sxml.parse sxml with
-        | Success(r, _, _) -> r |> BulletmlRead.tryBulletmlFromXmlNode
-        | Failure(_, _, _) -> None
+    let tryReadSxmlString (sxml: string) : Bulletml option = Sxml.parse sxml |> tryParsed
 
     let readSxml (sxmlFile: string) : Bulletml =
-        match Sxml.parseFromFile sxmlFile with
-        | Success(r, _, _) -> r |> BulletmlRead.convertBulletmlFromXmlNode
-        | Failure(_, _, _) -> failwith "sxml parse error"
+        Sxml.parseFromFile sxmlFile |> convertParsed "sxml"
 
     let tryReadSxml (sxmlFile: string) : Bulletml option =
-        match Sxml.parseFromFile sxmlFile with
-        | Success(r, _, _) -> r |> BulletmlRead.tryBulletmlFromXmlNode
-        | Failure(_, _, _) -> None
+        Sxml.parseFromFile sxmlFile |> tryParsed
 
     let readFsbString (fsb: string) : Bulletml =
-        match Offside.parse fsb with
-        | Success(r, _, _) -> r |> BulletmlRead.convertBulletmlFromXmlNode
-        | Failure(_, _, _) -> failwith "fsb parse error"
+        Offside.parse fsb |> convertParsed "fsb"
 
-    let tryReadFsbString (fsb: string) : Bulletml option =
-        match Offside.parse fsb with
-        | Success(r, _, _) -> r |> BulletmlRead.tryBulletmlFromXmlNode
-        | Failure(_, _, _) -> None
+    let tryReadFsbString (fsb: string) : Bulletml option = Offside.parse fsb |> tryParsed
 
     let readFsb (fsbFile: string) : Bulletml =
-        match Offside.parseFromFile fsbFile with
-        | Success(r, _, _) -> r |> BulletmlRead.convertBulletmlFromXmlNode
-        | Failure(_, _, _) -> failwith "fsb parse error"
+        Offside.parseFromFile fsbFile |> convertParsed "fsb"
 
     let tryReadFsb (fsbFile: string) : Bulletml option =
-        match Offside.parseFromFile fsbFile with
-        | Success(r, _, _) -> r |> BulletmlRead.tryBulletmlFromXmlNode
-        | Failure(_, _, _) -> None
+        Offside.parseFromFile fsbFile |> tryParsed
 
     type Bulletml with
 

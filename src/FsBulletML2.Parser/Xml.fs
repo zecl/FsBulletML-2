@@ -49,22 +49,18 @@ module Xml =
 
     // DOCTYPE は読まない。XmlUrlResolver を置くと外部へ取りにいって、
     // WASM ではメインスレッドが帰ってこない（Loading のまま Play も Apply も死ぬ）。
-    let readerSettingsIndented =
-        new XmlReaderSettings(
-            DtdProcessing = DtdProcessing.Ignore,
-            XmlResolver = null,
-            IgnoreComments = true,
-            IgnoreProcessingInstructions = true
-        )
-
-    let readerSettingsIgnoreWhitespace =
+    let private readerSettings ignoreWhitespace =
         new XmlReaderSettings(
             DtdProcessing = DtdProcessing.Ignore,
             XmlResolver = null,
             IgnoreComments = true,
             IgnoreProcessingInstructions = true,
-            IgnoreWhitespace = true
+            IgnoreWhitespace = ignoreWhitespace
         )
+
+    let readerSettingsIndented = readerSettings false
+
+    let readerSettingsIgnoreWhitespace = readerSettings true
 
     let loadXml xmlUri settings =
         let rec read (reader: XmlReader) =
@@ -90,6 +86,29 @@ module Xml =
     [<Literal>]
     let sysid = "http://www.asahi-net.or.jp/~cs8k-cyu/bulletml/bulletml.dtd"
 
+    let internal writeXmlString formatting (encdoc: EncodingAndDoctype) indentation (writeContent: XmlWriter -> unit) =
+        let output = new StringBuilder()
+
+        let sw =
+            { new StringWriter(output) with
+                override w.Encoding = Encoding.UTF8
+            }
+
+        sw.NewLine <- "\r\n"
+
+        use writer =
+            new XmlTextWriter(sw, Formatting = formatting, Indentation = indentation)
+
+        encdoc
+        |> function
+            | Nothing -> ()
+            | Exist ->
+                writer.WriteStartDocument()
+                writer.WriteDocType(docType, null, sysid, null)
+
+        writeContent writer
+        output.ToString()
+
     type AST.XmlNode with
         [<Extension>]
         member private this.WriteContentTo(writer: XmlWriter) =
@@ -110,27 +129,7 @@ module Xml =
 
         [<Extension>]
         member internal this.GetXmlString(formatting, encdoc: EncodingAndDoctype, indentation) =
-            let output = new StringBuilder()
-
-            let sw =
-                { new StringWriter(output) with
-                    override w.Encoding = Encoding.UTF8
-                }
-
-            sw.NewLine <- "\r\n"
-
-            use writer =
-                new XmlTextWriter(sw, Formatting = formatting, Indentation = indentation)
-
-            encdoc
-            |> function
-                | Nothing -> ()
-                | Exist ->
-                    writer.WriteStartDocument()
-                    writer.WriteDocType(docType, null, sysid, null)
-
-            this.WriteContentTo(writer)
-            output.ToString()
+            writeXmlString formatting encdoc indentation (fun writer -> this.WriteContentTo(writer))
 
         [<Extension>]
         member this.ToString() =
