@@ -328,8 +328,8 @@ module DTD =
 
         /// BulletML 書き込み
         let writeContentTo (sink: IBulletmlSink) (this: Bulletml) =
-            // 各腕の中身は位置ごとに分ける前と同じ順で書く
-            // （往復の試験が順序まで見ている）
+            // 各識別子の中身は位置ごとに分ける前と同じ順で書く
+            // （往復のテストが順序まで見ている）
             let attrIfSome name (value: string option) =
                 match value with
                 | Some v -> sink.Attr(name, v)
