@@ -14,8 +14,7 @@ FsBulletML-2/
 ├── tests/     Unitテスト
 ├── bench/     ベンチマーク
 ├── tools/     ツール
-├── license/   BulletML と白い弾幕くん
-└── infra/     GitHub Actions の runner
+└── license/   BulletML と白い弾幕くん
 ```
 
 ソリューションは `FsBulletML2.slnx`。ライブラリ側だけは `FsBulletML2.Library.slnx`。
