@@ -4,24 +4,17 @@ name: CI
 # 決め方は .github/scripts/affected.ps1、その校正は affected.Tests.ps1。
 # **対応表を手で書かない** —— 参照が変わったとき表だけが古びるのを避けるため。
 #
-# ## runner は self-hosted（Windows）
+# ## runner は GitHub-hosted（windows-latest）
 #
-# 全 job を手元の Windows 機で走らせる。
+# public にしたので GitHub-hosted に戻した（private の間 は手元 の
+# self-hosted で回していた）。門 と試験 は Windows 前提（pwsh、`guard-shipped-refs` の
+# `\bin\Release\`）なので、土 は Windows のまま。
 #
-# 契約は 3 つ ——
+# runner は毎回 まっさら なので、どの job も checkout の後 に 3 つ 入れる ——
 #
-#     labels        runs-on: [self-hosted, windows, fsbulletml2]
-#                   install-runner.ps1 の -Label と対。片方 だけ変えると
-#                   job は永遠に queued（赤ではないが緑にもならない）
-#     actions/cache 使わない。手元の runner ではクラウドへの往復のほうが遅く、
-#                   素のホストなら既定の置き場（~/.nuget/packages）が最初から残る
-#     setup-dotnet  使わない。SDK はホストに在り、global.json を満たさなければ
-#                   dotnet 自身 が落ちる（黙って別の SDK で建つことはない）
-#
-# **土 は変えていない。** 4 job は windows-latest で走っていたものをそのまま
-# Windows の runner へ移しただけ —— Linux へ移すと門の 1 か所（`guard-shipped-refs` の `\bin\Release\`）と
-# 773 件 の試験が初めて別の軸に載る。「止まっているものを外す」と
-# 「走ったことのない軸を増やす」を混ぜない。
+#     setup-dotnet  global.json の版 を入れる。runner に入っている SDK に任せない
+#     setup-node    Fable の突き合わせ（parity / share-roundtrip / core-fable）が node を呼ぶ
+#     actions/cache ~/.nuget/packages を持ち越す
 
 on:
   pull_request:
@@ -46,7 +39,7 @@ concurrency:
 jobs:
   select:
     name: Select
-    runs-on: [self-hosted, windows, fsbulletml2]
+    runs-on: windows-latest
     outputs:
       tests: ${{ steps.pick.outputs.tests }}
       builds: ${{ steps.pick.outputs.builds }}
@@ -55,6 +48,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
 
       # 載せ忘れたプロジェクトは CI から見ると存在しない。緑のまま素通りする
       - name: slnx から漏れた proj が無いか
@@ -145,13 +149,24 @@ jobs:
     name: Test · ${{ matrix.project.label }}
     needs: select
     if: needs.select.outputs.tests != '[]'
-    runs-on: [self-hosted, windows, fsbulletml2]
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         project: ${{ fromJson(needs.select.outputs.tests) }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
       - name: dotnet test
         run: dotnet test ${{ matrix.project.path }} -c Release --logger "trx;LogFileName=${{ matrix.project.name }}.trx"
 
@@ -167,13 +182,24 @@ jobs:
     name: Build · ${{ matrix.project.label }}
     needs: select
     if: needs.select.outputs.builds != '[]'
-    runs-on: [self-hosted, windows, fsbulletml2]
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         project: ${{ fromJson(needs.select.outputs.builds) }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
       - run: dotnet build ${{ matrix.project.path }} -c Release
 
   # 同梱 dll に対して Unity C# のソースを compile し直す。
@@ -185,13 +211,24 @@ jobs:
   # 焼き直しは .github/scripts/bake-unity-dlls.ps1。
   shipped:
     name: Shipped DLLs
-    runs-on: [self-hosted, windows, fsbulletml2]
+    runs-on: windows-latest
     steps:
       # **浅く取らない。** 下の校正が、stub を割る前の dll を過去の commit から
       # 取り出して当てる —— 既定の深さ 1 だとその blob が無くて落ちる
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
       - run: dotnet build samples/FsBulletML2.Sample.Unity2D.CSharp.Compile -c Release -p:UseShippedDlls=true
 
       # 同梱 dll が、名乗りどおりのアセンブリから型を引いているか。
@@ -222,9 +259,20 @@ jobs:
   # 数秒で終わる。条件を書くと「選ばれなかったから skip」と「壊れて skip」が混ざる。
   parity:
     name: Fable Parity
-    runs-on: [self-hosted, windows, fsbulletml2]
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
       # **焼くのは器の側だけ。** 面（Playground）は Danmaku Lab へ出たが、
       # 当てる先は元から `FsBulletML2.LanguageService/*.js` だけだった（v5.4）
       - name: 焼く
@@ -294,9 +342,20 @@ jobs:
   # 置いたとき、実際に FS1108 24 件 → FS3033 16 件 と段が 2 つ 出ている）。
   typeproviders:
     name: TypeProviders Run
-    runs-on: [self-hosted, windows, fsbulletml2]
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
       - name: 型プロバイダで引いた弾幕を走らせる
         run: dotnet run --project samples/FsBulletML2.Sample.TypeProviders.Debug -c Release
 
@@ -305,9 +364,20 @@ jobs:
   # 手で揃えると、次の焼き直しで消えるか、SDK の原文と差が付く。
   format:
     name: Format
-    runs-on: [self-hosted, windows, fsbulletml2]
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
       - name: Fantomas
         run: |
           dotnet tool restore
@@ -320,9 +390,20 @@ jobs:
     name: Gate
     needs: [select, test, build, shipped, parity, typeproviders, format]
     if: always()
-    runs-on: [self-hosted, windows, fsbulletml2]
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.fsproj', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
       - shell: pwsh
         env:
           SELECT: ${{ needs.select.result }}
