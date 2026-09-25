@@ -3,56 +3,34 @@ namespace FsBulletML2
 /// 木の上の操作。名前で引く、実引数を入れる、輪を 1 段だけ解く。木が 1 つでも要る。
 module internal BulletmlOps =
 
-    let internal convertDirectionOption =
-        fun prams ->
-            function
-            | Some(Direction(attrs, s)) -> Direction(attrs, Param.replaceIn prams s) |> Some
-            | None -> None
+    let internal convertDirection prams (Direction(attrs, s)) =
+        Direction(attrs, Param.replaceIn prams s)
 
-    let internal convertDirection =
-        fun prams ->
-            function
-            | Direction(attrs, s) -> Direction(attrs, Param.replaceIn prams s)
+    let internal convertSpeed prams (Speed(attrs, s)) = Speed(attrs, Param.replaceIn prams s)
 
-    let internal convertSpeedOption =
-        fun prams ->
-            function
-            | Some(Speed(attrs, s)) -> Speed(attrs, Param.replaceIn prams s) |> Some
-            | None -> None
+    let internal convertHorizontal prams (Horizontal(attrs, s)) =
+        Horizontal(attrs, Param.replaceIn prams s)
 
-    let internal convertSpeed =
-        fun prams ->
-            function
-            | Speed(attrs, s) -> Speed(attrs, Param.replaceIn prams s)
+    let internal convertVertical prams (Vertical(attrs, s)) =
+        Vertical(attrs, Param.replaceIn prams s)
 
-    let internal convertTerm =
-        fun prams ->
-            function
-            | Term(s) -> Term(Param.replaceIn prams s)
+    let internal convertTerm prams (Term s) = Term(Param.replaceIn prams s)
+    let internal convertTimes prams (Times s) = Times(Param.replaceIn prams s)
+    let internal convertWait prams s = Param.replaceIn prams s
 
-    let internal convertTimes =
-        fun prams ->
-            function
-            | Times(s) -> Times(Param.replaceIn prams s)
+    let internal convertParam prams =
+        List.map (fun s -> Param.replace s prams)
 
-    let internal convertParam = fun prams -> List.map (fun s -> Param.replace s prams)
+    let internal convertDirectionOption prams = Option.map (convertDirection prams)
+    let internal convertSpeedOption prams = Option.map (convertSpeed prams)
+    let internal convertHorizontalOption prams = Option.map (convertHorizontal prams)
+    let internal convertVerticalOption prams = Option.map (convertVertical prams)
 
-    let internal convertWait =
-        fun prams ->
-            function
-            | s -> Param.replaceIn prams s
-
-    let internal convertHorizontalOption =
-        fun prams ->
-            function
-            | Some(Horizontal(attrs, s)) -> Horizontal(attrs, Param.replaceIn prams s) |> Some
-            | None -> None
-
-    let internal convertVerticalOption =
-        fun prams ->
-            function
-            | Some(Vertical(attrs, s)) -> Vertical(attrs, Param.replaceIn prams s) |> Some
-            | None -> None
+    let private circular (key: RefKey) =
+        new BulletmlDTDViolationException(
+            sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)
+        )
+        |> raise
 
     /// 名前の付いた要素を集める。拾う順は自分を先、それから子。順を変えるな。
     let private collect
@@ -256,10 +234,8 @@ module internal BulletmlOps =
             if lastAction = Some attrs.actionRefLabel then
                 None
             else
-                new BulletmlDTDViolationException(
-                    sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)
-                )
-                |> raise
+                circular key
+
         else
             match tryFindAction top attrs.actionRefLabel with
             | Some action ->
@@ -283,10 +259,8 @@ module internal BulletmlOps =
             let key = FireKey attrs.fireRefLabel
 
             if Set.contains key visiting then
-                new BulletmlDTDViolationException(
-                    sprintf "circular reference detected:[%s] 参照が輪になっているため展開できません" (RefKey.text key)
-                )
-                |> raise
+                circular key
+
 
             let visiting = Set.add key visiting
 

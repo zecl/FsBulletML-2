@@ -20,24 +20,12 @@ module Offside =
 
     let str s = pstring s
     let ws = manyChars (pchar ' ')
-    let pid = (fun _ -> Reply(()))
     let nextline = attempt (eof) <|> skipNewline >>. skipMany (regex "\s*$\n")
     let ptagName = many1Chars (asciiLetter <|> digit)
     let pattrLabel = many1Chars (asciiLetter)
     let chr c = skipChar c
     let skipSpaces1 = skipMany (spaces1) <?> "no skip"
     let pattrValue = skipSpaces1 >>. chr '\"' >>. manyChars (noneOf "\"") .>> chr '\"'
-
-    let dprintPosition fmt =
-        parse {
-            let! p, _ = getPosition .>>. pid
-
-            let dprintfn (fmt: Printf.StringFormat<_ -> _, unit>) =
-                Printf.ksprintf System.Diagnostics.Debug.WriteLine fmt
-
-            dprintfn fmt p
-            return ()
-        }
 
     /// attribute
     let pAttr =
@@ -61,14 +49,6 @@ module Offside =
             return! attempt (ws >>. pAttrsAndBody)
         }
 
-    let dprintPointIndented =
-        parse {
-            let! state = getUserState
-            let indent = ("".PadLeft(state.Current, ' '))
-            let fmt = Printf.StringFormat<_ -> _, unit>(indent + "%A")
-            do! dprintPosition fmt
-        }
-
     let pUpdateDepth =
         attempt (
             parse {
@@ -82,15 +62,11 @@ module Offside =
         }
 
     let pSameDepth =
-        parse {
-            let! state = getUserState
-            do! userStateSatisfies (fun state -> state.Next = state.Current)
-        }
+        parse { do! userStateSatisfies (fun state -> state.Next = state.Current) }
 
     let pOpenIndent =
         parse {
             let! state = getUserState
-            do! dprintPointIndented
             do! userStateSatisfies (fun state -> state.Current < state.Next)
 
             do!
@@ -115,7 +91,6 @@ module Offside =
     let pChildren =
         opt
         <| parse {
-            let! state = getUserState
             let! children = between pOpenIndent pCloseIndent (many pAst)
             return children
         }
@@ -130,8 +105,6 @@ module Offside =
 
     pAstRef
     := parse {
-        let! state = getUserState
-
         do! pSameDepth
         let! name, attrs, body = pElement
         do! nextline
@@ -142,7 +115,7 @@ module Offside =
         return
             children
             |> function
-                | Some chiled -> Element(name, attrs, chiled)
+                | Some children -> Element(name, attrs, children)
                 | None -> Element(name, attrs, if body = "" then [] else [ PCData(body) ])
     }
 
