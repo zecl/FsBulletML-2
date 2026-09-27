@@ -36,8 +36,8 @@ if (-not $RepoRoot) { $RepoRoot = (git rev-parse --show-toplevel) }
 $RepoRoot = $RepoRoot -replace '\\', '/'
 
 # `.jpg` は v2.1 で足した。新しい binary を置くと、除外の無い綴りでこの門が赤くなる。
-# `.jpeg` は同じ物の別の綴り。
-$BinaryExt = @('.xnb', '.png', '.jpg', '.jpeg', '.dll', '.wav', '.mp3', '.psd')
+# `.jpeg` は同じ物の別の綴り。`.gif` は README の動画で足した。
+$BinaryExt = @('.xnb', '.png', '.jpg', '.jpeg', '.gif', '.dll', '.wav', '.mp3', '.psd')
 
 $C0 = @(
   'NUL', 'SOH', 'STX', 'ETX', 'EOT', 'ENQ', 'ACK', 'BEL',
