@@ -5,14 +5,16 @@ open FsBulletML2.Domain
 open FsBulletML2.Dsl
 
 /// `Core` と `Dsl` だけ。パーサは Fable で焼けない。
+/// 式は `$rank` と `$rand` を通す。数字だけの式だと、焼いた JS が変数を読めなくても
+/// 答えが変わらず、この門は緑のまま（rank も rand も 0.5 なので値は 3 と 2）。
 let private script =
     verticalAnon {
         top {
-            repeat "3" {
+            repeat "2+$rank*2" {
                 nest {
                     fire {
                         sequence "36"
-                        speed "2"
+                        speed "1+$rand*2"
                         plain
                     }
 
