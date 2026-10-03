@@ -25,10 +25,12 @@ module Expr =
     // ---- 読む ----
 
     /// `$rand` `$rank` `$数字` の順。順を変えると `$random` が別の字になる。
+    /// 切り出して比べる。`String.CompareOrdinal` の 5 引数 版は Fable が焼いた JS で
+    /// 一致を返さず、`$rand` `$rank` が `$数字` に落ちて式ごと NaN になる。
     let private tryVar (s: string) (i: int) =
-        if i + 5 <= s.Length && String.CompareOrdinal(s, i, "$rand", 0, 5) = 0 then
+        if i + 5 <= s.Length && s.Substring(i, 5) = "$rand" then
             Some(Rand, i + 5)
-        elif i + 5 <= s.Length && String.CompareOrdinal(s, i, "$rank", 0, 5) = 0 then
+        elif i + 5 <= s.Length && s.Substring(i, 5) = "$rank" then
             Some(Rank, i + 5)
         elif i < s.Length && s.[i] = '$' then
             // 旧の Regex.Replace(s, "\$\d*", "0")。数字が 0 個 でも当たる
