@@ -38,8 +38,10 @@ module internal CorpusData =
     /// StackOverflow で落ちるので避けていた弾幕。
     let known再帰: Set<string> = Set.empty
 
-    /// 落ちた場所を突き止めるための足跡。プロセスが死んでも残る
-    let progressPath = Path.Combine(Path.GetTempPath(), "fsb-corpus-progress.txt")
+    /// 落ちた場所を突き止めるための足跡。プロセスが死んでも残る。
+    /// TFM ごとに分ける。net10.0 と net11.0 の試験は同時に走り、同じ名前だと取り合って落ちる
+    let progressPath =
+        Path.Combine(Path.GetTempPath(), $"fsb-corpus-progress-net{Environment.Version.Major}.txt")
 
     /// 弾幕 1 本ぶんの結果
     type Row =

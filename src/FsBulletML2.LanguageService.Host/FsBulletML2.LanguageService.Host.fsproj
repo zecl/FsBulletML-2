@@ -69,10 +69,10 @@
       （溢れは黙って落ちる）。数え直しは配る側の node でやった。
 
       **版は FSharp.Core に合わせる。** ずれると NU1608 が 4 件 出る
-      （43.12.204 は FSharp.Core 10.1.204 を要るが、この repo は 10.1.400）。
+      （43.12.400 は FSharp.Core 10.1.400 を要るが、SDK 11 が持つのは 11.0.101）。
       **警告が出ること自体は走行に出ない**ので、上げるときは揃っているか見ること。
     -->
-    <PackageReference Include="FSharp.Compiler.Service" Version="43.12.400" />
+    <PackageReference Include="FSharp.Compiler.Service" Version="43.13.101" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FsBulletML2.LanguageService\FsBulletML2.LanguageService.fsproj" />

@@ -12,7 +12,7 @@ object pooling to your game framework: MonoGame, Unity, Godot or anything that c
 | `FsBulletML2.Dsl` | Computation expressions for writing patterns in F# |
 | `FsBulletML2.TypeProviders` | Type providers that turn an XML, SXML or FSB pattern into a typed value at compile time |
 
-`Core`, `Front` and `Dsl` target `net10.0` and `netstandard2.1` (Unity). `Parser` and `TypeProviders` target `net10.0`.
+`Core`, `Front` and `Dsl` target `net10.0`, `net11.0` and `netstandard2.1` (Unity). `Parser` targets `net10.0` and `net11.0`. `TypeProviders` targets `net10.0`.
 
 ## Run a pattern
 
