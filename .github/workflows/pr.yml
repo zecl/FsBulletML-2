@@ -13,6 +13,7 @@ name: CI
 # runner は毎回 まっさら なので、どの job も checkout の後 に 3 つ 入れる ——
 #
 #     setup-dotnet  global.json の版 を入れる。runner に入っている SDK に任せない
+#                   試験は net10.0 でも回すので、10.0 の runtime も入れる
 #     setup-node    Fable の突き合わせ（parity / share-roundtrip / core-fable）が node を呼ぶ
 #     actions/cache ~/.nuget/packages を持ち越す
 
@@ -51,6 +52,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+          dotnet-version: 10.0.x
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -159,6 +161,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+          dotnet-version: 10.0.x
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -192,6 +195,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+          dotnet-version: 10.0.x
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -221,6 +225,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+          dotnet-version: 10.0.x
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -265,6 +270,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+          dotnet-version: 10.0.x
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -348,6 +354,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+          dotnet-version: 10.0.x
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -370,6 +377,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+          dotnet-version: 10.0.x
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -396,6 +404,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+          dotnet-version: 10.0.x
       - uses: actions/setup-node@v7
         with:
           node-version: 24
